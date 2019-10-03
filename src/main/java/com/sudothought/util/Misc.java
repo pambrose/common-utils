@@ -19,7 +19,7 @@
 
 package com.sudothought.util;
 
-public class Utils {
+public class Misc {
     private static final java.util.Random random = new java.util.Random();
 
     public static long random(long upper) {
