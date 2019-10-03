@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.sudothought.common.util
 
 import com.google.common.base.Charsets

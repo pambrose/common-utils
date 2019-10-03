@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.sudothought.common.util
 
 import java.io.*
@@ -37,4 +39,3 @@ fun ByteArray.toObject(): Serializable =
             ObjectInputStream(bais)
                 .use { ois -> ois.readObject() as Serializable }
         }
-
