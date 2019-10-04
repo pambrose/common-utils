@@ -17,7 +17,7 @@
  *
  */
 
-package com.sudothought.util;
+package com.sudothought.common.util;
 
 public class Misc {
     private static final java.util.Random random = new java.util.Random();
