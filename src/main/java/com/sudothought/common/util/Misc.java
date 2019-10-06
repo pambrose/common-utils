@@ -31,7 +31,7 @@ public class Misc {
     }
 
     public static void sleepSecs(long time) {
-        sleepMillis(time * 1000);
+        sleepMillis(Math.min(time, Long.MAX_VALUE / 1000) * 1000);
     }
 
     public static void sleepMillis(long time) {
