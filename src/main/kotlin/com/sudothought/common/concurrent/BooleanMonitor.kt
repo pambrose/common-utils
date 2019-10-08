@@ -52,41 +52,49 @@ class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
             .toString()
 
     companion object : KLogging() {
+        @JvmStatic
         fun debug(msg: () -> Any?): MonitorAction = {
             logger.debug { msg }
             true
         }
 
+        @JvmStatic
         fun debug(msg: String): MonitorAction = {
             logger.debug { msg }
             true
         }
 
+        @JvmStatic
         fun info(msg: () -> Any?): MonitorAction = {
             logger.info { msg }
             true
         }
 
+        @JvmStatic
         fun info(msg: String): MonitorAction = {
             logger.info { msg }
             true
         }
 
+        @JvmStatic
         fun warn(msg: () -> Any?): MonitorAction = {
             logger.warn { msg }
             true
         }
 
+        @JvmStatic
         fun warn(msg: String): MonitorAction = {
             logger.warn { msg }
             true
         }
 
+        @JvmStatic
         fun error(msg: () -> Any?): MonitorAction = {
             logger.error { msg }
             true
         }
 
+        @JvmStatic
         fun error(msg: String): MonitorAction = {
             logger.error { msg }
             true

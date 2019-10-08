@@ -25,7 +25,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.*
 
 class Conversions {
-    companion object Static {
+    companion object {
+        @JvmStatic
         fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
             when (timeUnit) {
                 TimeUnit.MICROSECONDS -> value.microseconds
