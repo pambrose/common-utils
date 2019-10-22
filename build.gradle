@@ -1,7 +1,8 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.3.50'
-    id "com.github.ben-manes.versions" version "0.25.0"
+    id "com.github.ben-manes.versions" version "0.27.0"
+    id "maven-publish"
 }
 
 def jvmVersion = '1.8'
@@ -9,7 +10,7 @@ def guavaVersion = '26.0-android'
 def loggingVersion = '1.7.6'
 
 group 'com.sudothought'
-version '1.0-SNAPSHOT'
+version '1.0.0'
 description = 'common-utils'
 sourceCompatibility = jvmVersion
 
@@ -42,5 +43,23 @@ compileKotlin {
 compileTestKotlin {
     kotlinOptions.jvmTarget = jvmVersion
     kotlinOptions.freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/pambrose/common-utils")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GPR_USER")
+                password = project.findProperty("gpr.key") ?: System.getenv("GPR_API_KEY")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
 }
 

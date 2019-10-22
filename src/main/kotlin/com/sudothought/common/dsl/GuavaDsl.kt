@@ -24,7 +24,7 @@ package com.sudothought.common.dsl
 import com.google.common.base.MoreObjects
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
-import com.sudothought.common.delegate.DelegatesExtensions.singleAssign
+import com.sudothought.common.delegate.SingleAssignVar.singleAssign
 
 object GuavaDsl {
     fun Any.toStringElements(block: MoreObjects.ToStringHelper.() -> Unit) =
