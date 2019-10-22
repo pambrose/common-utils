@@ -17,25 +17,20 @@
  *
  */
 
+@file:JvmName("CountDownLatchUtils")
+
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
-package com.sudothought.common.time
+package com.sudothought.common.concurrent
 
-import java.util.concurrent.TimeUnit
-import kotlin.time.*
+import java.util.concurrent.CountDownLatch
 
-class Conversions {
-    companion object {
-        @JvmStatic
-        fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
-            when (timeUnit) {
-                TimeUnit.MICROSECONDS -> value.microseconds
-                TimeUnit.NANOSECONDS -> value.nanoseconds
-                TimeUnit.MILLISECONDS -> value.milliseconds
-                TimeUnit.SECONDS -> value.seconds
-                TimeUnit.MINUTES -> value.minutes
-                TimeUnit.HOURS -> value.hours
-                TimeUnit.DAYS -> value.days
-            }
+val CountDownLatch.isFinished: Boolean get() = count == 0L
+
+fun CountDownLatch.countDown(block: () -> Unit) {
+    try {
+        block()
+    } finally {
+        countDown()
     }
 }

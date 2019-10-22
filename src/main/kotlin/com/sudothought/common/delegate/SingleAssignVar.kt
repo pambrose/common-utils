@@ -24,7 +24,7 @@ package com.sudothought.common.delegate
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-object DelegatesExtensions {
+object SingleAssignVar {
 
     /**
      * Returns a property delegate for a read/write property that can be assigned only once. Trying to assign the property

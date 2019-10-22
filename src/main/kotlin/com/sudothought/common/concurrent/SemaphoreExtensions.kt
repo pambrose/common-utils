@@ -17,12 +17,13 @@
  *
  */
 
+@file:JvmName("SemaphoreUtils")
+
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.sudothought.common.concurrent
 
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
-
-val CountDownLatch.isFinished: Boolean get() = count == 0L
 
 fun <T> Semaphore.withLock(block: () -> T): T {
     acquire()

@@ -17,17 +17,21 @@
  *
  */
 
-package com.sudothought.util;
+package com.sudothought.common.util;
 
-public class Utils {
+public class Misc {
     private static final java.util.Random random = new java.util.Random();
+
+    public static int random(int upper) {
+        return Math.abs(random.nextInt() % upper);
+    }
 
     public static long random(long upper) {
         return Math.abs(random.nextLong() % upper);
     }
 
-    public static int random(int upper) {
-        return Math.abs(random.nextInt() % upper);
+    public static void sleepSecs(long time) {
+        sleepMillis(Math.min(time, Long.MAX_VALUE / 1000) * 1000);
     }
 
     public static void sleepMillis(long time) {
@@ -36,9 +40,5 @@ public class Utils {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-    }
-
-    public static void sleepSecs(long time) {
-        sleepMillis(time * 1000);
     }
 }
