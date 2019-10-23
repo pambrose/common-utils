@@ -17,19 +17,26 @@
  *
  */
 
-@file:JvmName("SemaphoreUtils")
-
+@file:JvmName("IOUtils")
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
-package com.sudothought.common.concurrent
+package com.sudothought.common.util
 
-import java.util.concurrent.Semaphore
+import java.io.*
 
-fun <T> Semaphore.withLock(block: () -> T): T {
-    acquire()
-    return try {
-        block()
-    } finally {
-        release()
-    }
-}
+@Throws(IOException::class)
+fun Serializable.toByteArray(): ByteArray =
+    ByteArrayOutputStream()
+        .use { baos ->
+            ObjectOutputStream(baos).use { oos -> oos.writeObject(this) }
+            baos.flush()
+            baos.toByteArray()
+        }
+
+@Throws(IOException::class, ClassNotFoundException::class)
+fun ByteArray.toObject(): Serializable =
+    ByteArrayInputStream(this)
+        .use { bais ->
+            ObjectInputStream(bais)
+                .use { ois -> ois.readObject() as Serializable }
+        }

@@ -17,25 +17,29 @@
  *
  */
 
+@file:JvmName("ConcurrentUtils")
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
-package com.sudothought.common.util
+package com.sudothought.common.concurrent
 
-import java.io.*
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Semaphore
 
-@Throws(IOException::class)
-fun Serializable.toByteArray(): ByteArray =
-    ByteArrayOutputStream()
-        .use { baos ->
-            ObjectOutputStream(baos).use { oos -> oos.writeObject(this) }
-            baos.flush()
-            baos.toByteArray()
-        }
+val CountDownLatch.isFinished: Boolean get() = count == 0L
 
-@Throws(IOException::class, ClassNotFoundException::class)
-fun ByteArray.toObject(): Serializable =
-    ByteArrayInputStream(this)
-        .use { bais ->
-            ObjectInputStream(bais)
-                .use { ois -> ois.readObject() as Serializable }
-        }
+fun CountDownLatch.countDown(block: () -> Unit) {
+    try {
+        block()
+    } finally {
+        countDown()
+    }
+}
+
+fun <T> Semaphore.withLock(block: () -> T): T {
+    acquire()
+    return try {
+        block()
+    } finally {
+        release()
+    }
+}
