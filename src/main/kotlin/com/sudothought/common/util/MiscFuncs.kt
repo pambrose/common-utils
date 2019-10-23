@@ -21,6 +21,9 @@
 
 package com.sudothought.common.util
 
+import com.google.common.base.StandardSystemProperty
+import java.net.InetAddress
+import java.net.UnknownHostException
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.seconds
@@ -42,5 +45,20 @@ fun repeatWithSleep(iterations: Int,
     repeat(iterations) { i ->
         block(i, startMillis)
         sleep(sleepTime)
+    }
+}
+
+val isWindows by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Windows") }
+val isMac by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Mac OS X") }
+val isJava6 by lazy { StandardSystemProperty.JAVA_VERSION.value().orEmpty().startsWith("1.6") }
+
+val hostInfo by lazy {
+    try {
+        val hostname = InetAddress.getLocalHost().hostName!!
+        val address = InetAddress.getLocalHost().hostAddress!!
+        //logger.debug { "Hostname: $hostname Address: $address" }
+        Pair(hostname, address)
+    } catch (e: UnknownHostException) {
+        Pair("Unknown", "Unknown")
     }
 }
