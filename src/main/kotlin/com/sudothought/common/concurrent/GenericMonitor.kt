@@ -21,10 +21,10 @@
 
 package com.sudothought.common.concurrent
 
-import com.google.common.base.Stopwatch
 import com.google.common.util.concurrent.Monitor
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.time.Duration
+import kotlin.time.MonoClock
 import kotlin.time.seconds
 
 typealias MonitorAction = () -> Boolean
@@ -106,11 +106,11 @@ abstract class GenericMonitor {
         waitUntilTrue(timeout, (-1).seconds, block)
 
     fun waitUntilTrue(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
-        val sw = Stopwatch.createStarted()
+        val start = MonoClock.markNow()
         while (true) {
             when {
                 waitUntilTrue(timeout) -> return true
-                maxWait > 0.seconds && sw.elapsed(MILLISECONDS) >= maxWait.toLongMilliseconds() -> return false
+                maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
                 else ->
                     block?.also {
                         val continueToWait = it.invoke()
@@ -127,11 +127,11 @@ abstract class GenericMonitor {
 
     @Throws(InterruptedException::class)
     fun waitUntilTrueWithInterruption(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
-        val sw = Stopwatch.createStarted()
+        val start = MonoClock.markNow()
         while (true) {
             when {
                 waitUntilTrueWithInterruption(timeout) -> return true
-                maxWait > 0.seconds && sw.elapsed(MILLISECONDS) >= maxWait.toLongMilliseconds() -> return false
+                maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
                 else ->
                     block?.also {
                         val continueToWait = it.invoke()
@@ -146,11 +146,11 @@ abstract class GenericMonitor {
         waitUntilFalse(timeout, (-1).seconds, block)
 
     fun waitUntilFalse(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
-        val sw = Stopwatch.createStarted()
+        val start = MonoClock.markNow()
         while (true) {
             when {
                 waitUntilFalse(timeout) -> return true
-                maxWait > 0.seconds && sw.elapsed(MILLISECONDS) >= maxWait.toLongMilliseconds() -> return false
+                maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
                 else ->
                     block?.also {
                         val continueToWait = it.invoke()
