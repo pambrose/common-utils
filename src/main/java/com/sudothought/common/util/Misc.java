@@ -19,8 +19,10 @@
 
 package com.sudothought.common.util;
 
+import java.util.Random;
+
 public class Misc {
-    private static final java.util.Random random = new java.util.Random();
+    private static final Random random = new Random();
 
     public static int random(int upper) {
         return Math.abs(random.nextInt() % upper);
