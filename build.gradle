@@ -10,7 +10,7 @@ def guavaVersion = '26.0-android'
 def loggingVersion = '1.7.6'
 
 group 'com.sudothought'
-version '1.0.0'
+version '1.0.2'
 description = 'common-utils'
 sourceCompatibility = jvmVersion
 
