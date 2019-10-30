@@ -52,13 +52,15 @@ val isWindows by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contain
 val isMac by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Mac OS X") }
 val isJava6 by lazy { StandardSystemProperty.JAVA_VERSION.value().orEmpty().startsWith("1.6") }
 
+data class HostInfo(val hostName: String, val ipAddress: String)
+
 val hostInfo by lazy {
     try {
         val hostname = InetAddress.getLocalHost().hostName!!
         val address = InetAddress.getLocalHost().hostAddress!!
         //logger.debug { "Hostname: $hostname Address: $address" }
-        Pair(hostname, address)
+        HostInfo(hostname, address)
     } catch (e: UnknownHostException) {
-        Pair("Unknown", "Unknown")
+        HostInfo("Unknown", "Unknown")
     }
 }
