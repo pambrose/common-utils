@@ -8,6 +8,8 @@ plugins {
 def jvmVersion = '1.8'
 def guavaVersion = '26.0-android'
 def loggingVersion = '1.7.6'
+def kluentVersion = '1.56'
+def junitVersion = '5.5.2'
 
 group 'com.sudothought'
 version '1.0.2'
@@ -16,6 +18,7 @@ sourceCompatibility = jvmVersion
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
@@ -23,7 +26,9 @@ dependencies {
     implementation "com.google.guava:guava:${guavaVersion}"
     implementation "io.github.microutils:kotlin-logging:${loggingVersion}"
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation "org.amshove.kluent:kluent:$kluentVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -63,3 +68,10 @@ publishing {
     }
 }
 
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        showStandardStreams = true
+    }
+}
