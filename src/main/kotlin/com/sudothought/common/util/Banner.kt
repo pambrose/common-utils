@@ -21,20 +21,20 @@
 
 package com.sudothought.common.util
 
-import com.google.common.base.Charsets
-import com.google.common.base.Joiner
-import com.google.common.base.Splitter
-import com.google.common.io.CharStreams
 import org.slf4j.Logger
-import java.io.InputStreamReader
 
 fun getBanner(filename: String, logger: Logger) =
     try {
         logger.javaClass.classLoader.getResourceAsStream(filename)
             .use { inputStream ->
-                val utf8 = Charsets.UTF_8.name()
-                val banner = CharStreams.toString(InputStreamReader(inputStream ?: throw InternalError(), utf8))
-                val lines: List<String> = Splitter.on("\n").splitToList(banner)
+                //val utf8 = Charsets.UTF_8.name()
+                val utf8 = kotlin.text.Charsets.UTF_8.name()
+                //val banner = CharStreams.toString(InputStreamReader(inputStream ?: throw InternalError(), utf8))
+                val banner =
+                    inputStream?.bufferedReader()?.use { it.readText() } ?: throw InternalError("Null InputStream")
+
+                //val lines: List<String> = Splitter.on("\n").splitToList(banner)
+                val lines: List<String> = banner.split("\n")
 
                 // Trim initial and trailing blank lines, but preserve blank lines in middle;
                 var first = -1
@@ -60,7 +60,8 @@ fun getBanner(filename: String, logger: Logger) =
                         .map { arg -> "     $arg" }
                         .toList()
 
-                val noNulls = Joiner.on("\n").skipNulls().join(vals)
+                //val noNulls = Joiner.on("\n").skipNulls().join(vals)
+                val noNulls = vals.filterNotNull().joinToString("\n")
                 "\n\n$noNulls\n\n"
             }
     } catch (e: Exception) {
