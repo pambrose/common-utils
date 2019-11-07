@@ -6,7 +6,7 @@ plugins {
 }
 
 def jvmVersion = '1.8'
-def guavaVersion = '26.0-android'
+def guavaVersion = '28.1-android'
 def loggingVersion = '1.7.6'
 def kluentVersion = '1.56'
 def junitVersion = '5.5.2'
