@@ -13,7 +13,7 @@ def junitVersion = '5.5.2'
 
 group 'com.sudothought'
 description = 'common-utils'
-version '1.0.3'
+version '1.0.4'
 sourceCompatibility = jvmVersion
 
 repositories {
