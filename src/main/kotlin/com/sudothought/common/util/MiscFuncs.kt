@@ -24,6 +24,8 @@ package com.sudothought.common.util
 import com.google.common.base.StandardSystemProperty
 import java.net.InetAddress
 import java.net.UnknownHostException
+import kotlin.math.abs
+import kotlin.math.log10
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.seconds
@@ -47,6 +49,18 @@ fun repeatWithSleep(iterations: Int,
         sleep(sleepTime)
     }
 }
+
+fun Int.length() =
+    when (this) {
+        0 -> 1
+        else -> log10(abs(toDouble())).toInt() + 1
+    }
+
+fun Long.length() =
+    when (this) {
+        0L -> 1
+        else -> log10(abs(toDouble())).toInt() + 1
+    }
 
 val isWindows by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Windows") }
 val isMac by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Mac OS X") }
