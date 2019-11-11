@@ -50,17 +50,19 @@ fun repeatWithSleep(iterations: Int,
     }
 }
 
-fun Int.length() =
-    when (this) {
-        0 -> 1
-        else -> log10(abs(toDouble())).toInt() + 1
-    }
+val Int.length
+    get() =
+        when (this) {
+            0 -> 1
+            else -> log10(abs(toDouble())).toInt() + 1
+        }
 
-fun Long.length() =
-    when (this) {
-        0L -> 1
-        else -> log10(abs(toDouble())).toInt() + 1
-    }
+val Long.length
+    get() =
+        when (this) {
+            0L -> 1
+            else -> log10(abs(toDouble())).toInt() + 1
+        }
 
 val isWindows by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Windows") }
 val isMac by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Mac OS X") }
