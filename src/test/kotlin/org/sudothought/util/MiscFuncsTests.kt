@@ -27,10 +27,10 @@ class MiscFuncsTests {
 
     @Test
     fun lengthTests() {
-        (0..10000000).forEach() { i -> i.length() shouldEqual i.toString().length }
-        (Int.MAX_VALUE - 10000000..Int.MAX_VALUE).forEach() { i -> i.length() shouldEqual i.toString().length }
+        (0..10000000).forEach() { i -> i.length shouldEqual i.toString().length }
+        (Int.MAX_VALUE - 10000000..Int.MAX_VALUE).forEach() { i -> i.length shouldEqual i.toString().length }
 
-        (0L..10000000L).forEach() { i -> i.length() shouldEqual i.toString().length }
-        (Long.MAX_VALUE - 10000000L..Long.MAX_VALUE).forEach() { i -> i.length() shouldEqual i.toString().length }
+        (0L..10000000L).forEach() { i -> i.length shouldEqual i.toString().length }
+        (Long.MAX_VALUE - 10000000L..Long.MAX_VALUE).forEach() { i -> i.length shouldEqual i.toString().length }
     }
 }
