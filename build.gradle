@@ -41,13 +41,17 @@ artifacts {
 }
 
 compileKotlin {
-    kotlinOptions.jvmTarget = jvmVersion
-    kotlinOptions.freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    kotlinOptions {
+        jvmTarget = jvmVersion
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
 }
 
 compileTestKotlin {
-    kotlinOptions.jvmTarget = jvmVersion
-    kotlinOptions.freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    kotlinOptions {
+        jvmTarget = jvmVersion
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
 }
 
 publishing {
