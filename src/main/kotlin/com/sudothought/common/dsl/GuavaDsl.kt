@@ -30,12 +30,12 @@ object GuavaDsl {
     fun Any.toStringElements(block: MoreObjects.ToStringHelper.() -> Unit) =
         MoreObjects.toStringHelper(this)
             .run {
-                block.invoke(this)
+                block(this)
                 toString()
             }
 
     fun serviceManager(services: List<Service>, block: ServiceManager.() -> Unit) =
-        ServiceManager(services).apply { block.invoke(this) }
+        ServiceManager(services).apply { block(this) }
 
     fun serviceManagerListener(init: ServiceManagerListenerHelper.() -> Unit) =
         ServiceManagerListenerHelper().apply { init() }

@@ -13,7 +13,7 @@ def junitVersion = '5.5.2'
 
 group 'com.sudothought'
 description = 'common-utils'
-version '1.0.5'
+version '1.0.6'
 sourceCompatibility = jvmVersion
 
 repositories {
@@ -41,13 +41,17 @@ artifacts {
 }
 
 compileKotlin {
-    kotlinOptions.jvmTarget = jvmVersion
-    kotlinOptions.freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    kotlinOptions {
+        jvmTarget = jvmVersion
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
 }
 
 compileTestKotlin {
-    kotlinOptions.jvmTarget = jvmVersion
-    kotlinOptions.freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    kotlinOptions {
+        jvmTarget = jvmVersion
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
 }
 
 publishing {
@@ -72,6 +76,8 @@ test {
     useJUnitPlatform()
 
     testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+        exceptionFormat "full"
         showStandardStreams = true
     }
 }

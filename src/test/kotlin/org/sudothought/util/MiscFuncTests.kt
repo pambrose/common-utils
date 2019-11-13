@@ -23,14 +23,14 @@ import com.sudothought.common.util.length
 import org.amshove.kluent.shouldEqual
 import org.junit.jupiter.api.Test
 
-class MiscFuncsTests {
+class MiscFuncTests {
 
     @Test
     fun lengthTests() {
-        (0..10000000).forEach() { i -> i.length() shouldEqual i.toString().length }
-        (Int.MAX_VALUE - 10000000..Int.MAX_VALUE).forEach() { i -> i.length() shouldEqual i.toString().length }
+        repeat(10000000) { i -> i.length shouldEqual i.toString().length }
+        for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldEqual i.toString().length
 
-        (0L..10000000L).forEach() { i -> i.length() shouldEqual i.toString().length }
-        (Long.MAX_VALUE - 10000000L..Long.MAX_VALUE).forEach() { i -> i.length() shouldEqual i.toString().length }
+        for (i in 0L..10000000L) i.length shouldEqual i.toString().length
+        for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldEqual i.toString().length
     }
 }
