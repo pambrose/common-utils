@@ -112,8 +112,8 @@ abstract class GenericMonitor {
                 waitUntilTrue(timeout) -> return true
                 maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
                 else ->
-                    block?.also {
-                        val continueToWait = it.invoke()
+                    block?.also { monitorAction ->
+                        val continueToWait = monitorAction()
                         if (!continueToWait)
                             return false
                     }
@@ -133,8 +133,8 @@ abstract class GenericMonitor {
                 waitUntilTrueWithInterruption(timeout) -> return true
                 maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
                 else ->
-                    block?.also {
-                        val continueToWait = it.invoke()
+                    block?.also { monitorAction ->
+                        val continueToWait = monitorAction()
                         if (!continueToWait)
                             return false
                     }
@@ -152,8 +152,8 @@ abstract class GenericMonitor {
                 waitUntilFalse(timeout) -> return true
                 maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
                 else ->
-                    block?.also {
-                        val continueToWait = it.invoke()
+                    block?.also { monitorAction ->
+                        val continueToWait = monitorAction()
                         if (!continueToWait)
                             return false
                     }
