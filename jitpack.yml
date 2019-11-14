@@ -4,6 +4,6 @@ jdk:
 #  - ./custom_setup.sh
 install:
   - echo "Running a custom install command"
-  - ./gradlew clean build -xtest publish
+  - ./gradlew clean build -xtest publish publishToMavenLocal
 env:
   MYVAR: "custom environment variable"
