@@ -7,9 +7,9 @@ plugins {
 }
 
 // Do not build root jar
-jar {
-    enabled = true
-}
+//jar {
+//    enabled = true
+//}
 
 
 allprojects {
