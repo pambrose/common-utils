@@ -26,6 +26,8 @@ plugins {
 
 description = 'core-utils'
 
+jar.enabled = true
+
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
