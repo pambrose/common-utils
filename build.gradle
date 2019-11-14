@@ -1,18 +1,29 @@
 plugins {
     id 'java'
-    //id 'org.jetbrains.kotlin.jvm' version '1.3.50'
-    //id "com.github.ben-manes.versions" version "0.27.0"
+    id 'org.jetbrains.kotlin.jvm' version '1.3.50' apply false
+    id "com.github.ben-manes.versions" version "0.27.0" apply false
     //id 'maven-publish'
-    id 'maven'
 }
 
 // Do not build root jar
-jar {
-    enabled = true
+jar.enabled = true
+
+repositories {
+    mavenCentral()
+    jcenter()
 }
 
-
 allprojects {
+
+}
+
+subprojects {
+    apply plugin: 'org.jetbrains.kotlin.jvm'
+    apply plugin: 'com.github.ben-manes.versions'
+
+    group 'com.github.pambrose.common-utils'
+    version '1.1.1'
+
     repositories {
         mavenCentral()
         jcenter()
@@ -22,13 +33,14 @@ allprojects {
         archiveClassifier = 'sources'
         from sourceSets.main.allSource
     }
-}
 
-subprojects {
-    apply plugin: "java"
-    apply plugin: "maven-publish"
-
-    group 'com.github.pambrose'
-    version '1.1.0'
+    sourceSets {
+        main {
+            java {
+                srcDirs 'src/main/java'
+                srcDirs 'src/main/kotlin'
+            }
+        }
+    }
 
 }
