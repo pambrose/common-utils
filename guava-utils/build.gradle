@@ -16,6 +16,17 @@ def loggingVersion = '1.7.6'
 def kluentVersion = '1.56'
 def junitVersion = '5.5.2'
 
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "https://plugins.gradle.org/m2/" }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 dependencies {
     compile project(':core-utils')
 
