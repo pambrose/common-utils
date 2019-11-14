@@ -11,10 +11,10 @@ jar.enabled = true
 repositories {
     mavenCentral()
     jcenter()
-    maven { url "https://plugins.gradle.org/m2/" }
 }
 
 allprojects {
+
 }
 
 subprojects {
@@ -23,5 +23,24 @@ subprojects {
 
     group 'com.github.pambrose.common-utils'
     version '1.1.1'
+
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        archiveClassifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    sourceSets {
+        main {
+            java {
+                srcDirs 'src/main/java'
+                srcDirs 'src/main/kotlin'
+            }
+        }
+    }
 
 }
