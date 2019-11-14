@@ -13,13 +13,19 @@ plugins {
 
 repositories {
     mavenCentral()
-    jcenter()
+    //jcenter()
+    jcenter {
+        url "http://jcenter.bintray.com/"
+    }
 }
 
 allprojects {
     repositories {
         mavenCentral()
-        jcenter()
+        //jcenter()
+        jcenter {
+            url "http://jcenter.bintray.com/"
+        }
     }
 
     task sourcesJar(type: Jar, dependsOn: classes) {
