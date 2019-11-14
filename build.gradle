@@ -6,7 +6,7 @@ plugins {
 }
 
 // Do not build root jar
-jar.enabled = false
+jar.enabled = true
 
 repositories {
     mavenCentral()
