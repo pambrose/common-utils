@@ -11,6 +11,10 @@ plugins {
 //    enabled = true
 //}
 
+repositories {
+    mavenCentral()
+    jcenter()
+}
 
 allprojects {
     repositories {
