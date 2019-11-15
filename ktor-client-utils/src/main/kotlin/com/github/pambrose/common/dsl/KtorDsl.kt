@@ -29,35 +29,35 @@ import kotlinx.coroutines.runBlocking
 
 object KtorDsl {
 
-    fun newHttpClient(): HttpClient = HttpClient(CIO)
+  fun newHttpClient(): HttpClient = HttpClient(CIO)
 
-    suspend fun http(httpClient: HttpClient? = null, block: suspend HttpClient.() -> Unit) {
-        if (httpClient == null) {
-            newHttpClient()
-                .use { client ->
-                    client.block()
-                }
-        } else {
-            httpClient.block()
+  suspend fun http(httpClient: HttpClient? = null, block: suspend HttpClient.() -> Unit) {
+    if (httpClient == null) {
+      newHttpClient()
+        .use { client ->
+          client.block()
         }
+    } else {
+      httpClient.block()
     }
+  }
 
-    suspend fun HttpClient.get(url: String,
-                               setUp: HttpRequestBuilder.() -> Unit = {},
-                               block: suspend (HttpResponse) -> Unit) {
-        val clientCall =
-            call(url) {
-                method = HttpMethod.Get
-                setUp()
-            }
-        clientCall.response.use { resp -> block(resp) }
-    }
+  suspend fun HttpClient.get(url: String,
+                             setUp: HttpRequestBuilder.() -> Unit = {},
+                             block: suspend (HttpResponse) -> Unit) {
+    val clientCall =
+      call(url) {
+        method = HttpMethod.Get
+        setUp()
+      }
+    clientCall.response.use { resp -> block(resp) }
+  }
 
-    fun blockingGet(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> Unit) {
-        runBlocking {
-            http {
-                get(url, setUp, block)
-            }
-        }
+  fun blockingGet(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> Unit) {
+    runBlocking {
+      http {
+        get(url, setUp, block)
+      }
     }
+  }
 }

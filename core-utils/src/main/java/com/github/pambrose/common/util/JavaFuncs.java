@@ -22,25 +22,25 @@ package com.github.pambrose.common.util;
 import java.util.Random;
 
 public class JavaFuncs {
-    private static final Random random = new Random();
+  private static final Random random = new Random();
 
-    public static int random(int upper) {
-        return Math.abs(random.nextInt() % upper);
-    }
+  public static int random(int upper) {
+    return Math.abs(random.nextInt() % upper);
+  }
 
-    public static long random(long upper) {
-        return Math.abs(random.nextLong() % upper);
-    }
+  public static long random(long upper) {
+    return Math.abs(random.nextLong() % upper);
+  }
 
-    public static void sleepSecs(long time) {
-        sleepMillis(Math.min(time, Long.MAX_VALUE / 1000) * 1000);
-    }
+  public static void sleepSecs(long time) {
+    sleepMillis(Math.min(time, Long.MAX_VALUE / 1000) * 1000);
+  }
 
-    public static void sleepMillis(long time) {
-        try {
-            Thread.sleep(time);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+  public static void sleepMillis(long time) {
+    try {
+      Thread.sleep(time);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
+  }
 }

@@ -26,10 +26,10 @@ import com.google.common.util.concurrent.Service
 import mu.KLogger
 
 fun genericServiceListener(service: Service, logger: KLogger) =
-    serviceListener {
-        starting { logger.info { "Starting $service" } }
-        running { logger.info { "Running $service" } }
-        stopping { logger.info { "Stopping $service" } }
-        terminated { logger.info { "Terminated $service" } }
-        failed { from, t -> logger.error(t) { "Failed on $from $service" } }
-    }
+  serviceListener {
+    starting { logger.info { "Starting $service" } }
+    running { logger.info { "Running $service" } }
+    stopping { logger.info { "Stopping $service" } }
+    terminated { logger.info { "Terminated $service" } }
+    failed { from, t -> logger.error(t) { "Failed on $from $service" } }
+  }

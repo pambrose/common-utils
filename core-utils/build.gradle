@@ -23,38 +23,38 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    implementation libraries.stdlib
-    implementation libraries.logging
+  implementation libraries.stdlib
+  implementation libraries.logging
 
-    testImplementation libraries.kluent
-    testImplementation libraries.jupiter_api
-    testRuntimeOnly libraries.jupiter_engine
+  testImplementation libraries.kluent
+  testImplementation libraries.jupiter_api
+  testRuntimeOnly libraries.jupiter_engine
 }
 
 artifacts {
-    archives sourcesJar
+  archives sourcesJar
 }
 
 compileKotlin {
-    kotlinOptions {
-        jvmTarget = '1.8'
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
-    }
+  kotlinOptions {
+    jvmTarget = '1.8'
+    freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+  }
 }
 
 compileTestKotlin {
-    kotlinOptions {
-        jvmTarget = '1.8'
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
-    }
+  kotlinOptions {
+    jvmTarget = '1.8'
+    freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+  }
 }
 
 test {
-    useJUnitPlatform()
+  useJUnitPlatform()
 
-    testLogging {
-        events "passed", "skipped", "failed", "standardOut", "standardError"
-        exceptionFormat "full"
-        showStandardStreams = true
-    }
+  testLogging {
+    events "passed", "skipped", "failed", "standardOut", "standardError"
+    exceptionFormat "full"
+    showStandardStreams = true
+  }
 }

@@ -25,12 +25,12 @@ import org.junit.jupiter.api.Test
 
 class MiscFuncTests {
 
-    @Test
-    fun lengthTests() {
-        repeat(10000000) { i -> i.length shouldEqual i.toString().length }
-        for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldEqual i.toString().length
+  @Test
+  fun lengthTests() {
+    repeat(10000000) { i -> i.length shouldEqual i.toString().length }
+    for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldEqual i.toString().length
 
-        for (i in 0L..10000000L) i.length shouldEqual i.toString().length
-        for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldEqual i.toString().length
-    }
+    for (i in 0L..10000000L) i.length shouldEqual i.toString().length
+    for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldEqual i.toString().length
+  }
 }

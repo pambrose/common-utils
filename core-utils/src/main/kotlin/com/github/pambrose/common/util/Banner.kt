@@ -24,46 +24,46 @@ package com.github.pambrose.common.util
 import org.slf4j.Logger
 
 fun getBanner(filename: String, logger: Logger) =
-    try {
-        logger.javaClass.classLoader.getResourceAsStream(filename)
-            .use { inputStream ->
-                //val utf8 = Charsets.UTF_8.name()
-                //val utf8 = kotlin.text.Charsets.UTF_8.name()
-                //val banner = CharStreams.toString(InputStreamReader(inputStream ?: throw InternalError(), utf8))
-                val banner =
-                    inputStream?.bufferedReader()?.use { it.readText() } ?: throw InternalError("Null InputStream")
+  try {
+    logger.javaClass.classLoader.getResourceAsStream(filename)
+      .use { inputStream ->
+        //val utf8 = Charsets.UTF_8.name()
+        //val utf8 = kotlin.text.Charsets.UTF_8.name()
+        //val banner = CharStreams.toString(InputStreamReader(inputStream ?: throw InternalError(), utf8))
+        val banner =
+          inputStream?.bufferedReader()?.use { it.readText() } ?: throw InternalError("Null InputStream")
 
-                //val lines: List<String> = Splitter.on("\n").splitToList(banner)
-                val lines: List<String> = banner.split("\n")
+        //val lines: List<String> = Splitter.on("\n").splitToList(banner)
+        val lines: List<String> = banner.split("\n")
 
-                // Trim initial and trailing blank lines, but preserve blank lines in middle;
-                var first = -1
-                var last = -1
-                var lineNum = 0
-                lines.forEach { arg1 ->
-                    if (arg1.trim { arg2 -> arg2 <= ' ' }.isNotEmpty()) {
-                        if (first == -1)
-                            first = lineNum
-                        last = lineNum
-                    }
-                    lineNum++
-                }
+        // Trim initial and trailing blank lines, but preserve blank lines in middle;
+        var first = -1
+        var last = -1
+        var lineNum = 0
+        lines.forEach { arg1 ->
+          if (arg1.trim { arg2 -> arg2 <= ' ' }.isNotEmpty()) {
+            if (first == -1)
+              first = lineNum
+            last = lineNum
+          }
+          lineNum++
+        }
 
-                lineNum = 0
+        lineNum = 0
 
-                val vals =
-                    lines
-                        .filter {
-                            val currLine = lineNum++
-                            currLine in first..last
-                        }
-                        .map { arg -> "     $arg" }
-                        .toList()
-
-                //val noNulls = Joiner.on("\n").skipNulls().join(vals)
-                val noNulls = vals.joinToString("\n")
-                "\n\n$noNulls\n\n"
+        val vals =
+          lines
+            .filter {
+              val currLine = lineNum++
+              currLine in first..last
             }
-    } catch (e: Exception) {
-        "Banner $filename cannot be found"
-    }
+            .map { arg -> "     $arg" }
+            .toList()
+
+        //val noNulls = Joiner.on("\n").skipNulls().join(vals)
+        val noNulls = vals.joinToString("\n")
+        "\n\n$noNulls\n\n"
+      }
+  } catch (e: Exception) {
+    "Banner $filename cannot be found"
+  }

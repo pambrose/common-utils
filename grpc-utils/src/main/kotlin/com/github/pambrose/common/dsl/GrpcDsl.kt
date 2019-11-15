@@ -31,66 +31,66 @@ import io.grpc.netty.NettyChannelBuilder
 import io.grpc.stub.StreamObserver
 
 object GrpcDsl {
-    fun channel(inProcessServerName: String = "",
-                hostName: String = "",
-                port: Int = -1,
-                block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
-        (if (inProcessServerName.isEmpty())
-            NettyChannelBuilder.forAddress(hostName, port)
-        else
-            InProcessChannelBuilder.forName(inProcessServerName))
-            .run {
-                block(this)
-                build()
-            }
+  fun channel(inProcessServerName: String = "",
+              hostName: String = "",
+              port: Int = -1,
+              block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
+    (if (inProcessServerName.isEmpty())
+      NettyChannelBuilder.forAddress(hostName, port)
+    else
+      InProcessChannelBuilder.forName(inProcessServerName))
+      .run {
+        block(this)
+        build()
+      }
 
-    fun server(inProcessServerName: String = "", port: Int = -1, block: ServerBuilder<*>.() -> Unit): Server =
-        (if (inProcessServerName.isEmpty())
-            ServerBuilder.forPort(port)
-        else
-            InProcessServerBuilder.forName(inProcessServerName))
-            .run {
-                block(this)
-                build()
-            }
+  fun server(inProcessServerName: String = "", port: Int = -1, block: ServerBuilder<*>.() -> Unit): Server =
+    (if (inProcessServerName.isEmpty())
+      ServerBuilder.forPort(port)
+    else
+      InProcessServerBuilder.forName(inProcessServerName))
+      .run {
+        block(this)
+        build()
+      }
 
-    fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
-        Attributes.newBuilder()
-            .run {
-                block(this)
-                build()
-            }
+  fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
+    Attributes.newBuilder()
+      .run {
+        block(this)
+        build()
+      }
 
-    fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
-        StreamObserverHelper<T>().apply { init() }
+  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
+    StreamObserverHelper<T>().apply { init() }
 
-    class StreamObserverHelper<T> : StreamObserver<T> {
-        private var onNextBlock: ((T) -> Unit)? by singleAssign()
-        private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
-        private var completedBlock: (() -> Unit)? by singleAssign()
+  class StreamObserverHelper<T> : StreamObserver<T> {
+    private var onNextBlock: ((T) -> Unit)? by singleAssign()
+    private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
+    private var completedBlock: (() -> Unit)? by singleAssign()
 
-        override fun onNext(response: T) {
-            onNextBlock?.invoke(response)
-        }
-
-        override fun onError(t: Throwable) {
-            onErrorBlock?.invoke(t)
-        }
-
-        override fun onCompleted() {
-            completedBlock?.invoke()
-        }
-
-        fun onNext(block: (T) -> Unit) {
-            onNextBlock = block
-        }
-
-        fun onError(block: (Throwable) -> Unit) {
-            onErrorBlock = block
-        }
-
-        fun onCompleted(block: () -> Unit) {
-            completedBlock = block
-        }
+    override fun onNext(response: T) {
+      onNextBlock?.invoke(response)
     }
+
+    override fun onError(t: Throwable) {
+      onErrorBlock?.invoke(t)
+    }
+
+    override fun onCompleted() {
+      completedBlock?.invoke()
+    }
+
+    fun onNext(block: (T) -> Unit) {
+      onNextBlock = block
+    }
+
+    fun onError(block: (Throwable) -> Unit) {
+      onErrorBlock = block
+    }
+
+    fun onCompleted(block: () -> Unit) {
+      completedBlock = block
+    }
+  }
 }

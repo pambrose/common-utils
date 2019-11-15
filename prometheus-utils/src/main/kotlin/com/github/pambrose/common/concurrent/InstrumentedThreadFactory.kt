@@ -24,38 +24,38 @@ import java.util.concurrent.ThreadFactory
 
 class InstrumentedThreadFactory(private val delegate: ThreadFactory, name: String, help: String) : ThreadFactory {
 
-    private val created =
-        PrometheusDsl.counter {
-            name("${name}_threads_created")
-            help("$help threads created")
-        }
-    private val running =
-        PrometheusDsl.gauge {
-            name("${name}_threads_running")
-            help("$help threads running")
-        }
-    private val terminated =
-        PrometheusDsl.counter {
-            name("${name}_threads_terminated")
-            help("$help threads terminated")
-        }
-
-    override fun newThread(runnable: Runnable): Thread {
-        val wrappedRunnable = InstrumentedRunnable(runnable)
-        val thread = delegate.newThread(wrappedRunnable)
-        created.inc()
-        return thread
+  private val created =
+    PrometheusDsl.counter {
+      name("${name}_threads_created")
+      help("$help threads created")
+    }
+  private val running =
+    PrometheusDsl.gauge {
+      name("${name}_threads_running")
+      help("$help threads running")
+    }
+  private val terminated =
+    PrometheusDsl.counter {
+      name("${name}_threads_terminated")
+      help("$help threads terminated")
     }
 
-    private inner class InstrumentedRunnable constructor(private val runnable: Runnable) : Runnable {
-        override fun run() {
-            running.inc()
-            try {
-                runnable.run()
-            } finally {
-                running.dec()
-                terminated.inc()
-            }
-        }
+  override fun newThread(runnable: Runnable): Thread {
+    val wrappedRunnable = InstrumentedRunnable(runnable)
+    val thread = delegate.newThread(wrappedRunnable)
+    created.inc()
+    return thread
+  }
+
+  private inner class InstrumentedRunnable constructor(private val runnable: Runnable) : Runnable {
+    override fun run() {
+      running.inc()
+      try {
+        runnable.run()
+      } finally {
+        running.dec()
+        terminated.inc()
+      }
     }
+  }
 }

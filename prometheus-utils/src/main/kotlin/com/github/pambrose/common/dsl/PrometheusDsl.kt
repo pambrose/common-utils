@@ -24,24 +24,24 @@ import io.prometheus.client.Gauge
 import io.prometheus.client.Summary
 
 object PrometheusDsl {
-    fun counter(block: Counter.Builder.() -> Unit): Counter =
-        Counter.build()
-            .run {
-                block(this)
-                register()
-            }
+  fun counter(block: Counter.Builder.() -> Unit): Counter =
+    Counter.build()
+      .run {
+        block(this)
+        register()
+      }
 
-    fun summary(block: Summary.Builder.() -> Unit): Summary =
-        Summary.build()
-            .run {
-                block(this)
-                register()
-            }
+  fun summary(block: Summary.Builder.() -> Unit): Summary =
+    Summary.build()
+      .run {
+        block(this)
+        register()
+      }
 
-    fun gauge(block: Gauge.Builder.() -> Unit): Gauge =
-        Gauge.build()
-            .run {
-                block(this)
-                register()
-            }
+  fun gauge(block: Gauge.Builder.() -> Unit): Gauge =
+    Gauge.build()
+      .run {
+        block(this)
+        register()
+      }
 }
