@@ -15,8 +15,7 @@ def junitVersion = '5.5.2'
 dependencies {
     compile project(':core-utils')
 
-    implementation "io.zipkin.brave:brave-instrumentation-sparkjava:${zipkinVersion}"
-    implementation "io.zipkin.brave:brave-instrumentation-grpc:${zipkinVersion}"
+    implementation "io.zipkin.brave:brave:${zipkinVersion}"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
     implementation "io.github.microutils:kotlin-logging:${loggingVersion}"
