@@ -1,0 +1,55 @@
+description = 'grpc-utils'
+
+jar.enabled = true
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+def kotlinVersion = '1.3.50'
+def grpcVersion = '1.25.0'
+
+def loggingVersion = '1.7.6'
+def kluentVersion = '1.56'
+def junitVersion = '5.5.2'
+
+dependencies {
+    compile project(':core-utils')
+
+    implementation "io.grpc:grpc-all:${grpcVersion}"
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
+    implementation "io.github.microutils:kotlin-logging:${loggingVersion}"
+
+    testImplementation "org.amshove.kluent:kluent:$kluentVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = '1.8'
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
+}
+
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = '1.8'
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
+}
+
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+        exceptionFormat "full"
+        showStandardStreams = true
+    }
+}
+
