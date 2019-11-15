@@ -16,6 +16,7 @@ dependencies {
     compile project(':core-utils')
 
     implementation "io.prometheus:simpleclient:${prometheusVersion}"
+    implementation "io.prometheus:simpleclient_hotspot:${prometheusVersion}"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
     implementation "io.github.microutils:kotlin-logging:${loggingVersion}"
