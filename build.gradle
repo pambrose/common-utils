@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '1.3.50' apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.3.60' apply false
     id "com.github.ben-manes.versions" version "0.27.0" apply false
     //id 'maven-publish'
 }
@@ -27,6 +27,22 @@ subprojects {
     repositories {
         mavenCentral()
         jcenter()
+    }
+
+    ext {
+        kotlinVersion = '1.3.60'
+
+        guavaVersion = '28.1-android'
+        grpcVersion = '1.25.0'
+        dropwizardVersion = '4.1.1'
+        jettyVersion = '9.4.22.v20191022'
+        ktorVersion = '1.2.4'
+        prometheusVersion = '0.8.0'
+        zipkinVersion = '5.9.0'
+
+        loggingVersion = '1.7.6'
+        kluentVersion = '1.56'
+        junitVersion = '5.5.2'
     }
 
     task sourcesJar(type: Jar, dependsOn: classes) {
