@@ -1,2 +1,9 @@
 include 'core-utils'
 include 'guava-utils'
+include 'jetty-utils'
+include 'prometheus-utils'
+include 'ktor-client-utils'
+include 'grpc-utils'
+include 'zipkin-utils'
+
+

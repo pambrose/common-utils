@@ -28,7 +28,7 @@ fun getBanner(filename: String, logger: Logger) =
         logger.javaClass.classLoader.getResourceAsStream(filename)
             .use { inputStream ->
                 //val utf8 = Charsets.UTF_8.name()
-                val utf8 = kotlin.text.Charsets.UTF_8.name()
+                //val utf8 = kotlin.text.Charsets.UTF_8.name()
                 //val banner = CharStreams.toString(InputStreamReader(inputStream ?: throw InternalError(), utf8))
                 val banner =
                     inputStream?.bufferedReader()?.use { it.readText() } ?: throw InternalError("Null InputStream")
@@ -61,7 +61,7 @@ fun getBanner(filename: String, logger: Logger) =
                         .toList()
 
                 //val noNulls = Joiner.on("\n").skipNulls().join(vals)
-                val noNulls = vals.filterNotNull().joinToString("\n")
+                val noNulls = vals.joinToString("\n")
                 "\n\n$noNulls\n\n"
             }
     } catch (e: Exception) {
