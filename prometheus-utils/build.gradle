@@ -1,29 +1,39 @@
-description = 'prometheus-utils'
+/*
+ *
+ *  Copyright © 2019 Paul Ambrose (pambrose@mac.com)
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *
+ */
 
-jar.enabled = true
+description = 'prometheus-utils'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-def kotlinVersion = '1.3.50'
-def prometheusVersion = '0.8.0'
-
-def loggingVersion = '1.7.6'
-def kluentVersion = '1.56'
-def junitVersion = '5.5.2'
-
 dependencies {
     compile project(':core-utils')
 
-    implementation "io.prometheus:simpleclient:${prometheusVersion}"
-    implementation "io.prometheus:simpleclient_hotspot:${prometheusVersion}"
+    implementation libraries.stdlib
+    implementation libraries.logging
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
-    implementation "io.github.microutils:kotlin-logging:${loggingVersion}"
+    implementation libraries.prometheus_core
+    implementation libraries.prometheus_hotspot
 
-    testImplementation "org.amshove.kluent:kluent:$kluentVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testImplementation libraries.kluent
+    testImplementation libraries.jupiter_api
+    testRuntimeOnly libraries.jupiter_engine
 }
 
 artifacts {
@@ -53,4 +63,3 @@ test {
         showStandardStreams = true
     }
 }
-

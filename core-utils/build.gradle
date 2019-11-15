@@ -19,23 +19,16 @@
 
 description = 'core-utils'
 
-jar.enabled = true
-
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-def kotlinVersion = '1.3.50'
-def loggingVersion = '1.7.6'
-def kluentVersion = '1.56'
-def junitVersion = '5.5.2'
-
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
-    implementation "io.github.microutils:kotlin-logging:${loggingVersion}"
+    implementation libraries.stdlib
+    implementation libraries.logging
 
-    testImplementation "org.amshove.kluent:kluent:$kluentVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testImplementation libraries.kluent
+    testImplementation libraries.jupiter_api
+    testRuntimeOnly libraries.jupiter_engine
 }
 
 artifacts {
@@ -65,4 +58,3 @@ test {
         showStandardStreams = true
     }
 }
-
