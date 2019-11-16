@@ -26,17 +26,17 @@ import java.io.*
 
 @Throws(IOException::class)
 fun Serializable.toByteArray(): ByteArray =
-    ByteArrayOutputStream()
-        .use { baos ->
-            ObjectOutputStream(baos).use { oos -> oos.writeObject(this) }
-            baos.flush()
-            baos.toByteArray()
-        }
+  ByteArrayOutputStream()
+    .use { baos ->
+      ObjectOutputStream(baos).use { oos -> oos.writeObject(this) }
+      baos.flush()
+      baos.toByteArray()
+    }
 
 @Throws(IOException::class, ClassNotFoundException::class)
 fun ByteArray.toObject(): Serializable =
-    ByteArrayInputStream(this)
-        .use { bais ->
-            ObjectInputStream(bais)
-                .use { ois -> ois.readObject() as Serializable }
-        }
+  ByteArrayInputStream(this)
+    .use { bais ->
+      ObjectInputStream(bais)
+        .use { ois -> ois.readObject() as Serializable }
+    }

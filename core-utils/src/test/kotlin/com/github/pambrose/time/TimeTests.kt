@@ -27,16 +27,16 @@ import kotlin.time.*
 
 class TimeTests {
 
-    @Test
-    fun conversionTest() {
-        repeat(100) { i ->
-            timeUnitToDuration(i.toLong(), TimeUnit.MICROSECONDS) shouldEqual i.microseconds
-            timeUnitToDuration(i.toLong(), TimeUnit.NANOSECONDS) shouldEqual i.nanoseconds
-            timeUnitToDuration(i.toLong(), TimeUnit.MILLISECONDS) shouldEqual i.milliseconds
-            timeUnitToDuration(i.toLong(), TimeUnit.SECONDS) shouldEqual i.seconds
-            timeUnitToDuration(i.toLong(), TimeUnit.MINUTES) shouldEqual i.minutes
-            timeUnitToDuration(i.toLong(), TimeUnit.HOURS) shouldEqual i.hours
-            timeUnitToDuration(i.toLong(), TimeUnit.DAYS) shouldEqual i.days
-        }
+  @Test
+  fun conversionTest() {
+    repeat(100) { i ->
+      timeUnitToDuration(i.toLong(), TimeUnit.MICROSECONDS) shouldEqual i.microseconds
+      timeUnitToDuration(i.toLong(), TimeUnit.NANOSECONDS) shouldEqual i.nanoseconds
+      timeUnitToDuration(i.toLong(), TimeUnit.MILLISECONDS) shouldEqual i.milliseconds
+      timeUnitToDuration(i.toLong(), TimeUnit.SECONDS) shouldEqual i.seconds
+      timeUnitToDuration(i.toLong(), TimeUnit.MINUTES) shouldEqual i.minutes
+      timeUnitToDuration(i.toLong(), TimeUnit.HOURS) shouldEqual i.hours
+      timeUnitToDuration(i.toLong(), TimeUnit.DAYS) shouldEqual i.days
     }
+  }
 }

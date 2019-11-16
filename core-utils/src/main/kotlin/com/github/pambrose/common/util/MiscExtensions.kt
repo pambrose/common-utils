@@ -31,9 +31,9 @@ val Int.random: Int get() = Random.nextInt(this)
 val Long.random: Long get() = Random.nextLong(this)
 
 val Throwable.stackTraceAsString: String
-    get() {
-        val sw = StringWriter()
-        val pw = PrintWriter(sw)
-        printStackTrace(pw)
-        return sw.toString()
-    }
+  get() {
+    val sw = StringWriter()
+    val pw = PrintWriter(sw)
+    printStackTrace(pw)
+    return sw.toString()
+  }

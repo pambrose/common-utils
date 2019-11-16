@@ -28,36 +28,36 @@ import java.util.concurrent.Semaphore
 val CountDownLatch.isFinished: Boolean get() = count == 0L
 
 fun CountDownLatch.countDown(block: () -> Unit) {
-    try {
-        block()
-    } finally {
-        countDown()
-    }
+  try {
+    block()
+  } finally {
+    countDown()
+  }
 }
 
 fun <T> Semaphore.withLock(block: () -> T): T {
-    acquire()
-    return try {
-        block()
-    } finally {
-        release()
-    }
+  acquire()
+  return try {
+    block()
+  } finally {
+    release()
+  }
 }
 
 fun thread(
-    latch: CountDownLatch,
-    start: Boolean = true,
-    isDaemon: Boolean = false,
-    contextClassLoader: ClassLoader? = null,
-    name: String? = null,
-    priority: Int = -1,
-    block: () -> Unit
+  latch: CountDownLatch,
+  start: Boolean = true,
+  isDaemon: Boolean = false,
+  contextClassLoader: ClassLoader? = null,
+  name: String? = null,
+  priority: Int = -1,
+  block: () -> Unit
 ): Thread {
-    return kotlin.concurrent.thread(start, isDaemon, contextClassLoader, name, priority) {
-        try {
-            block()
-        } finally {
-            latch.countDown()
-        }
+  return kotlin.concurrent.thread(start, isDaemon, contextClassLoader, name, priority) {
+    try {
+      block()
+    } finally {
+      latch.countDown()
     }
+  }
 }

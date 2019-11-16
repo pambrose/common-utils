@@ -26,12 +26,12 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.*
 
 fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
-    when (timeUnit) {
-        TimeUnit.MICROSECONDS -> value.microseconds
-        TimeUnit.NANOSECONDS -> value.nanoseconds
-        TimeUnit.MILLISECONDS -> value.milliseconds
-        TimeUnit.SECONDS -> value.seconds
-        TimeUnit.MINUTES -> value.minutes
-        TimeUnit.HOURS -> value.hours
-        TimeUnit.DAYS -> value.days
-    }
+  when (timeUnit) {
+    TimeUnit.MICROSECONDS -> value.microseconds
+    TimeUnit.NANOSECONDS -> value.nanoseconds
+    TimeUnit.MILLISECONDS -> value.milliseconds
+    TimeUnit.SECONDS -> value.seconds
+    TimeUnit.MINUTES -> value.minutes
+    TimeUnit.HOURS -> value.hours
+    TimeUnit.DAYS -> value.days
+  }

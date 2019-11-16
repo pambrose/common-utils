@@ -23,29 +23,29 @@ import io.prometheus.client.Collector
 import io.prometheus.client.hotspot.*
 
 object SystemMetrics {
-    private var initialized = false
+  private var initialized = false
 
-    @Synchronized
-    fun initialize(enableStandardExports: Boolean = false,
-                   enableMemoryPoolsExports: Boolean = false,
-                   enableGarbageCollectorExports: Boolean = false,
-                   enableThreadExports: Boolean = false,
-                   enableClassLoadingExports: Boolean = false,
-                   enableVersionInfoExports: Boolean = false) {
-        if (!initialized) {
-            if (enableStandardExports)
-                StandardExports().register<Collector>()
-            if (enableMemoryPoolsExports)
-                MemoryPoolsExports().register<Collector>()
-            if (enableGarbageCollectorExports)
-                GarbageCollectorExports().register<Collector>()
-            if (enableThreadExports)
-                ThreadExports().register<Collector>()
-            if (enableClassLoadingExports)
-                ClassLoadingExports().register<Collector>()
-            if (enableVersionInfoExports)
-                VersionInfoExports().register<Collector>()
-            initialized = true
-        }
+  @Synchronized
+  fun initialize(enableStandardExports: Boolean = false,
+                 enableMemoryPoolsExports: Boolean = false,
+                 enableGarbageCollectorExports: Boolean = false,
+                 enableThreadExports: Boolean = false,
+                 enableClassLoadingExports: Boolean = false,
+                 enableVersionInfoExports: Boolean = false) {
+    if (!initialized) {
+      if (enableStandardExports)
+        StandardExports().register<Collector>()
+      if (enableMemoryPoolsExports)
+        MemoryPoolsExports().register<Collector>()
+      if (enableGarbageCollectorExports)
+        GarbageCollectorExports().register<Collector>()
+      if (enableThreadExports)
+        ThreadExports().register<Collector>()
+      if (enableClassLoadingExports)
+        ClassLoadingExports().register<Collector>()
+      if (enableVersionInfoExports)
+        VersionInfoExports().register<Collector>()
+      initialized = true
     }
+  }
 }

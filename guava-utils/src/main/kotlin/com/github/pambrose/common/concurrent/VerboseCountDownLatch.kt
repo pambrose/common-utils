@@ -28,18 +28,18 @@ import kotlin.time.Duration
 
 class VerboseCountDownLatch(count: Int) : CountDownLatch(count) {
 
-    @Throws(InterruptedException::class)
-    fun await(timeout: Duration, msg: String) = await(timeout) { msg }
+  @Throws(InterruptedException::class)
+  fun await(timeout: Duration, msg: String) = await(timeout) { msg }
 
-    @Throws(InterruptedException::class)
-    fun await(timeout: Duration, msg: () -> Any?) {
-        while (true) {
-            val satisfied = await(timeout.toLongMilliseconds(), TimeUnit.MILLISECONDS)
-            if (satisfied)
-                break
-            logger.info(msg)
-        }
+  @Throws(InterruptedException::class)
+  fun await(timeout: Duration, msg: () -> Any?) {
+    while (true) {
+      val satisfied = await(timeout.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+      if (satisfied)
+        break
+      logger.info(msg)
     }
+  }
 
-    companion object : KLogging()
+  companion object : KLogging()
 }
