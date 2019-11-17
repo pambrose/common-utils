@@ -37,7 +37,7 @@ subprojects {
   apply plugin: 'com.github.ben-manes.versions'
 
   group 'com.github.pambrose.common-utils'
-  version '1.1.4'
+  version '1.1.5'
 
   repositories {
     mavenCentral()
@@ -54,12 +54,14 @@ subprojects {
     def ktorVersion = '1.2.4'
     def prometheusVersion = '0.8.0'
     def zipkinVersion = '5.9.0'
-    def loggingVersion = '1.7.6'
-    def kluentVersion = '1.56'
+    def zipkenSenderVersion = '2.11.0'
+    def loggingVersion = '1.7.7'
+    def kluentVersion = '1.57'
     def junitVersion = '5.5.2'
 
     libraries = [
         stdlib                : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}",
+        reflect               : "org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}",
 
         guava                 : "com.google.guava:guava:${guavaVersion}",
 
@@ -67,6 +69,8 @@ subprojects {
 
         dropwizard_core       : "io.dropwizard.metrics:metrics-core:${dropwizardVersion}",
         dropwizard_healthcheck: "io.dropwizard.metrics:metrics-healthchecks:${dropwizardVersion}",
+        dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:${dropwizardVersion}",
+        dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:${dropwizardVersion}",
 
         jetty_server          : "org.eclipse.jetty:jetty-server:${jettyVersion}",
         jetty_servlet         : "org.eclipse.jetty:jetty-servlet:${jettyVersion}",
@@ -78,6 +82,8 @@ subprojects {
         prometheus_hotspot    : "io.prometheus:simpleclient_hotspot:${prometheusVersion}",
 
         zipkin                : "io.zipkin.brave:brave:${zipkinVersion}",
+
+        zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:${zipkenSenderVersion}",
 
         logging               : "io.github.microutils:kotlin-logging:${loggingVersion}",
 
