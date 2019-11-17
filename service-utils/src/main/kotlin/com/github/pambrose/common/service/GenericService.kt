@@ -42,14 +42,16 @@ import mu.KLogging
 import java.io.Closeable
 import kotlin.properties.Delegates.notNull
 
-abstract class GenericService<T> protected constructor(val genericConfigVals: T,
-                                                       adminConfig: AdminConfig,
-                                                       metricsConfig: MetricsConfig,
-                                                       zipkinConfig: ZipkinConfig,
-                                                       versionBlock: () -> String,
-                                                       val isTestMode: Boolean) : GenericExecutionThreadService(),
-  Closeable {
+abstract class GenericService<T>
+protected constructor(val genericConfigVals: T,
+                      adminConfig: AdminConfig,
+                      metricsConfig: MetricsConfig,
+                      zipkinConfig: ZipkinConfig,
+                      versionBlock: () -> String,
+                      val isTestMode: Boolean) : GenericExecutionThreadService(), Closeable {
+
   protected val healthCheckRegistry = HealthCheckRegistry()
+  protected val metricRegistry = MetricRegistry()
 
   private val services = mutableListOf<Service>()
 
@@ -81,17 +83,14 @@ abstract class GenericService<T> protected constructor(val genericConfigVals: T,
     }
 
     if (isMetricsEnabled) {
-      metricsService = MetricsService(metricsConfig.port,
-                                      metricsConfig.path) {
-        addService(this)
-      }
+      metricsService = MetricsService(metricRegistry, metricsConfig.port, metricsConfig.path) { addService(this) }
       SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
                                enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
                                enableGarbageCollectorExports = metricsConfig.garbageCollectorExportsEnabled,
                                enableThreadExports = metricsConfig.threadExportsEnabled,
                                enableClassLoadingExports = metricsConfig.classLoadingExportsEnabled,
                                enableVersionInfoExports = metricsConfig.versionInfoExportsEnabled)
-      jmxReporter = JmxReporter.forRegistry(MetricRegistry()).build()
+      jmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     } else {
       logger.info { "Metrics service disabled" }
     }
