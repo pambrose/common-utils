@@ -21,9 +21,6 @@ package com.github.pambrose.common.util
 
 import io.ktor.http.HttpStatusCode
 
-object KtorUtils {
-  val HttpStatusCode.isSuccessful get() = value in (HttpStatusCode.OK.value..HttpStatusCode.MultipleChoices.value)
+val HttpStatusCode.isSuccessful get() = value in (HttpStatusCode.OK.value..HttpStatusCode.MultipleChoices.value)
 
-  val HttpStatusCode.isNotSuccessful get() = !isSuccessful
-
-}
+val HttpStatusCode.isNotSuccessful get() = !isSuccessful
