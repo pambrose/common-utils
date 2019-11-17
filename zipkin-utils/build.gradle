@@ -23,12 +23,12 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-  compile project(':core-utils')
-
-  implementation libraries.zipkin
+  implementation project(':core-utils')
 
   implementation libraries.stdlib
   implementation libraries.logging
+
+  implementation libraries.zipkin
 
   testImplementation libraries.kluent
   testImplementation libraries.jupiter_api
