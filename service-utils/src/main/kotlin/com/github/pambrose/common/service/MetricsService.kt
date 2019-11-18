@@ -19,6 +19,7 @@
 
 package com.github.pambrose.common.service
 
+import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.health.HealthCheck
 import com.codahale.metrics.servlets.MetricsServlet
 import com.github.pambrose.common.concurrent.GenericIdleService
@@ -31,7 +32,8 @@ import com.google.common.util.concurrent.MoreExecutors
 import mu.KLogging
 import org.eclipse.jetty.servlet.ServletHolder
 
-class MetricsService(private val port: Int,
+class MetricsService(private val metricRegistry: MetricRegistry,
+                     private val port: Int,
                      private val path: String,
                      initBlock: (MetricsService.() -> Unit) = {}) : GenericIdleService() {
 
@@ -40,7 +42,7 @@ class MetricsService(private val port: Int,
       handler =
         JettyDsl.servletContextHandler {
           contextPath = "/"
-          addServlet(ServletHolder(MetricsServlet()), "/$path")
+          addServlet(ServletHolder(MetricsServlet(metricRegistry)), "/$path")
         }
     }
   val healthCheck =
