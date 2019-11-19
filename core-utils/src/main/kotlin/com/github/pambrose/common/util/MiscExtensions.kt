@@ -26,9 +26,9 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.random.Random
 
-val Int.random: Int get() = Random.nextInt(this)
+fun Int.random(): Int = Random.nextInt(this)
 
-val Long.random: Long get() = Random.nextLong(this)
+fun Long.random(): Long = Random.nextLong(this)
 
 val Throwable.stackTraceAsString: String
   get() {
