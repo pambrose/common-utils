@@ -43,7 +43,7 @@ import java.io.Closeable
 import kotlin.properties.Delegates.notNull
 
 abstract class GenericService<T>
-protected constructor(val genericConfigVals: T,
+protected constructor(val configVals: T,
                       adminConfig: AdminConfig,
                       metricsConfig: MetricsConfig,
                       zipkinConfig: ZipkinConfig,
@@ -54,14 +54,13 @@ protected constructor(val genericConfigVals: T,
   protected val metricRegistry = MetricRegistry()
 
   private val services = mutableListOf<Service>()
-
+  private var jmxReporter: JmxReporter by notNull()
   private lateinit var serviceManager: ServiceManager
 
   val isAdminEnabled = adminConfig.enabled
   val isMetricsEnabled = metricsConfig.enabled
   val isZipkinEnabled = zipkinConfig.enabled
 
-  private var jmxReporter: JmxReporter by notNull()
   var adminService: AdminService by notNull()
   var metricsService: MetricsService by notNull()
   var zipkinReporterService: ZipkinReporterService by notNull()
