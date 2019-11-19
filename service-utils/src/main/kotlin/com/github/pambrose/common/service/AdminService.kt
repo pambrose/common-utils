@@ -31,6 +31,7 @@ import com.github.pambrose.common.servlet.VersionServlet
 import com.google.common.util.concurrent.MoreExecutors
 import mu.KLogging
 import org.eclipse.jetty.server.Server
+import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
 
 class AdminService(healthCheckRegistry: HealthCheckRegistry,
@@ -40,6 +41,7 @@ class AdminService(healthCheckRegistry: HealthCheckRegistry,
                    private val healthCheckPath: String = "",
                    private val threadDumpPath: String = "",
                    versionBlock: () -> String,
+                   adminServletInit: ServletContextHandler.() -> Unit,
                    initBlock: AdminService.() -> Unit = {}) : GenericIdleService() {
 
   private val server =
@@ -56,6 +58,9 @@ class AdminService(healthCheckRegistry: HealthCheckRegistry,
               addServlet(ServletHolder(HealthCheckServlet(healthCheckRegistry)), "/$healthCheckPath")
             if (threadDumpPath.isNotBlank())
               addServlet(ServletHolder(ThreadDumpServlet()), "/$threadDumpPath")
+
+            // Invoke additional servlet initialization
+            adminServletInit()
           }
       }
 

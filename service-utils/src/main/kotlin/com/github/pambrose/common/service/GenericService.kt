@@ -39,6 +39,7 @@ import io.prometheus.common.AdminConfig
 import io.prometheus.common.MetricsConfig
 import io.prometheus.common.ZipkinConfig
 import mu.KLogging
+import org.eclipse.jetty.servlet.ServletContextHandler
 import java.io.Closeable
 import kotlin.properties.Delegates.notNull
 
@@ -47,15 +48,16 @@ protected constructor(val configVals: T,
                       adminConfig: AdminConfig,
                       metricsConfig: MetricsConfig,
                       zipkinConfig: ZipkinConfig,
-                      versionBlock: () -> String,
-                      val isTestMode: Boolean) : GenericExecutionThreadService(), Closeable {
+                      versionBlock: () -> String = { "No version" },
+                      adminServletInit: ServletContextHandler.() -> Unit = {},
+                      val isTestMode: Boolean = false) : GenericExecutionThreadService(), Closeable {
 
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
 
+  private lateinit var serviceManager: ServiceManager
   private val services = mutableListOf<Service>()
   private var jmxReporter: JmxReporter by notNull()
-  private lateinit var serviceManager: ServiceManager
 
   val isAdminEnabled = adminConfig.enabled
   val isMetricsEnabled = metricsConfig.enabled
@@ -74,7 +76,8 @@ protected constructor(val configVals: T,
                      versionPath = adminConfig.versionPath,
                      healthCheckPath = adminConfig.healthCheckPath,
                      threadDumpPath = adminConfig.threadDumpPath,
-                     versionBlock = versionBlock) {
+                     versionBlock = versionBlock,
+                     adminServletInit = adminServletInit) {
           addService(this)
         }
     } else {
