@@ -64,7 +64,8 @@ class MetricsService(private val metricRegistry: MetricRegistry,
 
   override fun toString() =
     toStringElements {
-      add("url", "http://localhost:$port/$path")
+      add("port", port)
+      add("path", "/$path")
     }
 
   companion object : KLogging()

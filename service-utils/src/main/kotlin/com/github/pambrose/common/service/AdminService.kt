@@ -75,11 +75,11 @@ class AdminService(healthCheckRegistry: HealthCheckRegistry,
 
   override fun toString() =
     toStringElements {
-      add("port", ":$port")
-      add("ping", pingPath)
-      add("version", versionPath)
-      add("healthcheck", healthCheckPath)
-      add("threaddump", threadDumpPath)
+      add("port", port)
+      add("ping", "/$pingPath")
+      add("version", "/$versionPath")
+      add("healthcheck", "/$healthCheckPath")
+      add("threaddump", "/$threadDumpPath")
     }
 
   companion object : KLogging()

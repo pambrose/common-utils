@@ -65,7 +65,23 @@ protected constructor(val configVals: T,
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
 
-  init {
+  fun initService(adminServletInit: ServletContextHandler.() -> Unit = {}) {
+    if (isAdminEnabled) {
+      adminService =
+        AdminService(healthCheckRegistry = healthCheckRegistry,
+                     port = adminConfig.port,
+                     pingPath = adminConfig.pingPath,
+                     versionPath = adminConfig.versionPath,
+                     healthCheckPath = adminConfig.healthCheckPath,
+                     threadDumpPath = adminConfig.threadDumpPath,
+                     versionBlock = versionBlock,
+                     adminServletInit = adminServletInit) {
+          addService(this)
+        }
+    } else {
+      logger.info { "Admin service disabled" }
+    }
+
     if (isMetricsEnabled) {
       metricsService = MetricsService(metricRegistry, metricsConfig.port, metricsConfig.path) { addService(this) }
       SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
@@ -85,24 +101,6 @@ protected constructor(val configVals: T,
         ZipkinReporterService(url) { addService(this) }
     } else {
       logger.info { "Zipkin reporter service disabled" }
-    }
-  }
-
-  fun initService(adminServletInit: ServletContextHandler.() -> Unit = {}) {
-    if (isAdminEnabled) {
-      adminService =
-        AdminService(healthCheckRegistry = healthCheckRegistry,
-                     port = adminConfig.port,
-                     pingPath = adminConfig.pingPath,
-                     versionPath = adminConfig.versionPath,
-                     healthCheckPath = adminConfig.healthCheckPath,
-                     threadDumpPath = adminConfig.threadDumpPath,
-                     versionBlock = versionBlock,
-                     adminServletInit = adminServletInit) {
-          addService(this)
-        }
-    } else {
-      logger.info { "Admin service disabled" }
     }
 
     addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
@@ -135,8 +133,7 @@ protected constructor(val configVals: T,
     if (isAdminEnabled)
       adminService.startSync()
 
-    Runtime.getRuntime().addShutdownHook(shutDownHookAction(
-      this))
+    Runtime.getRuntime().addShutdownHook(shutDownHookAction(this))
   }
 
   override fun shutDown() {
