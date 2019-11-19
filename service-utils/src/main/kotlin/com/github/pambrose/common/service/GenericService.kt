@@ -41,15 +41,13 @@ import io.prometheus.common.ZipkinConfig
 import mu.KLogging
 import org.eclipse.jetty.servlet.ServletContextHandler
 import java.io.Closeable
-import kotlin.properties.Delegates.notNull
 
 abstract class GenericService<T>
 protected constructor(val configVals: T,
-                      adminConfig: AdminConfig,
-                      metricsConfig: MetricsConfig,
-                      zipkinConfig: ZipkinConfig,
-                      versionBlock: () -> String = { "No version" },
-                      adminServletInit: ServletContextHandler.() -> Unit = {},
+                      private val adminConfig: AdminConfig,
+                      private val metricsConfig: MetricsConfig,
+                      private val zipkinConfig: ZipkinConfig,
+                      private val versionBlock: () -> String = { "No version" },
                       val isTestMode: Boolean = false) : GenericExecutionThreadService(), Closeable {
 
   protected val healthCheckRegistry = HealthCheckRegistry()
@@ -57,33 +55,17 @@ protected constructor(val configVals: T,
 
   private lateinit var serviceManager: ServiceManager
   private val services = mutableListOf<Service>()
-  private var jmxReporter: JmxReporter by notNull()
 
   val isAdminEnabled = adminConfig.enabled
   val isMetricsEnabled = metricsConfig.enabled
   val isZipkinEnabled = zipkinConfig.enabled
 
-  var adminService: AdminService by notNull()
-  var metricsService: MetricsService by notNull()
-  var zipkinReporterService: ZipkinReporterService by notNull()
+  lateinit var jmxReporter: JmxReporter
+  lateinit var adminService: AdminService
+  lateinit var metricsService: MetricsService
+  lateinit var zipkinReporterService: ZipkinReporterService
 
   init {
-    if (isAdminEnabled) {
-      adminService =
-        AdminService(healthCheckRegistry = healthCheckRegistry,
-                     port = adminConfig.port,
-                     pingPath = adminConfig.pingPath,
-                     versionPath = adminConfig.versionPath,
-                     healthCheckPath = adminConfig.healthCheckPath,
-                     threadDumpPath = adminConfig.threadDumpPath,
-                     versionBlock = versionBlock,
-                     adminServletInit = adminServletInit) {
-          addService(this)
-        }
-    } else {
-      logger.info { "Admin service disabled" }
-    }
-
     if (isMetricsEnabled) {
       metricsService = MetricsService(metricRegistry, metricsConfig.port, metricsConfig.path) { addService(this) }
       SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
@@ -106,9 +88,27 @@ protected constructor(val configVals: T,
     }
   }
 
-  fun initService() {
+  fun initService(adminServletInit: ServletContextHandler.() -> Unit = {}) {
+    if (isAdminEnabled) {
+      adminService =
+        AdminService(healthCheckRegistry = healthCheckRegistry,
+                     port = adminConfig.port,
+                     pingPath = adminConfig.pingPath,
+                     versionPath = adminConfig.versionPath,
+                     healthCheckPath = adminConfig.healthCheckPath,
+                     threadDumpPath = adminConfig.threadDumpPath,
+                     versionBlock = versionBlock,
+                     adminServletInit = adminServletInit) {
+          addService(this)
+        }
+    } else {
+      logger.info { "Admin service disabled" }
+    }
+
     addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
+
     addService(this)
+
     serviceManager =
       serviceManager(services) {
         addListener(
@@ -118,6 +118,7 @@ protected constructor(val configVals: T,
             failure { logger.info { "${this@GenericService.simpleClassName} service failed: $it" } }
           })
       }
+
     registerHealthChecks()
   }
 
