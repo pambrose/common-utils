@@ -23,15 +23,33 @@
 package com.github.pambrose.common.time
 
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.*
 import kotlin.time.*
 
 fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
   when (timeUnit) {
     TimeUnit.MICROSECONDS -> value.microseconds
     TimeUnit.NANOSECONDS -> value.nanoseconds
-    TimeUnit.MILLISECONDS -> value.milliseconds
-    TimeUnit.SECONDS -> value.seconds
-    TimeUnit.MINUTES -> value.minutes
-    TimeUnit.HOURS -> value.hours
+    MILLISECONDS -> value.milliseconds
+    SECONDS -> value.seconds
+    MINUTES -> value.minutes
+    HOURS -> value.hours
     TimeUnit.DAYS -> value.days
   }
+
+
+fun Duration.format(includeMillis: Boolean = false): String {
+  val diff = toLongMilliseconds()
+  val hr = MILLISECONDS.toHours(diff)
+  val hrMillis = HOURS.toMillis(hr)
+  val min = MILLISECONDS.toMinutes(diff - hrMillis)
+  val minMillis = MINUTES.toMillis(min)
+  val sec = MILLISECONDS.toSeconds(diff - hrMillis - minMillis)
+  val secMillis = SECONDS.toMillis(sec)
+  val ms = MILLISECONDS.toMillis(diff - hrMillis - minMillis - secMillis)
+
+  return if (includeMillis)
+    java.lang.String.format("%02d:%02d:%02d.%03d", hr, min, sec, ms)
+  else
+    java.lang.String.format("%02d:%02d:%02d", hr, min, sec)
+}
