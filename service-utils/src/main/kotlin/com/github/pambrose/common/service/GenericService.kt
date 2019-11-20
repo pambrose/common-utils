@@ -41,6 +41,8 @@ import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.common.AdminConfig
 import io.prometheus.common.MetricsConfig
 import io.prometheus.common.ZipkinConfig
@@ -57,20 +59,24 @@ protected constructor(val configVals: T,
 
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
-
-  private val services = mutableListOf<Service>()
-
-  private lateinit var serviceManager: ServiceManager
-  private lateinit var servletGroup: ServletGroup
+  protected val services = mutableListOf<Service>()
 
   val isAdminEnabled = adminConfig.enabled
   val isMetricsEnabled = metricsConfig.enabled
   val isZipkinEnabled = zipkinConfig.enabled
 
+  private lateinit var serviceManager: ServiceManager
+  private lateinit var servletGroup: ServletGroup
+
   lateinit var jmxReporter: JmxReporter
   lateinit var adminService: AdminService
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
+
+  init {
+    if (isMetricsEnabled)
+      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry));
+  }
 
   fun initService(adminServletInit: ServletGroup.() -> Unit = {}) {
     if (isAdminEnabled) {
@@ -97,7 +103,7 @@ protected constructor(val configVals: T,
     }
 
     if (isMetricsEnabled) {
-      metricsService = MetricsService(metricRegistry, metricsConfig.port, metricsConfig.path) { addService(this) }
+      metricsService = MetricsService(metricsConfig.port, metricsConfig.path) { addService(this) }
       SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
                                enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
                                enableGarbageCollectorExports = metricsConfig.garbageCollectorExportsEnabled,

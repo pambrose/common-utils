@@ -21,7 +21,6 @@
 
 package com.github.pambrose.common.service
 
-import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.health.HealthCheck
 import com.github.pambrose.common.concurrent.GenericIdleService
 import com.github.pambrose.common.concurrent.genericServiceListener
@@ -34,8 +33,7 @@ import io.prometheus.client.exporter.MetricsServlet
 import mu.KLogging
 import org.eclipse.jetty.servlet.ServletHolder
 
-class MetricsService(private val metricRegistry: MetricRegistry,
-                     private val port: Int,
+class MetricsService(private val port: Int,
                      private val path: String,
                      initBlock: (MetricsService.() -> Unit) = {}) : GenericIdleService() {
 

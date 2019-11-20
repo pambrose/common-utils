@@ -35,6 +35,7 @@ dependencies {
 
     implementation libraries.guava
     implementation libraries.prometheus_servlet
+    implementation libraries.prometheus_dropwizard
     implementation libraries.dropwizard_core
     implementation libraries.dropwizard_healthcheck
     implementation libraries.dropwizard_servlets
