@@ -29,26 +29,6 @@ import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.seconds
 
-fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.toLongMilliseconds())
-
-private val charPool = ('a'..'z') + ('A'..'Z') + ('0'..'9')
-
-fun randomId(length: Int = 10): String =
-  (1..length)
-    .map { Random.nextInt(0, charPool.size) }
-    .map { i -> charPool[i] }
-    .joinToString("")
-
-fun repeatWithSleep(iterations: Int,
-                    sleepTime: Duration = 1.seconds,
-                    block: (count: Int, startMillis: Long) -> Unit) {
-  val startMillis = System.currentTimeMillis()
-  repeat(iterations) { i ->
-    block(i, startMillis)
-    sleep(sleepTime)
-  }
-}
-
 val Int.length
   get() =
     when (this) {
@@ -73,5 +53,25 @@ val hostInfo by lazy {
     HostInfo(hostname, address)
   } catch (e: UnknownHostException) {
     HostInfo("Unknown", "Unknown")
+  }
+}
+
+fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.toLongMilliseconds())
+
+private val randomCharPool = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+
+fun randomId(length: Int = 10): String =
+  (1..length)
+    .map { Random.nextInt(0, randomCharPool.size) }
+    .map { i -> randomCharPool[i] }
+    .joinToString("")
+
+fun repeatWithSleep(iterations: Int,
+                    sleepTime: Duration = 1.seconds,
+                    block: (count: Int, startMillis: Long) -> Unit) {
+  val startMillis = System.currentTimeMillis()
+  repeat(iterations) { i ->
+    block(i, startMillis)
+    sleep(sleepTime)
   }
 }

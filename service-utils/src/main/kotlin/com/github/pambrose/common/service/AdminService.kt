@@ -17,45 +17,29 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.common.service
 
-import com.codahale.metrics.health.HealthCheckRegistry
-import com.codahale.metrics.servlets.HealthCheckServlet
-import com.codahale.metrics.servlets.PingServlet
-import com.codahale.metrics.servlets.ThreadDumpServlet
 import com.github.pambrose.common.concurrent.GenericIdleService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
 import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
-import com.github.pambrose.common.servlet.VersionServlet
 import com.google.common.util.concurrent.MoreExecutors
 import mu.KLogging
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 
-class AdminService(healthCheckRegistry: HealthCheckRegistry,
-                   private val port: Int,
-                   private val pingPath: String = "",
-                   private val versionPath: String = "",
-                   private val healthCheckPath: String = "",
-                   private val threadDumpPath: String = "",
-                   versionBlock: () -> String,
+class AdminService(private val servletGroup: ServletGroup,
                    initBlock: AdminService.() -> Unit = {}) : GenericIdleService() {
 
   private val server =
-    Server(port)
+    Server(servletGroup.port)
       .apply {
         handler =
           servletContextHandler {
             contextPath = "/"
-            if (pingPath.isNotBlank())
-              addServlet(ServletHolder(PingServlet()), "/$pingPath")
-            if (versionPath.isNotBlank())
-              addServlet(ServletHolder(VersionServlet(versionBlock())), "/$versionPath")
-            if (healthCheckPath.isNotBlank())
-              addServlet(ServletHolder(HealthCheckServlet(healthCheckRegistry)), "/$healthCheckPath")
-            if (threadDumpPath.isNotBlank())
-              addServlet(ServletHolder(ThreadDumpServlet()), "/$threadDumpPath")
+            servletGroup.servletMap.forEach { path, servlet -> addServlet(ServletHolder(servlet), "/$path") }
           }
       }
 
@@ -70,9 +54,8 @@ class AdminService(healthCheckRegistry: HealthCheckRegistry,
 
   override fun toString() =
     toStringElements {
-      add("ping", ":$port/$pingPath")
-      add("healthcheck", ":$port/$healthCheckPath")
-      add("threaddump", ":$port/$threadDumpPath")
+      add("port", servletGroup.port)
+      add("paths", servletGroup.servletMap.keys.map { "/$it" })
     }
 
   companion object : KLogging()

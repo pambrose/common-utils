@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.common.util
 
 import com.google.common.base.StandardSystemProperty

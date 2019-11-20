@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.length

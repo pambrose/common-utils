@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.time
 
 import com.github.pambrose.common.time.timeUnitToDuration

@@ -19,14 +19,9 @@
 
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
-package com.github.pambrose.common.dsl
+package com.github.pambrose.common.coroutine
 
-import com.codahale.metrics.health.HealthCheck
+import kotlinx.coroutines.delay
+import kotlin.time.Duration
 
-object MetricsDsl {
-  fun healthCheck(block: HealthCheck.() -> HealthCheck.Result) =
-    object : HealthCheck() {
-      @Throws(Exception::class)
-      override fun check(): Result = block(this)
-    }
-}
+suspend fun delay(duration: Duration) = delay(duration.toLongMilliseconds())

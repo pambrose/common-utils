@@ -17,33 +17,18 @@
  *
  */
 
-description = 'service-utils'
+description = 'corex-utils'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    implementation project(':core-utils')
-    implementation project(':guava-utils')
-    implementation project(':jetty-utils')
-    implementation project(':prometheus-utils')
-    implementation project(':dropwizard-utils')
-    implementation project(':zipkin-utils')
-
     implementation libraries.stdlib
-    implementation libraries.logging
+    implementation libraries.coroutines_core
+    implementation libraries.coroutines_jdk8
+    implementation libraries.coroutines_slf4j
 
-    implementation libraries.guava
-    implementation libraries.prometheus_servlet
-    implementation libraries.prometheus_dropwizard
-    implementation libraries.dropwizard_core
-    implementation libraries.dropwizard_healthcheck
-    implementation libraries.dropwizard_servlets
-    implementation libraries.dropwizard_jmx
-    implementation libraries.jetty_server
-    implementation libraries.jetty_servlet
-    implementation libraries.zipkin
-    implementation libraries.zipkin_sender_okhttp
+    implementation libraries.logging
 
     testImplementation libraries.kluent
     testImplementation libraries.jupiter_api

@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.common.service
 
 import com.codahale.metrics.MetricRegistry
@@ -24,58 +26,76 @@ import com.codahale.metrics.health.HealthCheck
 import com.codahale.metrics.health.HealthCheckRegistry
 import com.codahale.metrics.health.jvm.ThreadDeadlockHealthCheck
 import com.codahale.metrics.jmx.JmxReporter
+import com.codahale.metrics.servlets.HealthCheckServlet
+import com.codahale.metrics.servlets.PingServlet
+import com.codahale.metrics.servlets.ThreadDumpServlet
 import com.github.pambrose.common.concurrent.GenericExecutionThreadService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.serviceManager
 import com.github.pambrose.common.dsl.GuavaDsl.serviceManagerListener
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.github.pambrose.common.metrics.SystemMetrics
+import com.github.pambrose.common.servlet.VersionServlet
 import com.github.pambrose.common.util.simpleClassName
 import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.common.AdminConfig
 import io.prometheus.common.MetricsConfig
 import io.prometheus.common.ZipkinConfig
 import mu.KLogging
 import java.io.Closeable
-import kotlin.properties.Delegates.notNull
 
 abstract class GenericService<T>
-protected constructor(val genericConfigVals: T,
-                      adminConfig: AdminConfig,
-                      metricsConfig: MetricsConfig,
-                      zipkinConfig: ZipkinConfig,
-                      versionBlock: () -> String,
-                      val isTestMode: Boolean) : GenericExecutionThreadService(), Closeable {
+protected constructor(val configVals: T,
+                      private val adminConfig: AdminConfig,
+                      private val metricsConfig: MetricsConfig,
+                      private val zipkinConfig: ZipkinConfig,
+                      private val versionBlock: () -> String = { "No version" },
+                      val isTestMode: Boolean = false) : GenericExecutionThreadService(), Closeable {
 
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
-
-  private val services = mutableListOf<Service>()
-
-  private lateinit var serviceManager: ServiceManager
+  protected val services = mutableListOf<Service>()
 
   val isAdminEnabled = adminConfig.enabled
   val isMetricsEnabled = metricsConfig.enabled
   val isZipkinEnabled = zipkinConfig.enabled
 
-  private var jmxReporter: JmxReporter by notNull()
-  var adminService: AdminService by notNull()
-  var metricsService: MetricsService by notNull()
-  var zipkinReporterService: ZipkinReporterService by notNull()
+  private lateinit var serviceManager: ServiceManager
+  private lateinit var servletGroup: ServletGroup
+
+  lateinit var jmxReporter: JmxReporter
+  lateinit var adminService: AdminService
+  lateinit var metricsService: MetricsService
+  lateinit var zipkinReporterService: ZipkinReporterService
 
   init {
+    if (isMetricsEnabled)
+      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry));
+  }
+
+  fun initService(adminServletInit: ServletGroup.() -> Unit = {}) {
     if (isAdminEnabled) {
+      adminConfig.apply {
+        servletGroup =
+          ServletGroup(port)
+            .apply {
+
+              addServlet(pingPath, PingServlet())
+              addServlet(versionPath, VersionServlet(versionBlock()))
+              addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
+              addServlet(threadDumpPath, ThreadDumpServlet())
+
+              adminServletInit(this)
+            }
+      }
+
       adminService =
-        AdminService(healthCheckRegistry = healthCheckRegistry,
-                     port = adminConfig.port,
-                     pingPath = adminConfig.pingPath,
-                     versionPath = adminConfig.versionPath,
-                     healthCheckPath = adminConfig.healthCheckPath,
-                     threadDumpPath = adminConfig.threadDumpPath,
-                     versionBlock = versionBlock) {
+        AdminService(servletGroup = servletGroup) {
           addService(this)
         }
     } else {
@@ -83,7 +103,7 @@ protected constructor(val genericConfigVals: T,
     }
 
     if (isMetricsEnabled) {
-      metricsService = MetricsService(metricRegistry, metricsConfig.port, metricsConfig.path) { addService(this) }
+      metricsService = MetricsService(metricsConfig.port, metricsConfig.path) { addService(this) }
       SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
                                enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
                                enableGarbageCollectorExports = metricsConfig.garbageCollectorExportsEnabled,
@@ -102,11 +122,11 @@ protected constructor(val genericConfigVals: T,
     } else {
       logger.info { "Zipkin reporter service disabled" }
     }
-  }
 
-  fun initService() {
     addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
+
     addService(this)
+
     serviceManager =
       serviceManager(services) {
         addListener(
@@ -116,6 +136,7 @@ protected constructor(val genericConfigVals: T,
             failure { logger.info { "${this@GenericService.simpleClassName} service failed: $it" } }
           })
       }
+
     registerHealthChecks()
   }
 
@@ -132,8 +153,7 @@ protected constructor(val genericConfigVals: T,
     if (isAdminEnabled)
       adminService.startSync()
 
-    Runtime.getRuntime().addShutdownHook(shutDownHookAction(
-      this))
+    Runtime.getRuntime().addShutdownHook(shutDownHookAction(this))
   }
 
   override fun shutDown() {

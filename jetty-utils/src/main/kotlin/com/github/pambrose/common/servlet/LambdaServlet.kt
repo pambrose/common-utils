@@ -27,19 +27,20 @@ import javax.servlet.http.HttpServlet
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class VersionServlet(private val version: String) : HttpServlet() {
+class LambdaServlet(private val block: () -> String,
+                    private val contentType: String = "text/plain") : HttpServlet() {
 
   @Throws(ServletException::class, IOException::class)
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
     resp.apply {
       status = HttpServletResponse.SC_OK
       setHeader("Cache-Control", "must-revalidate,no-cache,no-store")
-      contentType = "text/plain"
-      writer.use { it.println(version) }
+      contentType = this@LambdaServlet.contentType
+      writer.use { it.println(block()) }
     }
   }
 
   companion object {
-    private const val serialVersionUID = -9115048679370256251L
+    private const val serialVersionUID = -9215048679370216254L
   }
 }

@@ -17,34 +17,35 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.common.service
 
-import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.health.HealthCheck
-import com.codahale.metrics.servlets.MetricsServlet
 import com.github.pambrose.common.concurrent.GenericIdleService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
-import com.github.pambrose.common.dsl.JettyDsl
 import com.github.pambrose.common.dsl.JettyDsl.server
+import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.google.common.util.concurrent.MoreExecutors
+import io.prometheus.client.exporter.MetricsServlet
 import mu.KLogging
 import org.eclipse.jetty.servlet.ServletHolder
 
-class MetricsService(private val metricRegistry: MetricRegistry,
-                     private val port: Int,
+class MetricsService(private val port: Int,
                      private val path: String,
                      initBlock: (MetricsService.() -> Unit) = {}) : GenericIdleService() {
 
   private val server =
     server(port) {
       handler =
-        JettyDsl.servletContextHandler {
+        servletContextHandler {
           contextPath = "/"
-          addServlet(ServletHolder(MetricsServlet(metricRegistry)), "/$path")
+          addServlet(ServletHolder(MetricsServlet()), "/$path")
         }
     }
+
   val healthCheck =
     healthCheck {
       if (server.isRunning)
@@ -64,7 +65,8 @@ class MetricsService(private val metricRegistry: MetricRegistry,
 
   override fun toString() =
     toStringElements {
-      add("url", "http://localhost:$port/$path")
+      add("port", port)
+      add("path", "/$path")
     }
 
   companion object : KLogging()
