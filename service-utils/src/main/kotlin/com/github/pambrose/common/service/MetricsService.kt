@@ -23,7 +23,6 @@ package com.github.pambrose.common.service
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.health.HealthCheck
-import com.codahale.metrics.servlets.MetricsServlet
 import com.github.pambrose.common.concurrent.GenericIdleService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
@@ -31,6 +30,7 @@ import com.github.pambrose.common.dsl.JettyDsl.server
 import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.google.common.util.concurrent.MoreExecutors
+import io.prometheus.client.exporter.MetricsServlet
 import mu.KLogging
 import org.eclipse.jetty.servlet.ServletHolder
 
@@ -44,7 +44,7 @@ class MetricsService(private val metricRegistry: MetricRegistry,
       handler =
         servletContextHandler {
           contextPath = "/"
-          addServlet(ServletHolder(MetricsServlet(metricRegistry)), "/$path")
+          addServlet(ServletHolder(MetricsServlet()), "/$path")
         }
     }
 

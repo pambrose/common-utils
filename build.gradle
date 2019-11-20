@@ -85,6 +85,7 @@ subprojects {
 
         prometheus_core       : "io.prometheus:simpleclient:${prometheusVersion}",
         prometheus_hotspot    : "io.prometheus:simpleclient_hotspot:${prometheusVersion}",
+        prometheus_servlet    : "io.prometheus:simpleclient_servlet:${prometheusVersion}",
 
         zipkin                : "io.zipkin.brave:brave:${zipkinVersion}",
 
