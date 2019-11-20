@@ -27,8 +27,8 @@ import com.codahale.metrics.servlets.MetricsServlet
 import com.github.pambrose.common.concurrent.GenericIdleService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
-import com.github.pambrose.common.dsl.JettyDsl
 import com.github.pambrose.common.dsl.JettyDsl.server
+import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.google.common.util.concurrent.MoreExecutors
 import mu.KLogging
@@ -42,11 +42,12 @@ class MetricsService(private val metricRegistry: MetricRegistry,
   private val server =
     server(port) {
       handler =
-        JettyDsl.servletContextHandler {
+        servletContextHandler {
           contextPath = "/"
           addServlet(ServletHolder(MetricsServlet(metricRegistry)), "/$path")
         }
     }
+
   val healthCheck =
     healthCheck {
       if (server.isRunning)
