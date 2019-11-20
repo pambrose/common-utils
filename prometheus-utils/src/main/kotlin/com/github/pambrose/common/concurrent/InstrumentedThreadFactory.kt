@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.common.concurrent
 
 import com.github.pambrose.common.dsl.PrometheusDsl

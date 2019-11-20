@@ -19,14 +19,15 @@
 
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
-package com.github.pambrose.common.dsl
+package com.github.pambrose.common.service
 
-import com.codahale.metrics.health.HealthCheck
+import javax.servlet.Servlet
 
-object MetricsDsl {
-  fun healthCheck(block: HealthCheck.() -> HealthCheck.Result) =
-    object : HealthCheck() {
-      @Throws(Exception::class)
-      override fun check(): Result = block(this)
-    }
+class ServletGroup(val port: Int) {
+  internal val servletMap: MutableMap<String, Servlet> = mutableMapOf()
+
+  fun addServlet(path: String, servlet: Servlet) {
+    if (path.isNotEmpty() && path.isNotBlank())
+      servletMap.put(path, servlet)
+  }
 }

@@ -17,6 +17,8 @@
  *
  */
 
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
 package com.github.pambrose.common.service
 
 import com.codahale.metrics.MetricRegistry
@@ -24,12 +26,16 @@ import com.codahale.metrics.health.HealthCheck
 import com.codahale.metrics.health.HealthCheckRegistry
 import com.codahale.metrics.health.jvm.ThreadDeadlockHealthCheck
 import com.codahale.metrics.jmx.JmxReporter
+import com.codahale.metrics.servlets.HealthCheckServlet
+import com.codahale.metrics.servlets.PingServlet
+import com.codahale.metrics.servlets.ThreadDumpServlet
 import com.github.pambrose.common.concurrent.GenericExecutionThreadService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.serviceManager
 import com.github.pambrose.common.dsl.GuavaDsl.serviceManagerListener
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.github.pambrose.common.metrics.SystemMetrics
+import com.github.pambrose.common.servlet.VersionServlet
 import com.github.pambrose.common.util.simpleClassName
 import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors
@@ -39,7 +45,6 @@ import io.prometheus.common.AdminConfig
 import io.prometheus.common.MetricsConfig
 import io.prometheus.common.ZipkinConfig
 import mu.KLogging
-import org.eclipse.jetty.servlet.ServletContextHandler
 import java.io.Closeable
 
 abstract class GenericService<T>
@@ -53,8 +58,10 @@ protected constructor(val configVals: T,
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
 
-  private lateinit var serviceManager: ServiceManager
   private val services = mutableListOf<Service>()
+
+  private lateinit var serviceManager: ServiceManager
+  private lateinit var servletGroup: ServletGroup
 
   val isAdminEnabled = adminConfig.enabled
   val isMetricsEnabled = metricsConfig.enabled
@@ -65,17 +72,24 @@ protected constructor(val configVals: T,
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
 
-  fun initService(adminServletInit: ServletContextHandler.() -> Unit = {}) {
+  fun initService(adminServletInit: ServletGroup.() -> Unit = {}) {
     if (isAdminEnabled) {
+      adminConfig.apply {
+        servletGroup =
+          ServletGroup(port)
+            .apply {
+
+              addServlet(pingPath, PingServlet())
+              addServlet(versionPath, VersionServlet(versionBlock()))
+              addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
+              addServlet(threadDumpPath, ThreadDumpServlet())
+
+              adminServletInit(this)
+            }
+      }
+
       adminService =
-        AdminService(healthCheckRegistry = healthCheckRegistry,
-                     port = adminConfig.port,
-                     pingPath = adminConfig.pingPath,
-                     versionPath = adminConfig.versionPath,
-                     healthCheckPath = adminConfig.healthCheckPath,
-                     threadDumpPath = adminConfig.threadDumpPath,
-                     versionBlock = versionBlock,
-                     adminServletInit = adminServletInit) {
+        AdminService(servletGroup = servletGroup) {
           addService(this)
         }
     } else {
