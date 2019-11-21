@@ -53,10 +53,10 @@ object GrpcDsl : KLogging() {
 
   fun server(inProcessServerName: String = "", port: Int = -1, block: ServerBuilder<*>.() -> Unit): Server =
     (if (inProcessServerName.isEmpty()) {
-      logger.info { "Listening for gRPC on port $port" }
+      logger.info { "Listening for gRPC traffic on port $port" }
       ServerBuilder.forPort(port)
     } else {
-      logger.info { "Listening for gRPC with in-process server name $inProcessServerName" }
+      logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
       InProcessServerBuilder.forName(inProcessServerName)
     })
       .run {
