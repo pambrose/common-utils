@@ -127,7 +127,7 @@ protected constructor(val configVals: T,
       logger.info { "Zipkin reporter service disabled" }
     }
 
-    addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
+    addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
 
     addService(this)
 

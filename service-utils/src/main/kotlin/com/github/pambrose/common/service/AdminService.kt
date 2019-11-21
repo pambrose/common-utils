@@ -44,7 +44,7 @@ class AdminService(private val servletGroup: ServletGroup,
       }
 
   init {
-    addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
+    addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
     initBlock(this)
   }
 
