@@ -27,9 +27,10 @@ import mu.KLogger
 
 fun Service.genericServiceListener(logger: KLogger) =
   serviceListener {
-    starting { logger.info { "Starting $this" } }
-    running { logger.info { "Running $this" } }
-    stopping { logger.info { "Stopping $this" } }
-    terminated { logger.info { "Terminated $this" } }
-    failed { from, t -> logger.error(t) { "Failed on $from $this" } }
+    val service = this@genericServiceListener
+    starting { logger.info { "Starting $service" } }
+    running { logger.info { "Running $service" } }
+    stopping { logger.info { "Stopping $service" } }
+    terminated { logger.info { "Terminated $service" } }
+    failed { from, t -> logger.error(t) { "Failed on $from $service" } }
   }
