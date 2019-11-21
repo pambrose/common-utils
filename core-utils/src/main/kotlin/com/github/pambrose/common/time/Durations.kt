@@ -40,16 +40,18 @@ fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
 
 fun Duration.format(includeMillis: Boolean = false): String {
   val diff = toLongMilliseconds()
-  val hr = MILLISECONDS.toHours(diff)
+  val day = MILLISECONDS.toDays(diff)
+  val dayMillis = DAYS.toMillis(day)
+  val hr = MILLISECONDS.toHours(diff - dayMillis)
   val hrMillis = HOURS.toMillis(hr)
-  val min = MILLISECONDS.toMinutes(diff - hrMillis)
+  val min = MILLISECONDS.toMinutes(diff - dayMillis - hrMillis)
   val minMillis = MINUTES.toMillis(min)
-  val sec = MILLISECONDS.toSeconds(diff - hrMillis - minMillis)
+  val sec = MILLISECONDS.toSeconds(diff - dayMillis - hrMillis - minMillis)
   val secMillis = SECONDS.toMillis(sec)
-  val ms = MILLISECONDS.toMillis(diff - hrMillis - minMillis - secMillis)
+  val ms = MILLISECONDS.toMillis(diff - dayMillis - hrMillis - minMillis - secMillis)
 
   return if (includeMillis)
-    java.lang.String.format("%02d:%02d:%02d.%03d", hr, min, sec, ms)
+    String.format("%d:%02d:%02d:%02d.%03d", day, hr, min, sec, ms)
   else
-    java.lang.String.format("%02d:%02d:%02d", hr, min, sec)
+    String.format("%d:%02d:%02d:%02d", day, hr, min, sec)
 }
