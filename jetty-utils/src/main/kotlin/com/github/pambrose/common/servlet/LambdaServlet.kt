@@ -27,8 +27,8 @@ import javax.servlet.http.HttpServlet
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class LambdaServlet(private val block: () -> String,
-                    private val contentType: String = "text/plain") : HttpServlet() {
+class LambdaServlet(private val contentType: String = "text/plain",
+                    private val block: () -> String) : HttpServlet() {
 
   @Throws(ServletException::class, IOException::class)
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
