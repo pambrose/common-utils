@@ -31,26 +31,34 @@ import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.internal.AbstractManagedChannelImplBuilder
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.stub.StreamObserver
+import mu.KLogging
 
-object GrpcDsl {
+object GrpcDsl : KLogging() {
+
   fun channel(inProcessServerName: String = "",
               hostName: String = "",
               port: Int = -1,
               block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
-    (if (inProcessServerName.isEmpty())
+    (if (inProcessServerName.isEmpty()) {
+      logger.info { "Connecting to gRPC on port $port" }
       NettyChannelBuilder.forAddress(hostName, port)
-    else
-      InProcessChannelBuilder.forName(inProcessServerName))
+    } else {
+      logger.info { "Connecting to gRPC with in-process server name $inProcessServerName" }
+      InProcessChannelBuilder.forName(inProcessServerName)
+    })
       .run {
         block(this)
         build()
       }
 
   fun server(inProcessServerName: String = "", port: Int = -1, block: ServerBuilder<*>.() -> Unit): Server =
-    (if (inProcessServerName.isEmpty())
+    (if (inProcessServerName.isEmpty()) {
+      logger.info { "Listening for gRPC on port $port" }
       ServerBuilder.forPort(port)
-    else
-      InProcessServerBuilder.forName(inProcessServerName))
+    } else {
+      logger.info { "Listening for gRPC with in-process server name $inProcessServerName" }
+      InProcessServerBuilder.forName(inProcessServerName)
+    })
       .run {
         block(this)
         build()

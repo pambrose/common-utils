@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletResponse
 class LambdaServlet(private val contentType: String,
                     private val block: () -> String) : HttpServlet() {
 
-  // Go with 2nd constructor instead of default args to allow lambda to come last
+  // Use 2nd constructor instead of default args to allow lambda to come last
   constructor(block: () -> String) : this("text/plain", block)
 
   @Throws(ServletException::class, IOException::class)
