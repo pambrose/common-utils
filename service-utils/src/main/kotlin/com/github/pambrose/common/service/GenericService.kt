@@ -43,7 +43,6 @@ import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
-import io.prometheus.common.AdminConfig
 import mu.KLogging
 import java.io.Closeable
 import kotlin.time.MonoClock
