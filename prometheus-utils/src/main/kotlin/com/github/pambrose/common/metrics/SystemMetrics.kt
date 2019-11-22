@@ -23,8 +23,9 @@ package com.github.pambrose.common.metrics
 
 import io.prometheus.client.Collector
 import io.prometheus.client.hotspot.*
+import mu.KLogging
 
-object SystemMetrics {
+object SystemMetrics : KLogging() {
   private var initialized = false
 
   @Synchronized
@@ -35,18 +36,36 @@ object SystemMetrics {
                  enableClassLoadingExports: Boolean = false,
                  enableVersionInfoExports: Boolean = false) {
     if (!initialized) {
-      if (enableStandardExports)
+      if (enableStandardExports) {
+        logger.info { "Enabling standard JMX metrics" }
         StandardExports().register<Collector>()
-      if (enableMemoryPoolsExports)
+      }
+
+      if (enableMemoryPoolsExports) {
+        logger.info { "Enabling memory pool JMX metrics" }
         MemoryPoolsExports().register<Collector>()
-      if (enableGarbageCollectorExports)
+      }
+
+      if (enableGarbageCollectorExports) {
+        logger.info { "Enabling garbage collector JMX metrics" }
         GarbageCollectorExports().register<Collector>()
-      if (enableThreadExports)
+      }
+
+      if (enableThreadExports) {
+        logger.info { "Enabling thread JMX metrics" }
         ThreadExports().register<Collector>()
-      if (enableClassLoadingExports)
+      }
+
+      if (enableClassLoadingExports) {
+        logger.info { "Enabling class loading JMX metrics" }
         ClassLoadingExports().register<Collector>()
-      if (enableVersionInfoExports)
+      }
+
+      if (enableVersionInfoExports) {
+        logger.info { "Enabling version info metrics" }
         VersionInfoExports().register<Collector>()
+      }
+
       initialized = true
     }
   }
