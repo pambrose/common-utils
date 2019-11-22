@@ -37,7 +37,7 @@ class ZipkinReporterService(private val url: String,
   private val reporter = AsyncReporter.create(sender)
 
   init {
-    addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
+    addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
     initBlock(this)
   }
 

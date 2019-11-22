@@ -25,8 +25,9 @@ import com.github.pambrose.common.dsl.GuavaDsl.serviceListener
 import com.google.common.util.concurrent.Service
 import mu.KLogger
 
-fun genericServiceListener(service: Service, logger: KLogger) =
+fun Service.genericServiceListener(logger: KLogger) =
   serviceListener {
+    val service = this@genericServiceListener
     starting { logger.info { "Starting $service" } }
     running { logger.info { "Running $service" } }
     stopping { logger.info { "Stopping $service" } }

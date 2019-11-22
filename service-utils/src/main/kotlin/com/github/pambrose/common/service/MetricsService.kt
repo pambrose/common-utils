@@ -55,7 +55,7 @@ class MetricsService(private val port: Int,
     }
 
   init {
-    addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
+    addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
     initBlock(this)
   }
 

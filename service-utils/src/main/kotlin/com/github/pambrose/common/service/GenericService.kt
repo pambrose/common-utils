@@ -43,11 +43,9 @@ import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
-import io.prometheus.common.AdminConfig
-import io.prometheus.common.MetricsConfig
-import io.prometheus.common.ZipkinConfig
 import mu.KLogging
 import java.io.Closeable
+import kotlin.time.MonoClock
 
 abstract class GenericService<T>
 protected constructor(val configVals: T,
@@ -57,6 +55,7 @@ protected constructor(val configVals: T,
                       private val versionBlock: () -> String = { "No version" },
                       val isTestMode: Boolean = false) : GenericExecutionThreadService(), Closeable {
 
+  protected val startTime = MonoClock.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
   protected val services = mutableListOf<Service>()
@@ -73,10 +72,7 @@ protected constructor(val configVals: T,
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
 
-  init {
-    if (isMetricsEnabled)
-      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry));
-  }
+  val upTime get() = startTime.elapsedNow()
 
   fun initService(adminServletInit: ServletGroup.() -> Unit = {}) {
     if (isAdminEnabled) {
@@ -103,6 +99,10 @@ protected constructor(val configVals: T,
     }
 
     if (isMetricsEnabled) {
+      logger.info { "Enabling Dropwizard metrics" }
+      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry))
+
+      logger.info { "Enabling JMX metrics" }
       metricsService = MetricsService(metricsConfig.port, metricsConfig.path) { addService(this) }
       SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
                                enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
@@ -123,17 +123,18 @@ protected constructor(val configVals: T,
       logger.info { "Zipkin reporter service disabled" }
     }
 
-    addListener(genericServiceListener(this, logger), MoreExecutors.directExecutor())
+    addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
 
     addService(this)
 
     serviceManager =
       serviceManager(services) {
+        val clazzname = this@GenericService.simpleClassName
         addListener(
           serviceManagerListener {
-            healthy { logger.info { "All ${this@GenericService.simpleClassName} services healthy" } }
-            stopped { logger.info { "All ${this@GenericService.simpleClassName} services stopped" } }
-            failure { logger.info { "${this@GenericService.simpleClassName} service failed: $it" } }
+            healthy { logger.info { "All $clazzname services healthy" } }
+            stopped { logger.info { "All $clazzname services stopped" } }
+            failure { logger.info { "$clazzname service failed: $it" } }
           })
       }
 
