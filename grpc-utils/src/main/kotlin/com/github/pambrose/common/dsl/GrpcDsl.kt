@@ -40,10 +40,10 @@ object GrpcDsl : KLogging() {
               port: Int = -1,
               block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
     (if (inProcessServerName.isEmpty()) {
-      logger.info { "Connecting to gRPC on port $port" }
+      logger.info { "Connecting to gRPC server on port $port" }
       NettyChannelBuilder.forAddress(hostName, port)
     } else {
-      logger.info { "Connecting to gRPC with in-process server name $inProcessServerName" }
+      logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
       InProcessChannelBuilder.forName(inProcessServerName)
     })
       .run {
