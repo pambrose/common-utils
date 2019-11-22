@@ -24,8 +24,9 @@ plugins {
 }
 
 repositories {
-  mavenCentral()
-  jcenter()
+  maven { url = 'https://maven-central.storage-download.googleapis.com/repos/central/data/' }
+  //mavenCentral()
+  //jcenter()
 }
 
 allprojects {
@@ -40,8 +41,9 @@ subprojects {
   version '1.1.9'
 
   repositories {
-    mavenCentral()
-    jcenter()
+    maven { url = 'https://maven-central.storage-download.googleapis.com/repos/central/data/' }
+    //mavenCentral()
+    //jcenter()
   }
 
   ext {
@@ -52,11 +54,11 @@ subprojects {
     def grpcVersion = '1.25.0'
     def dropwizardVersion = '4.1.1'
     def jettyVersion = '9.4.22.v20191022'
-    def ktorVersion = '1.2.4'
+    def ktorVersion = '1.2.5'
     def prometheusVersion = '0.8.0'
-    def zipkinVersion = '5.9.0'
-    def zipkenSenderVersion = '2.11.0'
-    def loggingVersion = '1.7.7'
+    def zipkinVersion = '5.9.1'
+    def zipkenSenderVersion = '2.11.1'
+    def loggingVersion = '1.7.8'
     def kluentVersion = '1.57'
     def junitVersion = '5.5.2'
 
