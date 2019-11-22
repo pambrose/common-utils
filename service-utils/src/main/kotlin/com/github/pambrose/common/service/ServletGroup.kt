@@ -28,6 +28,6 @@ class ServletGroup(val port: Int) {
 
   fun addServlet(path: String, servlet: Servlet) {
     if (path.isNotEmpty() && path.isNotBlank())
-      servletMap.put(path, servlet)
+      servletMap[path] = servlet
   }
 }

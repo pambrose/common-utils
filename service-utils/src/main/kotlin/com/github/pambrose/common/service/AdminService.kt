@@ -39,7 +39,7 @@ class AdminService(private val servletGroup: ServletGroup,
         handler =
           servletContextHandler {
             contextPath = "/"
-            servletGroup.servletMap.forEach { path, servlet -> addServlet(ServletHolder(servlet), "/$path") }
+            servletGroup.servletMap.forEach { (path, servlet) -> addServlet(ServletHolder(servlet), "/$path") }
           }
       }
 

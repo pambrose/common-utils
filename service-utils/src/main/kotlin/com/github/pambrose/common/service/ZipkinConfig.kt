@@ -19,7 +19,7 @@
 
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
-package io.prometheus.common
+package com.github.pambrose.common.service
 
 data class ZipkinConfig(val enabled: Boolean,
                         val hostname: String,

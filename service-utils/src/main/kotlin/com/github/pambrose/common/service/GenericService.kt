@@ -44,8 +44,6 @@ import com.google.common.util.concurrent.ServiceManager
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.common.AdminConfig
-import io.prometheus.common.MetricsConfig
-import io.prometheus.common.ZipkinConfig
 import mu.KLogging
 import java.io.Closeable
 import kotlin.time.MonoClock
@@ -76,8 +74,10 @@ protected constructor(val configVals: T,
   lateinit var zipkinReporterService: ZipkinReporterService
 
   init {
-    if (isMetricsEnabled)
-      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry));
+    if (isMetricsEnabled) {
+      logger.info { "Enabling Dropwizard metrics" }
+      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry))
+    }
   }
 
   val upTime get() = startTime.elapsedNow()

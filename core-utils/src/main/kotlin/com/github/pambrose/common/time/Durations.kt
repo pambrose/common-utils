@@ -28,13 +28,13 @@ import kotlin.time.*
 
 fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
   when (timeUnit) {
-    TimeUnit.MICROSECONDS -> value.microseconds
-    TimeUnit.NANOSECONDS -> value.nanoseconds
+    MICROSECONDS -> value.microseconds
+    NANOSECONDS -> value.nanoseconds
     MILLISECONDS -> value.milliseconds
     SECONDS -> value.seconds
     MINUTES -> value.minutes
     HOURS -> value.hours
-    TimeUnit.DAYS -> value.days
+    DAYS -> value.days
   }
 
 
