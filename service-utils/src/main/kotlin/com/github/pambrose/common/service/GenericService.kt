@@ -72,13 +72,6 @@ protected constructor(val configVals: T,
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
 
-  init {
-    if (isMetricsEnabled) {
-      logger.info { "Enabling Dropwizard metrics" }
-      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry))
-    }
-  }
-
   val upTime get() = startTime.elapsedNow()
 
   fun initService(adminServletInit: ServletGroup.() -> Unit = {}) {
@@ -106,6 +99,10 @@ protected constructor(val configVals: T,
     }
 
     if (isMetricsEnabled) {
+      logger.info { "Enabling Dropwizard metrics" }
+      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry))
+
+      logger.info { "Enabling JMX metrics" }
       metricsService = MetricsService(metricsConfig.port, metricsConfig.path) { addService(this) }
       SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
                                enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
@@ -132,11 +129,12 @@ protected constructor(val configVals: T,
 
     serviceManager =
       serviceManager(services) {
+        val clazzname = this@GenericService.simpleClassName
         addListener(
           serviceManagerListener {
-            healthy { logger.info { "All ${this@GenericService.simpleClassName} services healthy" } }
-            stopped { logger.info { "All ${this@GenericService.simpleClassName} services stopped" } }
-            failure { logger.info { "${this@GenericService.simpleClassName} service failed: $it" } }
+            healthy { logger.info { "All $clazzname services healthy" } }
+            stopped { logger.info { "All $clazzname services stopped" } }
+            failure { logger.info { "$clazzname service failed: $it" } }
           })
       }
 
