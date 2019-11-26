@@ -30,6 +30,8 @@ dependencies {
     implementation project(':dropwizard-utils')
     implementation project(':zipkin-utils')
 
+    implementation platform(libraries.bom)
+
     implementation libraries.stdlib
     implementation libraries.logging
 

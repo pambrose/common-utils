@@ -23,6 +23,8 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
+  implementation platform(libraries.bom)
+
   implementation libraries.stdlib
   implementation libraries.reflect
   implementation libraries.logging
