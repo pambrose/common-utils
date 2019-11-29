@@ -43,6 +43,12 @@ val Long.length
       else -> log10(abs(toDouble())).toInt() + 1
     }
 
+fun String.isSingleQuoted() = trim().length >= 2 && trim().startsWith("'") && trim().endsWith("'")
+
+fun String.isDoubleQuoted() = trim().length >= 2 && trim().startsWith("\"") && trim().endsWith("\"")
+
+fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
+
 data class HostInfo(val hostName: String, val ipAddress: String)
 
 val hostInfo by lazy {

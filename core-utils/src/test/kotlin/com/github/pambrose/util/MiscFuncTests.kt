@@ -21,6 +21,9 @@
 
 package com.github.pambrose.util
 
+import com.github.pambrose.common.util.isDoubleQuoted
+import com.github.pambrose.common.util.isQuoted
+import com.github.pambrose.common.util.isSingleQuoted
 import com.github.pambrose.common.util.length
 import org.amshove.kluent.shouldEqual
 import org.junit.jupiter.api.Test
@@ -34,5 +37,32 @@ class MiscFuncTests {
 
     for (i in 0L..10000000L) i.length shouldEqual i.toString().length
     for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldEqual i.toString().length
+  }
+
+  @Test
+  fun quoteTests() {
+    "".isSingleQuoted() shouldEqual false
+    "".isDoubleQuoted() shouldEqual false
+    "".isQuoted() shouldEqual false
+
+    " ".isSingleQuoted() shouldEqual false
+    " ".isDoubleQuoted() shouldEqual false
+    " ".isQuoted() shouldEqual false
+
+    "'".isSingleQuoted() shouldEqual false
+    "'".isDoubleQuoted() shouldEqual false
+    "'".isQuoted() shouldEqual false
+
+    """ " """.isSingleQuoted() shouldEqual false
+    """ " """.isDoubleQuoted() shouldEqual false
+    """ " """.isQuoted() shouldEqual false
+
+    """ "" """.isSingleQuoted() shouldEqual false
+    """ "" """.isDoubleQuoted() shouldEqual true
+    """ "" """.isQuoted() shouldEqual true
+
+    "''".isSingleQuoted() shouldEqual true
+    "''".isDoubleQuoted() shouldEqual false
+    "''".isQuoted() shouldEqual true
   }
 }
