@@ -30,36 +30,36 @@ import kotlin.time.Duration
 import kotlin.time.seconds
 
 val Int.length
-  get() =
-    when (this) {
-      0 -> 1
-      else -> log10(abs(toDouble())).toInt() + 1
-    }
+    get() =
+        when (this) {
+            0 -> 1
+            else -> log10(abs(toDouble())).toInt() + 1
+        }
 
 val Long.length
-  get() =
-    when (this) {
-      0L -> 1
-      else -> log10(abs(toDouble())).toInt() + 1
-    }
+    get() =
+        when (this) {
+            0L -> 1
+            else -> log10(abs(toDouble())).toInt() + 1
+        }
 
-fun String.isSingleQuoted() = trim().length >= 2 && trim().startsWith("'") && trim().endsWith("'")
+fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
-fun String.isDoubleQuoted() = trim().length >= 2 && trim().startsWith("\"") && trim().endsWith("\"")
+fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
 
 fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
 
 data class HostInfo(val hostName: String, val ipAddress: String)
 
 val hostInfo by lazy {
-  try {
-    val hostname = InetAddress.getLocalHost().hostName!!
-    val address = InetAddress.getLocalHost().hostAddress!!
-    //logger.debug { "Hostname: $hostname Address: $address" }
-    HostInfo(hostname, address)
-  } catch (e: UnknownHostException) {
-    HostInfo("Unknown", "Unknown")
-  }
+    try {
+        val hostname = InetAddress.getLocalHost().hostName!!
+        val address = InetAddress.getLocalHost().hostAddress!!
+        //logger.debug { "Hostname: $hostname Address: $address" }
+        HostInfo(hostname, address)
+    } catch (e: UnknownHostException) {
+        HostInfo("Unknown", "Unknown")
+    }
 }
 
 fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.toLongMilliseconds())
@@ -67,17 +67,17 @@ fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.toLongMilliseconds())
 private val randomCharPool = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 
 fun randomId(length: Int = 10): String =
-  (1..length)
-    .map { Random.nextInt(0, randomCharPool.size) }
-    .map { i -> randomCharPool[i] }
-    .joinToString("")
+    (1..length)
+        .map { Random.nextInt(0, randomCharPool.size) }
+        .map { i -> randomCharPool[i] }
+        .joinToString("")
 
 fun repeatWithSleep(iterations: Int,
                     sleepTime: Duration = 1.seconds,
                     block: (count: Int, startMillis: Long) -> Unit) {
-  val startMillis = System.currentTimeMillis()
-  repeat(iterations) { i ->
-    block(i, startMillis)
-    sleep(sleepTime)
-  }
+    val startMillis = System.currentTimeMillis()
+    repeat(iterations) { i ->
+        block(i, startMillis)
+        sleep(sleepTime)
+    }
 }
