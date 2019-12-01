@@ -41,6 +41,9 @@ subprojects {
     jcenter()
   }
 
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
   def loggingVersion = '1.7.8'
   def kluentVersion = '1.58'
   def junitVersion = '5.5.2'
