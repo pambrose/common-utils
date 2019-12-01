@@ -25,22 +25,19 @@ plugins {
 
 repositories {
   maven { url = 'https://maven-central.storage-download.googleapis.com/repos/central/data/' }
-  //mavenCentral()
-  //jcenter()
+  jcenter()
 }
 
 subprojects {
 
   group 'com.github.pambrose.common-utils'
-  version '1.1.9'
+  version '1.1.10'
 
-  apply plugin: "kotlin"
   apply plugin: 'org.jetbrains.kotlin.jvm'
   apply plugin: 'com.github.ben-manes.versions'
 
   repositories {
     maven { url = 'https://maven-central.storage-download.googleapis.com/repos/central/data/' }
-    //mavenCentral()
     jcenter()
   }
 
