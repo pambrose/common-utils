@@ -43,3 +43,17 @@ val Long.length
             else -> log10(abs(toDouble())).toInt() + 1
         }
 
+inline infix operator fun Short.times(action: (Short) -> Unit) {
+    var i: Short = 0
+    while (i < this) action(i++)
+}
+
+inline infix operator fun Int.times(action: (Int) -> Unit) {
+    var i = 0
+    while (i < this) action(i++)
+}
+
+inline infix operator fun Long.times(action: (Long) -> Unit) {
+    var i = 0L
+    while (i < this) action(i++)
+}
