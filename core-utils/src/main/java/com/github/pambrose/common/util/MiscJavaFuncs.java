@@ -17,21 +17,30 @@
  *
  */
 
-@file:JvmName("MiscUtils")
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+package com.github.pambrose.common.util;
 
-package com.github.pambrose.common.util
+import java.util.Random;
 
-import java.io.PrintWriter
-import java.io.StringWriter
+public class MiscJavaFuncs {
+  private static final Random random = new Random();
 
-val Throwable.stackTraceAsString: String
-  get() {
-    val sw = StringWriter()
-    val pw = PrintWriter(sw)
-    printStackTrace(pw)
-    return sw.toString()
+  public static int random(int upper) {
+    return Math.abs(random.nextInt() % upper);
   }
 
-val <T : Any> T.simpleClassName: String
-  get() = this::class.simpleName ?: "None"
+  public static long random(long upper) {
+    return Math.abs(random.nextLong() % upper);
+  }
+
+  public static void sleepSecs(long time) {
+    sleepMillis(Math.min(time, Long.MAX_VALUE / 1000) * 1000);
+  }
+
+  public static void sleepMillis(long time) {
+    try {
+      Thread.sleep(time);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+}

@@ -23,31 +23,10 @@ package com.github.pambrose.common.util
 
 import java.net.InetAddress
 import java.net.UnknownHostException
-import kotlin.math.abs
-import kotlin.math.log10
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.seconds
 
-val Int.length
-    get() =
-        when (this) {
-            0 -> 1
-            else -> log10(abs(toDouble())).toInt() + 1
-        }
-
-val Long.length
-    get() =
-        when (this) {
-            0L -> 1
-            else -> log10(abs(toDouble())).toInt() + 1
-        }
-
-fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
-
-fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
-
-fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
 
 data class HostInfo(val hostName: String, val ipAddress: String)
 

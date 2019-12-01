@@ -17,21 +17,29 @@
  *
  */
 
-@file:JvmName("MiscUtils")
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.github.pambrose.common.util
 
-import java.io.PrintWriter
-import java.io.StringWriter
+import kotlin.math.abs
+import kotlin.math.log10
+import kotlin.random.Random
 
-val Throwable.stackTraceAsString: String
-  get() {
-    val sw = StringWriter()
-    val pw = PrintWriter(sw)
-    printStackTrace(pw)
-    return sw.toString()
-  }
+fun Int.random(): Int = Random.nextInt(this)
 
-val <T : Any> T.simpleClassName: String
-  get() = this::class.simpleName ?: "None"
+fun Long.random(): Long = Random.nextLong(this)
+
+val Int.length
+    get() =
+        when (this) {
+            0 -> 1
+            else -> log10(abs(toDouble())).toInt() + 1
+        }
+
+val Long.length
+    get() =
+        when (this) {
+            0L -> 1
+            else -> log10(abs(toDouble())).toInt() + 1
+        }
+

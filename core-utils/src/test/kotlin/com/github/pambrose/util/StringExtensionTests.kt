@@ -28,7 +28,7 @@ import com.github.pambrose.common.util.length
 import org.amshove.kluent.shouldEqual
 import org.junit.jupiter.api.Test
 
-class MiscFuncTests {
+class StringExtensionTests {
 
   @Test
   fun lengthTests() {
