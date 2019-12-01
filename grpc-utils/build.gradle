@@ -19,46 +19,8 @@
 
 description = 'grpc-utils'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
 dependencies {
   implementation project(':core-utils')
 
-  implementation libraries.stdlib
-  implementation libraries.logging
-
   implementation libraries.grpc
-
-  testImplementation libraries.kluent
-  testImplementation libraries.jupiter_api
-  testRuntimeOnly libraries.jupiter_engine
-}
-
-artifacts {
-  archives sourcesJar
-}
-
-compileKotlin {
-  kotlinOptions {
-    jvmTarget = '1.8'
-    freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
-  }
-}
-
-compileTestKotlin {
-  kotlinOptions {
-    jvmTarget = '1.8'
-    freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
-  }
-}
-
-test {
-  useJUnitPlatform()
-
-  testLogging {
-    events "passed", "skipped", "failed", "standardOut", "standardError"
-    exceptionFormat "full"
-    showStandardStreams = true
-  }
 }

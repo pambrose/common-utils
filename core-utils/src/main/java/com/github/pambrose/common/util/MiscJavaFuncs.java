@@ -17,22 +17,30 @@
  *
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+package com.github.pambrose.common.util;
 
-package com.github.pambrose.util
+import java.util.Random;
 
-import com.github.pambrose.common.util.length
-import org.amshove.kluent.shouldEqual
-import org.junit.jupiter.api.Test
+public class MiscJavaFuncs {
+  private static final Random random = new Random();
 
-class MiscFuncTests {
+  public static int random(int upper) {
+    return Math.abs(random.nextInt() % upper);
+  }
 
-  @Test
-  fun lengthTests() {
-    repeat(10000000) { i -> i.length shouldEqual i.toString().length }
-    for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldEqual i.toString().length
+  public static long random(long upper) {
+    return Math.abs(random.nextLong() % upper);
+  }
 
-    for (i in 0L..10000000L) i.length shouldEqual i.toString().length
-    for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldEqual i.toString().length
+  public static void sleepSecs(long time) {
+    sleepMillis(Math.min(time, Long.MAX_VALUE / 1000) * 1000);
+  }
+
+  public static void sleepMillis(long time) {
+    try {
+      Thread.sleep(time);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 }

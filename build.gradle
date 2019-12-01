@@ -19,50 +19,49 @@
 
 plugins {
   id 'java'
-  id 'org.jetbrains.kotlin.jvm' version '1.3.60' apply false
+  id 'org.jetbrains.kotlin.jvm' version '1.3.61' apply false
   id "com.github.ben-manes.versions" version "0.27.0" apply false
 }
 
 repositories {
-  mavenCentral()
-  jcenter()
-}
-
-allprojects {
-
+  maven { url = 'https://maven-central.storage-download.googleapis.com/repos/central/data/' }
+  //mavenCentral()
+  //jcenter()
 }
 
 subprojects {
+
+  group 'com.github.pambrose.common-utils'
+  version '1.1.9'
+
+  apply plugin: "kotlin"
   apply plugin: 'org.jetbrains.kotlin.jvm'
   apply plugin: 'com.github.ben-manes.versions'
 
-  group 'com.github.pambrose.common-utils'
-  version '1.1.8'
-
   repositories {
-    mavenCentral()
+    maven { url = 'https://maven-central.storage-download.googleapis.com/repos/central/data/' }
+    //mavenCentral()
     jcenter()
   }
 
   ext {
-
-    def kotlinVersion = '1.3.60'
     def coroutinesVersion = '1.3.2'
     def guavaVersion = '28.1-android'
     def grpcVersion = '1.25.0'
     def dropwizardVersion = '4.1.1'
     def jettyVersion = '9.4.22.v20191022'
-    def ktorVersion = '1.2.4'
+    def ktorVersion = '1.2.5'
     def prometheusVersion = '0.8.0'
-    def zipkinVersion = '5.9.0'
-    def zipkenSenderVersion = '2.11.0'
-    def loggingVersion = '1.7.7'
-    def kluentVersion = '1.57'
+    def zipkinVersion = '5.9.1'
+    def zipkenSenderVersion = '2.11.1'
+    def loggingVersion = '1.7.8'
+    def kluentVersion = '1.58'
     def junitVersion = '5.5.2'
 
     libraries = [
-        stdlib                : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}",
-        reflect               : "org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}",
+        bom                   : "org.jetbrains.kotlin:kotlin-bom",
+        stdlib                : "org.jetbrains.kotlin:kotlin-stdlib-jdk8",
+        reflect               : "org.jetbrains.kotlin:kotlin-reflect",
 
         coroutines_core       : "org.jetbrains.kotlinx:kotlinx-coroutines-core:${coroutinesVersion}",
         coroutines_jdk8       : "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${coroutinesVersion}",
@@ -101,6 +100,18 @@ subprojects {
     ]
   }
 
+  dependencies {
+    implementation platform(libraries.bom)
+
+    implementation libraries.stdlib
+    implementation libraries.reflect
+    implementation libraries.logging
+
+    testImplementation libraries.kluent
+    testImplementation libraries.jupiter_api
+    testRuntimeOnly libraries.jupiter_engine
+  }
+
   task sourcesJar(type: Jar, dependsOn: classes) {
     archiveClassifier = 'sources'
     from sourceSets.main.allSource
@@ -115,4 +126,31 @@ subprojects {
     }
   }
 
+  artifacts {
+    archives sourcesJar
+  }
+
+  compileKotlin {
+    kotlinOptions {
+      jvmTarget = '1.8'
+      freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
+  }
+
+  compileTestKotlin {
+    kotlinOptions {
+      jvmTarget = '1.8'
+      freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+    }
+  }
+
+  test {
+    useJUnitPlatform()
+
+    testLogging {
+      events "passed", "skipped", "failed", "standardOut", "standardError"
+      exceptionFormat "full"
+      showStandardStreams = true
+    }
+  }
 }
