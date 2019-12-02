@@ -30,6 +30,7 @@ import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.internal.AbstractManagedChannelImplBuilder
 import io.grpc.netty.NettyChannelBuilder
+import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
 import io.netty.handler.ssl.SslContext
 import mu.KLogging
@@ -69,12 +70,16 @@ object GrpcDsl : KLogging() {
             }
 
     fun server(port: Int = -1,
+               sslContext: SslContext? = null,
                inProcessServerName: String = "",
                block: ServerBuilder<*>.() -> Unit): Server =
         when {
             inProcessServerName.isEmpty() -> {
                 logger.info { "Listening for gRPC traffic on port $port" }
-                ServerBuilder.forPort(port)
+                NettyServerBuilder.forPort(port)
+                    .also { builder ->
+                        builder.sslContext(sslContext)
+                    }
             }
             else -> {
                 logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
