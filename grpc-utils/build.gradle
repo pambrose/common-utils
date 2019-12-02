@@ -23,4 +23,6 @@ dependencies {
   implementation project(':core-utils')
 
   implementation libraries.grpc
+
+  runtimeOnly libraries.netty_ssl
 }
