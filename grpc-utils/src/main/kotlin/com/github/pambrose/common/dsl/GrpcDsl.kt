@@ -45,16 +45,22 @@ object GrpcDsl : KLogging() {
         when {
             inProcessServerName.isEmpty() -> {
                 logger.info { "Connecting to gRPC server on port $port" }
-                NettyChannelBuilder.forAddress(hostName, port).also { builder ->
-                    if (overrideAuthority.isNotEmpty())
-                        builder.overrideAuthority(overrideAuthority)
-                    if (sslContext != null)
-                        builder.sslContext(sslContext)
-                }
+                NettyChannelBuilder.forAddress(hostName, port)
+                    .also { builder ->
+                        if (overrideAuthority.isNotEmpty())
+                            builder.overrideAuthority(overrideAuthority)
+                        if (sslContext != null)
+                            builder.sslContext(sslContext)
+                        else
+                            builder.usePlaintext()
+                    }
             }
             else -> {
                 logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
                 InProcessChannelBuilder.forName(inProcessServerName)
+                    .also { builder ->
+                        builder.usePlaintext()
+                    }
             }
         }
             .run {
