@@ -78,7 +78,8 @@ object GrpcDsl : KLogging() {
                 logger.info { "Listening for gRPC traffic on port $port" }
                 NettyServerBuilder.forPort(port)
                     .also { builder ->
-                        builder.sslContext(sslContext)
+                        if (sslContext != null)
+                            builder.sslContext(sslContext)
                     }
             }
             else -> {
