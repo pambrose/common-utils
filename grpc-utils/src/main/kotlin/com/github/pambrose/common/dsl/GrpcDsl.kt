@@ -31,76 +31,92 @@ import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.internal.AbstractManagedChannelImplBuilder
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.stub.StreamObserver
+import io.netty.handler.ssl.SslContext
 import mu.KLogging
 
 object GrpcDsl : KLogging() {
 
-  fun channel(inProcessServerName: String = "",
-              hostName: String = "",
-              port: Int = -1,
-              block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
-    (if (inProcessServerName.isEmpty()) {
-      logger.info { "Connecting to gRPC server on port $port" }
-      NettyChannelBuilder.forAddress(hostName, port)
-    } else {
-      logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
-      InProcessChannelBuilder.forName(inProcessServerName)
-    })
-      .run {
-        block(this)
-        build()
-      }
+    fun channel(hostName: String = "",
+                port: Int = -1,
+                overrideAuthority: String = "",
+                sslContext: SslContext? = null,
+                inProcessServerName: String = "",
+                block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
+        when {
+            inProcessServerName.isEmpty() -> {
+                logger.info { "Connecting to gRPC server on port $port" }
+                NettyChannelBuilder.forAddress(hostName, port).also { builder ->
+                    if (overrideAuthority.isNotEmpty())
+                        builder.overrideAuthority(overrideAuthority)
+                    if (sslContext != null)
+                        builder.sslContext(sslContext)
+                }
+            }
+            else -> {
+                logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
+                InProcessChannelBuilder.forName(inProcessServerName)
+            }
+        }
+            .run {
+                block(this)
+                build()
+            }
 
-  fun server(inProcessServerName: String = "", port: Int = -1, block: ServerBuilder<*>.() -> Unit): Server =
-    (if (inProcessServerName.isEmpty()) {
-      logger.info { "Listening for gRPC traffic on port $port" }
-      ServerBuilder.forPort(port)
-    } else {
-      logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
-      InProcessServerBuilder.forName(inProcessServerName)
-    })
-      .run {
-        block(this)
-        build()
-      }
+    fun server(port: Int = -1,
+               inProcessServerName: String = "",
+               block: ServerBuilder<*>.() -> Unit): Server =
+        when {
+            inProcessServerName.isEmpty() -> {
+                logger.info { "Listening for gRPC traffic on port $port" }
+                ServerBuilder.forPort(port)
+            }
+            else -> {
+                logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
+                InProcessServerBuilder.forName(inProcessServerName)
+            }
+        }
+            .run {
+                block(this)
+                build()
+            }
 
-  fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
-    Attributes.newBuilder()
-      .run {
-        block(this)
-        build()
-      }
+    fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
+        Attributes.newBuilder()
+            .run {
+                block(this)
+                build()
+            }
 
-  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
-    StreamObserverHelper<T>().apply { init() }
+    fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
+        StreamObserverHelper<T>().apply { init() }
 
-  class StreamObserverHelper<T> : StreamObserver<T> {
-    private var onNextBlock: ((T) -> Unit)? by singleAssign()
-    private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
-    private var completedBlock: (() -> Unit)? by singleAssign()
+    class StreamObserverHelper<T> : StreamObserver<T> {
+        private var onNextBlock: ((T) -> Unit)? by singleAssign()
+        private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
+        private var completedBlock: (() -> Unit)? by singleAssign()
 
-    override fun onNext(response: T) {
-      onNextBlock?.invoke(response)
+        override fun onNext(response: T) {
+            onNextBlock?.invoke(response)
+        }
+
+        override fun onError(t: Throwable) {
+            onErrorBlock?.invoke(t)
+        }
+
+        override fun onCompleted() {
+            completedBlock?.invoke()
+        }
+
+        fun onNext(block: (T) -> Unit) {
+            onNextBlock = block
+        }
+
+        fun onError(block: (Throwable) -> Unit) {
+            onErrorBlock = block
+        }
+
+        fun onCompleted(block: () -> Unit) {
+            completedBlock = block
+        }
     }
-
-    override fun onError(t: Throwable) {
-      onErrorBlock?.invoke(t)
-    }
-
-    override fun onCompleted() {
-      completedBlock?.invoke()
-    }
-
-    fun onNext(block: (T) -> Unit) {
-      onNextBlock = block
-    }
-
-    fun onError(block: (Throwable) -> Unit) {
-      onErrorBlock = block
-    }
-
-    fun onCompleted(block: () -> Unit) {
-      completedBlock = block
-    }
-  }
 }
