@@ -37,6 +37,8 @@ import mu.KLogging
 
 object GrpcDsl : KLogging() {
 
+    private fun desc(sslContext: SslContext?) = if (sslContext != null) "TLS" else "plaintext"
+
     fun channel(hostName: String = "",
                 port: Int = -1,
                 overrideAuthority: String = "",
@@ -45,7 +47,7 @@ object GrpcDsl : KLogging() {
                 block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
         when {
             inProcessServerName.isEmpty() -> {
-                logger.info { "Connecting to gRPC server on port $port" }
+                logger.info { "Connecting with ${desc(sslContext)} to gRPC server on port $port" }
                 NettyChannelBuilder.forAddress(hostName, port)
                     .also { builder ->
                         if (overrideAuthority.isNotEmpty())
@@ -75,7 +77,7 @@ object GrpcDsl : KLogging() {
                block: ServerBuilder<*>.() -> Unit): Server =
         when {
             inProcessServerName.isEmpty() -> {
-                logger.info { "Listening for ${if (sslContext != null) "TLS" else "plaintext"} gRPC traffic on port $port" }
+                logger.info { "Listening for ${desc(sslContext)} gRPC traffic on port $port" }
                 NettyServerBuilder.forPort(port)
                     .also { builder ->
                         if (sslContext != null)
