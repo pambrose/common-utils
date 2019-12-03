@@ -5,6 +5,7 @@ import io.grpc.netty.GrpcSslContexts
 import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContext
 import io.netty.handler.ssl.SslContextBuilder
+import mu.KLogging
 import java.io.File
 import javax.net.ssl.SSLException
 
@@ -22,7 +23,7 @@ data class TlsContext(val sslContext: SslContext?, val mutualAuth: Boolean) {
   }
 }
 
-object TlsUtils {
+object TlsUtils : KLogging() {
   private fun String.doesNotExistMsg() = "File ${doubleQuoted()} does not exist"
 
   @Throws(SSLException::class)
@@ -49,6 +50,7 @@ object TlsUtils {
         File(trustPath)
           .also { file ->
             require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
+            logger.info { "Assigning trustCertCollectionFilePath: $trustPath" }
             builder.trustManager(file)
           }
 
@@ -61,6 +63,8 @@ object TlsUtils {
         if (certPath.isNotEmpty() && keyPath.isNotEmpty()) {
           val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
           val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
+          logger.info { "Assigning certChainFilePath: $certPath" }
+          logger.info { "Assigning privateKeyFilePath: $keyPath" }
           builder.keyManager(certFile, keyFile)
         }
 
@@ -90,12 +94,16 @@ object TlsUtils {
     val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
     val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
 
+    logger.info { "Assigning certChainFilePath: $certPath" }
+    logger.info { "Assigning privateKeyFilePath: $keyPath" }
+
     return SslContextBuilder.forServer(certFile, keyFile)
       .let { builder ->
         if (trustPath.isNotEmpty()) {
           File(trustPath)
             .also { file ->
               require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
+              logger.info { "Assigning trustCertCollectionFilePath: $trustPath" }
               builder.trustManager(file)
             }
         }

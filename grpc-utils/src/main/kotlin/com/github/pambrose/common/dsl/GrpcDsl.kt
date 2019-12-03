@@ -49,8 +49,12 @@ object GrpcDsl : KLogging() {
         logger.info { "Connecting to gRPC server using ${tlsContext.desc()} on port $port" }
         NettyChannelBuilder.forAddress(hostName, port)
           .also { builder ->
-            if (overrideAuthority.isNotEmpty())
-              builder.overrideAuthority(overrideAuthority)
+            val override = overrideAuthority.trim()
+            if (override.isNotEmpty()) {
+              logger.info { "Assigning overrideAuthority: $override" }
+              builder.overrideAuthority(override)
+            }
+
             if (tlsContext.sslContext != null)
               builder.sslContext(tlsContext.sslContext)
             else
