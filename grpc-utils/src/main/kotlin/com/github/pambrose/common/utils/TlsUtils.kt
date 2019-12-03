@@ -22,16 +22,16 @@ object TlsUtils {
   private fun String.doesNotExistMsg() = "File ${doubleQuoted()} does not exist"
 
   @Throws(SSLException::class)
-  fun buildClientSslContext(certChainFilePath: String = "",
+  fun buildClientTlsContext(certChainFilePath: String = "",
                             privateKeyFilePath: String = "",
                             trustCertCollectionFilePath: String = ""): TlsContext =
-    clientSslContextBuilder(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
+    clientTlsContextBuilder(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
       .run {
         TlsContext(builder.build(), mutualAuth)
       }
 
   @Throws(SSLException::class)
-  fun clientSslContextBuilder(certChainFilePath: String = "",
+  fun clientTlsContextBuilder(certChainFilePath: String = "",
                               privateKeyFilePath: String = "",
                               trustCertCollectionFilePath: String = ""): TlsContextBuilder =
     GrpcSslContexts.forClient()
@@ -64,16 +64,16 @@ object TlsUtils {
       }
 
   @Throws(SSLException::class)
-  fun buildServerSslContext(certChainFilePath: String,
+  fun buildServerTlsContext(certChainFilePath: String,
                             privateKeyFilePath: String,
                             trustCertCollectionFilePath: String = ""): TlsContext =
-    serverSslContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
+    serverTlsContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
       .run {
         TlsContext(GrpcSslContexts.configure(builder).build(), mutualAuth)
       }
 
   @Throws(SSLException::class)
-  fun serverSslContext(certChainFilePath: String,
+  fun serverTlsContext(certChainFilePath: String,
                        privateKeyFilePath: String,
                        trustCertCollectionFilePath: String = ""): TlsContextBuilder {
     val certPath = certChainFilePath.trim()
