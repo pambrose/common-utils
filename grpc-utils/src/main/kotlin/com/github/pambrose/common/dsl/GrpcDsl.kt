@@ -22,6 +22,7 @@
 package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
+import com.github.pambrose.common.util.doubleQuoted
 import com.github.pambrose.common.utils.TlsContext
 import com.github.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
 import io.grpc.Attributes
@@ -51,7 +52,7 @@ object GrpcDsl : KLogging() {
           .also { builder ->
             val override = overrideAuthority.trim()
             if (override.isNotEmpty()) {
-              logger.info { "Assigning overrideAuthority: $override" }
+              logger.info { "Assigning overrideAuthority: ${override.doubleQuoted()}" }
               builder.overrideAuthority(override)
             }
 

@@ -50,7 +50,7 @@ object TlsUtils : KLogging() {
         File(trustPath)
           .also { file ->
             require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
-            logger.info { "Assigning trustCertCollectionFilePath: $trustPath" }
+            logger.info { "Assigning trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
             builder.trustManager(file)
           }
 
@@ -63,8 +63,8 @@ object TlsUtils : KLogging() {
         if (certPath.isNotEmpty() && keyPath.isNotEmpty()) {
           val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
           val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
-          logger.info { "Assigning certChainFilePath: $certPath" }
-          logger.info { "Assigning privateKeyFilePath: $keyPath" }
+          logger.info { "Assigning certChainFilePath: ${certPath.doubleQuoted()}" }
+          logger.info { "Assigning privateKeyFilePath: ${keyPath.doubleQuoted()}" }
           builder.keyManager(certFile, keyFile)
         }
 
@@ -94,8 +94,8 @@ object TlsUtils : KLogging() {
     val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
     val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
 
-    logger.info { "Assigning certChainFilePath: $certPath" }
-    logger.info { "Assigning privateKeyFilePath: $keyPath" }
+    logger.info { "Assigning certChainFilePath: ${certPath.doubleQuoted()}" }
+    logger.info { "Assigning privateKeyFilePath: ${keyPath.doubleQuoted()}" }
 
     return SslContextBuilder.forServer(certFile, keyFile)
       .let { builder ->
@@ -103,7 +103,7 @@ object TlsUtils : KLogging() {
           File(trustPath)
             .also { file ->
               require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
-              logger.info { "Assigning trustCertCollectionFilePath: $trustPath" }
+              logger.info { "Assigning trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
               builder.trustManager(file)
             }
         }
