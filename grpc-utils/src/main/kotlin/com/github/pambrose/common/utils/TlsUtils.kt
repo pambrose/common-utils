@@ -8,7 +8,9 @@ import io.netty.handler.ssl.SslContextBuilder
 import java.io.File
 import javax.net.ssl.SSLException
 
-data class TlsDetails(val sslContext: SslContext? = null, val mutualAuth: Boolean = false) {
+data class TlsContextBuilder(val builder: SslContextBuilder, val mutualAuth: Boolean)
+
+data class TlsContext(val sslContext: SslContext? = null, val mutualAuth: Boolean = false) {
   fun desc() =
     if (sslContext == null)
       "plaintext"
@@ -22,15 +24,18 @@ object TlsUtils {
   @Throws(SSLException::class)
   fun buildClientSslContext(certChainFilePath: String = "",
                             privateKeyFilePath: String = "",
-                            trustCertCollectionFilePath: String = ""): SslContext =
-    clientSslContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath).build()
+                            trustCertCollectionFilePath: String = ""): TlsContext =
+    clientSslContextBuilder(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
+      .run {
+        TlsContext(builder.build(), mutualAuth)
+      }
 
   @Throws(SSLException::class)
-  fun clientSslContext(certChainFilePath: String = "",
-                       privateKeyFilePath: String = "",
-                       trustCertCollectionFilePath: String = ""): SslContextBuilder =
+  fun clientSslContextBuilder(certChainFilePath: String = "",
+                              privateKeyFilePath: String = "",
+                              trustCertCollectionFilePath: String = ""): TlsContextBuilder =
     GrpcSslContexts.forClient()
-      .also { builder ->
+      .let { builder ->
         val certPath = certChainFilePath.trim()
         val keyPath = privateKeyFilePath.trim()
         val trustPath = trustCertCollectionFilePath.trim()
@@ -54,20 +59,23 @@ object TlsUtils {
           val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
           builder.keyManager(certFile, keyFile)
         }
+
+        TlsContextBuilder(builder, certPath.isNotEmpty() && keyPath.isNotEmpty())
       }
 
   @Throws(SSLException::class)
   fun buildServerSslContext(certChainFilePath: String,
                             privateKeyFilePath: String,
-                            trustCertCollectionFilePath: String = ""): SslContext {
-    val builder = serverSslContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
-    return GrpcSslContexts.configure(builder).build()
-  }
+                            trustCertCollectionFilePath: String = ""): TlsContext =
+    serverSslContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
+      .run {
+        TlsContext(GrpcSslContexts.configure(builder).build(), mutualAuth)
+      }
 
   @Throws(SSLException::class)
   fun serverSslContext(certChainFilePath: String,
                        privateKeyFilePath: String,
-                       trustCertCollectionFilePath: String = ""): SslContextBuilder {
+                       trustCertCollectionFilePath: String = ""): TlsContextBuilder {
     val certPath = certChainFilePath.trim()
     val keyPath = privateKeyFilePath.trim()
     val trustPath = trustCertCollectionFilePath.trim()
@@ -79,15 +87,15 @@ object TlsUtils {
     val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
 
     return SslContextBuilder.forServer(certFile, keyFile)
-      .also { builder ->
+      .let { builder ->
         if (trustPath.isNotEmpty()) {
           File(trustPath)
             .also { file ->
               require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
               builder.trustManager(file)
             }
-          builder.clientAuth(ClientAuth.REQUIRE)
         }
+        TlsContextBuilder(builder.clientAuth(ClientAuth.REQUIRE), trustPath.isNotEmpty())
       }
   }
 }

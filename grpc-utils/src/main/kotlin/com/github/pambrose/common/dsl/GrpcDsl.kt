@@ -22,7 +22,7 @@
 package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
-import com.github.pambrose.common.utils.TlsDetails
+import com.github.pambrose.common.utils.TlsContext
 import io.grpc.Attributes
 import io.grpc.ManagedChannel
 import io.grpc.Server
@@ -39,19 +39,19 @@ object GrpcDsl : KLogging() {
 
   fun channel(hostName: String = "",
               port: Int = -1,
-              tlsDetails: TlsDetails,
+              tlsContext: TlsContext,
               overrideAuthority: String = "",
               inProcessServerName: String = "",
               block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
     when {
       inProcessServerName.isEmpty() -> {
-        logger.info { "Connecting to gRPC server using ${tlsDetails.desc()} on port $port" }
+        logger.info { "Connecting to gRPC server using ${tlsContext.desc()} on port $port" }
         NettyChannelBuilder.forAddress(hostName, port)
           .also { builder ->
             if (overrideAuthority.isNotEmpty())
               builder.overrideAuthority(overrideAuthority)
-            if (tlsDetails.sslContext != null)
-              builder.sslContext(tlsDetails.sslContext)
+            if (tlsContext.sslContext != null)
+              builder.sslContext(tlsContext.sslContext)
             else
               builder.usePlaintext()
           }
@@ -70,16 +70,16 @@ object GrpcDsl : KLogging() {
       }
 
   fun server(port: Int = -1,
-             tlsDetails: TlsDetails = TlsDetails(),
+             tlsContext: TlsContext = TlsContext(),
              inProcessServerName: String = "",
              block: ServerBuilder<*>.() -> Unit): Server =
     when {
       inProcessServerName.isEmpty() -> {
-        logger.info { "Listening for gRPC traffic using ${tlsDetails.desc()} on port $port" }
+        logger.info { "Listening for gRPC traffic using ${tlsContext.desc()} on port $port" }
         NettyServerBuilder.forPort(port)
           .also { builder ->
-            if (tlsDetails.sslContext != null)
-              builder.sslContext(tlsDetails.sslContext)
+            if (tlsContext.sslContext != null)
+              builder.sslContext(tlsContext.sslContext)
           }
       }
       else -> {
