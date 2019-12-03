@@ -10,12 +10,16 @@ import javax.net.ssl.SSLException
 
 data class TlsContextBuilder(val builder: SslContextBuilder, val mutualAuth: Boolean)
 
-data class TlsContext(val sslContext: SslContext? = null, val mutualAuth: Boolean = false) {
+data class TlsContext(val sslContext: SslContext?, val mutualAuth: Boolean) {
   fun desc() =
     if (sslContext == null)
       "plaintext"
     else
       "TLS " + if (mutualAuth) "with mutual auth" else "(no mutual auth)"
+
+  companion object {
+    val PLAIN_TEST_CONTEXT = TlsContext(null, false)
+  }
 }
 
 object TlsUtils {

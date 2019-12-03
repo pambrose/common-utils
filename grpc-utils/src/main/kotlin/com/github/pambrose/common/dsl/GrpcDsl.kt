@@ -23,6 +23,7 @@ package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
 import com.github.pambrose.common.utils.TlsContext
+import com.github.pambrose.common.utils.TlsContext.Companion.PLAIN_TEST_CONTEXT
 import io.grpc.Attributes
 import io.grpc.ManagedChannel
 import io.grpc.Server
@@ -70,7 +71,7 @@ object GrpcDsl : KLogging() {
       }
 
   fun server(port: Int = -1,
-             tlsContext: TlsContext = TlsContext(),
+             tlsContext: TlsContext = PLAIN_TEST_CONTEXT,
              inProcessServerName: String = "",
              block: ServerBuilder<*>.() -> Unit): Server =
     when {
