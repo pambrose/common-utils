@@ -37,100 +37,100 @@ import mu.KLogging
 
 object GrpcDsl : KLogging() {
 
-    private fun desc(sslContext: SslContext?) = if (sslContext != null) "TLS" else "plaintext"
+  private fun desc(sslContext: SslContext?) = if (sslContext != null) "TLS" else "plaintext"
 
-    fun channel(hostName: String = "",
-                port: Int = -1,
-                sslContext: SslContext? = null,
-                overrideAuthority: String = "",
-                inProcessServerName: String = "",
-                block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
-        when {
-            inProcessServerName.isEmpty() -> {
-                logger.info { "Connecting with ${desc(sslContext)} to gRPC server on port $port" }
-                NettyChannelBuilder.forAddress(hostName, port)
-                    .also { builder ->
-                        if (overrideAuthority.isNotEmpty())
-                            builder.overrideAuthority(overrideAuthority)
-                        if (sslContext != null)
-                            builder.sslContext(sslContext)
-                        else
-                            builder.usePlaintext()
-                    }
-            }
-            else -> {
-                logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
-                InProcessChannelBuilder.forName(inProcessServerName)
-                    .also { builder ->
-                        builder.usePlaintext()
-                    }
-            }
-        }
-            .run {
-                block(this)
-                build()
-            }
-
-    fun server(port: Int = -1,
-               sslContext: SslContext? = null,
-               inProcessServerName: String = "",
-               block: ServerBuilder<*>.() -> Unit): Server =
-        when {
-            inProcessServerName.isEmpty() -> {
-                logger.info { "Listening for ${desc(sslContext)} gRPC traffic on port $port" }
-                NettyServerBuilder.forPort(port)
-                    .also { builder ->
-                        if (sslContext != null)
-                            builder.sslContext(sslContext)
-                    }
-            }
-            else -> {
-                logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
-                InProcessServerBuilder.forName(inProcessServerName)
-            }
-        }
-            .run {
-                block(this)
-                build()
-            }
-
-    fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
-        Attributes.newBuilder()
-            .run {
-                block(this)
-                build()
-            }
-
-    fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
-        StreamObserverHelper<T>().apply { init() }
-
-    class StreamObserverHelper<T> : StreamObserver<T> {
-        private var onNextBlock: ((T) -> Unit)? by singleAssign()
-        private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
-        private var completedBlock: (() -> Unit)? by singleAssign()
-
-        override fun onNext(response: T) {
-            onNextBlock?.invoke(response)
-        }
-
-        override fun onError(t: Throwable) {
-            onErrorBlock?.invoke(t)
-        }
-
-        override fun onCompleted() {
-            completedBlock?.invoke()
-        }
-
-        fun onNext(block: (T) -> Unit) {
-            onNextBlock = block
-        }
-
-        fun onError(block: (Throwable) -> Unit) {
-            onErrorBlock = block
-        }
-
-        fun onCompleted(block: () -> Unit) {
-            completedBlock = block
-        }
+  fun channel(hostName: String = "",
+              port: Int = -1,
+              sslContext: SslContext? = null,
+              overrideAuthority: String = "",
+              inProcessServerName: String = "",
+              block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
+    when {
+      inProcessServerName.isEmpty() -> {
+        logger.info { "Connecting with ${desc(sslContext)} to gRPC server on port $port" }
+        NettyChannelBuilder.forAddress(hostName, port)
+          .also { builder ->
+            if (overrideAuthority.isNotEmpty())
+              builder.overrideAuthority(overrideAuthority)
+            if (sslContext != null)
+              builder.sslContext(sslContext)
+            else
+              builder.usePlaintext()
+          }
+      }
+      else -> {
+        logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
+        InProcessChannelBuilder.forName(inProcessServerName)
+          .also { builder ->
+            builder.usePlaintext()
+          }
+      }
     }
+      .run {
+        block(this)
+        build()
+      }
+
+  fun server(port: Int = -1,
+             sslContext: SslContext? = null,
+             inProcessServerName: String = "",
+             block: ServerBuilder<*>.() -> Unit): Server =
+    when {
+      inProcessServerName.isEmpty() -> {
+        logger.info { "Listening for ${desc(sslContext)} gRPC traffic on port $port" }
+        NettyServerBuilder.forPort(port)
+          .also { builder ->
+            if (sslContext != null)
+              builder.sslContext(sslContext)
+          }
+      }
+      else -> {
+        logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
+        InProcessServerBuilder.forName(inProcessServerName)
+      }
+    }
+      .run {
+        block(this)
+        build()
+      }
+
+  fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
+    Attributes.newBuilder()
+      .run {
+        block(this)
+        build()
+      }
+
+  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
+    StreamObserverHelper<T>().apply { init() }
+
+  class StreamObserverHelper<T> : StreamObserver<T> {
+    private var onNextBlock: ((T) -> Unit)? by singleAssign()
+    private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
+    private var completedBlock: (() -> Unit)? by singleAssign()
+
+    override fun onNext(response: T) {
+      onNextBlock?.invoke(response)
+    }
+
+    override fun onError(t: Throwable) {
+      onErrorBlock?.invoke(t)
+    }
+
+    override fun onCompleted() {
+      completedBlock?.invoke()
+    }
+
+    fun onNext(block: (T) -> Unit) {
+      onNextBlock = block
+    }
+
+    fun onError(block: (Throwable) -> Unit) {
+      onErrorBlock = block
+    }
+
+    fun onCompleted(block: () -> Unit) {
+      completedBlock = block
+    }
+  }
 }

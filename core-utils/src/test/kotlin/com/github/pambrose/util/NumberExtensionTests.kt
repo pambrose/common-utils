@@ -27,42 +27,42 @@ import org.junit.jupiter.api.Test
 
 class NumberExtensionTests {
 
-    @Test
-    fun shortTest() {
-        val cnt: Short = Short.MAX_VALUE
-        var runs: Short = 0
-        var index: Short = 0
-        cnt times {
-            index shouldEqual it
-            index++
-            runs++
-        }
-        cnt shouldEqual runs
+  @Test
+  fun shortTest() {
+    val cnt: Short = Short.MAX_VALUE
+    var runs: Short = 0
+    var index: Short = 0
+    cnt times {
+      index shouldEqual it
+      index++
+      runs++
     }
+    cnt shouldEqual runs
+  }
 
-    @Test
-    fun intTest() {
-        val cnt = Int.MAX_VALUE
-        var runs = 0
-        var index = 0
-        cnt times {
-            index shouldEqual it
-            index++
-            runs++
-        }
-        cnt shouldEqual runs
+  @Test
+  fun intTest() {
+    val cnt = Int.MAX_VALUE
+    var runs = 0
+    var index = 0
+    cnt times {
+      index shouldEqual it
+      index++
+      runs++
     }
+    cnt shouldEqual runs
+  }
 
-    @Test
-    fun longTest() {
-        val cnt = 100000L
-        var runs = 0L
-        var index = 0L
-        cnt times {
-            index shouldEqual it
-            index++
-            runs++
-        }
-        cnt shouldEqual runs
+  @Test
+  fun longTest() {
+    val cnt = 100000L
+    var runs = 0L
+    var index = 0L
+    cnt times {
+      index shouldEqual it
+      index++
+      runs++
     }
+    cnt shouldEqual runs
+  }
 }

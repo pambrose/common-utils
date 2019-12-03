@@ -20,20 +20,20 @@
 description = 'ktor-client-utils'
 
 dependencies {
-  implementation project(':core-utils')
+    implementation project(':core-utils')
 
-  implementation libraries.ktor_client_core
-  implementation libraries.ktor_client_cio
+    implementation libraries.ktor_client_core
+    implementation libraries.ktor_client_cio
 }
 
 compileKotlin {
-  kotlinOptions {
-    freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
-  }
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+    }
 }
 
 compileTestKotlin {
-  kotlinOptions {
-    freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
-  }
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+    }
 }

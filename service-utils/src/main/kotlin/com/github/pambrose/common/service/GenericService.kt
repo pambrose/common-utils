@@ -94,7 +94,8 @@ protected constructor(val configVals: T,
         AdminService(servletGroup = servletGroup) {
           addService(this)
         }
-    } else {
+    }
+    else {
       logger.info { "Admin service disabled" }
     }
 
@@ -111,7 +112,8 @@ protected constructor(val configVals: T,
                                enableClassLoadingExports = metricsConfig.classLoadingExportsEnabled,
                                enableVersionInfoExports = metricsConfig.versionInfoExportsEnabled)
       jmxReporter = JmxReporter.forRegistry(metricRegistry).build()
-    } else {
+    }
+    else {
       logger.info { "Metrics service disabled" }
     }
 
@@ -119,7 +121,8 @@ protected constructor(val configVals: T,
       val url = "http://${zipkinConfig.hostname}:${zipkinConfig.port}/${zipkinConfig.path}"
       zipkinReporterService =
         ZipkinReporterService(url) { addService(this) }
-    } else {
+    }
+    else {
       logger.info { "Zipkin reporter service disabled" }
     }
 
@@ -131,11 +134,11 @@ protected constructor(val configVals: T,
       serviceManager(services) {
         val clazzname = this@GenericService.simpleClassName
         addListener(
-          serviceManagerListener {
-            healthy { logger.info { "All $clazzname services healthy" } }
-            stopped { logger.info { "All $clazzname services stopped" } }
-            failure { logger.info { "$clazzname service failed: $it" } }
-          })
+            serviceManagerListener {
+              healthy { logger.info { "All $clazzname services healthy" } }
+              stopped { logger.info { "All $clazzname services stopped" } }
+              failure { logger.info { "$clazzname service failed: $it" } }
+            })
       }
 
     registerHealthChecks()

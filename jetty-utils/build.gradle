@@ -20,8 +20,8 @@
 description = 'jetty-utils'
 
 dependencies {
-  implementation project(':core-utils')
+    implementation project(':core-utils')
 
-  implementation libraries.jetty_server
-  implementation libraries.jetty_servlet
+    implementation libraries.jetty_server
+    implementation libraries.jetty_servlet
 }

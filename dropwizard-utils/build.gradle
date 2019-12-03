@@ -20,8 +20,8 @@
 description = 'dropwizard-utils'
 
 dependencies {
-  implementation project(':core-utils')
+    implementation project(':core-utils')
 
-  implementation libraries.dropwizard_core
-  implementation libraries.dropwizard_healthcheck
+    implementation libraries.dropwizard_core
+    implementation libraries.dropwizard_healthcheck
 }

@@ -26,3 +26,7 @@ fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && end
 fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
 
 fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
+
+fun String.singleQuoted() = "'$this'"
+
+fun String.doubleQuoted() = "\"$this\""
