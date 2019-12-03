@@ -41,8 +41,8 @@ object GrpcDsl : KLogging() {
 
     fun channel(hostName: String = "",
                 port: Int = -1,
-                overrideAuthority: String = "",
                 sslContext: SslContext? = null,
+                overrideAuthority: String = "",
                 inProcessServerName: String = "",
                 block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
         when {

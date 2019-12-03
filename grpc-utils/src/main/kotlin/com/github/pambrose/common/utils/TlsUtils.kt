@@ -14,11 +14,27 @@ object TlsUtils {
                               trustCertCollectionFilePath: String = ""): SslContext =
         GrpcSslContexts.forClient()
             .let { builder ->
-                if (trustCertCollectionFilePath.isNotEmpty())
-                    builder.trustManager(File(trustCertCollectionFilePath))
+                if (trustCertCollectionFilePath.isNotEmpty()) {
+                    File(trustCertCollectionFilePath)
+                        .also { file ->
+                            require(file.exists()) { "File $trustCertCollectionFilePath does not exist" }
+                            builder.trustManager(file)
+                        }
+                }
 
-                if (certChainFilePath.isNotEmpty() && privateKeyFilePath.isNotEmpty())
-                    builder.keyManager(File(certChainFilePath), File(privateKeyFilePath))
+                if (certChainFilePath.isNotEmpty())
+                    require(privateKeyFilePath.isNotEmpty()) { "privateKeyFilePath required if certChainFilePath specified" }
+
+                if (privateKeyFilePath.isNotEmpty())
+                    require(certChainFilePath.isNotEmpty()) { "certChainFilePath required if privateKeyFilePath specified" }
+
+                if (certChainFilePath.isNotEmpty() && privateKeyFilePath.isNotEmpty()) {
+                    val cert = File(certChainFilePath)
+                        .apply { require(exists()) { "File $certChainFilePath does not exist" } }
+                    val key = File(privateKeyFilePath)
+                        .apply { require(exists()) { "File $privateKeyFilePath does not exist" } }
+                    builder.keyManager(cert, key)
+                }
 
                 builder.build()
             }
@@ -29,10 +45,20 @@ object TlsUtils {
                               trustCertCollectionFilePath: String = ""): SslContext {
         require(certChainFilePath.isNotEmpty()) { "certChainFilePath cannot be empty" }
         require(privateKeyFilePath.isNotEmpty()) { "privateKeyFilePath cannot be empty" }
-        return SslContextBuilder.forServer(File(certChainFilePath), File(privateKeyFilePath))
+
+        val cert = File(certChainFilePath)
+            .apply { require(exists()) { "File $certChainFilePath does not exist" } }
+        val key = File(privateKeyFilePath)
+            .apply { require(exists()) { "File $privateKeyFilePath does not exist" } }
+
+        return SslContextBuilder.forServer(cert, key)
             .let { builder ->
                 if (trustCertCollectionFilePath.isNotEmpty()) {
-                    builder.trustManager(File(trustCertCollectionFilePath))
+                    File(trustCertCollectionFilePath)
+                        .also { file ->
+                            require(file.exists()) { "File $trustCertCollectionFilePath does not exist" }
+                            builder.trustManager(file)
+                        }
                     builder.clientAuth(ClientAuth.REQUIRE)
                 }
 
