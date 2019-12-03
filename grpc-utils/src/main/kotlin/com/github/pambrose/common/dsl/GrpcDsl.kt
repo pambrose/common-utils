@@ -75,7 +75,7 @@ object GrpcDsl : KLogging() {
                block: ServerBuilder<*>.() -> Unit): Server =
         when {
             inProcessServerName.isEmpty() -> {
-                logger.info { "Listening for gRPC traffic on port $port" }
+                logger.info { "Listening for ${if (sslContext != null) "TLS" else "plaintext"} gRPC traffic on port $port" }
                 NettyServerBuilder.forPort(port)
                     .also { builder ->
                         if (sslContext != null)
