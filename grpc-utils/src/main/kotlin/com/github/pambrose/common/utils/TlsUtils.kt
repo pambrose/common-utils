@@ -26,8 +26,10 @@ object TlsUtils {
     @Throws(SSLException::class)
     fun buildServerSslContext(certChainFilePath: String,
                               privateKeyFilePath: String,
-                              trustCertCollectionFilePath: String = ""): SslContext =
-        SslContextBuilder.forServer(File(certChainFilePath), File(privateKeyFilePath))
+                              trustCertCollectionFilePath: String = ""): SslContext {
+        require(certChainFilePath.isNotEmpty()) { "certChainFilePath cannot be empty" }
+        require(privateKeyFilePath.isNotEmpty()) { "privateKeyFilePath cannot be empty" }
+        return SslContextBuilder.forServer(File(certChainFilePath), File(privateKeyFilePath))
             .let { builder ->
                 if (trustCertCollectionFilePath.isNotEmpty()) {
                     builder.trustManager(File(trustCertCollectionFilePath))
@@ -36,4 +38,5 @@ object TlsUtils {
 
                 GrpcSslContexts.configure(builder).build()
             }
+    }
 }
