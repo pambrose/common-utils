@@ -8,6 +8,14 @@ import io.netty.handler.ssl.SslContextBuilder
 import java.io.File
 import javax.net.ssl.SSLException
 
+data class TlsDetails(val sslContext: SslContext? = null, val mutualAuth: Boolean = false) {
+  fun desc() =
+    if (sslContext == null)
+      "plaintext"
+    else
+      "TLS " + if (mutualAuth) "with mutual auth" else "(no mutual auth)"
+}
+
 object TlsUtils {
   private fun String.doesNotExistMsg() = "File ${doubleQuoted()} does not exist"
 
@@ -23,28 +31,28 @@ object TlsUtils {
                        trustCertCollectionFilePath: String = ""): SslContextBuilder =
     GrpcSslContexts.forClient()
       .also { builder ->
-        val certFile = certChainFilePath.trim()
-        val keyFile = privateKeyFilePath.trim()
-        val trustFile = trustCertCollectionFilePath.trim()
+        val certPath = certChainFilePath.trim()
+        val keyPath = privateKeyFilePath.trim()
+        val trustPath = trustCertCollectionFilePath.trim()
 
-        if (trustFile.isNotEmpty()) {
-          File(trustFile)
-            .also { file ->
-              require(file.exists() && file.isFile()) { trustFile.doesNotExistMsg() }
-              builder.trustManager(file)
-            }
-        }
+        require(trustPath.isNotEmpty()) { "Client trustCertCollectionFilePath is required for TLS" }
 
-        if (certFile.isNotEmpty())
-          require(keyFile.isNotEmpty()) { "privateKeyFilePath required if certChainFilePath specified" }
+        File(trustPath)
+          .also { file ->
+            require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
+            builder.trustManager(file)
+          }
 
-        if (keyFile.isNotEmpty())
-          require(certFile.isNotEmpty()) { "certChainFilePath required if privateKeyFilePath specified" }
+        if (certPath.isNotEmpty())
+          require(keyPath.isNotEmpty()) { "privateKeyFilePath required if certChainFilePath specified" }
 
-        if (certFile.isNotEmpty() && keyFile.isNotEmpty()) {
-          val cert = File(certFile).apply { require(exists() && isFile()) { certFile.doesNotExistMsg() } }
-          val key = File(keyFile).apply { require(exists() && isFile()) { keyFile.doesNotExistMsg() } }
-          builder.keyManager(cert, key)
+        if (keyPath.isNotEmpty())
+          require(certPath.isNotEmpty()) { "certChainFilePath required if privateKeyFilePath specified" }
+
+        if (certPath.isNotEmpty() && keyPath.isNotEmpty()) {
+          val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
+          val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
+          builder.keyManager(certFile, keyFile)
         }
       }
 
@@ -60,22 +68,22 @@ object TlsUtils {
   fun serverSslContext(certChainFilePath: String,
                        privateKeyFilePath: String,
                        trustCertCollectionFilePath: String = ""): SslContextBuilder {
-    val certFile = certChainFilePath.trim()
-    val keyFile = privateKeyFilePath.trim()
-    val trustFile = trustCertCollectionFilePath.trim()
+    val certPath = certChainFilePath.trim()
+    val keyPath = privateKeyFilePath.trim()
+    val trustPath = trustCertCollectionFilePath.trim()
 
-    require(certFile.isNotEmpty()) { "certChainFilePath cannot be empty" }
-    require(keyFile.isNotEmpty()) { "privateKeyFilePath cannot be empty" }
+    require(certPath.isNotEmpty()) { "Server certChainFilePath is required for TLS" }
+    require(keyPath.isNotEmpty()) { "Server privateKeyFilePath is required for TLS" }
 
-    val cert = File(certFile).apply { require(exists() && isFile()) { certFile.doesNotExistMsg() } }
-    val key = File(keyFile).apply { require(exists() && isFile()) { keyFile.doesNotExistMsg() } }
+    val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
+    val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
 
-    return SslContextBuilder.forServer(cert, key)
+    return SslContextBuilder.forServer(certFile, keyFile)
       .also { builder ->
-        if (trustFile.isNotEmpty()) {
-          File(trustFile)
+        if (trustPath.isNotEmpty()) {
+          File(trustPath)
             .also { file ->
-              require(file.exists() && file.isFile()) { trustFile.doesNotExistMsg() }
+              require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
               builder.trustManager(file)
             }
           builder.clientAuth(ClientAuth.REQUIRE)

@@ -22,6 +22,7 @@
 package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
+import com.github.pambrose.common.utils.TlsDetails
 import io.grpc.Attributes
 import io.grpc.ManagedChannel
 import io.grpc.Server
@@ -32,28 +33,25 @@ import io.grpc.internal.AbstractManagedChannelImplBuilder
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
-import io.netty.handler.ssl.SslContext
 import mu.KLogging
 
 object GrpcDsl : KLogging() {
 
-  private fun desc(sslContext: SslContext?) = if (sslContext != null) "TLS" else "plaintext"
-
   fun channel(hostName: String = "",
               port: Int = -1,
-              sslContext: SslContext? = null,
+              tlsDetails: TlsDetails,
               overrideAuthority: String = "",
               inProcessServerName: String = "",
               block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
     when {
       inProcessServerName.isEmpty() -> {
-        logger.info { "Connecting with ${desc(sslContext)} to gRPC server on port $port" }
+        logger.info { "Connecting to gRPC server using ${tlsDetails.desc()} on port $port" }
         NettyChannelBuilder.forAddress(hostName, port)
           .also { builder ->
             if (overrideAuthority.isNotEmpty())
               builder.overrideAuthority(overrideAuthority)
-            if (sslContext != null)
-              builder.sslContext(sslContext)
+            if (tlsDetails.sslContext != null)
+              builder.sslContext(tlsDetails.sslContext)
             else
               builder.usePlaintext()
           }
@@ -72,16 +70,16 @@ object GrpcDsl : KLogging() {
       }
 
   fun server(port: Int = -1,
-             sslContext: SslContext? = null,
+             tlsDetails: TlsDetails = TlsDetails(),
              inProcessServerName: String = "",
              block: ServerBuilder<*>.() -> Unit): Server =
     when {
       inProcessServerName.isEmpty() -> {
-        logger.info { "Listening for ${desc(sslContext)} gRPC traffic on port $port" }
+        logger.info { "Listening for gRPC traffic using ${tlsDetails.desc()} on port $port" }
         NettyServerBuilder.forPort(port)
           .also { builder ->
-            if (sslContext != null)
-              builder.sslContext(sslContext)
+            if (tlsDetails.sslContext != null)
+              builder.sslContext(tlsDetails.sslContext)
           }
       }
       else -> {
