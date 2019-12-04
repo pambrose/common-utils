@@ -105,9 +105,10 @@ object TlsUtils : KLogging() {
               require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
               logger.info { "Assigning trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
               builder.trustManager(file)
+              builder.clientAuth(ClientAuth.REQUIRE)
             }
         }
-        TlsContextBuilder(builder.clientAuth(ClientAuth.REQUIRE), trustPath.isNotEmpty())
+        TlsContextBuilder(builder, trustPath.isNotEmpty())
       }
   }
 }
