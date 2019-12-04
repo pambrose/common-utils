@@ -22,6 +22,9 @@
 package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
+import com.github.pambrose.common.util.doubleQuoted
+import com.github.pambrose.common.utils.TlsContext
+import com.github.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
 import io.grpc.Attributes
 import io.grpc.ManagedChannel
 import io.grpc.Server
@@ -30,35 +33,66 @@ import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.internal.AbstractManagedChannelImplBuilder
 import io.grpc.netty.NettyChannelBuilder
+import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
 import mu.KLogging
 
 object GrpcDsl : KLogging() {
 
-  fun channel(inProcessServerName: String = "",
-              hostName: String = "",
+  fun channel(hostName: String = "",
               port: Int = -1,
+              tlsContext: TlsContext,
+              overrideAuthority: String = "",
+              inProcessServerName: String = "",
               block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
-    (if (inProcessServerName.isEmpty()) {
-      logger.info { "Connecting to gRPC server on port $port" }
-      NettyChannelBuilder.forAddress(hostName, port)
-    } else {
-      logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
-      InProcessChannelBuilder.forName(inProcessServerName)
-    })
+    when {
+      inProcessServerName.isEmpty() -> {
+        logger.info { "Creating connection for gRPC server on port $port using ${tlsContext.desc()}" }
+        NettyChannelBuilder.forAddress(hostName, port)
+          .also { builder ->
+            val override = overrideAuthority.trim()
+            if (override.isNotEmpty()) {
+              logger.info { "Assigning overrideAuthority: ${override.doubleQuoted()}" }
+              builder.overrideAuthority(override)
+            }
+
+            if (tlsContext.sslContext != null)
+              builder.sslContext(tlsContext.sslContext)
+            else
+              builder.usePlaintext()
+          }
+      }
+      else -> {
+        logger.info { "Creating connection for gRPC server with in-process server name $inProcessServerName" }
+        InProcessChannelBuilder.forName(inProcessServerName)
+          .also { builder ->
+            builder.usePlaintext()
+          }
+      }
+    }
       .run {
         block(this)
         build()
       }
 
-  fun server(inProcessServerName: String = "", port: Int = -1, block: ServerBuilder<*>.() -> Unit): Server =
-    (if (inProcessServerName.isEmpty()) {
-      logger.info { "Listening for gRPC traffic on port $port" }
-      ServerBuilder.forPort(port)
-    } else {
-      logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
-      InProcessServerBuilder.forName(inProcessServerName)
-    })
+  fun server(port: Int = -1,
+             tlsContext: TlsContext = PLAINTEXT_CONTEXT,
+             inProcessServerName: String = "",
+             block: ServerBuilder<*>.() -> Unit): Server =
+    when {
+      inProcessServerName.isEmpty() -> {
+        logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
+        NettyServerBuilder.forPort(port)
+          .also { builder ->
+            if (tlsContext.sslContext != null)
+              builder.sslContext(tlsContext.sslContext)
+          }
+      }
+      else -> {
+        logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
+        InProcessServerBuilder.forName(inProcessServerName)
+      }
+    }
       .run {
         block(this)
         build()

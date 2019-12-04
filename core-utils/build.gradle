@@ -18,3 +18,7 @@
  */
 
 description = 'core-utils'
+
+dependencies {
+    implementation libraries.reflect
+}

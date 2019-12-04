@@ -39,7 +39,8 @@ object KtorDsl {
         .use { client ->
           client.block()
         }
-    } else {
+    }
+    else {
       httpClient.block()
     }
   }

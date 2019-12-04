@@ -20,7 +20,7 @@
 description = 'zipkin-utils'
 
 dependencies {
-  implementation project(':core-utils')
+    implementation project(':core-utils')
 
-  implementation libraries.zipkin
+    implementation libraries.zipkin
 }
