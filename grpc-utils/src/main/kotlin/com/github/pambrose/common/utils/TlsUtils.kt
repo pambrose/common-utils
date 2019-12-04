@@ -50,7 +50,7 @@ object TlsUtils : KLogging() {
         File(trustPath)
           .also { file ->
             require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
-            logger.info { "Assigning trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
+            logger.info { "Reading trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
             builder.trustManager(file)
           }
 
@@ -63,8 +63,10 @@ object TlsUtils : KLogging() {
         if (certPath.isNotEmpty() && keyPath.isNotEmpty()) {
           val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
           val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
-          logger.info { "Assigning certChainFilePath: ${certPath.doubleQuoted()}" }
-          logger.info { "Assigning privateKeyFilePath: ${keyPath.doubleQuoted()}" }
+
+          logger.info { "Reading certChainFilePath: ${certPath.doubleQuoted()}" }
+          logger.info { "Reading privateKeyFilePath: ${keyPath.doubleQuoted()}" }
+
           builder.keyManager(certFile, keyFile)
         }
 
@@ -94,8 +96,8 @@ object TlsUtils : KLogging() {
     val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
     val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
 
-    logger.info { "Assigning certChainFilePath: ${certPath.doubleQuoted()}" }
-    logger.info { "Assigning privateKeyFilePath: ${keyPath.doubleQuoted()}" }
+    logger.info { "Reading certChainFilePath: ${certPath.doubleQuoted()}" }
+    logger.info { "Reading privateKeyFilePath: ${keyPath.doubleQuoted()}" }
 
     return SslContextBuilder.forServer(certFile, keyFile)
       .let { builder ->
@@ -103,7 +105,7 @@ object TlsUtils : KLogging() {
           File(trustPath)
             .also { file ->
               require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
-              logger.info { "Assigning trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
+              logger.info { "Reading trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
               builder.trustManager(file)
               builder.clientAuth(ClientAuth.REQUIRE)
             }
