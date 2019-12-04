@@ -47,7 +47,7 @@ object GrpcDsl : KLogging() {
               block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
     when {
       inProcessServerName.isEmpty() -> {
-        logger.info { "Connecting to gRPC server using ${tlsContext.desc()} on port $port" }
+        logger.info { "Creating connection for gRPC server on port $port using ${tlsContext.desc()}" }
         NettyChannelBuilder.forAddress(hostName, port)
           .also { builder ->
             val override = overrideAuthority.trim()
@@ -63,7 +63,7 @@ object GrpcDsl : KLogging() {
           }
       }
       else -> {
-        logger.info { "Connecting to gRPC server with in-process server name $inProcessServerName" }
+        logger.info { "Creating connection for gRPC server with in-process server name $inProcessServerName" }
         InProcessChannelBuilder.forName(inProcessServerName)
           .also { builder ->
             builder.usePlaintext()
@@ -81,7 +81,7 @@ object GrpcDsl : KLogging() {
              block: ServerBuilder<*>.() -> Unit): Server =
     when {
       inProcessServerName.isEmpty() -> {
-        logger.info { "Listening for gRPC traffic using ${tlsContext.desc()} on port $port" }
+        logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
         NettyServerBuilder.forPort(port)
           .also { builder ->
             if (tlsContext.sslContext != null)
