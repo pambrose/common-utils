@@ -16,6 +16,12 @@ class KtsScript {
   private var initialized = false
 
   fun add(name: String, value: Any, clazz: KClass<*>? = null) {
+    if (Collection::class.isInstance(value) && clazz == null)
+      throw ScriptException("Collection type missing in ${KtsScript::class.simpleName}.add() for variable ${name.doubleQuoted()}")
+
+    if (value.javaClass.kotlin.qualifiedName == null)
+      throw ScriptException("Variable ${name.doubleQuoted()} is a local or an anonymous class")
+
     valueMap[name] = value
     typeMap[name] = clazz
   }
@@ -26,26 +32,17 @@ class KtsScript {
 
       valueMap.forEach { entry ->
         val name = entry.key
-        val javaClazz = entry.value.javaClass
-        val kotlinClazz = javaClazz.kotlin
-        val kotlinQualified = kotlinClazz.qualifiedName
-
-        if (kotlinQualified == null)
-          throw ScriptException("Variable $name is a local or anonymous class")
+        val kotlinClazz = entry.value.javaClass.kotlin
+        val kotlinQualified = kotlinClazz.qualifiedName!!
 
         val asType =
           when {
             kotlinQualified.startsWith("kotlin.") -> kotlinClazz.simpleName
-            Collection::class.isInstance(entry.value) -> {
-              val collectionType =
-                typeMap[name]
-                  ?: throw ScriptException("Collection type missing in ${KtsScript::class.simpleName}.add() for variable ${name.doubleQuoted()}")
-              "$kotlinQualified<${collectionType.simpleName}>"
-            }
+            Collection::class.isInstance(entry.value) -> "$kotlinQualified<${typeMap[name]?.simpleName}>"
             else -> kotlinQualified
           }
 
-        assigns += "val $name = bindings[\"$name\"] as $asType"
+        assigns += "val $name = bindings[${name.doubleQuoted()}] as $asType"
       }
 
       return assigns.joinToString("\n")

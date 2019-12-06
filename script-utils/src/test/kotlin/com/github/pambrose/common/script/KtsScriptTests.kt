@@ -96,14 +96,24 @@ class KtsScriptTests {
   }
 
   @Test
+  fun innerClassTest() {
+    class InnerTest()
+
+    val inner = InnerTest()
+
+    KtsScript()
+      .apply {
+        invoking { add("inner", inner) } shouldThrow ScriptException::class
+      }
+  }
+
+  @Test
   fun missingCollectionTypeTest() {
     val list = mutableListOf(1)
 
     KtsScript()
       .apply {
-        add("list", list)
-
-        invoking { list.size shouldEqual eval("list.size") } shouldThrow ScriptException::class
+        invoking { add("list", list) } shouldThrow ScriptException::class
       }
   }
 
