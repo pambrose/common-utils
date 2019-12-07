@@ -10,12 +10,12 @@ class KtsScript {
   private val manager = ScriptEngineManager()
   private val engine = manager.getEngineByExtension("kts")
   private val valueMap = mutableMapOf<String, Any>()
-  private val typeMap = mutableMapOf<String, KClass<*>?>()
+  private val typeMap = mutableMapOf<String, Pair<KClass<*>?, String>>()
   private val imports = mutableListOf("import ${System::class.qualifiedName}")
   private val bindings = SimpleBindings(valueMap)
   private var initialized = false
 
-  fun add(name: String, value: Any, clazz: KClass<*>? = null) {
+  fun add(name: String, value: Any, clazz: KClass<*>? = null, nullable: Boolean = false) {
     if (Collection::class.isInstance(value) && clazz == null)
       throw ScriptException("Collection type missing in ${KtsScript::class.simpleName}.add() for variable ${name.doubleQuoted()}")
 
@@ -23,7 +23,7 @@ class KtsScript {
       throw ScriptException("Variable ${name.doubleQuoted()} is a local or an anonymous class")
 
     valueMap[name] = value
-    typeMap[name] = clazz
+    typeMap[name] = clazz to if (nullable) "?" else ""
   }
 
   val varDecls: String
@@ -38,7 +38,10 @@ class KtsScript {
         val asType =
           when {
             kotlinQualified.startsWith("kotlin.") -> kotlinClazz.simpleName
-            Collection::class.isInstance(entry.value) -> "$kotlinQualified<${typeMap[name]?.simpleName}>"
+            Collection::class.isInstance(entry.value) -> {
+              val valType = typeMap[name]!!
+              "$kotlinQualified<${valType.first?.simpleName}${valType.second}>"
+            }
             else -> kotlinQualified
           }
 

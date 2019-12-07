@@ -96,6 +96,32 @@ class KtsScriptTests {
   }
 
   @Test
+  fun nullObjectTest() {
+    val list = mutableListOf<Int?>()
+
+    KtsScript()
+      .apply {
+        add("list", list, Int::class, true)
+
+        println(varDecls)
+
+        list.size shouldEqual eval("list.size")
+
+        val inc_ed =
+          eval(
+              """
+          repeat(100) { list.add(null) }
+          list
+        """
+          ) as List<Int?>
+
+        list.size shouldEqual 100
+        list.size shouldEqual eval("list.size")
+        list.size shouldEqual inc_ed.size
+      }
+  }
+
+  @Test
   fun innerClassTest() {
     class InnerTest()
 
