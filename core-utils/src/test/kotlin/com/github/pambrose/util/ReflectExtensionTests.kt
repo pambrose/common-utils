@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test
 class ReflectExtensionTests {
 
   @Test
-  fun paramTest() {
+  fun tyeParamCountTest() {
     4.typeParameterCount shouldEqual 0
     "dd".typeParameterCount shouldEqual 0
     listOf(3).typeParameterCount shouldEqual 1
