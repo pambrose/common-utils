@@ -3,6 +3,7 @@ package com.github.pambrose.common.script
 import com.github.pambrose.common.util.doubleQuoted
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.typeParameterCount
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import javax.script.SimpleBindings
@@ -15,7 +16,7 @@ class KtsScript {
   private val typeMap = mutableMapOf<String, Array<out KType>>()
   private val imports = mutableListOf("import ${System::class.qualifiedName}")
   private val bindings = SimpleBindings(valueMap)
-  private var initialized = false
+  private var initialized = AtomicBoolean(false)
 
   fun add(name: String, value: Any, vararg types: KType) {
     val paramCnt = value.typeParameterCount
@@ -68,11 +69,19 @@ class KtsScript {
 
   @Synchronized
   fun eval(code: String): Any? {
-    if (!initialized) {
+
+    if ("java.lang.System.exit" in code)
+      throw ScriptException(SYSTEM_ERROR)
+
+    if (!initialized.get()) {
       engine.eval(varDecls, bindings)
-      initialized = true
+      initialized.set(true)
     }
 
     return engine.eval(importDecls + "\n\n" + code, bindings)
+  }
+
+  companion object {
+    internal const val SYSTEM_ERROR = "Illegal call to System.exit()"
   }
 }

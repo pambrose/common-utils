@@ -69,7 +69,6 @@ class KtsScriptTests {
       }
   }
 
-
   @Test
   fun userObjectTest() {
     val aux = AuxClass()
@@ -235,6 +234,7 @@ class KtsScriptTests {
     KtsScript()
       .apply {
         invoking { eval("System.exit(1)") } shouldThrow ScriptException::class
+        invoking { eval("com.lang.System.exit(1)") } shouldThrow ScriptException::class
       }
   }
 }
