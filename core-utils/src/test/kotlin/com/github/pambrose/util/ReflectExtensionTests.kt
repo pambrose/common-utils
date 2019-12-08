@@ -19,16 +19,22 @@
 
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
-package com.github.pambrose.common.util
+package com.github.pambrose.util
 
-fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
+import com.github.pambrose.common.util.typeParameterCount
+import org.amshove.kluent.shouldEqual
+import org.junit.jupiter.api.Test
 
-fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
+class ReflectExtensionTests {
 
-fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
-
-fun String.singleQuoted() = "'$this'"
-
-fun String.doubleQuoted() = "\"$this\""
-
-fun String.pluralize(cnt: Int) = if (cnt == 1) this else "${this}s"
+  @Test
+  fun paramTest() {
+    4.typeParameterCount shouldEqual 0
+    "dd".typeParameterCount shouldEqual 0
+    listOf(3).typeParameterCount shouldEqual 1
+    mapOf(3 to "d").typeParameterCount shouldEqual 2
+    mutableMapOf("k1" to 1).typeParameterCount shouldEqual 2
+    arrayOf(4).typeParameterCount shouldEqual 1
+    (IntArray(1) { 2 }).typeParameterCount shouldEqual 0
+  }
+}

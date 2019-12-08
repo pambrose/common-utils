@@ -21,10 +21,7 @@
 
 package com.github.pambrose.util
 
-import com.github.pambrose.common.util.isDoubleQuoted
-import com.github.pambrose.common.util.isQuoted
-import com.github.pambrose.common.util.isSingleQuoted
-import com.github.pambrose.common.util.length
+import com.github.pambrose.common.util.*
 import org.amshove.kluent.shouldEqual
 import org.junit.jupiter.api.Test
 
@@ -64,5 +61,12 @@ class StringExtensionTests {
     "''".isSingleQuoted() shouldEqual true
     "''".isDoubleQuoted() shouldEqual false
     "''".isQuoted() shouldEqual true
+  }
+
+  @Test
+  fun pluralTest() {
+    "car".pluralize(0) shouldEqual "cars"
+    "car".pluralize(1) shouldEqual "car"
+    "car".pluralize(2) shouldEqual "cars"
   }
 }

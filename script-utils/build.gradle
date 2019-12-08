@@ -32,3 +32,15 @@ dependencies {
 
     runtime libraries.kotlin_scripting
 }
+
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
+    }
+}
+
+compileTestKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
+    }
+}

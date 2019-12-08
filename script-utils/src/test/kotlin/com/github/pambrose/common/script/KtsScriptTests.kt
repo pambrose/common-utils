@@ -6,6 +6,7 @@ import org.amshove.kluent.shouldEqualTo
 import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
+import kotlin.reflect.typeOf
 
 class AuxClass(var i: Int = 0) {
   fun inc() {
@@ -54,6 +55,7 @@ class KtsScriptTests {
 
     KtsScript()
       .apply {
+
         add("aux", aux)
 
         aux.i shouldEqual eval("aux.i")
@@ -72,12 +74,43 @@ class KtsScriptTests {
   }
 
   @Test
-  fun jdkObjectTest() {
+  fun objectWithKClassTest() {
+    val list = mutableListOf(1)
+    val map = mutableMapOf("k1" to 1)
+
+    KtsScript()
+      .apply {
+        add("list", list, typeOf<Int>())
+        add("map", map, typeOf<String>(), typeOf<Int>())
+
+        list.size shouldEqual eval("list.size")
+        map.size shouldEqual eval("map.size")
+
+        val inc_ed =
+          eval("""
+          map["k2"] = 10
+          repeat(100) { list.add(it) }
+          list
+        """
+          ) as List<*>
+
+        list.size shouldEqual 101
+        list.size shouldEqual eval("list.size")
+        list.size shouldEqual inc_ed.size
+
+        map.size shouldEqual eval("map.size")
+        map.size shouldEqual 2
+        map["k2"] shouldEqual 10
+      }
+  }
+
+  @Test
+  fun objectWithKTypeTest() {
     val list = mutableListOf(1)
 
     KtsScript()
       .apply {
-        add("list", list, Int::class)
+        add("list", list, typeOf<Int>())
 
         list.size shouldEqual eval("list.size")
 
@@ -87,7 +120,7 @@ class KtsScriptTests {
           repeat(100) { list.add(it) }
           list
         """
-          ) as List<Int>
+          ) as List<*>
 
         list.size shouldEqual 101
         list.size shouldEqual eval("list.size")
@@ -101,7 +134,7 @@ class KtsScriptTests {
 
     KtsScript()
       .apply {
-        add("list", list, Int::class, true)
+        add("list", list, typeOf<Int?>())
 
         println(varDecls)
 
@@ -113,7 +146,7 @@ class KtsScriptTests {
           repeat(100) { list.add(null) }
           list
         """
-          ) as List<Int?>
+          ) as List<*>
 
         list.size shouldEqual 100
         list.size shouldEqual eval("list.size")
@@ -130,6 +163,30 @@ class KtsScriptTests {
     KtsScript()
       .apply {
         invoking { add("inner", inner) } shouldThrow ScriptException::class
+      }
+  }
+
+  @Test
+  fun unnecesssaryParamsTest() {
+    class InnerTest()
+
+    val value = 5
+
+    KtsScript()
+      .apply {
+        invoking { add("value", value, typeOf<Int?>()) } shouldThrow ScriptException::class
+      }
+  }
+
+  @Test
+  fun unmatchedParamsTest() {
+    class InnerTest()
+
+    val list = mutableListOf(1)
+
+    KtsScript()
+      .apply {
+        invoking { add("list", list, typeOf<Int?>(), typeOf<Int>()) } shouldThrow ScriptException::class
       }
   }
 

@@ -1,29 +1,51 @@
 package com.github.pambrose.common.script
 
 import com.github.pambrose.common.util.doubleQuoted
+import com.github.pambrose.common.util.pluralize
+import com.github.pambrose.common.util.typeParameterCount
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import javax.script.SimpleBindings
-import kotlin.reflect.KClass
+import kotlin.reflect.KType
 
 class KtsScript {
   private val manager = ScriptEngineManager()
   private val engine = manager.getEngineByExtension("kts")
   private val valueMap = mutableMapOf<String, Any>()
-  private val typeMap = mutableMapOf<String, Pair<KClass<*>?, String>>()
+  private val typeMap = mutableMapOf<String, Array<out KType>>()
   private val imports = mutableListOf("import ${System::class.qualifiedName}")
   private val bindings = SimpleBindings(valueMap)
   private var initialized = false
 
-  fun add(name: String, value: Any, clazz: KClass<*>? = null, nullable: Boolean = false) {
-    if (Collection::class.isInstance(value) && clazz == null)
-      throw ScriptException("Collection type missing in ${KtsScript::class.simpleName}.add() for variable ${name.doubleQuoted()}")
+  fun add(name: String, value: Any, vararg types: KType) {
+    val paramCnt = value.typeParameterCount
+    return when {
+      value.javaClass.kotlin.qualifiedName == null ->
+        throw ScriptException("Variable ${name.doubleQuoted()} is a local or an anonymous class")
+      paramCnt > 0 && types.size == 0 -> {
+        val plural = "parameter".pluralize(paramCnt)
+        throw ScriptException("Expected $paramCnt type $plural to be specified for ${name.doubleQuoted()}")
+      }
+      paramCnt == 0 && types.size > 0 -> {
+        val plural = "parameter".pluralize(types.size)
+        val found = params(name, types)
+        throw ScriptException("Invalid type $plural $found specified for ${name.doubleQuoted()}")
+      }
+      paramCnt != types.size -> {
+        val plural = "parameter".pluralize(paramCnt)
+        val found = "${types.size}: ${params(name, types)}"
+        throw ScriptException("Expected $paramCnt type $plural for ${name.doubleQuoted()} but found $found")
+      }
+      else -> {
+        valueMap[name] = value
+        typeMap[name] = types
+      }
+    }
+  }
 
-    if (value.javaClass.kotlin.qualifiedName == null)
-      throw ScriptException("Variable ${name.doubleQuoted()} is a local or an anonymous class")
-
-    valueMap[name] = value
-    typeMap[name] = clazz to if (nullable) "?" else ""
+  private fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
+    val params = types.map { type -> type.toString().removePrefix("kotlin.") }
+    return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
   val varDecls: String
@@ -34,18 +56,8 @@ class KtsScript {
         val name = entry.key
         val kotlinClazz = entry.value.javaClass.kotlin
         val kotlinQualified = kotlinClazz.qualifiedName!!
-
-        val asType =
-          when {
-            kotlinQualified.startsWith("kotlin.") -> kotlinClazz.simpleName
-            Collection::class.isInstance(entry.value) -> {
-              val valType = typeMap[name]!!
-              "$kotlinQualified<${valType.first?.simpleName}${valType.second}>"
-            }
-            else -> kotlinQualified
-          }
-
-        assigns += "val $name = bindings[${name.doubleQuoted()}] as $asType"
+        val type = kotlinQualified.removePrefix("kotlin.")
+        assigns += "val $name = bindings[${name.doubleQuoted()}] as $type${params(name)}"
       }
 
       return assigns.joinToString("\n")
