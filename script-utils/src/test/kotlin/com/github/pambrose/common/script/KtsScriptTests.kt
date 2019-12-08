@@ -50,6 +50,27 @@ class KtsScriptTests {
   }
 
   @Test
+  fun valVarTest() {
+    val intVal = 0
+    var intVar = 0
+
+    KtsScript()
+      .apply {
+        add("intVal", intVal)
+        add("intVar", intVar)
+
+        intVal shouldEqual eval("intVal")
+        intVal + 1 shouldEqual eval("intVal + 1")
+        intVal shouldEqual 0
+
+        intVar shouldEqual eval("intVar")
+        intVar + 1 shouldEqual eval("intVar + 1")
+        intVar shouldEqual 0
+      }
+  }
+
+
+  @Test
   fun userObjectTest() {
     val aux = AuxClass()
 
