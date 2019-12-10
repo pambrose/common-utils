@@ -3,6 +3,7 @@ package com.github.pambrose.common.script
 import com.github.pambrose.common.util.doubleQuoted
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.typeParameterCount
+import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
@@ -17,6 +18,10 @@ class KtsScript {
   private val imports = mutableListOf("import ${System::class.qualifiedName}")
   private val bindings = SimpleBindings(valueMap)
   private var initialized = AtomicBoolean(false)
+
+  init {
+    setIdeaIoUseFallback()
+  }
 
   fun add(name: String, value: Any, vararg types: KType) {
     val paramCnt = value.typeParameterCount
