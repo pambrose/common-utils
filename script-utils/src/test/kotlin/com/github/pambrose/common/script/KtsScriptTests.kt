@@ -176,7 +176,7 @@ class KtsScriptTests {
 
   @Test
   fun innerClassTest() {
-    class InnerTest()
+    class InnerTest
 
     val inner = InnerTest()
 
@@ -188,8 +188,6 @@ class KtsScriptTests {
 
   @Test
   fun unnecesssaryParamsTest() {
-    class InnerTest()
-
     val value = 5
 
     KtsScript()
@@ -200,8 +198,6 @@ class KtsScriptTests {
 
   @Test
   fun unmatchedParamsTest() {
-    class InnerTest()
-
     val list = mutableListOf(1)
 
     KtsScript()

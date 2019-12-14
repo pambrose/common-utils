@@ -49,7 +49,7 @@ object TlsUtils : KLogging() {
 
         File(trustPath)
           .also { file ->
-            require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
+            require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
             logger.info { "Reading trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
             builder.trustManager(file)
           }
@@ -61,8 +61,8 @@ object TlsUtils : KLogging() {
           require(certPath.isNotEmpty()) { "certChainFilePath required if privateKeyFilePath specified" }
 
         if (certPath.isNotEmpty() && keyPath.isNotEmpty()) {
-          val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
-          val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
+          val certFile = File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
+          val keyFile = File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
 
           logger.info { "Reading certChainFilePath: ${certPath.doubleQuoted()}" }
           logger.info { "Reading privateKeyFilePath: ${keyPath.doubleQuoted()}" }
@@ -93,8 +93,8 @@ object TlsUtils : KLogging() {
     require(certPath.isNotEmpty()) { "Server certChainFilePath is required for TLS" }
     require(keyPath.isNotEmpty()) { "Server privateKeyFilePath is required for TLS" }
 
-    val certFile = File(certPath).apply { require(exists() && isFile()) { certPath.doesNotExistMsg() } }
-    val keyFile = File(keyPath).apply { require(exists() && isFile()) { keyPath.doesNotExistMsg() } }
+    val certFile = File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
+    val keyFile = File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
 
     logger.info { "Reading certChainFilePath: ${certPath.doubleQuoted()}" }
     logger.info { "Reading privateKeyFilePath: ${keyPath.doubleQuoted()}" }
@@ -104,7 +104,7 @@ object TlsUtils : KLogging() {
         if (trustPath.isNotEmpty()) {
           File(trustPath)
             .also { file ->
-              require(file.exists() && file.isFile()) { trustPath.doesNotExistMsg() }
+              require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
               logger.info { "Reading trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
               builder.trustManager(file)
               builder.clientAuth(ClientAuth.REQUIRE)

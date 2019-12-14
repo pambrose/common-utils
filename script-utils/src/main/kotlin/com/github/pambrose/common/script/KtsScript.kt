@@ -28,11 +28,11 @@ class KtsScript {
     return when {
       value.javaClass.kotlin.qualifiedName == null ->
         throw ScriptException("Variable ${name.doubleQuoted()} is a local or an anonymous class")
-      paramCnt > 0 && types.size == 0 -> {
+      paramCnt > 0 && types.isEmpty() -> {
         val plural = "parameter".pluralize(paramCnt)
         throw ScriptException("Expected $paramCnt type $plural to be specified for ${name.doubleQuoted()}")
       }
-      paramCnt == 0 && types.size > 0 -> {
+      paramCnt == 0 && types.isNotEmpty() -> {
         val plural = "parameter".pluralize(types.size)
         val found = params(name, types)
         throw ScriptException("Invalid type $plural $found specified for ${name.doubleQuoted()}")
