@@ -77,7 +77,7 @@ class StringExtensionTests {
     val s =
       "kjwkjfhwekfjhwwewewerrr cdsc  ##444445 wekfnkfn ew fwefwejfewkjfwef  qweqweqweqwe wef wef w ef wefwef ezzzzxdweere"
     val builder = StringBuilder()
-    repeat(1_000_000) { builder.append(s) }
+    repeat(100_000) { builder.append(s) }
     val g = builder.toString()
     g.zip().unzip() shouldEqual g
 
