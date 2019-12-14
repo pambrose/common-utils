@@ -16,7 +16,7 @@ data class TlsContext(val sslContext: SslContext?, val mutualAuth: Boolean) {
     if (sslContext == null)
       "plaintext"
     else
-      "TLS " + if (mutualAuth) "with mutual auth" else "(no mutual auth)"
+      "TLS ${if (mutualAuth) "with mutual auth" else "(no mutual auth)"}"
 
   companion object {
     val PLAINTEXT_CONTEXT = TlsContext(null, false)
