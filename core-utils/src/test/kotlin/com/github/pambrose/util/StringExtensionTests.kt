@@ -31,7 +31,7 @@ class StringExtensionTests {
 
   @Test
   fun lengthTests() {
-    repeat(10000000) { i -> i.length shouldEqual i.toString().length }
+    repeat(10_000_000) { i -> i.length shouldEqual i.toString().length }
     for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldEqual i.toString().length
 
     for (i in 0L..10000000L) i.length shouldEqual i.toString().length
