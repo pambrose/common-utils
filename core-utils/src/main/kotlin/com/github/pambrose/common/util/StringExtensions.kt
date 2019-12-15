@@ -43,40 +43,46 @@ fun String.doubleQuoted() = "\"$this\""
 
 fun String.pluralize(cnt: Int) = if (cnt == 1) this else "${this}s"
 
+private val EMPTY_BYTE_ARRAY = ByteArray(0)
+
 fun String.zip(): ByteArray {
-  require(isNotEmpty()) { "Cannot zip empty string" }
-  ByteArrayOutputStream()
-    .use { baos ->
-      GZIPOutputStream(baos)
-        .use { gzos ->
-          gzos.write(toByteArray(StandardCharsets.UTF_8))
-        }
-      return baos.toByteArray()
-    }
+  if (isEmpty())
+    return EMPTY_BYTE_ARRAY
+  else
+    ByteArrayOutputStream()
+      .use { baos ->
+        GZIPOutputStream(baos)
+          .use { gzos ->
+            gzos.write(toByteArray(StandardCharsets.UTF_8))
+          }
+        return baos.toByteArray()
+      }
 }
 
 fun ByteArray.isZipped() = this[0] == GZIP_MAGIC.toByte() && this[1] == (GZIP_MAGIC shr 8).toByte()
 
 fun ByteArray.unzip(): String {
-  require(size != 0) { "Cannot unzip empty byte array" }
-  if (!isZipped())
-    return String(this)
-
-  ByteArrayInputStream(this)
-    .use { bais ->
-      GZIPInputStream(bais)
-        .use { gzis ->
-          InputStreamReader(gzis, StandardCharsets.UTF_8)
-            .use { isReader ->
-              BufferedReader(isReader)
-                .use { bufferedReader ->
-                  val output = StringBuilder()
-                  var line: String?
-                  while (bufferedReader.readLine().also { line = it } != null)
-                    output.append(line)
-                  return output.toString()
+  when {
+    size == 0 -> return ""
+    !isZipped() -> return String(this)
+    else -> {
+      ByteArrayInputStream(this)
+        .use { bais ->
+          GZIPInputStream(bais)
+            .use { gzis ->
+              InputStreamReader(gzis, StandardCharsets.UTF_8)
+                .use { isReader ->
+                  BufferedReader(isReader)
+                    .use { bufferedReader ->
+                      val output = StringBuilder()
+                      var line: String?
+                      while (bufferedReader.readLine().also { line = it } != null)
+                        output.append(line)
+                      return output.toString()
+                    }
                 }
             }
         }
     }
+  }
 }

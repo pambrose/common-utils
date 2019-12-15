@@ -22,9 +22,7 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.*
-import org.amshove.kluent.invoking
 import org.amshove.kluent.shouldEqual
-import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 
 class StringExtensionTests {
@@ -80,8 +78,12 @@ class StringExtensionTests {
     repeat(100_000) { builder.append(s) }
     val g = builder.toString()
     g.zip().unzip() shouldEqual g
+  }
 
-    invoking { "".zip() } shouldThrow IllegalArgumentException::class
-    invoking { ByteArray(0).unzip() } shouldThrow IllegalArgumentException::class
+  @Test
+  fun empyStringZipTest() {
+    "".zip() shouldEqual ByteArray(0)
+    "".zip().unzip() shouldEqual ""
+    ByteArray(0).unzip() shouldEqual ""
   }
 }
