@@ -29,9 +29,8 @@ repositories {
 }
 
 subprojects {
-
     group 'com.github.pambrose.common-utils'
-    version '1.1.13'
+    version '1.1.14'
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
