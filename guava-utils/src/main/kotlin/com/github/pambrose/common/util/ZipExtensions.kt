@@ -10,19 +10,16 @@ import java.util.zip.GZIPOutputStream
 
 val EMPTY_BYTE_ARRAY = ByteArray(0)
 
-fun String.zip(): ByteArray {
+fun String.zip(): ByteArray =
   if (isEmpty())
-    return EMPTY_BYTE_ARRAY
+    EMPTY_BYTE_ARRAY
   else
-    ByteArrayOutputStream()
-      .use { baos ->
-        GZIPOutputStream(baos)
-          .use { gzos ->
-            gzos.write(toByteArray(StandardCharsets.UTF_8))
-          }
-        return baos.toByteArray()
+    ByteArrayOutputStream().use { baos ->
+      GZIPOutputStream(baos).use { gzos ->
+        gzos.write(toByteArray(StandardCharsets.UTF_8))
       }
-}
+      baos.toByteArray()
+    }
 
 fun ByteArray.isZipped() =
   this[0] == GZIPInputStream.GZIP_MAGIC.toByte() && this[1] == (GZIPInputStream.GZIP_MAGIC shr 8).toByte()
