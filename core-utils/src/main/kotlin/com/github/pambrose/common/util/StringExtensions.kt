@@ -43,7 +43,7 @@ fun String.doubleQuoted() = "\"$this\""
 
 fun String.pluralize(cnt: Int) = if (cnt == 1) this else "${this}s"
 
-private val EMPTY_BYTE_ARRAY = ByteArray(0)
+val EMPTY_BYTE_ARRAY = ByteArray(0)
 
 fun String.zip(): ByteArray {
   if (isEmpty())
