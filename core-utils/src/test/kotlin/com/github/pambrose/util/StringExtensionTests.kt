@@ -69,21 +69,4 @@ class StringExtensionTests {
     "car".pluralize(1) shouldEqual "car"
     "car".pluralize(2) shouldEqual "cars"
   }
-
-  @Test
-  fun zipTest() {
-    val s =
-      "kjwkjfhwekfjhwwewewerrr cdsc  ##444445 wekfnkfn ew fwefwejfewkjfwef  qweqweqweqwe wef wef w ef wefwef ezzzzxdweere"
-    val builder = StringBuilder()
-    repeat(100_000) { builder.append(s) }
-    val g = builder.toString()
-    g.zip().unzip() shouldEqual g
-  }
-
-  @Test
-  fun empyStringZipTest() {
-    "".zip() shouldEqual ByteArray(0)
-    "".zip().unzip() shouldEqual ""
-    ByteArray(0).unzip() shouldEqual ""
-  }
 }
