@@ -43,12 +43,10 @@ val hostInfo by lazy {
 
 fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.toLongMilliseconds())
 
-private val randomCharPool = ('a'..'z') + ('A'..'Z') + ('0'..'9')
-
-fun randomId(length: Int = 10): String =
+fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')) =
   (1..length)
-    .map { Random.nextInt(0, randomCharPool.size) }
-    .map { i -> randomCharPool[i] }
+    .map { Random.nextInt(0, charPool.size) }
+    .map { i -> charPool[i] }
     .joinToString("")
 
 fun repeatWithSleep(iterations: Int,

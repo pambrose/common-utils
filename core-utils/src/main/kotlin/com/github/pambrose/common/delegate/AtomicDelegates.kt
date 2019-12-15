@@ -22,6 +22,7 @@
 package com.github.pambrose.common.delegate
 
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.properties.ReadWriteProperty
@@ -38,6 +39,8 @@ object AtomicDelegates {
     SingleSetAtomicReferenceDelegate(initValue, compareValue)
 
   fun atomicBoolean(initValue: Boolean = false): ReadWriteProperty<Any?, Boolean> = AtomicBooleanDelegate(initValue)
+
+  fun atomicInteger(initValue: Int = -1): ReadWriteProperty<Any?, Int> = AtomicIntegerDelegate(initValue)
 
   fun atomicLong(initValue: Long = -1L): ReadWriteProperty<Any?, Long> = AtomicLongDelegate(initValue)
 }
@@ -80,6 +83,20 @@ private class AtomicBooleanDelegate(initValue: Boolean) : ReadWriteProperty<Any?
     thisRef: Any?,
     property: KProperty<*>,
     value: Boolean
+  ) = atomicVal.set(value)
+}
+
+private class AtomicIntegerDelegate(initValue: Int) : ReadWriteProperty<Any?, Int> {
+  private val atomicVal = AtomicInteger(initValue)
+  override operator fun getValue(
+    thisRef: Any?,
+    property: KProperty<*>
+  ) = atomicVal.get()
+
+  override operator fun setValue(
+    thisRef: Any?,
+    property: KProperty<*>,
+    value: Int
   ) = atomicVal.set(value)
 }
 

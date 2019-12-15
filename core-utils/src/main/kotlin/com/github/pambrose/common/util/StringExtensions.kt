@@ -21,6 +21,16 @@
 
 package com.github.pambrose.common.util
 
+import java.io.BufferedReader
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPInputStream.GZIP_MAGIC
+import java.util.zip.GZIPOutputStream
+
+
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
 fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
@@ -30,3 +40,43 @@ fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
 fun String.singleQuoted() = "'$this'"
 
 fun String.doubleQuoted() = "\"$this\""
+
+fun String.pluralize(cnt: Int) = if (cnt == 1) this else "${this}s"
+
+fun String.zip(): ByteArray {
+  require(isNotEmpty()) { "Cannot zip empty string" }
+  ByteArrayOutputStream()
+    .use { baos ->
+      GZIPOutputStream(baos)
+        .use { gzos ->
+          gzos.write(toByteArray(StandardCharsets.UTF_8))
+        }
+      return baos.toByteArray()
+    }
+}
+
+fun ByteArray.isZipped() = this[0] == GZIP_MAGIC.toByte() && this[1] == (GZIP_MAGIC shr 8).toByte()
+
+fun ByteArray.unzip(): String {
+  require(size != 0) { "Cannot unzip empty byte array" }
+  if (!isZipped())
+    return String(this)
+
+  ByteArrayInputStream(this)
+    .use { bais ->
+      GZIPInputStream(bais)
+        .use { gzis ->
+          InputStreamReader(gzis, StandardCharsets.UTF_8)
+            .use { isReader ->
+              BufferedReader(isReader)
+                .use { bufferedReader ->
+                  val output = StringBuilder()
+                  var line: String?
+                  while (bufferedReader.readLine().also { line = it } != null)
+                    output.append(line)
+                  return output.toString()
+                }
+            }
+        }
+    }
+}

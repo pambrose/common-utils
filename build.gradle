@@ -31,7 +31,7 @@ repositories {
 subprojects {
 
     group 'com.github.pambrose.common-utils'
-    version '1.1.11'
+    version '1.1.12'
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
@@ -44,21 +44,22 @@ subprojects {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    def loggingVersion = '1.7.8'
-    def kluentVersion = '1.58'
     def junitVersion = '5.5.2'
+    def kluentVersion = '1.58'
+    def loggingVersion = '1.7.8'
 
     ext {
-        def coroutinesVersion = '1.3.2'
-        def guavaVersion = '28.1-android'
+        def coroutinesVersion = '1.3.3'
+        def dropwizardVersion = '4.1.2'
         def grpcVersion = '1.25.0'
-        def nettyTcNativeVersion = '2.0.26.Final'
-        def dropwizardVersion = '4.1.1'
+        def guavaVersion = '28.1-jre'
         def jettyVersion = '9.4.22.v20191022'
-        def ktorVersion = '1.2.5'
+        def jnaVersion = "5.5.0"
+        def ktorVersion = '1.2.6'
+        def nettyTcNativeVersion = '2.0.26.Final'
         def prometheusVersion = '0.8.0'
-        def zipkinVersion = '5.9.1'
         def zipkenSenderVersion = '2.11.1'
+        def zipkinVersion = '5.9.1'
 
         libraries = [
                 reflect               : "org.jetbrains.kotlin:kotlin-reflect",
@@ -78,6 +79,13 @@ subprojects {
                 dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:${dropwizardVersion}",
                 dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:${dropwizardVersion}",
 
+                jna                   : "net.java.dev.jna:jna:${jnaVersion}",
+                jna_platform          : "net.java.dev.jna:jna-platform:${jnaVersion}",
+                script_util           : "org.jetbrains.kotlin:kotlin-script-util",
+                script_runtime        : "org.jetbrains.kotlin:kotlin-script-runtime",
+                kotlin_compiler       : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
+                kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",
+
                 jetty_server          : "org.eclipse.jetty:jetty-server:${jettyVersion}",
                 jetty_servlet         : "org.eclipse.jetty:jetty-servlet:${jettyVersion}",
 
@@ -96,8 +104,6 @@ subprojects {
     }
 
     dependencies {
-        //implementation platform("org.jetbrains.kotlin:kotlin-bom")
-
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
         implementation "io.github.microutils:kotlin-logging:${loggingVersion}"
@@ -110,15 +116,6 @@ subprojects {
     task sourcesJar(type: Jar, dependsOn: classes) {
         archiveClassifier = 'sources'
         from sourceSets.main.allSource
-    }
-
-    sourceSets {
-        main {
-            java {
-                srcDirs 'src/main/java'
-                srcDirs 'src/main/kotlin'
-            }
-        }
     }
 
     artifacts {
