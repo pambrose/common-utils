@@ -49,8 +49,8 @@ subprojects {
     def loggingVersion = '1.7.8'
 
     ext {
-        def coroutinesVersion = '1.3.2'
-        def dropwizardVersion = '4.1.1'
+        def coroutinesVersion = '1.3.3'
+        def dropwizardVersion = '4.1.2'
         def grpcVersion = '1.25.0'
         def guavaVersion = '28.1-jre'
         def jettyVersion = '9.4.22.v20191022'
