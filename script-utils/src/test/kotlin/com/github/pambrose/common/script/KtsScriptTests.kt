@@ -156,7 +156,7 @@ class KtsScriptTests {
       .apply {
         add("list", list, typeOf<Int?>())
 
-        println(varDecls)
+        varDecls.toString() shouldEqual "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
 
         list.size shouldEqual eval("list.size")
 
