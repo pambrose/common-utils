@@ -25,8 +25,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.request
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.HttpStatement
-import io.ktor.client.statement.readText
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.runBlocking
 
@@ -48,18 +48,18 @@ object KtorDsl {
 
   suspend fun HttpClient.get(url: String,
                              setUp: HttpRequestBuilder.() -> Unit = {},
-                             block: suspend (String) -> Unit) {
+                             block: suspend (HttpResponse) -> Unit) {
     val clientCall =
       request<HttpStatement>(url) {
         method = HttpMethod.Get
         setUp()
       }
-    clientCall.execute().also { resp -> block(resp.readText()) }
+    clientCall.execute().also { resp -> block(resp) }
   }
 
   fun blockingGet(url: String,
                   setUp: HttpRequestBuilder.() -> Unit = {},
-                  block: suspend (String) -> Unit) {
+                  block: suspend (HttpResponse) -> Unit) {
     runBlocking {
       http {
         get(url, setUp, block)
