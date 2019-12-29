@@ -22,10 +22,11 @@
 package com.github.pambrose.common.dsl
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.call
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.response.HttpResponse
+import io.ktor.client.request.request
+import io.ktor.client.statement.HttpStatement
+import io.ktor.client.statement.readText
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.runBlocking
 
@@ -47,16 +48,18 @@ object KtorDsl {
 
   suspend fun HttpClient.get(url: String,
                              setUp: HttpRequestBuilder.() -> Unit = {},
-                             block: suspend (HttpResponse) -> Unit) {
+                             block: suspend (String) -> Unit) {
     val clientCall =
-      call(url) {
+      request<HttpStatement>(url) {
         method = HttpMethod.Get
         setUp()
       }
-    clientCall.response.use { resp -> block(resp) }
+    clientCall.execute().also { resp -> block(resp.readText()) }
   }
 
-  fun blockingGet(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> Unit) {
+  fun blockingGet(url: String,
+                  setUp: HttpRequestBuilder.() -> Unit = {},
+                  block: suspend (String) -> Unit) {
     runBlocking {
       http {
         get(url, setUp, block)
