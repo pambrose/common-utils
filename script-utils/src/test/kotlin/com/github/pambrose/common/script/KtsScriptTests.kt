@@ -52,7 +52,7 @@ class KtsScriptTests {
   @Test
   fun valVarTest() {
     val intVal = 0
-    var intVar = 0
+    val intVar = 0
 
     KtsScript()
       .apply {
@@ -80,7 +80,7 @@ class KtsScriptTests {
 
         aux.i shouldEqual eval("aux.i")
 
-        val inc_ed =
+        val incEd =
           eval(
               """
           repeat(100) { aux.inc() }
@@ -89,7 +89,7 @@ class KtsScriptTests {
           ) as AuxClass
 
         aux.i shouldEqualTo 100
-        aux.i shouldEqualTo inc_ed.i
+        aux.i shouldEqualTo incEd.i
       }
   }
 
@@ -106,7 +106,7 @@ class KtsScriptTests {
         list.size shouldEqual eval("list.size")
         map.size shouldEqual eval("map.size")
 
-        val inc_ed =
+        val incEd =
           eval("""
           map["k2"] = 10
           repeat(100) { list.add(it) }
@@ -116,7 +116,7 @@ class KtsScriptTests {
 
         list.size shouldEqual 101
         list.size shouldEqual eval("list.size")
-        list.size shouldEqual inc_ed.size
+        list.size shouldEqual incEd.size
 
         map.size shouldEqual eval("map.size")
         map.size shouldEqual 2
@@ -134,7 +134,7 @@ class KtsScriptTests {
 
         list.size shouldEqual eval("list.size")
 
-        val inc_ed =
+        val incEd =
           eval(
               """
           repeat(100) { list.add(it) }
@@ -144,7 +144,7 @@ class KtsScriptTests {
 
         list.size shouldEqual 101
         list.size shouldEqual eval("list.size")
-        list.size shouldEqual inc_ed.size
+        list.size shouldEqual incEd.size
       }
   }
 
@@ -156,11 +156,11 @@ class KtsScriptTests {
       .apply {
         add("list", list, typeOf<Int?>())
 
-        varDecls.toString() shouldEqual "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
+        varDecls shouldEqual "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
 
         list.size shouldEqual eval("list.size")
 
-        val inc_ed =
+        val incEd =
           eval(
               """
           repeat(100) { list.add(null) }
@@ -170,7 +170,7 @@ class KtsScriptTests {
 
         list.size shouldEqual 100
         list.size shouldEqual eval("list.size")
-        list.size shouldEqual inc_ed.size
+        list.size shouldEqual incEd.size
       }
   }
 
