@@ -31,7 +31,7 @@ ext {
     def jettyVersion = '9.4.22.v20191022'
     def jnaVersion = "5.5.0"
     def ktorVersion = '1.3.0-rc2'
-    def nettyTcNativeVersion = '2.0.26.Final'
+    def nettyTcNativeVersion = '2.0.28.Final'
     def prometheusVersion = '0.8.0'
     def zipkenSenderVersion = '2.12.0'
     def zipkinVersion = '5.9.1'
@@ -96,7 +96,7 @@ allprojects {
 
 subprojects {
     def junitVersion = '5.5.2'
-    def kluentVersion = '1.58'
+    def kluentVersion = '1.59'
     def loggingVersion = '1.7.8'
 
     dependencies {
