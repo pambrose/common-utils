@@ -1,8 +1,7 @@
 package com.github.pambrose.common.script
 
 import org.amshove.kluent.invoking
-import org.amshove.kluent.shouldEqual
-import org.amshove.kluent.shouldEqualTo
+import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
@@ -32,20 +31,20 @@ class KtsScriptTests {
         add("floatVal", floatVal)
         add("strVal", strVal)
 
-        intVal shouldEqual eval("intVal")
-        intVal + 1 shouldEqual eval("intVal + 1")
+        intVal shouldBeEqualTo eval("intVal")
+        intVal + 1 shouldBeEqualTo eval("intVal + 1")
 
-        longVal shouldEqual eval("longVal")
-        longVal + 1 shouldEqual eval("longVal + 1")
+        longVal shouldBeEqualTo eval("longVal")
+        longVal + 1 shouldBeEqualTo eval("longVal + 1")
 
-        doubleVal shouldEqual eval("doubleVal")
-        doubleVal + 1 shouldEqual eval("doubleVal + 1")
+        doubleVal shouldBeEqualTo eval("doubleVal")
+        doubleVal + 1 shouldBeEqualTo eval("doubleVal + 1")
 
-        floatVal shouldEqual eval("floatVal")
-        floatVal + 1 shouldEqual eval("floatVal + 1")
+        floatVal shouldBeEqualTo eval("floatVal")
+        floatVal + 1 shouldBeEqualTo eval("floatVal + 1")
 
-        strVal shouldEqual eval("strVal")
-        strVal.length shouldEqual eval("strVal.length")
+        strVal shouldBeEqualTo eval("strVal")
+        strVal.length shouldBeEqualTo eval("strVal.length")
       }
   }
 
@@ -59,13 +58,13 @@ class KtsScriptTests {
         add("intVal", intVal)
         add("intVar", intVar)
 
-        intVal shouldEqual eval("intVal")
-        intVal + 1 shouldEqual eval("intVal + 1")
-        intVal shouldEqual 0
+        intVal shouldBeEqualTo eval("intVal")
+        intVal + 1 shouldBeEqualTo eval("intVal + 1")
+        intVal shouldBeEqualTo 0
 
-        intVar shouldEqual eval("intVar")
-        intVar + 1 shouldEqual eval("intVar + 1")
-        intVar shouldEqual 0
+        intVar shouldBeEqualTo eval("intVar")
+        intVar + 1 shouldBeEqualTo eval("intVar + 1")
+        intVar shouldBeEqualTo 0
       }
   }
 
@@ -78,7 +77,7 @@ class KtsScriptTests {
 
         add("aux", aux)
 
-        aux.i shouldEqual eval("aux.i")
+        aux.i shouldBeEqualTo eval("aux.i")
 
         val incEd =
           eval(
@@ -88,8 +87,8 @@ class KtsScriptTests {
         """
           ) as AuxClass
 
-        aux.i shouldEqualTo 100
-        aux.i shouldEqualTo incEd.i
+        aux.i shouldBeEqualTo 100
+        aux.i shouldBeEqualTo incEd.i
       }
   }
 
@@ -103,8 +102,8 @@ class KtsScriptTests {
         add("list", list, typeOf<Int>())
         add("map", map, typeOf<String>(), typeOf<Int>())
 
-        list.size shouldEqual eval("list.size")
-        map.size shouldEqual eval("map.size")
+        list.size shouldBeEqualTo eval("list.size")
+        map.size shouldBeEqualTo eval("map.size")
 
         val incEd =
           eval("""
@@ -114,13 +113,13 @@ class KtsScriptTests {
         """
           ) as List<*>
 
-        list.size shouldEqual 101
-        list.size shouldEqual eval("list.size")
-        list.size shouldEqual incEd.size
+        list.size shouldBeEqualTo 101
+        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBeEqualTo incEd.size
 
-        map.size shouldEqual eval("map.size")
-        map.size shouldEqual 2
-        map["k2"] shouldEqual 10
+        map.size shouldBeEqualTo eval("map.size")
+        map.size shouldBeEqualTo 2
+        map["k2"] shouldBeEqualTo 10
       }
   }
 
@@ -132,7 +131,7 @@ class KtsScriptTests {
       .apply {
         add("list", list, typeOf<Int>())
 
-        list.size shouldEqual eval("list.size")
+        list.size shouldBeEqualTo eval("list.size")
 
         val incEd =
           eval(
@@ -142,9 +141,9 @@ class KtsScriptTests {
         """
           ) as List<*>
 
-        list.size shouldEqual 101
-        list.size shouldEqual eval("list.size")
-        list.size shouldEqual incEd.size
+        list.size shouldBeEqualTo 101
+        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBeEqualTo incEd.size
       }
   }
 
@@ -156,9 +155,9 @@ class KtsScriptTests {
       .apply {
         add("list", list, typeOf<Int?>())
 
-        varDecls shouldEqual "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
+        varDecls shouldBeEqualTo "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
 
-        list.size shouldEqual eval("list.size")
+        list.size shouldBeEqualTo eval("list.size")
 
         val incEd =
           eval(
@@ -168,9 +167,9 @@ class KtsScriptTests {
         """
           ) as List<*>
 
-        list.size shouldEqual 100
-        list.size shouldEqual eval("list.size")
-        list.size shouldEqual incEd.size
+        list.size shouldBeEqualTo 100
+        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBeEqualTo incEd.size
       }
   }
 

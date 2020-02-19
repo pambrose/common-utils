@@ -22,51 +22,51 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.*
-import org.amshove.kluent.shouldEqual
+import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 
 class StringExtensionTests {
 
   @Test
   fun lengthTests() {
-    repeat(10_000_000) { i -> i.length shouldEqual i.toString().length }
-    for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldEqual i.toString().length
+    repeat(10_000_000) { i -> i.length shouldBeEqualTo i.toString().length }
+    for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldBeEqualTo i.toString().length
 
-    for (i in 0L..10000000L) i.length shouldEqual i.toString().length
-    for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldEqual i.toString().length
+    for (i in 0L..10000000L) i.length shouldBeEqualTo i.toString().length
+    for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldBeEqualTo i.toString().length
   }
 
   @Test
   fun quoteTests() {
-    "".isSingleQuoted() shouldEqual false
-    "".isDoubleQuoted() shouldEqual false
-    "".isQuoted() shouldEqual false
+    "".isSingleQuoted() shouldBeEqualTo false
+    "".isDoubleQuoted() shouldBeEqualTo false
+    "".isQuoted() shouldBeEqualTo false
 
-    " ".isSingleQuoted() shouldEqual false
-    " ".isDoubleQuoted() shouldEqual false
-    " ".isQuoted() shouldEqual false
+    " ".isSingleQuoted() shouldBeEqualTo false
+    " ".isDoubleQuoted() shouldBeEqualTo false
+    " ".isQuoted() shouldBeEqualTo false
 
-    "'".isSingleQuoted() shouldEqual false
-    "'".isDoubleQuoted() shouldEqual false
-    "'".isQuoted() shouldEqual false
+    "'".isSingleQuoted() shouldBeEqualTo false
+    "'".isDoubleQuoted() shouldBeEqualTo false
+    "'".isQuoted() shouldBeEqualTo false
 
-    """ " """.isSingleQuoted() shouldEqual false
-    """ " """.isDoubleQuoted() shouldEqual false
-    """ " """.isQuoted() shouldEqual false
+    """ " """.isSingleQuoted() shouldBeEqualTo false
+    """ " """.isDoubleQuoted() shouldBeEqualTo false
+    """ " """.isQuoted() shouldBeEqualTo false
 
-    """ "" """.isSingleQuoted() shouldEqual false
-    """ "" """.isDoubleQuoted() shouldEqual true
-    """ "" """.isQuoted() shouldEqual true
+    """ "" """.isSingleQuoted() shouldBeEqualTo false
+    """ "" """.isDoubleQuoted() shouldBeEqualTo true
+    """ "" """.isQuoted() shouldBeEqualTo true
 
-    "''".isSingleQuoted() shouldEqual true
-    "''".isDoubleQuoted() shouldEqual false
-    "''".isQuoted() shouldEqual true
+    "''".isSingleQuoted() shouldBeEqualTo true
+    "''".isDoubleQuoted() shouldBeEqualTo false
+    "''".isQuoted() shouldBeEqualTo true
   }
 
   @Test
   fun pluralTest() {
-    "car".pluralize(0) shouldEqual "cars"
-    "car".pluralize(1) shouldEqual "car"
-    "car".pluralize(2) shouldEqual "cars"
+    "car".pluralize(0) shouldBeEqualTo "cars"
+    "car".pluralize(1) shouldBeEqualTo "car"
+    "car".pluralize(2) shouldBeEqualTo "cars"
   }
 }

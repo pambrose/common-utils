@@ -22,19 +22,19 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.typeParameterCount
-import org.amshove.kluent.shouldEqual
+import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 
 class ReflectExtensionTests {
 
   @Test
   fun tyeParamCountTest() {
-    4.typeParameterCount shouldEqual 0
-    "dd".typeParameterCount shouldEqual 0
-    listOf(3).typeParameterCount shouldEqual 1
-    mapOf(3 to "d").typeParameterCount shouldEqual 2
-    mutableMapOf("k1" to 1).typeParameterCount shouldEqual 2
-    arrayOf(4).typeParameterCount shouldEqual 1
-    (IntArray(1) { 2 }).typeParameterCount shouldEqual 0
+    4.typeParameterCount shouldBeEqualTo 0
+    "dd".typeParameterCount shouldBeEqualTo 0
+    listOf(3).typeParameterCount shouldBeEqualTo 1
+    mapOf(3 to "d").typeParameterCount shouldBeEqualTo 2
+    mutableMapOf("k1" to 1).typeParameterCount shouldBeEqualTo 2
+    arrayOf(4).typeParameterCount shouldBeEqualTo 1
+    (IntArray(1) { 2 }).typeParameterCount shouldBeEqualTo 0
   }
 }
