@@ -24,7 +24,7 @@ package com.github.pambrose.common.concurrent
 import com.google.common.util.concurrent.Monitor
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.time.Duration
-import kotlin.time.MonoClock
+import kotlin.time.TimeSource.Monotonic
 import kotlin.time.seconds
 
 typealias MonitorAction = () -> Boolean
@@ -106,7 +106,7 @@ abstract class GenericMonitor {
     waitUntilTrue(timeout, (-1).seconds, block)
 
   fun waitUntilTrue(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
-    val start = MonoClock.markNow()
+    val start = Monotonic.markNow()
     while (true) {
       when {
         waitUntilTrue(timeout) -> return true
@@ -127,7 +127,7 @@ abstract class GenericMonitor {
 
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
-    val start = MonoClock.markNow()
+    val start = Monotonic.markNow()
     while (true) {
       when {
         waitUntilTrueWithInterruption(timeout) -> return true
@@ -146,7 +146,7 @@ abstract class GenericMonitor {
     waitUntilFalse(timeout, (-1).seconds, block)
 
   fun waitUntilFalse(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
-    val start = MonoClock.markNow()
+    val start = Monotonic.markNow()
     while (true) {
       when {
         waitUntilFalse(timeout) -> return true

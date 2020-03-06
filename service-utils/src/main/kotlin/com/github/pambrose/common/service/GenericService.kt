@@ -45,7 +45,7 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import mu.KLogging
 import java.io.Closeable
-import kotlin.time.MonoClock
+import kotlin.time.TimeSource.Monotonic
 
 abstract class GenericService<T>
 protected constructor(val configVals: T,
@@ -55,7 +55,7 @@ protected constructor(val configVals: T,
                       private val versionBlock: () -> String = { "No version" },
                       val isTestMode: Boolean = false) : GenericExecutionThreadService(), Closeable {
 
-  protected val startTime = MonoClock.markNow()
+  protected val startTime = Monotonic.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
   protected val services = mutableListOf<Service>()
