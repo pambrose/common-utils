@@ -22,7 +22,7 @@
 package com.github.pambrose.time
 
 import com.github.pambrose.common.time.timeUnitToDuration
-import org.amshove.kluent.shouldEqual
+import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
 import kotlin.time.*
@@ -32,13 +32,13 @@ class TimeTests {
   @Test
   fun conversionTest() {
     repeat(100) { i ->
-      timeUnitToDuration(i.toLong(), TimeUnit.MICROSECONDS) shouldEqual i.microseconds
-      timeUnitToDuration(i.toLong(), TimeUnit.NANOSECONDS) shouldEqual i.nanoseconds
-      timeUnitToDuration(i.toLong(), TimeUnit.MILLISECONDS) shouldEqual i.milliseconds
-      timeUnitToDuration(i.toLong(), TimeUnit.SECONDS) shouldEqual i.seconds
-      timeUnitToDuration(i.toLong(), TimeUnit.MINUTES) shouldEqual i.minutes
-      timeUnitToDuration(i.toLong(), TimeUnit.HOURS) shouldEqual i.hours
-      timeUnitToDuration(i.toLong(), TimeUnit.DAYS) shouldEqual i.days
+      timeUnitToDuration(i.toLong(), TimeUnit.MICROSECONDS) shouldBeEqualTo i.microseconds
+      timeUnitToDuration(i.toLong(), TimeUnit.NANOSECONDS) shouldBeEqualTo i.nanoseconds
+      timeUnitToDuration(i.toLong(), TimeUnit.MILLISECONDS) shouldBeEqualTo i.milliseconds
+      timeUnitToDuration(i.toLong(), TimeUnit.SECONDS) shouldBeEqualTo i.seconds
+      timeUnitToDuration(i.toLong(), TimeUnit.MINUTES) shouldBeEqualTo i.minutes
+      timeUnitToDuration(i.toLong(), TimeUnit.HOURS) shouldBeEqualTo i.hours
+      timeUnitToDuration(i.toLong(), TimeUnit.DAYS) shouldBeEqualTo i.days
     }
   }
 }
