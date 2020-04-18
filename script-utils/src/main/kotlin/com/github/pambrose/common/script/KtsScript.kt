@@ -1,7 +1,7 @@
 package com.github.pambrose.common.script
 
-import com.github.pambrose.common.util.doubleQuoted
 import com.github.pambrose.common.util.pluralize
+import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
 import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import java.util.concurrent.atomic.AtomicBoolean
@@ -27,23 +27,23 @@ class KtsScript {
     val paramCnt = value.typeParameterCount
     return when {
       value.javaClass.kotlin.qualifiedName == null ->
-        throw ScriptException("Variable ${name.doubleQuoted()} is a local or an anonymous class")
+        throw ScriptException("Variable ${name.toDoubleQuoted()} is a local or an anonymous class")
 
       paramCnt > 0 && types.isEmpty() -> {
         val plural = "parameter".pluralize(paramCnt)
-        throw ScriptException("Expected $paramCnt type $plural to be specified for ${name.doubleQuoted()}")
+        throw ScriptException("Expected $paramCnt type $plural to be specified for ${name.toDoubleQuoted()}")
       }
 
       paramCnt == 0 && types.isNotEmpty() -> {
         val plural = "parameter".pluralize(types.size)
         val found = params(name, types)
-        throw ScriptException("Invalid type $plural $found specified for ${name.doubleQuoted()}")
+        throw ScriptException("Invalid type $plural $found specified for ${name.toDoubleQuoted()}")
       }
 
       paramCnt != types.size -> {
         val plural = "parameter".pluralize(paramCnt)
         val found = "${types.size}: ${params(name, types)}"
-        throw ScriptException("Expected $paramCnt type $plural for ${name.doubleQuoted()} but found $found")
+        throw ScriptException("Expected $paramCnt type $plural for ${name.toDoubleQuoted()} but found $found")
       }
 
       else -> {
@@ -67,7 +67,7 @@ class KtsScript {
         val kotlinClazz = entry.value.javaClass.kotlin
         val kotlinQualified = kotlinClazz.qualifiedName!!
         val type = kotlinQualified.removePrefix("kotlin.")
-        assigns += "val $name = bindings[${name.doubleQuoted()}] as $type${params(name)}"
+        assigns += "val $name = bindings[${name.toDoubleQuoted()}] as $type${params(name)}"
       }
 
       return assigns.joinToString("\n")

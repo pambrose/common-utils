@@ -1,6 +1,6 @@
 package com.github.pambrose.common.utils
 
-import com.github.pambrose.common.util.doubleQuoted
+import com.github.pambrose.common.util.toDoubleQuoted
 import io.grpc.netty.GrpcSslContexts
 import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContext
@@ -24,7 +24,7 @@ data class TlsContext(val sslContext: SslContext?, val mutualAuth: Boolean) {
 }
 
 object TlsUtils : KLogging() {
-  private fun String.doesNotExistMsg() = "File ${doubleQuoted()} does not exist"
+  private fun String.doesNotExistMsg() = "File ${toDoubleQuoted()} does not exist"
 
   @Throws(SSLException::class)
   fun buildClientTlsContext(certChainFilePath: String = "",
@@ -50,7 +50,7 @@ object TlsUtils : KLogging() {
         File(trustPath)
           .also { file ->
             require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
-            logger.info { "Reading trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
+            logger.info { "Reading trustCertCollectionFilePath: ${trustPath.toDoubleQuoted()}" }
             builder.trustManager(file)
           }
 
@@ -64,8 +64,8 @@ object TlsUtils : KLogging() {
           val certFile = File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
           val keyFile = File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
 
-          logger.info { "Reading certChainFilePath: ${certPath.doubleQuoted()}" }
-          logger.info { "Reading privateKeyFilePath: ${keyPath.doubleQuoted()}" }
+          logger.info { "Reading certChainFilePath: ${certPath.toDoubleQuoted()}" }
+          logger.info { "Reading privateKeyFilePath: ${keyPath.toDoubleQuoted()}" }
 
           builder.keyManager(certFile, keyFile)
         }
@@ -96,8 +96,8 @@ object TlsUtils : KLogging() {
     val certFile = File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
     val keyFile = File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
 
-    logger.info { "Reading certChainFilePath: ${certPath.doubleQuoted()}" }
-    logger.info { "Reading privateKeyFilePath: ${keyPath.doubleQuoted()}" }
+    logger.info { "Reading certChainFilePath: ${certPath.toDoubleQuoted()}" }
+    logger.info { "Reading privateKeyFilePath: ${keyPath.toDoubleQuoted()}" }
 
     return SslContextBuilder.forServer(certFile, keyFile)
       .let { builder ->
@@ -105,7 +105,7 @@ object TlsUtils : KLogging() {
           File(trustPath)
             .also { file ->
               require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
-              logger.info { "Reading trustCertCollectionFilePath: ${trustPath.doubleQuoted()}" }
+              logger.info { "Reading trustCertCollectionFilePath: ${trustPath.toDoubleQuoted()}" }
               builder.trustManager(file)
               builder.clientAuth(ClientAuth.REQUIRE)
             }
