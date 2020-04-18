@@ -64,9 +64,21 @@ class StringExtensionTests {
   }
 
   @Test
+  fun convertTest() {
+    "".singleToDoubleQuoted() shouldBeEqualTo ""
+    "'".singleToDoubleQuoted() shouldBeEqualTo "'"
+    "'test'".singleToDoubleQuoted() shouldBeEqualTo """"test""""
+    """'te"st'""".singleToDoubleQuoted() shouldBeEqualTo """"te"st""""
+    """"test"""".singleToDoubleQuoted() shouldBeEqualTo """"test""""
+  }
+
+  @Test
   fun pluralTest() {
     "car".pluralize(0) shouldBeEqualTo "cars"
     "car".pluralize(1) shouldBeEqualTo "car"
     "car".pluralize(2) shouldBeEqualTo "cars"
+
+    "ski".pluralize(1, "es") shouldBeEqualTo "ski"
+    "ski".pluralize(2, "es") shouldBeEqualTo "skies"
   }
 }

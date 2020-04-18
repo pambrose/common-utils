@@ -21,15 +21,20 @@
 
 package com.github.pambrose.common.util
 
-
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
 fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
 
 fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
 
-fun String.singleQuoted() = "'$this'"
+fun String.toSingleQuoted() = "'$this'"
 
-fun String.doubleQuoted() = "\"$this\""
+fun String.toDoubleQuoted() = "\"$this\""
 
-fun String.pluralize(cnt: Int) = if (cnt == 1) this else "${this}s"
+fun String.pluralize(cnt: Int, suffix: String = "s") = if (cnt == 1) this else "$this$suffix"
+
+fun String.singleToDoubleQuoted() =
+  when {
+    !isSingleQuoted() -> this
+    else -> subSequence(1, length - 1).replace(Regex("\""), "\\\"").toDoubleQuoted()
+  }
