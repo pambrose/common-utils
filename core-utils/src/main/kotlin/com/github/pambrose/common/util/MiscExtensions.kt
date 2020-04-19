@@ -35,3 +35,5 @@ val Throwable.stackTraceAsString: String
 
 val <T : Any> T.simpleClassName: String
   get() = this::class.simpleName ?: "None"
+
+fun <T> Iterable<T>.toCsv() = joinToString(", ")
