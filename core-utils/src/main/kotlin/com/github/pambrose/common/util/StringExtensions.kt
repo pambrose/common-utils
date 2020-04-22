@@ -38,3 +38,5 @@ fun String.singleToDoubleQuoted() =
     !isSingleQuoted() -> this
     else -> subSequence(1, length - 1).replace(Regex("\""), "\\\"").toDoubleQuoted()
   }
+
+fun String.ensureSuffix(suffix: String) = if (this.endsWith(suffix)) this else this + suffix
