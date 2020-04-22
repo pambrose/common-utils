@@ -21,6 +21,9 @@
 
 package com.github.pambrose.common.util
 
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
 fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
@@ -40,3 +43,5 @@ fun String.singleToDoubleQuoted() =
   }
 
 fun String.ensureSuffix(suffix: String) = if (this.endsWith(suffix)) this else this + suffix
+
+fun String.decode() = URLDecoder.decode(this, StandardCharsets.UTF_8.toString()) ?: this
