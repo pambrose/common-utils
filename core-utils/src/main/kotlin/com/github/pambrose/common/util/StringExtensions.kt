@@ -43,3 +43,8 @@ fun String.singleToDoubleQuoted() =
 fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else this + suffix
 
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
+
+fun List<String>.toPath(addTrailingSeparator: Boolean = true, separator: CharSequence = "/") =
+  mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
+    .mapIndexed { i, s -> if (i < size - 1 || addTrailingSeparator) s.ensureSuffix(separator) else s }
+    .joinToString("")
