@@ -1,19 +1,17 @@
 /*
+ * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
  *
- *  Copyright © 2019 Paul Ambrose (pambrose@mac.com)
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -22,7 +20,7 @@
 package com.github.pambrose.common.util
 
 import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets.UTF_8
 
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
@@ -42,6 +40,6 @@ fun String.singleToDoubleQuoted() =
     else -> subSequence(1, length - 1).replace(Regex("\""), "\\\"").toDoubleQuoted()
   }
 
-fun String.ensureSuffix(suffix: String) = if (this.endsWith(suffix)) this else this + suffix
+fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else this + suffix
 
-fun String.decode() = URLDecoder.decode(this, StandardCharsets.UTF_8.toString()) ?: this
+fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
