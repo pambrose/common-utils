@@ -48,3 +48,26 @@ fun List<String>.toPath(addTrailingSeparator: Boolean = true, separator: CharSeq
   mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
     .mapIndexed { i, s -> if (i < size - 1 || addTrailingSeparator) s.ensureSuffix(separator) else s }
     .joinToString("")
+
+fun String.firstLineNumberOf(regex: Regex) = split("\n").firstLineNumberOf(regex)
+
+fun List<String>.firstLineNumberOf(regex: Regex) =
+  asSequence()
+    .mapIndexed { i, str -> i to str }
+    .filter { it.second.contains(regex) }
+    .map { it.first }
+    .firstOrNull() ?: -1
+
+fun String.lastLineNumberOf(regex: Regex) = split("\n").lastLineNumberOf(regex)
+
+fun List<String>.lastLineNumberOf(regex: Regex) =
+  mapIndexed { i, str -> i to str }
+    .asReversed()
+    .asSequence()
+    .filter { it.second.contains(regex) }
+    .map { it.first }
+    .firstOrNull() ?: -1
+
+fun String.linesBetween(start: Regex, end: Regex) = split("\n").linesBetween(start, end)
+
+fun List<String>.linesBetween(start: Regex, end: Regex) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))

@@ -79,4 +79,55 @@ class StringExtensionTests {
     "ski".pluralize(1, "es") shouldBeEqualTo "ski"
     "ski".pluralize(2, "es") shouldBeEqualTo "skies"
   }
+
+  @Test
+  fun testPaths() {
+
+    listOf("a", "b", "c").toPath() shouldBeEqualTo "a/b/c/"
+    listOf("/a", "/b", "c").toPath() shouldBeEqualTo "/a/b/c/"
+
+    listOf("a", "b", "c").toPath(false) shouldBeEqualTo "a/b/c"
+    listOf("a/", "/b/", "c").toPath(false) shouldBeEqualTo "a/b/c"
+    listOf("/a/", "/b/", "c").toPath(false) shouldBeEqualTo "/a/b/c"
+    listOf("/a/", "/b/", "/c").toPath(false) shouldBeEqualTo "/a/b/c"
+  }
+
+  @Test
+  fun testLineIndexes() {
+    val s = """
+      aaa
+      bbb
+      ccc
+      ddd
+      eee
+      aaa
+      bbb
+      ccc
+      ddd
+      eee
+    """.trimIndent()
+
+    s.firstLineNumberOf(Regex("zzz")) shouldBeEqualTo -1
+    s.firstLineNumberOf(Regex("bbb")) shouldBeEqualTo 1
+
+    s.lastLineNumberOf(Regex("zzz")) shouldBeEqualTo -1
+    s.lastLineNumberOf(Regex("bbb")) shouldBeEqualTo 6
+  }
+
+  @Test
+  fun testLinesBetween() {
+    val s = """
+      aaa
+      bbb
+      ccc
+      aaa
+      bbb
+      ccc
+    """.trimIndent()
+
+    s.linesBetween(Regex("aaa"), Regex("ccc")) shouldBeEqualTo listOf("bbb", "ccc", "aaa", "bbb")
+    s.linesBetween(Regex("ccc"), Regex("bbb")) shouldBeEqualTo listOf("aaa")
+    s.linesBetween(Regex("ccc"), Regex("aaa")) shouldBeEqualTo listOf()
+  }
+
 }
