@@ -94,7 +94,7 @@ allprojects {
 
 subprojects {
     def junitVersion = '5.6.1'
-    def kluentVersion = '1.60'
+    def kluentVersion = '1.61'
     def loggingVersion = '1.7.9'
 
     dependencies {
