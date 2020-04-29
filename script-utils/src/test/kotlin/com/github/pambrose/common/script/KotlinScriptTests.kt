@@ -24,7 +24,13 @@ import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 
-class PyScriptTests {
+class AuxClass(var i: Int = 0) {
+  fun inc() {
+    i++
+  }
+}
+
+class KotlinScriptTests {
 
   @Test
   fun builtInTypesTest() {
@@ -35,7 +41,7 @@ class PyScriptTests {
     val floatVal = 0.0F
     val strVal = "A String"
 
-    PyScript()
+    KotlinScript()
       .apply {
         add("boolVal", boolVal)
         add("intVal", intVal)
@@ -45,22 +51,22 @@ class PyScriptTests {
         add("strVal", strVal)
 
         boolVal shouldBeEqualTo eval("boolVal")
-        !boolVal shouldBeEqualTo eval("not boolVal")
+        !boolVal shouldBeEqualTo eval("!boolVal")
 
         intVal shouldBeEqualTo eval("intVal")
         intVal + 1 shouldBeEqualTo eval("intVal + 1")
 
-        longVal.toBigInteger() shouldBeEqualTo eval("longVal")
-        (longVal + 1).toBigInteger() shouldBeEqualTo eval("longVal + 1")
+        longVal shouldBeEqualTo eval("longVal")
+        longVal + 1 shouldBeEqualTo eval("longVal + 1")
 
         doubleVal shouldBeEqualTo eval("doubleVal")
         doubleVal + 1 shouldBeEqualTo eval("doubleVal + 1")
 
-        floatVal.toDouble() shouldBeEqualTo eval("floatVal")
-        floatVal.toDouble() + 1 shouldBeEqualTo eval("floatVal + 1")
+        floatVal shouldBeEqualTo eval("floatVal")
+        floatVal + 1 shouldBeEqualTo eval("floatVal + 1")
 
         strVal shouldBeEqualTo eval("strVal")
-        strVal.length shouldBeEqualTo eval("len(strVal)")
+        strVal.length shouldBeEqualTo eval("strVal.length")
       }
   }
 
@@ -69,7 +75,7 @@ class PyScriptTests {
     val intVal = 0
     val intVar = 0
 
-    PyScript()
+    KotlinScript()
       .apply {
         add("intVal", intVal)
         add("intVar", intVar)
@@ -88,20 +94,22 @@ class PyScriptTests {
   fun userObjectTest() {
     val aux = AuxClass()
 
-    PyScript()
+    KotlinScript()
       .apply {
 
         add("aux", aux)
 
         aux.i shouldBeEqualTo eval("aux.i")
 
-        eval("""
-                for i in range(100):
-                  aux.inc()
-              """.trimIndent()
-        )
+        val incEd =
+          eval("""
+                repeat(100) { aux.inc() }
+                aux
+              """
+          ) as AuxClass
 
         aux.i shouldBeEqualTo 100
+        aux.i shouldBeEqualTo incEd.i
       }
   }
 
@@ -110,25 +118,27 @@ class PyScriptTests {
     val list = mutableListOf(1)
     val map = mutableMapOf("k1" to 1)
 
-    PyScript()
+    KotlinScript()
       .apply {
         add("list", list, typeOf<Int>())
         add("map", map, typeOf<String>(), typeOf<Int>())
 
-        list.size shouldBeEqualTo eval("len(list)")
-        map.size shouldBeEqualTo eval("len(map)")
+        list.size shouldBeEqualTo eval("list.size")
+        map.size shouldBeEqualTo eval("map.size")
 
-        eval("""
+        val incEd =
+          eval("""
                 map["k2"] = 10
-                for i in range(100):
-                  list.add(i)
-              """.trimIndent()
-        )
+                repeat(100) { list.add(it) }
+                list
+              """
+          ) as List<*>
 
         list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBeEqualTo incEd.size
 
-        map.size shouldBeEqualTo eval("len(map)")
+        map.size shouldBeEqualTo eval("map.size")
         map.size shouldBeEqualTo 2
         map["k2"] shouldBeEqualTo 10
       }
@@ -138,20 +148,22 @@ class PyScriptTests {
   fun objectWithKTypeTest() {
     val list = mutableListOf(1)
 
-    PyScript()
+    KotlinScript()
       .apply {
         add("list", list, typeOf<Int>())
 
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size")
 
-        eval("""
-                for i in range(100):
-                  list.add(i)
-              """.trimIndent()
-        )
+        val incEd =
+          eval("""
+                repeat(100) { list.add(it) }
+                list
+              """
+          ) as List<*>
 
         list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBeEqualTo incEd.size
       }
   }
 
@@ -159,20 +171,24 @@ class PyScriptTests {
   fun nullObjectTest() {
     val list = mutableListOf<Int?>()
 
-    PyScript()
+    KotlinScript()
       .apply {
         add("list", list, typeOf<Int?>())
 
-        list.size shouldBeEqualTo eval("len(list)")
+        varDecls shouldBeEqualTo "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
 
-        eval("""
-                for i in range(100):
-                  list.add(None)
-              """.trimIndent()
-        )
+        list.size shouldBeEqualTo eval("list.size")
+
+        val incEd =
+          eval("""
+                repeat(100) { list.add(null) }
+                list
+              """
+          ) as List<*>
 
         list.size shouldBeEqualTo 100
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBeEqualTo incEd.size
       }
   }
 
@@ -182,7 +198,7 @@ class PyScriptTests {
 
     val inner = InnerTest()
 
-    PyScript()
+    KotlinScript()
       .apply {
         invoking { add("inner", inner) } shouldThrow ScriptException::class
       }
@@ -192,7 +208,7 @@ class PyScriptTests {
   fun unnecessaryParamsTest() {
     val value = 5
 
-    PyScript()
+    KotlinScript()
       .apply {
         invoking { add("value", value, typeOf<Int?>()) } shouldThrow ScriptException::class
       }
@@ -202,7 +218,7 @@ class PyScriptTests {
   fun unmatchedParamsTest() {
     val list = mutableListOf(1)
 
-    PyScript()
+    KotlinScript()
       .apply {
         invoking { add("list", list, typeOf<Int?>(), typeOf<Int>()) } shouldThrow ScriptException::class
       }
@@ -211,7 +227,8 @@ class PyScriptTests {
   @Test
   fun missingCollectionTypeTest() {
     val list = mutableListOf(1)
-    PyScript()
+
+    KotlinScript()
       .apply {
         invoking { add("list", list) } shouldThrow ScriptException::class
       }
@@ -219,7 +236,7 @@ class PyScriptTests {
 
   @Test
   fun invalidSyntaxTest() {
-    PyScript()
+    KotlinScript()
       .apply {
         invoking { eval("junk") } shouldThrow ScriptException::class
       }
@@ -227,11 +244,10 @@ class PyScriptTests {
 
   @Test
   fun illegalCallsTest() {
-    PyScript()
+    KotlinScript()
       .apply {
-        invoking { eval("sys.exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("quit(1)") } shouldThrow ScriptException::class
+        invoking { eval("System.exit(1)") } shouldThrow ScriptException::class
+        invoking { eval("com.lang.System.exit(1)") } shouldThrow ScriptException::class
       }
   }
 }

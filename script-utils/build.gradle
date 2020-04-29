@@ -30,7 +30,6 @@ dependencies {
     implementation libraries.kotlin_compiler
 
     runtime libraries.kotlin_scripting
-
 }
 
 compileKotlin {

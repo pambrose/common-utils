@@ -19,16 +19,7 @@ package com.github.pambrose.common.script
 
 import javax.script.ScriptException
 
-class PyScript : AbstractScript("py") {
-
-  internal fun assignBindings() {
-    valueMap.forEach { (name, value) ->
-      //val kotlinClazz = value.javaClass.kotlin
-      //val kotlinQualified = kotlinClazz.qualifiedName!!
-      //val type = kotlinQualified.removePrefix("kotlin.")
-      bindings.put(name, value)
-    }
-  }
+class PythonScript : AbstractScript("py") {
 
   @Synchronized
   fun eval(code: String): Any? {
@@ -43,7 +34,7 @@ class PyScript : AbstractScript("py") {
       throw ScriptException("Illegal call to quit()")
 
     if (!initialized.get()) {
-      assignBindings()
+      valueMap.forEach { (name, value) -> bindings.put(name, value) }
       initialized.set(true)
     }
 

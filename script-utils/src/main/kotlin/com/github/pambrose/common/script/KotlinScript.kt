@@ -23,7 +23,7 @@ import javax.script.ScriptException
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 
-class KtsScript : AbstractScript("kts") {
+class KotlinScript : AbstractScript("kts") {
   private val imports = mutableListOf("import ${System::class.qualifiedName}")
 
   val varDecls: String
