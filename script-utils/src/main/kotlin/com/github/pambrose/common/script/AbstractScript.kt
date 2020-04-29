@@ -28,10 +28,10 @@ import javax.script.SimpleBindings
 import kotlin.reflect.KType
 
 abstract class AbstractScript(extension: String) {
+  private val manager = ScriptEngineManager()
+  protected val engine = manager.getEngineByExtension(extension)
   private val typeMap = mutableMapOf<String, Array<out KType>>()
   protected val valueMap = mutableMapOf<String, Any>()
-  protected val manager = ScriptEngineManager()
-  protected val engine = manager.getEngineByExtension(extension)
   protected val bindings = SimpleBindings(valueMap)
   protected var initialized = AtomicBoolean(false)
 

@@ -47,7 +47,7 @@ class KtsScript : AbstractScript("kts") {
   fun eval(code: String): Any? {
 
     if ("java.lang.System.exit" in code)
-      throw ScriptException(SYSTEM_ERROR)
+      throw ScriptException("Illegal call to System.exit()")
 
     if (!initialized.get()) {
       engine.eval(varDecls, bindings)
@@ -57,7 +57,4 @@ class KtsScript : AbstractScript("kts") {
     return engine.eval("$importDecls\n\n$code", bindings)
   }
 
-  companion object {
-    internal const val SYSTEM_ERROR = "Illegal call to System.exit()"
-  }
 }

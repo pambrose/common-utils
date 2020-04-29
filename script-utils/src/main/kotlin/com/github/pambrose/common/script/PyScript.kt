@@ -20,32 +20,27 @@ package com.github.pambrose.common.script
 import javax.script.ScriptException
 
 class PyScript : AbstractScript("py") {
-  //private val imports = mutableListOf("import ${System::class.qualifiedName}")
 
-  fun assignBindings() {
-    //val assigns = mutableListOf<String>()
-
+  internal fun assignBindings() {
     valueMap.forEach { (name, value) ->
-      val kotlinClazz = value.javaClass.kotlin
-      val kotlinQualified = kotlinClazz.qualifiedName!!
-      val type = kotlinQualified.removePrefix("kotlin.")
-      //assigns += "$name = bindings[${name.toDoubleQuoted()}] " // as $type${params(name)}
-
+      //val kotlinClazz = value.javaClass.kotlin
+      //val kotlinQualified = kotlinClazz.qualifiedName!!
+      //val type = kotlinQualified.removePrefix("kotlin.")
       bindings.put(name, value)
     }
-
-    //return assigns.joinToString("\n")
   }
 
-  /*
-  val importDecls: String
-    get() = imports.joinToString("\n")
-*/
   @Synchronized
   fun eval(code: String): Any? {
 
     if ("sys.exit(" in code)
-      throw ScriptException(SYSTEM_ERROR)
+      throw ScriptException("Illegal call to sys.exit()")
+
+    if ("exit(" in code)
+      throw ScriptException("Illegal call to exit()")
+
+    if ("quit(" in code)
+      throw ScriptException("Illegal call to quit()")
 
     if (!initialized.get()) {
       assignBindings()
@@ -55,7 +50,4 @@ class PyScript : AbstractScript("py") {
     return engine.eval(code, bindings)
   }
 
-  companion object {
-    internal const val SYSTEM_ERROR = "Illegal call to sys.exit()"
-  }
 }

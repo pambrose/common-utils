@@ -225,14 +225,13 @@ class PyScriptTests {
       }
   }
 
-  /*
   @Test
   fun illegalCallsTest() {
     PyScript()
       .apply {
-        invoking { eval("System.exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("com.lang.System.exit(1)") } shouldThrow ScriptException::class
+        invoking { eval("sys.exit(1)") } shouldThrow ScriptException::class
+        invoking { eval("exit(1)") } shouldThrow ScriptException::class
+        invoking { eval("quit(1)") } shouldThrow ScriptException::class
       }
   }
-  */
 }
