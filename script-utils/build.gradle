@@ -26,9 +26,11 @@ dependencies {
     implementation libraries.jna_platform
     implementation libraries.script_util
     implementation libraries.script_runtime
+    implementation libraries.python_scripting
     implementation libraries.kotlin_compiler
 
     runtime libraries.kotlin_scripting
+
 }
 
 compileKotlin {
