@@ -22,7 +22,6 @@ import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
-import kotlin.reflect.typeOf
 
 class PythonScriptTests {
 
@@ -65,28 +64,8 @@ class PythonScriptTests {
   }
 
   @Test
-  fun valVarTest() {
-    val intVal = 0
-    val intVar = 0
-
-    PythonScript()
-      .apply {
-        add("intVal", intVal)
-        add("intVar", intVar)
-
-        intVal shouldBeEqualTo eval("intVal")
-        intVal + 1 shouldBeEqualTo eval("intVal + 1")
-        intVal shouldBeEqualTo 0
-
-        intVar shouldBeEqualTo eval("intVar")
-        intVar + 1 shouldBeEqualTo eval("intVar + 1")
-        intVar shouldBeEqualTo 0
-      }
-  }
-
-  @Test
   fun userObjectTest() {
-    val aux = AuxClass()
+    val aux = IncClass()
 
     PythonScript()
       .apply {
@@ -106,14 +85,14 @@ class PythonScriptTests {
   }
 
   @Test
-  fun objectWithKClassTest() {
+  fun objectWithClassTest() {
     val list = mutableListOf(1)
     val map = mutableMapOf("k1" to 1)
 
     PythonScript()
       .apply {
-        add("list", list, typeOf<Int>())
-        add("map", map, typeOf<String>(), typeOf<Int>())
+        add("list", list)
+        add("map", map)
 
         list.size shouldBeEqualTo eval("len(list)")
         map.size shouldBeEqualTo eval("len(map)")
@@ -135,12 +114,12 @@ class PythonScriptTests {
   }
 
   @Test
-  fun objectWithKTypeTest() {
+  fun objectWithTypeTest() {
     val list = mutableListOf(1)
 
     PythonScript()
       .apply {
-        add("list", list, typeOf<Int>())
+        add("list", list)
 
         list.size shouldBeEqualTo eval("len(list)")
 
@@ -161,7 +140,7 @@ class PythonScriptTests {
 
     PythonScript()
       .apply {
-        add("list", list, typeOf<Int?>())
+        add("list", list)
 
         list.size shouldBeEqualTo eval("len(list)")
 
@@ -173,47 +152,6 @@ class PythonScriptTests {
 
         list.size shouldBeEqualTo 100
         list.size shouldBeEqualTo eval("len(list)")
-      }
-  }
-
-  @Test
-  fun innerClassTest() {
-    class InnerTest
-
-    val inner = InnerTest()
-
-    PythonScript()
-      .apply {
-        invoking { add("inner", inner) } shouldThrow ScriptException::class
-      }
-  }
-
-  @Test
-  fun unnecessaryParamsTest() {
-    val value = 5
-
-    PythonScript()
-      .apply {
-        invoking { add("value", value, typeOf<Int?>()) } shouldThrow ScriptException::class
-      }
-  }
-
-  @Test
-  fun unmatchedParamsTest() {
-    val list = mutableListOf(1)
-
-    PythonScript()
-      .apply {
-        invoking { add("list", list, typeOf<Int?>(), typeOf<Int>()) } shouldThrow ScriptException::class
-      }
-  }
-
-  @Test
-  fun missingCollectionTypeTest() {
-    val list = mutableListOf(1)
-    PythonScript()
-      .apply {
-        invoking { add("list", list) } shouldThrow ScriptException::class
       }
   }
 

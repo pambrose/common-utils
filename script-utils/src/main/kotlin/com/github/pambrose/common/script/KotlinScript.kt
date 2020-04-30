@@ -24,7 +24,7 @@ import javax.script.ScriptException
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 
 class KotlinScript : AbstractScript("kts") {
-  private val imports = mutableListOf("import ${System::class.qualifiedName}")
+  private val imports = mutableListOf(System::class.qualifiedName)
 
   val varDecls: String
     get() {
@@ -41,7 +41,7 @@ class KotlinScript : AbstractScript("kts") {
     }
 
   val importDecls: String
-    get() = imports.joinToString("\n")
+    get() = imports.map { "import $it" }.joinToString("\n")
 
   @Synchronized
   fun eval(code: String): Any? {

@@ -18,8 +18,13 @@
 package com.github.pambrose.common.script
 
 import javax.script.ScriptException
+import kotlin.reflect.KType
 
 class PythonScript : AbstractScript("py") {
+
+  override fun add(name: String, value: Any, vararg types: KType) {
+    valueMap[name] = value
+  }
 
   @Synchronized
   fun eval(code: String): Any? {

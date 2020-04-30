@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 
-class AuxClass(var i: Int = 0) {
+class IncClass(var i: Int = 0) {
   fun inc() {
     i++
   }
@@ -73,7 +73,7 @@ class KotlinScriptTests {
   @Test
   fun valVarTest() {
     val intVal = 0
-    val intVar = 0
+    var intVar = 0
 
     KotlinScript()
       .apply {
@@ -92,7 +92,7 @@ class KotlinScriptTests {
 
   @Test
   fun userObjectTest() {
-    val aux = AuxClass()
+    val aux = IncClass()
 
     KotlinScript()
       .apply {
@@ -106,7 +106,7 @@ class KotlinScriptTests {
                 repeat(100) { aux.inc() }
                 aux
               """
-          ) as AuxClass
+          ) as IncClass
 
         aux.i shouldBeEqualTo 100
         aux.i shouldBeEqualTo incEd.i
@@ -114,7 +114,7 @@ class KotlinScriptTests {
   }
 
   @Test
-  fun objectWithKClassTest() {
+  fun objectWithTypesTest() {
     val list = mutableListOf(1)
     val map = mutableMapOf("k1" to 1)
 

@@ -26,23 +26,9 @@ import kotlin.reflect.typeOf
 
 class JavaScriptTests {
 
-  fun String.asProgram() =
-    """
-    public class Script {
-        public boolean boolVal;
-        public int intVal;
-        public long longVal;
-        public double doubleVal;
-        public float floatVal;
-        public String strVal;
-        public Object getValue() {
-          return $this; 
-        } 
-    }
-    """
-
   @Test
   fun builtInTypesTest() {
+
     val boolVal = true
     val intVal = 0
     val longVal = 0L
@@ -59,69 +45,53 @@ class JavaScriptTests {
         add("floatVal", floatVal)
         add("strVal", strVal)
 
-        boolVal shouldBeEqualTo eval("boolVal".asProgram())
-        !boolVal shouldBeEqualTo eval("!boolVal".asProgram())
-
-        intVal shouldBeEqualTo eval("intVal".asProgram())
-        intVal + 1 shouldBeEqualTo eval("intVal + 1".asProgram())
-
-        longVal shouldBeEqualTo eval("longVal".asProgram())
-        (longVal + 1) shouldBeEqualTo eval("longVal + 1".asProgram())
-
-        doubleVal shouldBeEqualTo eval("doubleVal".asProgram())
-        doubleVal + 1 shouldBeEqualTo eval("doubleVal + 1".asProgram())
-
-        floatVal shouldBeEqualTo eval("floatVal".asProgram())
-        floatVal + 1 shouldBeEqualTo eval("floatVal + 1".asProgram())
-
-        strVal shouldBeEqualTo eval("strVal".asProgram())
-        strVal.length shouldBeEqualTo eval("strVal.length()".asProgram())
-      }
-  }
-
-  @Test
-  fun valVarTest() {
-    val intVal = 0
-    val intVar = 0
-
-    JavaScript()
-      .apply {
-        add("intVal", intVal)
-        add("intVar", intVar)
+        boolVal shouldBeEqualTo eval("boolVal")
+        !boolVal shouldBeEqualTo eval("!boolVal")
 
         intVal shouldBeEqualTo eval("intVal")
         intVal + 1 shouldBeEqualTo eval("intVal + 1")
-        intVal shouldBeEqualTo 0
 
-        intVar shouldBeEqualTo eval("intVar")
-        intVar + 1 shouldBeEqualTo eval("intVar + 1")
-        intVar shouldBeEqualTo 0
+        longVal shouldBeEqualTo eval("longVal")
+        (longVal + 1) shouldBeEqualTo eval("longVal + 1")
+
+        doubleVal shouldBeEqualTo eval("doubleVal")
+        doubleVal + 1 shouldBeEqualTo eval("doubleVal + 1")
+
+        floatVal shouldBeEqualTo eval("floatVal")
+        floatVal + 1 shouldBeEqualTo eval("floatVal + 1")
+
+        strVal shouldBeEqualTo eval("strVal")
+        strVal.length shouldBeEqualTo eval("strVal.length()")
       }
   }
 
   @Test
   fun userObjectTest() {
-    val aux = AuxClass()
+    val aux = IncClass()
 
     JavaScript()
       .apply {
 
         add("aux", aux)
+        import(IncClass::class.java)
 
-        aux.i shouldBeEqualTo eval("aux.i")
+        aux.i shouldBeEqualTo eval("aux.getI()")
 
-        eval("""
-                for i in range(100):
-                  aux.inc()
+        val retval =
+          eval("aux.getI()",
+               """
+                for (int i = 0; i < 100; i++)
+                  aux.inc();
               """.trimIndent()
-        )
+          )
 
+        retval shouldBeEqualTo 100
         aux.i shouldBeEqualTo 100
       }
   }
 
   @Test
-  fun objectWithKClassTest() {
+  fun objectWithTypesTest() {
     val list = mutableListOf(1)
     val map = mutableMapOf("k1" to 1)
 
@@ -129,21 +99,27 @@ class JavaScriptTests {
       .apply {
         add("list", list, typeOf<Int>())
         add("map", map, typeOf<String>(), typeOf<Int>())
+        import(ArrayList::class.java)
+        import(LinkedHashMap::class.java)
 
-        list.size shouldBeEqualTo eval("len(list)")
-        map.size shouldBeEqualTo eval("len(map)")
+        list.size shouldBeEqualTo eval("list.size()")
+        map.size shouldBeEqualTo eval("map.size()")
 
-        eval("""
-                map["k2"] = 10
-                for i in range(100):
-                  list.add(i)
+        val retval =
+          eval("map.size()",
+               """
+                map.put("k2", 10);
+                for (int i = 0; i < 100; i++)
+                  list.add(i);
               """.trimIndent()
-        )
+          )
+
+        retval shouldBeEqualTo map.size
 
         list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size()")
 
-        map.size shouldBeEqualTo eval("len(map)")
+        map.size shouldBeEqualTo eval("map.size()")
         map.size shouldBeEqualTo 2
         map["k2"] shouldBeEqualTo 10
       }
@@ -156,17 +132,18 @@ class JavaScriptTests {
     JavaScript()
       .apply {
         add("list", list, typeOf<Int>())
+        import(ArrayList::class.java)
 
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size()")
 
-        eval("""
-                for i in range(100):
-                  list.add(i)
+        eval("0", """
+            for (int i = 0; i < 100; i++)
+              list.add(i);
               """.trimIndent()
         )
 
         list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size()")
       }
   }
 
@@ -177,17 +154,19 @@ class JavaScriptTests {
     JavaScript()
       .apply {
         add("list", list, typeOf<Int?>())
+        import(ArrayList::class.java)
 
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size()")
 
-        eval("""
-                for i in range(100):
-                  list.add(None)
+        eval("0",
+             """
+                for (int i = 0; i < 100; i++)
+                  list.add(null);
               """.trimIndent()
         )
 
         list.size shouldBeEqualTo 100
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBeEqualTo eval("list.size()")
       }
   }
 

@@ -17,25 +17,71 @@
 
 package com.github.pambrose.common.script
 
-import javax.script.ScriptEngineManager
 import javax.script.ScriptException
+import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 // See: https://github.com/eobermuhlner/java-scriptengine
 
 class JavaScript : AbstractScript("java") {
+  private val imports = mutableListOf<String>()
+
+  val varDecls: String
+    get() {
+      val assigns = mutableListOf<String>()
+
+      valueMap.forEach { (name, value) ->
+        val javaClazz = value.javaClass
+        val kotlinClazz = javaClazz.kotlin
+        val type = kotlinClazz.javaPrimitiveType?.name ?: javaClazz.simpleName
+        assigns += "public $type${params(name)} $name;"
+      }
+
+      return assigns.joinToString("\n")
+    }
+
+  val importDecls: String
+    get() = imports.joinToString("\n") { "import $it;" }
+
+  fun <T> import(clazz: Class<T>) {
+    imports += clazz.name
+  }
+
+  private val KType.javaEquiv: String
+    get() =
+      when (this) {
+        typeOf<Int>() -> Integer::class.java.simpleName
+        typeOf<Int?>() -> Integer::class.java.simpleName
+        else -> this.toString().removePrefix("kotlin.").replace("?", "")
+      }
+
+  override fun params(name: String, types: Array<out KType>): String {
+    val params = types.map { type -> type.javaEquiv }
+    return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
+  }
+
 
   @Synchronized
-  fun eval(code: String): Any? {
+  fun eval(expr: String, action: String = ""): Any {
 
-    if ("sys.exit(" in code)
-      throw ScriptException("Illegal call to sys.exit()")
+    if ("System.exit" in expr)
+      throw ScriptException("Illegal call to System.exit()")
 
-    if ("exit(" in code)
-      throw ScriptException("Illegal call to exit()")
+    val code = """
+    $importDecls
+    
+    public class Main {
+    
+      $varDecls
+      
+      public Object getValue() {
+        $action
+        return $expr; 
+      }
+    }
+    """.trimIndent()
 
-    if ("quit(" in code)
-      throw ScriptException("Illegal call to quit()")
-
+    println(code)
     if (!initialized.get()) {
       valueMap.forEach { (name, value) -> bindings.put(name, value) }
       initialized.set(true)
@@ -43,14 +89,5 @@ class JavaScript : AbstractScript("java") {
 
     return engine.eval(code, bindings)
   }
-
-}
-
-fun main() {
-  val manager = ScriptEngineManager()
-  println(manager.engineFactories)
-  val engine = manager.getEngineByExtension("java")
-  println(engine.factory.extensions)
-  println("done")
 
 }
