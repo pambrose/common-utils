@@ -171,18 +171,6 @@ class JavaScriptTests {
   }
 
   @Test
-  fun innerClassTest() {
-    class InnerTest
-
-    val inner = InnerTest()
-
-    JavaScript()
-      .apply {
-        invoking { add("inner", inner) } shouldThrow ScriptException::class
-      }
-  }
-
-  @Test
   fun unnecessaryParamsTest() {
     val value = 5
 

@@ -34,7 +34,7 @@ class JavaScript : AbstractScript("java") {
         val javaClazz = value.javaClass
         val kotlinClazz = javaClazz.kotlin
         val type = kotlinClazz.javaPrimitiveType?.name ?: javaClazz.simpleName
-        assigns += "public $type${params(name)} $name;"
+        assigns += "  public $type${params(name)} $name;"
       }
 
       return assigns.joinToString("\n")
@@ -68,20 +68,18 @@ class JavaScript : AbstractScript("java") {
       throw ScriptException("Illegal call to System.exit()")
 
     val code = """
-    $importDecls
-    
-    public class Main {
-    
-      $varDecls
-      
-      public Object getValue() {
-        $action
-        return $expr; 
-      }
-    }
-    """.trimIndent()
+$importDecls
+public class Main {
 
-    println(code)
+$varDecls
+  public Object getValue() {
+    $action
+    return $expr; 
+  }
+}
+"""
+
+    //println(code)
     if (!initialized.get()) {
       valueMap.forEach { (name, value) -> bindings.put(name, value) }
       initialized.set(true)
@@ -89,5 +87,4 @@ class JavaScript : AbstractScript("java") {
 
     return engine.eval(code, bindings)
   }
-
 }
