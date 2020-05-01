@@ -21,7 +21,8 @@ import javax.script.ScriptException
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
-// See: https://github.com/eobermuhlner/java-scriptengine
+// https://github.com/eobermuhlner/java-scriptengine
+// https://gitter.im/java-scriptengine/community
 
 class JavaScript : AbstractScript("java") {
   private val imports = mutableListOf<String>()
@@ -60,6 +61,15 @@ class JavaScript : AbstractScript("java") {
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
+  @Synchronized
+  fun evalScript(script: String): Any {
+    if (!initialized.get()) {
+      valueMap.forEach { (name, value) -> bindings.put(name, value) }
+      initialized.set(true)
+    }
+
+    return engine.eval(importDecls + script, bindings)
+  }
 
   @Synchronized
   fun eval(expr: String, action: String = ""): Any {
@@ -79,7 +89,6 @@ $varDecls
 }
 """
 
-    //println(code)
     if (!initialized.get()) {
       valueMap.forEach { (name, value) -> bindings.put(name, value) }
       initialized.set(true)
