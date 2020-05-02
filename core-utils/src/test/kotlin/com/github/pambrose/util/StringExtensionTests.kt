@@ -130,4 +130,27 @@ class StringExtensionTests {
     s.linesBetween(Regex("ccc"), Regex("aaa")) shouldBeEqualTo listOf()
   }
 
+  @Test
+  fun bracketTest() {
+
+    "  [fddsf]  ".isBracketed() shouldBeEqualTo true
+    "[fddsf]".isBracketed() shouldBeEqualTo true
+    "[]".isBracketed() shouldBeEqualTo true
+    "[".isBracketed() shouldBeEqualTo false
+    "]".isBracketed() shouldBeEqualTo false
+    "".isBracketed() shouldBeEqualTo false
+
+    "{fddsf}".isBracketed('{', '}') shouldBeEqualTo true
+    "{}}".isBracketed('{', '}') shouldBeEqualTo true
+    "{".isBracketed('{', '}') shouldBeEqualTo false
+    "}".isBracketed('{', '}') shouldBeEqualTo false
+    "".isBracketed('{', '}') shouldBeEqualTo false
+  }
+
+  @Test
+  fun trimEndsTest() {
+    "  [fddsf]  ".trimEnds() shouldBeEqualTo "fddsf"
+    "  [fddsf]  ".trimEnds(2) shouldBeEqualTo "dds"
+  }
+
 }

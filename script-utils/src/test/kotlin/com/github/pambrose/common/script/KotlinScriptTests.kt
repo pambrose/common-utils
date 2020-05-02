@@ -193,6 +193,16 @@ class KotlinScriptTests {
   }
 
   @Test
+  fun listCompareTest() {
+
+    KotlinScript()
+      .apply {
+        eval("listOf(1,2,3) == listOf(1, 2, 3)") shouldBeEqualTo true
+        eval("listOf(1,2) == listOf(1, 2, 3)") shouldBeEqualTo false
+      }
+  }
+
+  @Test
   fun innerClassTest() {
     class InnerTest
 

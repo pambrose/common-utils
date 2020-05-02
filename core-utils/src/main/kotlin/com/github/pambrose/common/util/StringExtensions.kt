@@ -71,3 +71,9 @@ fun List<String>.lastLineNumberOf(regex: Regex) =
 fun String.linesBetween(start: Regex, end: Regex) = split("\n").linesBetween(start, end)
 
 fun List<String>.linesBetween(start: Regex, end: Regex) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
+
+fun String.isBracketed(startChar: Char = '[', endChar: Char = ']') = trim().run {
+  startsWith(startChar) && endsWith(endChar)
+}
+
+fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
