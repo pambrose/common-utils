@@ -21,6 +21,7 @@ package com.github.pambrose.common.util
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
+import kotlin.math.log10
 
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
@@ -78,3 +79,9 @@ fun String.isBracketed(startChar: Char = '[', endChar: Char = ']') =
 fun String.asBracketed(startChar: Char = '[', endChar: Char = ']') = "$startChar$this$endChar"
 
 fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
+
+fun String.withLineNumbers(separator: Char = ':'): String {
+  val lines = split("\n")
+  val len = (log10(lines.size.toDouble()) + 1).toInt()
+  return lines.mapIndexed { i, s -> "${(i + 1).toString().padEnd(len + 1)}$separator $s" }.joinToString("\n")
+}
