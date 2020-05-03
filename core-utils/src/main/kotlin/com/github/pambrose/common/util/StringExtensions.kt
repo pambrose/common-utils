@@ -72,8 +72,9 @@ fun String.linesBetween(start: Regex, end: Regex) = split("\n").linesBetween(sta
 
 fun List<String>.linesBetween(start: Regex, end: Regex) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
 
-fun String.isBracketed(startChar: Char = '[', endChar: Char = ']') = trim().run {
-  startsWith(startChar) && endsWith(endChar)
-}
+fun String.isBracketed(startChar: Char = '[', endChar: Char = ']') =
+  trim().run { startsWith(startChar) && endsWith(endChar) }
+
+fun String.asBracketed(startChar: Char = '[', endChar: Char = ']') = "$startChar$this$endChar"
 
 fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
