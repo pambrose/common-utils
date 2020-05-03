@@ -37,6 +37,7 @@ import com.github.pambrose.common.servlet.VersionServlet
 import com.github.pambrose.common.util.simpleClassName
 import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors
+import com.google.common.util.concurrent.MoreExecutors.directExecutor
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
 import io.prometheus.client.CollectorRegistry
@@ -136,7 +137,8 @@ protected constructor(val configVals: T,
               healthy { logger.info { "All $clazzname services healthy" } }
               stopped { logger.info { "All $clazzname services stopped" } }
               failure { logger.info { "$clazzname service failed: $it" } }
-            })
+            },
+            directExecutor())
       }
 
     registerHealthChecks()

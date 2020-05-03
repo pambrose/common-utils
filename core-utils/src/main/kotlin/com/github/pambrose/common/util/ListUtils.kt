@@ -17,8 +17,6 @@
 
 package com.github.pambrose.common.util
 
-import com.github.pambrose.common.util.ArrayUtils.withBrackets
-
 object ListUtils {
 
   @JvmStatic
@@ -31,6 +29,6 @@ object ListUtils {
         else
           it.toString()
       }
-    println(str.withBrackets)
+    println(str.asBracketed())
   }
 }

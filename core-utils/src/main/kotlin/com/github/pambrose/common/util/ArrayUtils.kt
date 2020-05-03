@@ -23,55 +23,54 @@ object ArrayUtils {
   fun arrayPrint(vals: BooleanArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: BooleanArray) = vals.joinToString().withBrackets
+  fun asString(vals: BooleanArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: CharArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: CharArray) = vals.joinToString().withBrackets
+  fun asString(vals: CharArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: ByteArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: ByteArray) = vals.joinToString().withBrackets
+  fun asString(vals: ByteArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: ShortArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: ShortArray) = vals.joinToString().withBrackets
+  fun asString(vals: ShortArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: IntArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: IntArray) = vals.joinToString().withBrackets
+  fun asString(vals: IntArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: LongArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: LongArray) = vals.joinToString().withBrackets
+  fun asString(vals: LongArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: FloatArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: FloatArray) = vals.joinToString().withBrackets
+  fun asString(vals: FloatArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: DoubleArray) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: DoubleArray) = vals.joinToString().withBrackets
+  fun asString(vals: DoubleArray) = vals.joinToString().asBracketed()
 
   @JvmStatic
   fun arrayPrint(vals: Array<String>) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: Array<String>) = vals.joinToString() { it.toDoubleQuoted() }.withBrackets
+  fun asString(vals: Array<String>) = vals.joinToString() { it.toDoubleQuoted() }.asBracketed()
 
-  internal val String.withBrackets get() = "[$this]"
 }
