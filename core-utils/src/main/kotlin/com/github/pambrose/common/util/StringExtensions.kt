@@ -50,7 +50,7 @@ fun List<String>.toPath(addTrailingSeparator: Boolean = true, separator: CharSeq
     .mapIndexed { i, s -> if (i < size - 1 || addTrailingSeparator) s.ensureSuffix(separator) else s }
     .joinToString("")
 
-fun String.firstLineNumberOf(regex: Regex) = split("\n").firstLineNumberOf(regex)
+fun String.firstLineNumberOf(regex: Regex) = lines().firstLineNumberOf(regex)
 
 fun List<String>.firstLineNumberOf(regex: Regex) =
   asSequence()
@@ -59,7 +59,7 @@ fun List<String>.firstLineNumberOf(regex: Regex) =
     .map { it.first }
     .firstOrNull() ?: -1
 
-fun String.lastLineNumberOf(regex: Regex) = split("\n").lastLineNumberOf(regex)
+fun String.lastLineNumberOf(regex: Regex) = lines().lastLineNumberOf(regex)
 
 fun List<String>.lastLineNumberOf(regex: Regex) =
   mapIndexed { i, str -> i to str }
@@ -69,7 +69,7 @@ fun List<String>.lastLineNumberOf(regex: Regex) =
     .map { it.first }
     .firstOrNull() ?: -1
 
-fun String.linesBetween(start: Regex, end: Regex) = split("\n").linesBetween(start, end)
+fun String.linesBetween(start: Regex, end: Regex) = lines().linesBetween(start, end)
 
 fun List<String>.linesBetween(start: Regex, end: Regex) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
 
@@ -80,8 +80,10 @@ fun String.asBracketed(startChar: Char = '[', endChar: Char = ']') = "$startChar
 
 fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
 
+fun String.substringBetween(begin: String, end: String) = substringAfter(begin).substringBeforeLast(end)
+
 fun String.withLineNumbers(separator: Char = ':'): String {
-  val lines = split("\n")
+  val lines = lines()
   val len = (log10(lines.size.toDouble()) + 1).toInt()
   return lines.mapIndexed { i, s -> "${(i + 1).toString().padEnd(len + 1)}$separator $s" }.joinToString("\n")
 }

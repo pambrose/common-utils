@@ -114,6 +114,14 @@ class PythonScriptTests {
   }
 
   @Test
+  fun listCompareTest() {
+    PythonScript()
+      .apply {
+        eval("[True] == [True]") shouldBeEqualTo true
+      }
+  }
+
+  @Test
   fun objectWithTypeTest() {
     val list = mutableListOf(1)
 

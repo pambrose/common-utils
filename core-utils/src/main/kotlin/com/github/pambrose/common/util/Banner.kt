@@ -32,7 +32,7 @@ fun getBanner(filename: String, logger: Logger) =
           inputStream?.bufferedReader()?.use { it.readText() } ?: throw InternalError("Null InputStream")
 
         //val lines: List<String> = Splitter.on("\n").splitToList(banner)
-        val lines: List<String> = banner.split("\n")
+        val lines: List<String> = banner.lines()
 
         // Trim initial and trailing blank lines, but preserve blank lines in middle;
         var first = -1
