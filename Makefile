@@ -14,6 +14,9 @@ publish:
 tests:
 	./gradlew check
 
+refresh:
+	./gradlew --refresh-dependencies dependencyUpdates
+
 versioncheck:
 	./gradlew dependencyUpdates
 
