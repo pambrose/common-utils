@@ -15,18 +15,20 @@
  *
  */
 
-include 'core-utils'
-include 'corex-utils'
-include 'dropwizard-utils'
-include 'grpc-utils'
-include 'guava-utils'
-include 'jetty-utils'
-include 'ktor-client-utils'
-include 'prometheus-utils'
-include 'script-utils-common'
-include 'script-utils-python'
-include 'script-utils-java'
-include 'script-utils-kotlin'
-include 'service-utils'
-include 'zipkin-utils'
+description = 'script-utils-common'
 
+dependencies {
+    implementation project(':core-utils')
+}
+
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
+    }
+}
+
+compileTestKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
+    }
+}
