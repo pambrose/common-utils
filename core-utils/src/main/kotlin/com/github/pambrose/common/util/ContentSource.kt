@@ -25,17 +25,17 @@ interface ContentSource {
   val content: String
 }
 
-open class AbstractRepo(val scheme: String = "https://",
-                        val domainName: String,
-                        val organizationName: String,
-                        val repoName: String) {
+abstract class AbstractRepo(val scheme: String,
+                            val domainName: String,
+                            val organizationName: String,
+                            val repoName: String) {
 
   val url: String get() = scheme + listOf(domainName + organizationName + repoName).toPath()
 }
 
 class GitHubRepo(organizationName: String,
                  repoName: String,
-                 scheme: String,
+                 scheme: String = "https://",
                  domainName: String = "github.com") : AbstractRepo(scheme,
                                                                    domainName,
                                                                    organizationName,
@@ -43,7 +43,7 @@ class GitHubRepo(organizationName: String,
 
 class GitLabRepo(organizationName: String,
                  repoName: String,
-                 scheme: String,
+                 scheme: String = "https://",
                  domainName: String = "gitlab.com") : AbstractRepo(scheme,
                                                                    domainName,
                                                                    organizationName,
