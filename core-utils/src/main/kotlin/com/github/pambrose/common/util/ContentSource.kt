@@ -25,24 +25,29 @@ interface ContentSource {
   val content: String
 }
 
-interface AbstractRepo {
-  val organizationName: String
-  val repoName: String
-  val scheme: String
-  val domainName: String
+open class AbstractRepo(val scheme: String = "https://",
+                        val domainName: String,
+                        val organizationName: String,
+                        val repoName: String) {
 
   val url: String get() = scheme + listOf(domainName + organizationName + repoName).toPath()
 }
 
-data class GitHubRepo(override val organizationName: String,
-                      override val repoName: String,
-                      override val scheme: String = "https://",
-                      override val domainName: String = "github.com") : AbstractRepo
+class GitHubRepo(organizationName: String,
+                 repoName: String,
+                 scheme: String,
+                 domainName: String = "github.com") : AbstractRepo(scheme,
+                                                                   domainName,
+                                                                   organizationName,
+                                                                   repoName)
 
-data class GitLabRepo(override val organizationName: String,
-                      override val repoName: String,
-                      override val scheme: String = "https://",
-                      override val domainName: String = "gitlab.com") : AbstractRepo
+class GitLabRepo(organizationName: String,
+                 repoName: String,
+                 scheme: String,
+                 domainName: String = "gitlab.com") : AbstractRepo(scheme,
+                                                                   domainName,
+                                                                   organizationName,
+                                                                   repoName)
 
 open class GitHubFile(val repo: GitHubRepo,
                       val branchName: String = "master",
