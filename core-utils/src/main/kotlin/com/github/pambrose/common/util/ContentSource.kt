@@ -22,25 +22,39 @@ import java.net.URL
 
 interface ContentSource {
   val path: String
-
   val content: String
 }
 
-open class GitHubSource(val scheme: String = "https://",
-                        val organization: String,
-                        val repo: String,
-                        val branch: String = "master",
-                        val srcPath: String,
-                        val fileName: String)
-  : UrlSource(scheme + listOf("raw.githubusercontent.com", organization, repo, branch, srcPath, fileName).toPath(false))
+data class GitHubRepo(val organizationName: String,
+                      val repoName: String,
+                      val branchName: String = "master",
+                      val scheme: String = "https://")
 
-open class GitLabSource(val scheme: String = "https://",
-                        val organization: String,
-                        val repo: String,
-                        val branch: String = "master",
-                        val srcPath: String,
-                        val fileName: String)
-  : UrlSource(scheme + listOf("gitlab.com", organization, repo, "-/blob", branch, srcPath, fileName).toPath(false))
+data class GitLabRepo(val organizationName: String,
+                      val repoName: String,
+                      val branchName: String = "master",
+                      val scheme: String = "https://")
+
+open class GitHubFile(val repo: GitHubRepo,
+                      val srcPath: String,
+                      val fileName: String)
+  : UrlSource(repo.scheme + listOf("raw.githubusercontent.com",
+                                   repo.organizationName,
+                                   repo.repoName,
+                                   repo.branchName,
+                                   srcPath,
+                                   fileName).toPath(false))
+
+open class GitLabFile(val repo: GitLabRepo,
+                      val srcPath: String,
+                      val fileName: String)
+  : UrlSource(repo.scheme + listOf("gitlab.com",
+                                   repo.organizationName,
+                                   repo.repoName,
+                                   "-/blob",
+                                   repo.branchName,
+                                   srcPath,
+                                   fileName).toPath(false))
 
 open class UrlSource(override val path: String) : ContentSource {
   override val content: String
