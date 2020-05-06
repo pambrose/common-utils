@@ -87,3 +87,14 @@ fun String.withLineNumbers(separator: Char = ':'): String {
   val len = (log10(lines.size.toDouble()) + 1).toInt()
   return lines.mapIndexed { i, s -> "${(i + 1).toString().padEnd(len + 1)}$separator $s" }.joinToString("\n")
 }
+
+private const val dot = "__SINGLE__DOT__"
+
+val String.toPattern: String
+  get() {
+    // First protect the period and then convert back at end
+    val pattern = this.replace(".", dot).replace("*", ".*").replace("?", ".").replace(dot, """\.""")
+    return """^$pattern$"""
+  }
+
+val String.toRegex get() = Regex(this.toPattern)

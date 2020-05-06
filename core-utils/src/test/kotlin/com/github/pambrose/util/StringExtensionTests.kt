@@ -153,4 +153,18 @@ class StringExtensionTests {
     "  [fddsf]  ".trimEnds(2) shouldBeEqualTo "dds"
   }
 
+  @Test
+  fun patternMatchTest() {
+    "*st*".toRegex.pattern shouldBeEqualTo "^.*st.*$"
+    "?.*".toRegex.pattern shouldBeEqualTo "^.\\..*$"
+
+    "Test.java".contains("*st*".toRegex) shouldBeEqualTo true
+    "Test.java".contains("*.j".toRegex) shouldBeEqualTo false
+    "Test.java".contains("*.java".toRegex) shouldBeEqualTo true
+    "Test.java".contains("T?s?.java".toRegex) shouldBeEqualTo true
+    "Test.java".contains("T?s?*java".toRegex) shouldBeEqualTo true
+    "Test.java".contains("T?s?*jav?".toRegex) shouldBeEqualTo true
+    "Test.java".contains("T?s?.*".toRegex) shouldBeEqualTo true
+    "Test.java".contains("T?s?.*a".toRegex) shouldBeEqualTo true
+  }
 }
