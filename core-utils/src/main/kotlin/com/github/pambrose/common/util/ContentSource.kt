@@ -25,15 +25,25 @@ interface ContentSource {
   val content: String
 }
 
-data class GitHubRepo(val organizationName: String,
-                      val repoName: String,
-                      val branchName: String = "master",
-                      val scheme: String = "https://")
+interface AbstractRepo {
+  val organizationName: String
+  val repoName: String
+  val branchName: String
+  val scheme: String
+  val domainName: String
+}
 
-data class GitLabRepo(val organizationName: String,
-                      val repoName: String,
-                      val branchName: String = "master",
-                      val scheme: String = "https://")
+data class GitHubRepo(override val organizationName: String,
+                      override val repoName: String,
+                      override val branchName: String = "master",
+                      override val scheme: String = "https://",
+                      override val domainName: String = "github.com") : AbstractRepo
+
+data class GitLabRepo(override val organizationName: String,
+                      override val repoName: String,
+                      override val branchName: String = "master",
+                      override val scheme: String = "https://",
+                      override val domainName: String = "gitlab.com") : AbstractRepo
 
 open class GitHubFile(val repo: GitHubRepo,
                       val srcPath: String,
