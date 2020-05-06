@@ -31,6 +31,8 @@ interface AbstractRepo {
   val branchName: String
   val scheme: String
   val domainName: String
+
+  val urlRoot: String get() = scheme + listOf(domainName + organizationName + repoName + branchName).toPath()
 }
 
 data class GitHubRepo(override val organizationName: String,
