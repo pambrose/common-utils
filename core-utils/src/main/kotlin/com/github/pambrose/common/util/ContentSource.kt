@@ -30,7 +30,7 @@ abstract class AbstractRepo(val scheme: String,
                             val organizationName: String,
                             val repoName: String) {
 
-  val url: String get() = scheme + listOf(domainName + organizationName + repoName).toPath()
+  val url: String get() = scheme + listOf(domainName, organizationName, repoName).toPath()
 }
 
 class GitHubRepo(organizationName: String,
