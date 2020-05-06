@@ -28,44 +28,42 @@ interface ContentSource {
 interface AbstractRepo {
   val organizationName: String
   val repoName: String
-  val branchName: String
   val scheme: String
   val domainName: String
 
-  val rootUrl: String get() = scheme + listOf(domainName + organizationName + repoName).toPath()
-  val branchUrl: String get() = listOf(rootUrl + branchName).toPath()
+  val url: String get() = scheme + listOf(domainName + organizationName + repoName).toPath()
 }
 
 data class GitHubRepo(override val organizationName: String,
                       override val repoName: String,
-                      override val branchName: String = "master",
                       override val scheme: String = "https://",
                       override val domainName: String = "github.com") : AbstractRepo
 
 data class GitLabRepo(override val organizationName: String,
                       override val repoName: String,
-                      override val branchName: String = "master",
                       override val scheme: String = "https://",
                       override val domainName: String = "gitlab.com") : AbstractRepo
 
 open class GitHubFile(val repo: GitHubRepo,
+                      val branchName: String = "master",
                       val srcPath: String,
                       val fileName: String)
   : UrlSource(repo.scheme + listOf("raw.githubusercontent.com",
                                    repo.organizationName,
                                    repo.repoName,
-                                   repo.branchName,
+                                   branchName,
                                    srcPath,
                                    fileName).toPath(false))
 
 open class GitLabFile(val repo: GitLabRepo,
+                      val branchName: String = "master",
                       val srcPath: String,
                       val fileName: String)
   : UrlSource(repo.scheme + listOf("gitlab.com",
                                    repo.organizationName,
                                    repo.repoName,
                                    "-/blob",
-                                   repo.branchName,
+                                   branchName,
                                    srcPath,
                                    fileName).toPath(false))
 
