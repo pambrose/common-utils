@@ -97,4 +97,8 @@ val String.toPattern: String
     return """^$pattern$"""
   }
 
-val String.toRegex get() = Regex(this.toPattern)
+fun String.asRegex(ignoreCase: Boolean = false) =
+  if (ignoreCase)
+    Regex(this.toPattern, RegexOption.IGNORE_CASE)
+  else
+    Regex(this.toPattern)

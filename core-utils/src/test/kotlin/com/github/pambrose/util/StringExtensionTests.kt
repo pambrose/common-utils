@@ -155,16 +155,18 @@ class StringExtensionTests {
 
   @Test
   fun patternMatchTest() {
-    "*st*".toRegex.pattern shouldBeEqualTo "^.*st.*$"
-    "?.*".toRegex.pattern shouldBeEqualTo "^.\\..*$"
+    "*st*".toPattern shouldBeEqualTo "^.*st.*$"
+    "?.*".toPattern shouldBeEqualTo "^.\\..*$"
 
-    "Test.java".contains("*st*".toRegex) shouldBeEqualTo true
-    "Test.java".contains("*.j".toRegex) shouldBeEqualTo false
-    "Test.java".contains("*.java".toRegex) shouldBeEqualTo true
-    "Test.java".contains("T?s?.java".toRegex) shouldBeEqualTo true
-    "Test.java".contains("T?s?*java".toRegex) shouldBeEqualTo true
-    "Test.java".contains("T?s?*jav?".toRegex) shouldBeEqualTo true
-    "Test.java".contains("T?s?.*".toRegex) shouldBeEqualTo true
-    "Test.java".contains("T?s?.*a".toRegex) shouldBeEqualTo true
+    "Test.java".contains("*st*".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("*.j".asRegex()) shouldBeEqualTo false
+    "Test.java".contains("*.java".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?.java".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?*java".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?*jav?".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?.*".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?.*a".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("t?s?.*a".asRegex()) shouldBeEqualTo false
+    "Test.java".contains("t?s?.*a".asRegex(true)) shouldBeEqualTo true
   }
 }
