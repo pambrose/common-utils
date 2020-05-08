@@ -23,11 +23,14 @@ import java.net.URL
 interface ContentRoot {
   val sourcePrefix: String
   val remote: Boolean
+  fun file(path: String): ContentSource
 }
 
 class FileSystemSource(val pathPrefix: String) : ContentRoot {
   override val sourcePrefix = pathPrefix
   override val remote = false
+
+  override fun file(path: String) = FileSource(path)
 }
 
 abstract class AbstractRepo(val scheme: String,
@@ -37,6 +40,8 @@ abstract class AbstractRepo(val scheme: String,
 
   override val sourcePrefix: String get() = scheme + listOf(domainName, organizationName, repoName).toPath()
   override val remote = true
+
+  override fun file(path: String) = UrlSource(path)
 }
 
 class GitHubRepo(organizationName: String,
