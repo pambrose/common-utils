@@ -22,10 +22,12 @@ import java.net.URL
 
 interface ContentRoot {
   val sourcePrefix: String
+  val remote: Boolean
 }
 
-class FileSystemRoot(val pathPrefix: String) : ContentRoot {
+class FileSystemSource(val pathPrefix: String) : ContentRoot {
   override val sourcePrefix = pathPrefix
+  override val remote = false
 }
 
 abstract class AbstractRepo(val scheme: String,
@@ -34,6 +36,7 @@ abstract class AbstractRepo(val scheme: String,
                             val repoName: String) : ContentRoot {
 
   override val sourcePrefix: String get() = scheme + listOf(domainName, organizationName, repoName).toPath()
+  override val remote = true
 }
 
 class GitHubRepo(organizationName: String,
@@ -55,6 +58,7 @@ class GitLabRepo(organizationName: String,
 interface ContentSource {
   val source: String
   val content: String
+  val remote: Boolean
 }
 
 open class GitHubFile(val repo: GitHubRepo,
@@ -83,12 +87,16 @@ open class GitLabFile(val repo: GitLabRepo,
 open class UrlSource(override val source: String) : ContentSource {
   override val content: String
     get() = URL(source).readText()
+
+  override val remote = true
 }
 
-class FileSystemSource(val fileName: String) : ContentSource {
+class FileSource(val fileName: String) : ContentSource {
   override val source: String
     get() = fileName
 
   override val content: String
     get() = File(fileName).readText()
+
+  override val remote = false
 }
