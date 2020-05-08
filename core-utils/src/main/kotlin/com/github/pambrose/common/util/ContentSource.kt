@@ -20,17 +20,20 @@ package com.github.pambrose.common.util
 import java.io.File
 import java.net.URL
 
-interface ContentSource {
-  val path: String
-  val content: String
+interface ContentRoot {
+  val sourcePrefix: String
+}
+
+class FileSystemRoot(val pathPrefix: String) : ContentRoot {
+  override val sourcePrefix = pathPrefix
 }
 
 abstract class AbstractRepo(val scheme: String,
                             val domainName: String,
                             val organizationName: String,
-                            val repoName: String) {
+                            val repoName: String) : ContentRoot {
 
-  val url: String get() = scheme + listOf(domainName, organizationName, repoName).toPath()
+  override val sourcePrefix: String get() = scheme + listOf(domainName, organizationName, repoName).toPath()
 }
 
 class GitHubRepo(organizationName: String,
@@ -48,6 +51,11 @@ class GitLabRepo(organizationName: String,
                                                                    domainName,
                                                                    organizationName,
                                                                    repoName)
+
+interface ContentSource {
+  val source: String
+  val content: String
+}
 
 open class GitHubFile(val repo: GitHubRepo,
                       val branchName: String = "master",
@@ -72,13 +80,13 @@ open class GitLabFile(val repo: GitLabRepo,
                                    srcPath,
                                    fileName).toPath(false))
 
-open class UrlSource(override val path: String) : ContentSource {
+open class UrlSource(override val source: String) : ContentSource {
   override val content: String
-    get() = URL(path).readText()
+    get() = URL(source).readText()
 }
 
-class FileSource(val fileName: String) : ContentSource {
-  override val path: String
+class FileSystemSource(val fileName: String) : ContentSource {
+  override val source: String
     get() = fileName
 
   override val content: String
