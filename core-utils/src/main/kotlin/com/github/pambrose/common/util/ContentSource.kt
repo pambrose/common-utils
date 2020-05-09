@@ -40,17 +40,24 @@ abstract class AbstractRepo(val scheme: String,
 
   override val sourcePrefix: String get() = scheme + listOf(domainName, organizationName, repoName).toPath()
   override val remote = true
+  abstract val rawSourcePrefix: String
 
   override fun file(path: String) = UrlSource(path)
 }
 
+private const val github = "github.com"
+private const val githubUserContent = "raw.githubusercontent.com"
+
 class GitHubRepo(organizationName: String,
                  repoName: String,
                  scheme: String = "https://",
-                 domainName: String = "github.com") : AbstractRepo(scheme,
-                                                                   domainName,
-                                                                   organizationName,
-                                                                   repoName)
+                 domainName: String = github) : AbstractRepo(scheme,
+                                                             domainName,
+                                                             organizationName,
+                                                             repoName) {
+  override val rawSourcePrefix = sourcePrefix.replace(github, githubUserContent)
+}
+
 
 class GitLabRepo(organizationName: String,
                  repoName: String,
@@ -58,7 +65,9 @@ class GitLabRepo(organizationName: String,
                  domainName: String = "gitlab.com") : AbstractRepo(scheme,
                                                                    domainName,
                                                                    organizationName,
-                                                                   repoName)
+                                                                   repoName) {
+  override val rawSourcePrefix = sourcePrefix
+}
 
 interface ContentSource {
   val source: String
@@ -70,7 +79,7 @@ open class GitHubFile(val repo: GitHubRepo,
                       val branchName: String = "master",
                       val srcPath: String,
                       val fileName: String)
-  : UrlSource(repo.scheme + listOf("raw.githubusercontent.com",
+  : UrlSource(repo.scheme + listOf(githubUserContent,
                                    repo.organizationName,
                                    repo.repoName,
                                    branchName,
