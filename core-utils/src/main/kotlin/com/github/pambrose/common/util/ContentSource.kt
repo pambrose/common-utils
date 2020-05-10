@@ -105,7 +105,7 @@ open class UrlSource(override val source: String) : ContentSource {
   override val remote = true
 }
 
-class FileSource(val fileName: String) : ContentSource {
+open class FileSource(val fileName: String) : ContentSource {
   override val source: String
     get() = fileName
 
