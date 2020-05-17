@@ -83,13 +83,19 @@ class StringExtensionTests {
   @Test
   fun testPaths() {
 
-    listOf("a", "b", "c").toPath() shouldBeEqualTo "a/b/c/"
+    listOf("a", "b", "c").toPath(false, false) shouldBeEqualTo "a/b/c"
+    listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
+    listOf("a", "b", "c").toPath(true, false) shouldBeEqualTo "/a/b/c"
+    listOf("a", "b", "c").toPath(false, true) shouldBeEqualTo "a/b/c/"
+    listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
     listOf("/a", "/b", "c").toPath() shouldBeEqualTo "/a/b/c/"
+    listOf("/a", "/b", "c/").toPath() shouldBeEqualTo "/a/b/c/"
+    listOf("a", "/b", "c/").toPath() shouldBeEqualTo "/a/b/c/"
 
-    listOf("a", "b", "c").toPath(false) shouldBeEqualTo "a/b/c"
-    listOf("a/", "/b/", "c").toPath(false) shouldBeEqualTo "a/b/c"
-    listOf("/a/", "/b/", "c").toPath(false) shouldBeEqualTo "/a/b/c"
-    listOf("/a/", "/b/", "/c").toPath(false) shouldBeEqualTo "/a/b/c"
+    listOf("a", "b", "c").toPath(false, false) shouldBeEqualTo "a/b/c"
+    listOf("a/", "/b/", "c").toPath(false, false) shouldBeEqualTo "a/b/c"
+    listOf("/a/", "/b/", "c").toPath(false, false) shouldBeEqualTo "/a/b/c"
+    listOf("/a/", "/b/", "/c").toPath(false, false) shouldBeEqualTo "/a/b/c"
   }
 
   @Test
