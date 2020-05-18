@@ -38,7 +38,7 @@ abstract class AbstractRepo(val scheme: String,
                             val organizationName: String,
                             val repoName: String) : ContentRoot {
 
-  override val sourcePrefix: String get() = scheme + listOf(domainName, organizationName, repoName).toPath(false, false)
+  override val sourcePrefix: String get() = scheme + listOf(domainName, organizationName, repoName).join()
   override val remote = true
   abstract val rawSourcePrefix: String
 
@@ -84,7 +84,7 @@ open class GitHubFile(val repo: GitHubRepo,
                                    repo.repoName,
                                    branchName,
                                    srcPath,
-                                   fileName).toPath(false, false))
+                                   fileName).join())
 
 open class GitLabFile(val repo: GitLabRepo,
                       val branchName: String = "master",
@@ -96,7 +96,7 @@ open class GitLabFile(val repo: GitLabRepo,
                                    "-/blob",
                                    branchName,
                                    srcPath,
-                                   fileName).toPath(false, false))
+                                   fileName).join())
 
 open class UrlSource(override val source: String) : ContentSource {
   override val content: String

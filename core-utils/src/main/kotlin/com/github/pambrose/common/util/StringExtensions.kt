@@ -45,12 +45,14 @@ fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this 
 
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
-fun List<String>.toPath(addPrefixSeparator: Boolean = true,
-                        addTrailingSeparator: Boolean = true,
+fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false)
+
+fun List<String>.toPath(addPrefix: Boolean = true,
+                        addTrailing: Boolean = true,
                         separator: CharSequence = "/") =
-  mapIndexed { i, s -> if (i == 0 && addPrefixSeparator && !s.startsWith(separator)) "$separator$s" else s }
+  mapIndexed { i, s -> if (i == 0 && addPrefix && !s.startsWith(separator)) "$separator$s" else s }
     .mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
-    .mapIndexed { i, s -> if (i < size - 1 || addTrailingSeparator) s.ensureSuffix(separator) else s }
+    .mapIndexed { i, s -> if (i < size - 1 || addTrailing) s.ensureSuffix(separator) else s }
     .joinToString("")
 
 fun String.firstLineNumberOf(regex: Regex) = lines().firstLineNumberOf(regex)
