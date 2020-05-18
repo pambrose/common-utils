@@ -47,6 +47,9 @@ fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
 fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false)
 
+fun List<String>.toRootPath(addTrailing: Boolean = false, separator: CharSequence = "/") =
+  toPath(addPrefix = true, addTrailing = addTrailing)
+
 fun List<String>.toPath(addPrefix: Boolean = true,
                         addTrailing: Boolean = true,
                         separator: CharSequence = "/") =

@@ -84,7 +84,8 @@ class StringExtensionTests {
   fun testPaths() {
     listOf("a", "b", "c").join() shouldBeEqualTo "a/b/c"
     listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
-    listOf("a", "b", "c").toPath(addPrefix = true, addTrailing = false) shouldBeEqualTo "/a/b/c"
+    listOf("a", "b", "c").toRootPath() shouldBeEqualTo "/a/b/c"
+    listOf("a", "b", "c").toRootPath(true) shouldBeEqualTo "/a/b/c/"
     listOf("a", "b", "c").toPath(addPrefix = false, addTrailing = true) shouldBeEqualTo "a/b/c/"
     listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
     listOf("/a", "/b", "c").toPath() shouldBeEqualTo "/a/b/c/"
