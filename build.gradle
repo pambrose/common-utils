@@ -54,6 +54,8 @@ ext {
             jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
             jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
 
+            ktor_server_core      : "io.ktor:ktor-server-core:$ktor_version",
+
             ktor_client_core      : "io.ktor:ktor-client-core:$ktor_version",
             ktor_client_cio       : "io.ktor:ktor-client-cio:$ktor_version",
 
