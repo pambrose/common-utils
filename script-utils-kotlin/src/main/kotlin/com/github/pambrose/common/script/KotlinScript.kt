@@ -62,5 +62,4 @@ class KotlinScript : AbstractScript("kts") {
 
     return engine.eval("$importDecls\n\n$code", bindings)
   }
-
 }
