@@ -126,6 +126,8 @@ private val emailPattern by lazy {
 
 fun String.isValidEmail() = emailPattern.matcher(this).matches()
 
+fun String.isNotValidEmail() = !isValidEmail()
+
 fun String.md5(salt: String): String = encodedByteArray(this, { salt }, "MD5").asText
 
 fun String.sha256(salt: String): String = encodedByteArray(this, { salt }, "SHA-256").asText
