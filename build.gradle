@@ -64,6 +64,8 @@ ext {
             prometheus_servlet    : "io.prometheus:simpleclient_servlet:$prometheus_version",
             prometheus_dropwizard : "io.prometheus:simpleclient_dropwizard:$prometheus_version",
 
+            redis                 : "redis.clients:jedis:$redis_version",
+
             zipkin                : "io.zipkin.brave:brave:$zipkin_version",
 
             zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkenSender_version",

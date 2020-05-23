@@ -1,12 +1,3 @@
-pluginManagement {
-    repositories {
-        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
-
-        mavenCentral()
-
-        maven { url 'https://plugins.gradle.org/m2/' }
-    }
-}
 /*
  * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
  *
@@ -24,20 +15,10 @@ pluginManagement {
  *
  */
 
-include 'core-utils'
-include 'corex-utils'
-include 'dropwizard-utils'
-include 'grpc-utils'
-include 'guava-utils'
-include 'jetty-utils'
-include 'ktor-client-utils'
-include 'ktor-server-utils'
-include 'prometheus-utils'
-include 'redis-utils'
-include 'script-utils-common'
-include 'script-utils-python'
-include 'script-utils-java'
-include 'script-utils-kotlin'
-include 'service-utils'
-include 'zipkin-utils'
+description = 'redis-utils'
 
+dependencies {
+    //implementation project(':core-utils')
+
+    implementation libraries.redis
+}
