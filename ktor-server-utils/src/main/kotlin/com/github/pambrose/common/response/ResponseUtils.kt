@@ -20,13 +20,18 @@ package com.github.pambrose.common.response
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.http.ContentType
+import io.ktor.http.ContentType.Text
 import io.ktor.response.respondRedirect
 import io.ktor.response.respondText
 import io.ktor.util.pipeline.PipelineContext
 
-suspend fun PipelineContext<Unit, ApplicationCall>.respondWith(contentTye: ContentType = ContentType.Text.Html,
-                                                               block: () -> String) =
-  call.respondText(block.invoke(), contentTye)
+suspend fun PipelineContext<Unit, ApplicationCall>.respondWith(contentTye: ContentType = Text.Html,
+                                                               block: () -> String) {
+  val html = block.invoke()
+  call.respondText(html, contentTye)
+}
 
-suspend fun PipelineContext<Unit, ApplicationCall>.redirectTo(block: () -> String) =
-  call.respondRedirect(block.invoke())
+suspend fun PipelineContext<Unit, ApplicationCall>.redirectTo(block: () -> String) {
+  val html = block.invoke()
+  call.respondRedirect(html)
+}
