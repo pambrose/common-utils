@@ -26,12 +26,12 @@ import io.ktor.response.respondText
 import io.ktor.util.pipeline.PipelineContext
 
 suspend fun PipelineContext<Unit, ApplicationCall>.respondWith(contentTye: ContentType = Text.Html,
-                                                               block: () -> String) {
+                                                               block: suspend () -> String) {
   val html = block.invoke()
   call.respondText(html, contentTye)
 }
 
-suspend fun PipelineContext<Unit, ApplicationCall>.redirectTo(block: () -> String) {
+suspend fun PipelineContext<Unit, ApplicationCall>.redirectTo(block: suspend () -> String) {
   val html = block.invoke()
   call.respondRedirect(html)
 }
