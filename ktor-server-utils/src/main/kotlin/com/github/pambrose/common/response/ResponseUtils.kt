@@ -31,7 +31,8 @@ suspend fun PipelineContext<Unit, ApplicationCall>.respondWith(contentTye: Conte
   call.respondText(html, contentTye)
 }
 
-suspend fun PipelineContext<Unit, ApplicationCall>.redirectTo(block: suspend () -> String) {
-  val html = block.invoke()
-  call.respondRedirect(html)
+suspend fun PipelineContext<Unit, ApplicationCall>.redirectTo(permanent: Boolean = false,
+                                                              block: suspend () -> String) {
+  val url = block.invoke()
+  call.respondRedirect(url, permanent)
 }
