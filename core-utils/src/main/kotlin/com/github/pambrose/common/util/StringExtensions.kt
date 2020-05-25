@@ -20,6 +20,7 @@
 package com.github.pambrose.common.util
 
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -47,6 +48,8 @@ fun String.singleToDoubleQuoted() =
 fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else this + suffix
 
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
+
+fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
 
 fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false)
 
