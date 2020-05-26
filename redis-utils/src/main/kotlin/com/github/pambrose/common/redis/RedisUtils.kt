@@ -43,7 +43,28 @@ object RedisUtils {
       block.invoke(null)
     }
 
+  suspend fun <T> withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
+    try {
+      pool.resource.use { redis -> block.invoke(redis) }
+    } catch (e: JedisException) {
+      e.printStackTrace()
+      block.invoke(null)
+    }
+
   fun <T> withRedis(block: (Jedis?) -> T): T =
+    try {
+      Jedis(redisURI.host,
+            redisURI.port,
+            Protocol.DEFAULT_TIMEOUT).use { redis ->
+        redis.auth(password)
+        block.invoke(redis)
+      }
+    } catch (e: JedisException) {
+      e.printStackTrace()
+      block.invoke(null)
+    }
+
+  suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T =
     try {
       Jedis(redisURI.host,
             redisURI.port,
