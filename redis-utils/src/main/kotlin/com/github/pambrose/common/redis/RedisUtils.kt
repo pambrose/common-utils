@@ -22,7 +22,7 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
 import redis.clients.jedis.Protocol
-import redis.clients.jedis.exceptions.JedisException
+import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
 object RedisUtils : KLogging() {
@@ -40,7 +40,7 @@ object RedisUtils : KLogging() {
     pool.resource.use { redis ->
       try {
         redis.ping("")
-      } catch (e: JedisException) {
+      } catch (e: JedisConnectionException) {
         return block.invoke(null)
       }
       return block.invoke(redis)
@@ -51,7 +51,7 @@ object RedisUtils : KLogging() {
     pool.resource.use { redis ->
       try {
         redis.ping("")
-      } catch (e: JedisException) {
+      } catch (e: JedisConnectionException) {
         return block.invoke(null)
       }
       block.invoke(redis)
@@ -61,7 +61,7 @@ object RedisUtils : KLogging() {
     Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
       try {
         redis.auth(password)
-      } catch (e: JedisException) {
+      } catch (e: JedisConnectionException) {
         logger.info(e) { "" }
         return block.invoke(null)
       }
@@ -72,7 +72,7 @@ object RedisUtils : KLogging() {
     Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
       try {
         redis.auth(password)
-      } catch (e: JedisException) {
+      } catch (e: JedisConnectionException) {
         logger.info(e) { "" }
         return block.invoke(null)
       }
