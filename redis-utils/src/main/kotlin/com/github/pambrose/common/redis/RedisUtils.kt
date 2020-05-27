@@ -35,46 +35,47 @@ object RedisUtils {
                                           Protocol.DEFAULT_TIMEOUT,
                                           password)
 
-  fun <T> withRedisPool(block: (Jedis?) -> T): T =
-    try {
-      pool.resource.use { redis -> block.invoke(redis) }
-    } catch (e: JedisException) {
-      e.printStackTrace()
-      block.invoke(null)
+  fun <T> withRedisPool(block: (Jedis?) -> T): T {
+    pool.resource.use { redis ->
+      try {
+        redis.ping("")
+      } catch (e: JedisException) {
+        return block.invoke(null)
+      }
+      return block.invoke(redis)
     }
+  }
 
   suspend fun <T> withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
-    try {
-      pool.resource.use { redis -> block.invoke(redis) }
-    } catch (e: JedisException) {
-      e.printStackTrace()
-      block.invoke(null)
+    pool.resource.use { redis ->
+      try {
+        redis.ping("")
+      } catch (e: JedisException) {
+        return block.invoke(null)
+      }
+      block.invoke(redis)
     }
 
   fun <T> withRedis(block: (Jedis?) -> T): T =
-    try {
-      Jedis(redisURI.host,
-            redisURI.port,
-            Protocol.DEFAULT_TIMEOUT).use { redis ->
-        redis.auth(password)
-        block.invoke(redis)
+    Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
+      try {
+        redis.ping("")
+      } catch (e: JedisException) {
+        return block.invoke(null)
       }
-    } catch (e: JedisException) {
-      e.printStackTrace()
-      block.invoke(null)
+      redis.auth(password)
+      block.invoke(redis)
     }
 
   suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T =
-    try {
-      Jedis(redisURI.host,
-            redisURI.port,
-            Protocol.DEFAULT_TIMEOUT).use { redis ->
-        redis.auth(password)
-        block.invoke(redis)
+    Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
+      try {
+        redis.ping("")
+      } catch (e: JedisException) {
+        return block.invoke(null)
       }
-    } catch (e: JedisException) {
-      e.printStackTrace()
-      block.invoke(null)
+      redis.auth(password)
+      block.invoke(redis)
     }
 }
 
