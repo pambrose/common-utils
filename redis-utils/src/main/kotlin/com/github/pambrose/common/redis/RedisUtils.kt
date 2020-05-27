@@ -17,6 +17,7 @@
 
 package com.github.pambrose.common.redis
 
+import mu.KLogging
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
@@ -24,7 +25,7 @@ import redis.clients.jedis.Protocol
 import redis.clients.jedis.exceptions.JedisException
 import java.net.URI
 
-object RedisUtils {
+object RedisUtils : KLogging() {
   private val redisURI by lazy { URI(System.getenv("REDISTOGO_URL") ?: "redis://user:none@localhost:6379") }
   private val colon = Regex(":")
   private val password by lazy { redisURI.userInfo.split(colon, 2)[1] }
@@ -59,22 +60,22 @@ object RedisUtils {
   fun <T> withRedis(block: (Jedis?) -> T): T =
     Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
       try {
-        redis.ping("")
+        redis.auth(password)
       } catch (e: JedisException) {
+        logger.info(e) { "" }
         return block.invoke(null)
       }
-      redis.auth(password)
       block.invoke(redis)
     }
 
   suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T =
     Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
       try {
-        redis.ping("")
+        redis.auth(password)
       } catch (e: JedisException) {
+        logger.info(e) { "" }
         return block.invoke(null)
       }
-      redis.auth(password)
       block.invoke(redis)
     }
 }
