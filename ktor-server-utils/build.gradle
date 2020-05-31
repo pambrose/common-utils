@@ -1,21 +1,12 @@
-pluginManagement {
-    repositories {
-        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
-
-        mavenCentral()
-
-        maven { url 'https://plugins.gradle.org/m2/' }
-    }
-}
 /*
  * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *  
  *       http://www.apache.org/licenses/LICENSE-2.0
- *
+ *  
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,20 +15,22 @@ pluginManagement {
  *
  */
 
-include 'core-utils'
-include 'corex-utils'
-include 'dropwizard-utils'
-include 'grpc-utils'
-include 'guava-utils'
-include 'jetty-utils'
-include 'ktor-client-utils'
-include 'ktor-server-utils'
-include 'prometheus-utils'
-include 'redis-utils'
-include 'script-utils-common'
-include 'script-utils-python'
-include 'script-utils-java'
-include 'script-utils-kotlin'
-include 'service-utils'
-include 'zipkin-utils'
+description = 'ktor-server-utils'
 
+dependencies {
+    implementation project(':core-utils')
+
+    implementation libraries.ktor_server_core
+}
+
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+    }
+}
+
+compileTestKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+    }
+}

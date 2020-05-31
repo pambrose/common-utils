@@ -45,5 +45,4 @@ class PythonScript : AbstractScript("py") {
 
     return engine.eval(code, bindings)
   }
-
 }

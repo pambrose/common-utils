@@ -26,23 +26,23 @@ ext {
     libraries = [
             reflect               : "org.jetbrains.kotlin:kotlin-reflect",
 
-            coroutines_core       : "org.jetbrains.kotlinx:kotlinx-coroutines-core:${coroutines_version}",
-            coroutines_jdk8       : "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${coroutines_version}",
-            coroutines_slf4j      : "org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:${coroutines_version}",
+            coroutines_core       : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version",
+            coroutines_jdk8       : "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutines_version",
+            coroutines_slf4j      : "org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:$coroutines_version",
 
-            guava                 : "com.google.guava:guava:${guava_version}",
+            guava                 : "com.google.guava:guava:$guava_version",
 
-            grpc                  : "io.grpc:grpc-all:${grpc_version}",
+            grpc                  : "io.grpc:grpc-all:$grpc_version",
 
-            netty_ssl             : "io.netty:netty-tcnative-boringssl-static:${nettyTcNative_version}",
+            netty_ssl             : "io.netty:netty-tcnative-boringssl-static:$nettyTcNative_version",
 
-            dropwizard_core       : "io.dropwizard.metrics:metrics-core:${dropwizard_version}",
-            dropwizard_healthcheck: "io.dropwizard.metrics:metrics-healthchecks:${dropwizard_version}",
-            dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:${dropwizard_version}",
-            dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:${dropwizard_version}",
+            dropwizard_core       : "io.dropwizard.metrics:metrics-core:$dropwizard_version",
+            dropwizard_healthcheck: "io.dropwizard.metrics:metrics-healthchecks:$dropwizard_version",
+            dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:$dropwizard_version",
+            dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:$dropwizard_version",
 
-            jna                   : "net.java.dev.jna:jna:${jna_version}",
-            jna_platform          : "net.java.dev.jna:jna-platform:${jna_version}",
+            jna                   : "net.java.dev.jna:jna:$jna_version",
+            jna_platform          : "net.java.dev.jna:jna-platform:$jna_version",
             script_util           : "org.jetbrains.kotlin:kotlin-script-util",
             script_runtime        : "org.jetbrains.kotlin:kotlin-script-runtime",
             kotlin_compiler       : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
@@ -51,26 +51,30 @@ ext {
             python_scripting      : "org.python:jython-standalone:2.7.2",
             java_scripting        : "ch.obermuhlner:java-scriptengine:2.0.0",
 
-            jetty_server          : "org.eclipse.jetty:jetty-server:${jetty_version}",
-            jetty_servlet         : "org.eclipse.jetty:jetty-servlet:${jetty_version}",
+            jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
+            jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
 
-            ktor_client_core      : "io.ktor:ktor-client-core:${ktor_version}",
-            ktor_client_cio       : "io.ktor:ktor-client-cio:${ktor_version}",
+            ktor_server_core      : "io.ktor:ktor-server-core:$ktor_version",
 
-            prometheus_core       : "io.prometheus:simpleclient:${prometheus_version}",
-            prometheus_hotspot    : "io.prometheus:simpleclient_hotspot:${prometheus_version}",
-            prometheus_servlet    : "io.prometheus:simpleclient_servlet:${prometheus_version}",
-            prometheus_dropwizard : "io.prometheus:simpleclient_dropwizard:${prometheus_version}",
+            ktor_client_core      : "io.ktor:ktor-client-core:$ktor_version",
+            ktor_client_cio       : "io.ktor:ktor-client-cio:$ktor_version",
 
-            zipkin                : "io.zipkin.brave:brave:${zipkin_version}",
+            prometheus_core       : "io.prometheus:simpleclient:$prometheus_version",
+            prometheus_hotspot    : "io.prometheus:simpleclient_hotspot:$prometheus_version",
+            prometheus_servlet    : "io.prometheus:simpleclient_servlet:$prometheus_version",
+            prometheus_dropwizard : "io.prometheus:simpleclient_dropwizard:$prometheus_version",
 
-            zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:${zipkenSender_version}",
+            redis                 : "redis.clients:jedis:$redis_version",
+
+            zipkin                : "io.zipkin.brave:brave:$zipkin_version",
+
+            zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkenSender_version",
     ]
 }
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.1.16'
+    version '1.1.17'
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
@@ -88,11 +92,11 @@ subprojects {
     dependencies {
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
-        implementation "io.github.microutils:kotlin-logging:${logging_version}"
+        implementation "io.github.microutils:kotlin-logging:$logging_version"
 
         testImplementation "org.amshove.kluent:kluent:$kluent_version"
-        testImplementation "org.junit.jupiter:junit-jupiter-api:${junit_version}"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
     }
 
     task sourcesJar(type: Jar, dependsOn: classes) {

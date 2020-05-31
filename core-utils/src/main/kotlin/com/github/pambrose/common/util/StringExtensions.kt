@@ -20,7 +20,11 @@
 package com.github.pambrose.common.util
 
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.regex.Pattern
 import kotlin.math.log10
 
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
@@ -45,9 +49,19 @@ fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this 
 
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
-fun List<String>.toPath(addTrailingSeparator: Boolean = true, separator: CharSequence = "/") =
-  mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
-    .mapIndexed { i, s -> if (i < size - 1 || addTrailingSeparator) s.ensureSuffix(separator) else s }
+fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
+
+fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false)
+
+fun List<String>.toRootPath(addTrailing: Boolean = false, separator: CharSequence = "/") =
+  toPath(addPrefix = true, addTrailing = addTrailing)
+
+fun List<String>.toPath(addPrefix: Boolean = true,
+                        addTrailing: Boolean = true,
+                        separator: CharSequence = "/") =
+  mapIndexed { i, s -> if (i == 0 && addPrefix && !s.startsWith(separator)) "$separator$s" else s }
+    .mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
+    .mapIndexed { i, s -> if (i < size - 1 || addTrailing) s.ensureSuffix(separator) else s }
     .joinToString("")
 
 fun String.firstLineNumberOf(regex: Regex) = lines().firstLineNumberOf(regex)
@@ -87,3 +101,59 @@ fun String.withLineNumbers(separator: Char = ':'): String {
   val len = (log10(lines.size.toDouble()) + 1).toInt()
   return lines.mapIndexed { i, s -> "${(i + 1).toString().padEnd(len + 1)}$separator $s" }.joinToString("\n")
 }
+
+private const val dot = "__SINGLE__DOT__"
+
+val String.toPattern: String
+  get() {
+    // First protect the period and then convert back at end
+    val pattern = this.replace(".", dot).replace("*", ".*").replace("?", ".").replace(dot, """\.""")
+    return """^$pattern$"""
+  }
+
+fun String.asRegex(ignoreCase: Boolean = false) =
+  if (ignoreCase)
+    Regex(this.toPattern, RegexOption.IGNORE_CASE)
+  else
+    Regex(this.toPattern)
+
+private val emailPattern by lazy {
+  Pattern.compile(
+      "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@"
+          + "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+          + "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\."
+          + "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+          + "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|"
+          + "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$")
+}
+
+fun String.isValidEmail() = emailPattern.matcher(this).matches()
+
+fun String.isNotValidEmail() = !isValidEmail()
+
+fun String.md5(salt: String): String = encodedByteArray(this, { salt }, "MD5").asText
+
+fun String.sha256(salt: String): String = encodedByteArray(this, { salt }, "SHA-256").asText
+
+fun String.md5(salt: ByteArray): String = encodedByteArray(this, salt, "MD5").asText
+
+fun String.sha256(salt: ByteArray): String = encodedByteArray(this, salt, "SHA-256").asText
+
+val ByteArray.asText get() = fold("", { str, it -> str + "%02x".format(it) })
+
+private fun encodedByteArray(input: String, salt: ByteArray, algorithm: String) =
+  with(MessageDigest.getInstance(algorithm)) {
+    update(salt)
+    digest(input.toByteArray())
+  }
+
+private fun encodedByteArray(input: String, salt: (String) -> String, algorithm: String) =
+  with(MessageDigest.getInstance(algorithm)) {
+    update(salt(input).toByteArray())
+    digest(input.toByteArray())
+  }
+
+fun newByteArraySalt(len: Int = 16): ByteArray = ByteArray(len).apply { SecureRandom().nextBytes(this) }
+
+fun newStringSalt(len: Int = 16): String = randomId(len)
+

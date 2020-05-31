@@ -21,7 +21,7 @@ package com.github.pambrose.common.util
 
 import java.net.InetAddress
 import java.net.UnknownHostException
-import kotlin.random.Random
+import java.security.SecureRandom
 import kotlin.time.Duration
 import kotlin.time.seconds
 
@@ -42,10 +42,12 @@ val hostInfo by lazy {
 fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.toLongMilliseconds())
 
 fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')) =
-  (1..length)
-    .map { Random.nextInt(0, charPool.size) }
-    .map { i -> charPool[i] }
-    .joinToString("")
+  SecureRandom().let { random ->
+    (1..length)
+      .map { random.nextInt(charPool.size) }
+      .map { i -> charPool[i] }
+      .joinToString("")
+  }
 
 fun repeatWithSleep(iterations: Int,
                     sleepTime: Duration = 1.seconds,

@@ -82,14 +82,20 @@ class StringExtensionTests {
 
   @Test
   fun testPaths() {
-
-    listOf("a", "b", "c").toPath() shouldBeEqualTo "a/b/c/"
+    listOf("a", "b", "c").join() shouldBeEqualTo "a/b/c"
+    listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
+    listOf("a", "b", "c").toRootPath() shouldBeEqualTo "/a/b/c"
+    listOf("a", "b", "c").toRootPath(true) shouldBeEqualTo "/a/b/c/"
+    listOf("a", "b", "c").toPath(addPrefix = false, addTrailing = true) shouldBeEqualTo "a/b/c/"
+    listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
     listOf("/a", "/b", "c").toPath() shouldBeEqualTo "/a/b/c/"
+    listOf("/a", "/b", "c/").toPath() shouldBeEqualTo "/a/b/c/"
+    listOf("a", "/b", "c/").toPath() shouldBeEqualTo "/a/b/c/"
 
-    listOf("a", "b", "c").toPath(false) shouldBeEqualTo "a/b/c"
-    listOf("a/", "/b/", "c").toPath(false) shouldBeEqualTo "a/b/c"
-    listOf("/a/", "/b/", "c").toPath(false) shouldBeEqualTo "/a/b/c"
-    listOf("/a/", "/b/", "/c").toPath(false) shouldBeEqualTo "/a/b/c"
+    listOf("a", "b", "c").join() shouldBeEqualTo "a/b/c"
+    listOf("a/", "/b/", "c").join() shouldBeEqualTo "a/b/c"
+    listOf("/a/", "/b/", "c").join() shouldBeEqualTo "/a/b/c"
+    listOf("/a/", "/b/", "/c").join() shouldBeEqualTo "/a/b/c"
   }
 
   @Test
@@ -153,4 +159,20 @@ class StringExtensionTests {
     "  [fddsf]  ".trimEnds(2) shouldBeEqualTo "dds"
   }
 
+  @Test
+  fun patternMatchTest() {
+    "*st*".toPattern shouldBeEqualTo "^.*st.*$"
+    "?.*".toPattern shouldBeEqualTo "^.\\..*$"
+
+    "Test.java".contains("*st*".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("*.j".asRegex()) shouldBeEqualTo false
+    "Test.java".contains("*.java".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?.java".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?*java".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?*jav?".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?.*".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("T?s?.*a".asRegex()) shouldBeEqualTo true
+    "Test.java".contains("t?s?.*a".asRegex()) shouldBeEqualTo false
+    "Test.java".contains("t?s?.*a".asRegex(true)) shouldBeEqualTo true
+  }
 }
