@@ -71,6 +71,6 @@ object ArrayUtils {
   fun arrayPrint(vals: Array<String>) = println(asString(vals))
 
   @JvmStatic
-  fun asString(vals: Array<String>) = vals.joinToString() { it.toDoubleQuoted() }.asBracketed()
+  fun asString(vals: Array<String>) = vals.joinToString { it.toDoubleQuoted() }.asBracketed()
 
 }

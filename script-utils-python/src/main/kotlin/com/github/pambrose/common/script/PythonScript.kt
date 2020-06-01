@@ -39,7 +39,7 @@ class PythonScript : AbstractScript("py") {
       throw ScriptException("Illegal call to quit()")
 
     if (!initialized.get()) {
-      valueMap.forEach { (name, value) -> bindings.put(name, value) }
+      valueMap.forEach { (name, value) -> bindings[name] = value }
       initialized.set(true)
     }
 
