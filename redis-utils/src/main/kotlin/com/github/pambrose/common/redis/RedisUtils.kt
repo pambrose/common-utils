@@ -26,11 +26,21 @@ import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
 object RedisUtils : KLogging() {
-  private val redisURI by lazy { URI(System.getenv("REDISTOGO_URL") ?: "redis://user:none@localhost:6379") }
+  private val redisURI by lazy { URI(System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379") }
   private val colon = Regex(":")
   private val password by lazy { redisURI.userInfo.split(colon, 2)[1] }
 
-  private var pool: JedisPool = JedisPool(JedisPoolConfig(),
+  private val poolConfig = JedisPoolConfig()
+    .apply {
+      setMaxTotal(10);
+      setMaxIdle(5);
+      setMinIdle(1);
+      setTestOnBorrow(true);
+      setTestOnReturn(true);
+      setTestWhileIdle(true);
+    }
+
+  private var pool: JedisPool = JedisPool(poolConfig,
                                           redisURI.host,
                                           redisURI.port,
                                           Protocol.DEFAULT_TIMEOUT,
