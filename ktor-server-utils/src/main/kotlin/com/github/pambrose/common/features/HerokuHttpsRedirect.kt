@@ -2,7 +2,7 @@
  * Copyright 2014-2019 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package com.github.readingbat.config
+package com.github.pambrose.common.features
 
 import io.ktor.application.ApplicationCall
 import io.ktor.application.ApplicationCallPipeline

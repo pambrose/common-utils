@@ -47,7 +47,7 @@ class KotlinScript : AbstractScript("kts") {
     }
 
   val importDecls: String
-    get() = imports.map { "import $it" }.joinToString("\n")
+    get() = imports.joinToString("\n") { "import $it" }
 
   @Synchronized
   fun eval(code: String): Any? {

@@ -26,57 +26,70 @@ import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
 object RedisUtils : KLogging() {
-  private val redisURI by lazy { URI(System.getenv("REDISTOGO_URL") ?: "redis://user:none@localhost:6379") }
   private val colon = Regex(":")
+  private val redisURI by lazy { URI(System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379") }
   private val password by lazy { redisURI.userInfo.split(colon, 2)[1] }
 
-  private var pool: JedisPool = JedisPool(JedisPoolConfig(),
-                                          redisURI.host,
-                                          redisURI.port,
-                                          Protocol.DEFAULT_TIMEOUT,
-                                          password)
+  private fun newJedisPool(): JedisPool {
+    val poolConfig =
+      JedisPoolConfig()
+        .apply {
+          maxTotal = 10
+          maxIdle = 5
+          minIdle = 1
+          testOnBorrow = true
+          testOnReturn = true
+          testWhileIdle = true
+        }
+    return JedisPool(poolConfig, redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT, password)
+  }
+
+  private val pool by lazy { newJedisPool() }
 
   fun <T> withRedisPool(block: (Jedis?) -> T): T {
-    pool.resource.use { redis ->
-      try {
+    try {
+      pool.resource.use { redis ->
         redis.ping("")
-      } catch (e: JedisConnectionException) {
-        return block.invoke(null)
+        return block.invoke(redis)
       }
-      return block.invoke(redis)
+    } catch (e: JedisConnectionException) {
+      return block.invoke(null)
     }
   }
 
-  suspend fun <T> withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
-    pool.resource.use { redis ->
-      try {
+  suspend fun <T> withSuspendingRedisPool(block: suspend (Jedis?) -> T): T {
+    try {
+      pool.resource.use { redis ->
         redis.ping("")
-      } catch (e: JedisConnectionException) {
-        return block.invoke(null)
+        return block.invoke(redis)
       }
-      block.invoke(redis)
+    } catch (e: JedisConnectionException) {
+      return block.invoke(null)
     }
+  }
 
-  fun <T> withRedis(block: (Jedis?) -> T): T =
-    Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
-      try {
+  fun <T> withRedis(block: (Jedis?) -> T): T {
+    try {
+      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
         redis.auth(password)
-      } catch (e: JedisConnectionException) {
-        logger.info(e) { "" }
-        return block.invoke(null)
+        return block.invoke(redis)
       }
-      block.invoke(redis)
+    } catch (e: JedisConnectionException) {
+      logger.info(e) { "" }
+      return block.invoke(null)
     }
+  }
 
-  suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T =
-    Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
-      try {
+  suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T {
+    try {
+      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
         redis.auth(password)
-      } catch (e: JedisConnectionException) {
-        logger.info(e) { "" }
-        return block.invoke(null)
+        return block.invoke(redis)
       }
-      block.invoke(redis)
+    } catch (e: JedisConnectionException) {
+      logger.info(e) { "" }
+      return block.invoke(null)
     }
+  }
 }
 

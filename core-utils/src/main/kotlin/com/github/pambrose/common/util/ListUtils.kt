@@ -23,7 +23,7 @@ object ListUtils {
   fun <T> listPrint(vals: List<T>) {
     val hasString = vals.any { it is String }
     val str =
-      vals.joinToString() {
+      vals.joinToString {
         if (hasString)
           (it as String?)?.toDoubleQuoted() ?: "".toDoubleQuoted()
         else

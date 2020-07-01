@@ -36,7 +36,6 @@ import com.github.pambrose.common.metrics.SystemMetrics
 import com.github.pambrose.common.servlet.VersionServlet
 import com.github.pambrose.common.util.simpleClassName
 import com.google.common.base.Joiner
-import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.MoreExecutors.directExecutor
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
@@ -125,7 +124,7 @@ protected constructor(val configVals: T,
       logger.info { "Zipkin reporter service disabled" }
     }
 
-    addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
+    addListener(genericServiceListener(logger), directExecutor())
 
     addService(this)
 
