@@ -12,11 +12,10 @@ publish:
 	./gradlew publish
 
 tests:
-	./gradlew check
+	./gradlew --rerun-tasks check
 
 refresh:
 	./gradlew --refresh-dependencies dependencyUpdates
 
 versioncheck:
 	./gradlew dependencyUpdates
-

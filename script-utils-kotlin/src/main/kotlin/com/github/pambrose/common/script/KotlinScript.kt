@@ -55,9 +55,9 @@ class KotlinScript : AbstractScript("kts") {
     if ("java.lang.System.exit" in code)
       throw ScriptException("Illegal call to System.exit()")
 
-    if (!initialized.get()) {
+    if (!initialized) {
       engine.eval(varDecls, bindings)
-      initialized.set(true)
+      initialized = true
     }
 
     return engine.eval("$importDecls\n\n$code", bindings)

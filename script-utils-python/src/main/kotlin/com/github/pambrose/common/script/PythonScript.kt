@@ -38,9 +38,9 @@ class PythonScript : AbstractScript("py") {
     if ("quit(" in code)
       throw ScriptException("Illegal call to quit()")
 
-    if (!initialized.get()) {
+    if (!initialized) {
       valueMap.forEach { (name, value) -> bindings[name] = value }
-      initialized.set(true)
+      initialized = true
     }
 
     return engine.eval(code, bindings)

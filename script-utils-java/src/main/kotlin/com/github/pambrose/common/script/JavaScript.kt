@@ -63,9 +63,9 @@ class JavaScript : AbstractScript("java") {
 
   @Synchronized
   fun evalScript(script: String): Any {
-    if (!initialized.get()) {
+    if (!initialized) {
       valueMap.forEach { (name, value) -> bindings[name] = value }
-      initialized.set(true)
+      initialized = true
     }
 
     return engine.eval(importDecls + script, bindings)
@@ -89,9 +89,9 @@ $varDecls
 }
 """
 
-    if (!initialized.get()) {
+    if (!initialized) {
       valueMap.forEach { (name, value) -> bindings[name] = value }
-      initialized.set(true)
+      initialized = true
     }
 
     return engine.eval(code, bindings)

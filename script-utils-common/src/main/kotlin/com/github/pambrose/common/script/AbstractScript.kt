@@ -20,7 +20,7 @@ package com.github.pambrose.common.script
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.atomicfu.atomic
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import javax.script.SimpleBindings
@@ -28,11 +28,17 @@ import kotlin.reflect.KType
 
 abstract class AbstractScript(extension: String) {
   private val manager = ScriptEngineManager()
-  protected val engine = manager.getEngineByExtension(extension)
+  private val _initialized = atomic(false)
   private val typeMap = mutableMapOf<String, Array<out KType>>()
+  protected val engine = manager.getEngineByExtension(extension)
   protected val valueMap = mutableMapOf<String, Any>()
   protected val bindings = SimpleBindings(valueMap)
-  protected var initialized = AtomicBoolean(false)
+
+  protected var initialized: Boolean
+    get() = _initialized.value
+    set(value) {
+      _initialized.value = value
+    }
 
   open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
     val params = types.map { type -> type.toString().removePrefix("kotlin.") }
