@@ -87,6 +87,7 @@ allprojects {
     apply plugin: 'maven' // required for jitpack.io install
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
+    apply plugin: 'kotlinx-atomicfu'
 
     repositories {
         maven { url 'https://maven-central.storage-download.googleapis.com/repos/central/data/' }
@@ -98,7 +99,6 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'kotlinx-atomicfu'
 
     dependencies {
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
