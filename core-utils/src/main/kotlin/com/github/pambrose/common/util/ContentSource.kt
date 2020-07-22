@@ -31,6 +31,7 @@ class FileSystemSource(val pathPrefix: String) : ContentRoot {
   override val remote = false
 
   override fun file(path: String) = FileSource(path)
+  override fun toString() = "FileSystemSource(pathPrefix='$pathPrefix', sourcePrefix='$sourcePrefix')"
 }
 
 abstract class AbstractRepo(val scheme: String,
@@ -56,6 +57,9 @@ class GitHubRepo(organizationName: String,
                                                              organizationName,
                                                              repoName) {
   override val rawSourcePrefix = sourcePrefix.replace(github, githubUserContent)
+
+  override fun toString() =
+    "GitHubRepo(scheme='$scheme', domainName='$domainName', organizationName='$organizationName', repoName='$repoName', rawSourcePrefix='$rawSourcePrefix')"
 }
 
 
@@ -67,6 +71,9 @@ class GitLabRepo(organizationName: String,
                                                                    organizationName,
                                                                    repoName) {
   override val rawSourcePrefix = sourcePrefix
+
+  override fun toString() =
+    "GitLabRepo(scheme='$scheme', domainName='$domainName', organizationName='$organizationName', repoName='$repoName', rawSourcePrefix='$rawSourcePrefix')"
 }
 
 interface ContentSource {
