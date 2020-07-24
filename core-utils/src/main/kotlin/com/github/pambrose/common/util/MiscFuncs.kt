@@ -70,7 +70,7 @@ fun Any?.isNotNull(): Boolean {
 
 fun Any?.isNull(): Boolean {
   contract {
-    returns(true) implies (this@isNull == null)
+    returns(false) implies (this@isNull != null)
   }
   return this == null
 }
