@@ -34,7 +34,8 @@ val hostInfo by lazy {
     val address = InetAddress.getLocalHost().hostAddress!!
     //logger.debug { "Hostname: $hostname Address: $address" }
     HostInfo(hostname, address)
-  } catch (e: UnknownHostException) {
+  }
+  catch (e: UnknownHostException) {
     HostInfo("Unknown", "Unknown")
   }
 }
@@ -58,3 +59,7 @@ fun repeatWithSleep(iterations: Int,
     sleep(sleepTime)
   }
 }
+
+fun Any?.isNotNull() = this != null
+
+fun Any?.isNull() = this == null
