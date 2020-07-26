@@ -29,7 +29,11 @@ import kotlin.math.log10
 
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
+fun String.isNotSingleQuoted() = !isSingleQuoted()
+
 fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
+
+fun String.isNotDoubleQuoted() = !isDoubleQuoted()
 
 fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
 
