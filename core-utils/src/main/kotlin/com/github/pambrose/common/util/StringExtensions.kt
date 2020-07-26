@@ -100,6 +100,28 @@ fun String.isNotBracketed(startChar: Char = '[', endChar: Char = ']') = !isBrack
 
 fun String.asBracketed(startChar: Char = '[', endChar: Char = ']') = "$startChar$this$endChar"
 
+fun String.isInt() =
+  try {
+    this.toInt()
+    true
+  }
+  catch (e: Exception) {
+    false
+  }
+
+fun String.isNotInt() = !isInt()
+
+fun String.isDouble() =
+  try {
+    this.toDouble()
+    true
+  }
+  catch (e: Exception) {
+    false
+  }
+
+fun String.isNotDouble() = !isDouble()
+
 fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
 
 fun String.substringBetween(begin: String, end: String) = substringAfter(begin).substringBeforeLast(end)

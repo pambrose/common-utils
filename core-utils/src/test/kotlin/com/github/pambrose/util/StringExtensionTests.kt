@@ -68,6 +68,32 @@ class StringExtensionTests {
   }
 
   @Test
+  fun isIntTest() {
+    "".isInt() shouldBeEqualTo false
+    "a".isInt() shouldBeEqualTo false
+    "4".isInt() shouldBeEqualTo true
+    "4.0".isInt() shouldBeEqualTo false
+
+    "".isNotInt() shouldBeEqualTo true
+    "a".isNotInt() shouldBeEqualTo true
+    "4".isNotInt() shouldBeEqualTo false
+    "4.0".isNotInt() shouldBeEqualTo true
+  }
+
+  @Test
+  fun isDoubleTest() {
+    "".isDouble() shouldBeEqualTo false
+    "a".isDouble() shouldBeEqualTo false
+    "4.0".isDouble() shouldBeEqualTo true
+    "4".isDouble() shouldBeEqualTo true
+
+    "".isNotDouble() shouldBeEqualTo true
+    "a".isNotDouble() shouldBeEqualTo true
+    "4.0".isNotDouble() shouldBeEqualTo false
+    "4".isNotDouble() shouldBeEqualTo false
+  }
+
+  @Test
   fun convertTest() {
     "".singleToDoubleQuoted() shouldBeEqualTo ""
     "'".singleToDoubleQuoted() shouldBeEqualTo "'"
