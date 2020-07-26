@@ -39,26 +39,32 @@ class StringExtensionTests {
     "".isSingleQuoted() shouldBeEqualTo false
     "".isDoubleQuoted() shouldBeEqualTo false
     "".isQuoted() shouldBeEqualTo false
+    "".isNotQuoted() shouldBeEqualTo true
 
     " ".isSingleQuoted() shouldBeEqualTo false
     " ".isDoubleQuoted() shouldBeEqualTo false
     " ".isQuoted() shouldBeEqualTo false
+    " ".isNotQuoted() shouldBeEqualTo true
 
     "'".isSingleQuoted() shouldBeEqualTo false
     "'".isDoubleQuoted() shouldBeEqualTo false
     "'".isQuoted() shouldBeEqualTo false
+    "'".isNotQuoted() shouldBeEqualTo true
 
     """ " """.isSingleQuoted() shouldBeEqualTo false
     """ " """.isDoubleQuoted() shouldBeEqualTo false
     """ " """.isQuoted() shouldBeEqualTo false
+    """ " """.isNotQuoted() shouldBeEqualTo true
 
     """ "" """.isSingleQuoted() shouldBeEqualTo false
     """ "" """.isDoubleQuoted() shouldBeEqualTo true
     """ "" """.isQuoted() shouldBeEqualTo true
+    """ "" """.isNotQuoted() shouldBeEqualTo false
 
     "''".isSingleQuoted() shouldBeEqualTo true
     "''".isDoubleQuoted() shouldBeEqualTo false
     "''".isQuoted() shouldBeEqualTo true
+    "''".isNotQuoted() shouldBeEqualTo false
   }
 
   @Test
