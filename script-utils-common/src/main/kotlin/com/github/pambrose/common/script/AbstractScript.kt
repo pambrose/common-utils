@@ -30,7 +30,8 @@ abstract class AbstractScript(extension: String) {
   private val manager = ScriptEngineManager()
   private val _initialized = atomic(false)
   private val typeMap = mutableMapOf<String, Array<out KType>>()
-  protected val engine = manager.getEngineByExtension(extension)
+  protected val engine =
+    manager.getEngineByExtension(extension) ?: throw ScriptException("Unrecognized script extension: $extension")
   protected val valueMap = mutableMapOf<String, Any>()
   protected val bindings = SimpleBindings(valueMap)
 
