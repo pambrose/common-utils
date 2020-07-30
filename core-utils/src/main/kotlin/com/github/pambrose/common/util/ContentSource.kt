@@ -34,7 +34,12 @@ class FileSystemSource(val pathPrefix: String) : ContentRoot {
   override fun toString() = "FileSystemSource(pathPrefix='$pathPrefix', sourcePrefix='$sourcePrefix')"
 }
 
-enum class OwnerType { User, Organization }
+enum class OwnerType {
+  User, Organization;
+
+  fun isUser() = this == User
+  fun isOrganization() = this == Organization
+}
 
 abstract class AbstractRepo(val scheme: String,
                             val domainName: String,
