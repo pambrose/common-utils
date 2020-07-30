@@ -34,12 +34,15 @@ class FileSystemSource(val pathPrefix: String) : ContentRoot {
   override fun toString() = "FileSystemSource(pathPrefix='$pathPrefix', sourcePrefix='$sourcePrefix')"
 }
 
+enum class OwnerType { User, Organization }
+
 abstract class AbstractRepo(val scheme: String,
                             val domainName: String,
-                            val organizationName: String,
+                            val ownerType: OwnerType,
+                            val ownerName: String,
                             val repoName: String) : ContentRoot {
 
-  override val sourcePrefix: String get() = scheme + listOf(domainName, organizationName, repoName).join()
+  override val sourcePrefix: String get() = scheme + listOf(domainName, ownerName, repoName).join()
   override val remote = true
   abstract val rawSourcePrefix: String
 
@@ -49,31 +52,35 @@ abstract class AbstractRepo(val scheme: String,
 private const val github = "github.com"
 private const val githubUserContent = "raw.githubusercontent.com"
 
-class GitHubRepo(organizationName: String,
+class GitHubRepo(ownerType: OwnerType,
+                 ownerName: String,
                  repoName: String,
                  scheme: String = "https://",
                  domainName: String = github) : AbstractRepo(scheme,
                                                              domainName,
-                                                             organizationName,
+                                                             ownerType,
+                                                             ownerName,
                                                              repoName) {
   override val rawSourcePrefix = sourcePrefix.replace(github, githubUserContent)
 
   override fun toString() =
-    "GitHubRepo(scheme='$scheme', domainName='$domainName', organizationName='$organizationName', repoName='$repoName', rawSourcePrefix='$rawSourcePrefix')"
+    "GitHubRepo(scheme='$scheme', domainName='$domainName', ownerName='$ownerName', repoName='$repoName', rawSourcePrefix='$rawSourcePrefix')"
 }
 
 
-class GitLabRepo(organizationName: String,
+class GitLabRepo(ownerType: OwnerType,
+                 ownerName: String,
                  repoName: String,
                  scheme: String = "https://",
                  domainName: String = "gitlab.com") : AbstractRepo(scheme,
                                                                    domainName,
-                                                                   organizationName,
+                                                                   ownerType,
+                                                                   ownerName,
                                                                    repoName) {
   override val rawSourcePrefix = sourcePrefix
 
   override fun toString() =
-    "GitLabRepo(scheme='$scheme', domainName='$domainName', organizationName='$organizationName', repoName='$repoName', rawSourcePrefix='$rawSourcePrefix')"
+    "GitLabRepo(scheme='$scheme', domainName='$domainName', ownerName='$ownerName', repoName='$repoName', rawSourcePrefix='$rawSourcePrefix')"
 }
 
 interface ContentSource {
@@ -83,11 +90,11 @@ interface ContentSource {
 }
 
 open class GitHubFile(val repo: GitHubRepo,
-                      val branchName: String = "master",
+                      val branchName: String,
                       val srcPath: String,
                       val fileName: String)
   : UrlSource(repo.scheme + listOf(githubUserContent,
-                                   repo.organizationName,
+                                   repo.ownerName,
                                    repo.repoName,
                                    branchName,
                                    srcPath,
@@ -96,11 +103,11 @@ open class GitHubFile(val repo: GitHubRepo,
 }
 
 open class GitLabFile(val repo: GitLabRepo,
-                      val branchName: String = "master",
+                      val branchName: String,
                       val srcPath: String,
                       val fileName: String)
   : UrlSource(repo.scheme + listOf("gitlab.com",
-                                   repo.organizationName,
+                                   repo.ownerName,
                                    repo.repoName,
                                    "-/blob",
                                    branchName,
