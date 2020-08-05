@@ -20,5 +20,4 @@ package com.github.pambrose.common.util
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class Version {
-}
+annotation class Version(val version: String, val date: String)
