@@ -17,9 +17,6 @@
 
 package com.github.pambrose.common.util
 
-import com.github.pambrose.common.util.Version.Companion.jsonStr
-import com.github.pambrose.common.util.Version.Companion.plainStr
-import com.github.pambrose.common.util.Version.Companion.unknown
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 
@@ -31,10 +28,10 @@ annotation class Version(val version: String, val date: String) {
     internal val jsonStr = { version: String, date: String -> """{"Version": "$version", "Release Date": "$date"}""" }
     internal val plainStr = { version: String, date: String -> "Version: $version Release Date: $date" }
     internal const val unknown = "unknown"
+
+    fun KClass<*>.versionDesc(asJson: Boolean = false): String =
+      this.findAnnotation<Version>()
+        ?.run { if (asJson) jsonStr(version, date) else plainStr(version, date) }
+      ?: if (asJson) jsonStr(unknown, unknown) else plainStr(unknown, unknown)
   }
 }
-
-fun KClass<*>.versionDesc(asJson: Boolean = false): String =
-  this.findAnnotation<Version>()
-    ?.run { if (asJson) jsonStr(version, date) else plainStr(version, date) }
-  ?: if (asJson) jsonStr(unknown, unknown) else plainStr(unknown, unknown)
