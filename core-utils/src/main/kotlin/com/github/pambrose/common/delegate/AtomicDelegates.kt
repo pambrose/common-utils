@@ -19,7 +19,6 @@
 
 package com.github.pambrose.common.delegate
 
-import com.github.pambrose.common.util.isNull
 import kotlinx.atomicfu.atomic
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.properties.ReadWriteProperty
@@ -49,8 +48,6 @@ private class NonNullAtomicReferenceDelegate<T : Any>(initValue: T? = null) : Re
     atomicVal.get() ?: throw IllegalStateException("Property ${property.name} must be initialized first")
 
   override operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) = atomicVal.set(value)
-
-  override fun toString(): String = if (atomicVal.isNull()) "" else atomicVal.toString()
 }
 
 private class NullableAtomicReferenceDelegate<T : Any?>(initValue: T? = null) : ReadWriteProperty<Any?, T> {
