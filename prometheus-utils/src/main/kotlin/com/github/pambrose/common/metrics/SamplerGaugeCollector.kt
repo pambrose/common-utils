@@ -24,7 +24,7 @@ import io.prometheus.client.Collector
 class SamplerGaugeCollector(private val name: String,
                             private val help: String,
                             private val labelNames: List<String> = emptyList(),
-                            private val labelValues: List<String> = emptyList(),
+                            private val labelValues: () -> List<String> = { emptyList() },
                             private val data: () -> Double) : Collector() {
 
   init {
@@ -32,10 +32,7 @@ class SamplerGaugeCollector(private val name: String,
   }
 
   override fun collect(): List<MetricFamilySamples> {
-    val sample = MetricFamilySamples.Sample(name,
-                                            labelNames,
-                                            labelValues,
-                                            data())
+    val sample = MetricFamilySamples.Sample(name, labelNames, labelValues.invoke(), data())
     return listOf(MetricFamilySamples(name, Type.GAUGE, help, listOf(sample)))
   }
 }
