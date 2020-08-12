@@ -17,10 +17,11 @@
 
 package com.github.pambrose.common.script
 
+import org.python.jsr223.PyScriptEngine
 import javax.script.ScriptException
 import kotlin.reflect.KType
 
-class PythonScript : AbstractScript("py") {
+class PythonScript : AbstractScript("py"), AutoCloseable {
 
   override fun add(name: String, value: Any, vararg types: KType) {
     valueMap[name] = value
@@ -44,5 +45,9 @@ class PythonScript : AbstractScript("py") {
     }
 
     return engine.eval(code, bindings)
+  }
+
+  override fun close() {
+    (engine as PyScriptEngine).close()
   }
 }

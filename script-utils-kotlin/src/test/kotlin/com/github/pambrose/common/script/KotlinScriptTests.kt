@@ -41,8 +41,8 @@ class KotlinScriptTests {
     val floatVal = 0.0F
     val strVal = "A String"
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         add("boolVal", boolVal)
         add("intVal", intVal)
         add("longVal", longVal)
@@ -68,6 +68,7 @@ class KotlinScriptTests {
         strVal shouldBeEqualTo eval("strVal")
         strVal.length shouldBeEqualTo eval("strVal.length")
       }
+    }
   }
 
   @Test
@@ -75,8 +76,8 @@ class KotlinScriptTests {
     val intVal = 0
     var intVar = 0
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         add("intVal", intVal)
         add("intVar", intVar)
 
@@ -88,14 +89,15 @@ class KotlinScriptTests {
         intVar + 1 shouldBeEqualTo eval("intVar + 1")
         intVar shouldBeEqualTo 0
       }
+    }
   }
 
   @Test
   fun userObjectTest() {
     val aux = IncClass()
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
 
         add("aux", aux)
 
@@ -111,6 +113,7 @@ class KotlinScriptTests {
         aux.i shouldBeEqualTo 100
         aux.i shouldBeEqualTo incEd.i
       }
+    }
   }
 
   @Test
@@ -118,8 +121,8 @@ class KotlinScriptTests {
     val list = mutableListOf(1)
     val map = mutableMapOf("k1" to 1)
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         add("list", list, typeOf<Int>())
         add("map", map, typeOf<String>(), typeOf<Int>())
 
@@ -142,14 +145,15 @@ class KotlinScriptTests {
         map.size shouldBeEqualTo 2
         map["k2"] shouldBeEqualTo 10
       }
+    }
   }
 
   @Test
   fun objectWithKTypeTest() {
     val list = mutableListOf(1)
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         add("list", list, typeOf<Int>())
 
         list.size shouldBeEqualTo eval("list.size")
@@ -165,14 +169,15 @@ class KotlinScriptTests {
         list.size shouldBeEqualTo eval("list.size")
         list.size shouldBeEqualTo incEd.size
       }
+    }
   }
 
   @Test
   fun nullObjectTest() {
     val list = mutableListOf<Int?>()
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         add("list", list, typeOf<Int?>())
 
         varDecls shouldBeEqualTo "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
@@ -190,12 +195,13 @@ class KotlinScriptTests {
         list.size shouldBeEqualTo eval("list.size")
         list.size shouldBeEqualTo incEd.size
       }
+    }
   }
 
   @Test
   fun listCompareTest() {
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         eval("listOf(1,2,3) == listOf(1, 2, 3)") shouldBeEqualTo true
         eval("listOf(1,2) == listOf(1, 2, 3)") shouldBeEqualTo false
 
@@ -205,6 +211,7 @@ class KotlinScriptTests {
         eval("""listOf("aaa","bbb") == listOf("aaa", "bbb")""") shouldBeEqualTo true
         eval("""listOf("aaa","bbb") == listOf("aaa", "aaa")""") shouldBeEqualTo false
       }
+    }
   }
 
   @Test
@@ -213,56 +220,62 @@ class KotlinScriptTests {
 
     val inner = InnerTest()
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         invoking { add("inner", inner) } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun unnecessaryParamsTest() {
     val value = 5
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         invoking { add("value", value, typeOf<Int?>()) } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun unmatchedParamsTest() {
     val list = mutableListOf(1)
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         invoking { add("list", list, typeOf<Int?>(), typeOf<Int>()) } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun missingCollectionTypeTest() {
     val list = mutableListOf(1)
 
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         invoking { add("list", list) } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun invalidSyntaxTest() {
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         invoking { eval("junk") } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun illegalCallsTest() {
-    KotlinScript()
-      .apply {
+    KotlinScript().use {
+      it.apply {
         invoking { eval("System.exit(1)") } shouldThrow ScriptException::class
         invoking { eval("com.lang.System.exit(1)") } shouldThrow ScriptException::class
       }
+    }
   }
 }

@@ -24,7 +24,7 @@ import kotlin.reflect.typeOf
 // https://github.com/eobermuhlner/java-scriptengine
 // https://gitter.im/java-scriptengine/community
 
-class JavaScript : AbstractScript("java") {
+class JavaScript : AbstractScript("java"), AutoCloseable {
   private val imports = mutableListOf<String>()
 
   val varDecls: String
@@ -95,5 +95,9 @@ $varDecls
     }
 
     return engine.eval(code, bindings)
+  }
+
+  override fun close() {
+    // Placeholder
   }
 }

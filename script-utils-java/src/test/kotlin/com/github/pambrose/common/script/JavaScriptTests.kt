@@ -42,8 +42,8 @@ class JavaScriptTests {
     val floatVal = 0.0F
     val strVal = "A String"
 
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         add("boolVal", boolVal)
         add("intVal", intVal)
         add("longVal", longVal)
@@ -69,14 +69,15 @@ class JavaScriptTests {
         strVal shouldBeEqualTo eval("strVal")
         strVal.length shouldBeEqualTo eval("strVal.length()")
       }
+    }
   }
 
   @Test
   fun userObjectTest() {
     val aux = IncClass()
 
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
 
         add("aux", aux)
         import(IncClass::class.java)
@@ -94,6 +95,7 @@ class JavaScriptTests {
         retval shouldBeEqualTo 100
         aux.i shouldBeEqualTo 100
       }
+    }
   }
 
   @Test
@@ -101,8 +103,8 @@ class JavaScriptTests {
     val list = mutableListOf(1)
     val map = mutableMapOf("k1" to 1)
 
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         add("list", list, typeOf<Int>())
         add("map", map, typeOf<String>(), typeOf<Int>())
         import(ArrayList::class.java)
@@ -129,14 +131,15 @@ class JavaScriptTests {
         map.size shouldBeEqualTo 2
         map["k2"] shouldBeEqualTo 10
       }
+    }
   }
 
   @Test
   fun objectWithKTypeTest() {
     val list = mutableListOf(1)
 
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         add("list", list, typeOf<Int>())
         import(ArrayList::class.java)
 
@@ -151,14 +154,15 @@ class JavaScriptTests {
         list.size shouldBeEqualTo 101
         list.size shouldBeEqualTo eval("list.size()")
       }
+    }
   }
 
   @Test
   fun nullObjectTest() {
     val list = mutableListOf<Int?>()
 
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         add("list", list, typeOf<Int?>())
         import(ArrayList::class.java)
 
@@ -174,52 +178,58 @@ class JavaScriptTests {
         list.size shouldBeEqualTo 100
         list.size shouldBeEqualTo eval("list.size()")
       }
+    }
   }
 
   @Test
   fun unnecessaryParamsTest() {
     val value = 5
 
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         invoking { add("value", value, typeOf<Int?>()) } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun unmatchedParamsTest() {
     val list = mutableListOf(1)
 
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         invoking { add("list", list, typeOf<Int?>(), typeOf<Int>()) } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun missingCollectionTypeTest() {
     val list = mutableListOf(1)
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         invoking { add("list", list) } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun invalidSyntaxTest() {
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         invoking { eval("junk") } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun illegalCallsTest() {
-    JavaScript()
-      .apply {
+    JavaScript().use {
+      it.apply {
         invoking { eval("sys.exit(1)") } shouldThrow ScriptException::class
         invoking { eval("exit(1)") } shouldThrow ScriptException::class
         invoking { eval("quit(1)") } shouldThrow ScriptException::class
       }
+    }
   }
 }
