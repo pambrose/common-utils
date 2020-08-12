@@ -61,8 +61,8 @@ ext {
             kotlin_compiler       : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
             kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",
 
-            python_scripting      : "org.python:jython-standalone:2.7.2",
-            java_scripting        : "ch.obermuhlner:java-scriptengine:2.0.0",
+            python_scripting      : "org.python:jython-standalone:$python_version",
+            java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
 
             jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
             jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
