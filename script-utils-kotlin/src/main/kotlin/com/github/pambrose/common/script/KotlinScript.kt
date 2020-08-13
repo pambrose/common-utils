@@ -25,7 +25,7 @@ import javax.script.ScriptException
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting
 
-class KotlinScript : AbstractScript("kts") {
+class KotlinScript : AbstractScript("kts"), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
   init {
@@ -55,11 +55,15 @@ class KotlinScript : AbstractScript("kts") {
     if ("java.lang.System.exit" in code)
       throw ScriptException("Illegal call to System.exit()")
 
-    if (!initialized.get()) {
+    if (!initialized) {
       engine.eval(varDecls, bindings)
-      initialized.set(true)
+      initialized = true
     }
 
     return engine.eval("$importDecls\n\n$code", bindings)
+  }
+
+  override fun close() {
+    // Placeholder
   }
 }

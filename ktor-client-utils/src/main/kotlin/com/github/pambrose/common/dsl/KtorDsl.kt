@@ -32,7 +32,7 @@ object KtorDsl {
 
   fun newHttpClient(): HttpClient = HttpClient(CIO)
 
-  suspend fun http(httpClient: HttpClient? = null, block: suspend HttpClient.() -> Unit) {
+  suspend fun withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> Unit) {
     if (httpClient == null) {
       newHttpClient()
         .use { client ->
@@ -41,6 +41,18 @@ object KtorDsl {
     }
     else {
       httpClient.block()
+    }
+  }
+
+  suspend fun httpClient(httpClient: HttpClient? = null, block: suspend (HttpClient) -> Unit) {
+    if (httpClient == null) {
+      newHttpClient()
+        .use { client ->
+          block(client)
+        }
+    }
+    else {
+      block(httpClient)
     }
   }
 
@@ -59,7 +71,7 @@ object KtorDsl {
                   setUp: HttpRequestBuilder.() -> Unit = {},
                   block: suspend (HttpResponse) -> Unit) {
     runBlocking {
-      http {
+      withHttpClient {
         get(url, setUp, block)
       }
     }

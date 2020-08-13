@@ -40,8 +40,8 @@ class PythonScriptTests {
     val floatVal = 0.0F
     val strVal = "A String"
 
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
         add("boolVal", boolVal)
         add("intVal", intVal)
         add("longVal", longVal)
@@ -67,14 +67,15 @@ class PythonScriptTests {
         strVal shouldBeEqualTo eval("strVal")
         strVal.length shouldBeEqualTo eval("len(strVal)")
       }
+    }
   }
 
   @Test
   fun userObjectTest() {
     val aux = IncClass()
 
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
 
         add("aux", aux)
 
@@ -88,6 +89,7 @@ class PythonScriptTests {
 
         aux.i shouldBeEqualTo 100
       }
+    }
   }
 
   @Test
@@ -95,8 +97,8 @@ class PythonScriptTests {
     val list = mutableListOf(1)
     val map = mutableMapOf("k1" to 1)
 
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
         add("list", list)
         add("map", map)
 
@@ -117,22 +119,24 @@ class PythonScriptTests {
         map.size shouldBeEqualTo 2
         map["k2"] shouldBeEqualTo 10
       }
+    }
   }
 
   @Test
   fun listCompareTest() {
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
         eval("[True] == [True]") shouldBeEqualTo true
       }
+    }
   }
 
   @Test
   fun objectWithTypeTest() {
     val list = mutableListOf(1)
 
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
         add("list", list)
 
         list.size shouldBeEqualTo eval("len(list)")
@@ -146,14 +150,15 @@ class PythonScriptTests {
         list.size shouldBeEqualTo 101
         list.size shouldBeEqualTo eval("len(list)")
       }
+    }
   }
 
   @Test
   fun nullObjectTest() {
     val list = mutableListOf<Int?>()
 
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
         add("list", list)
 
         list.size shouldBeEqualTo eval("len(list)")
@@ -167,23 +172,26 @@ class PythonScriptTests {
         list.size shouldBeEqualTo 100
         list.size shouldBeEqualTo eval("len(list)")
       }
+    }
   }
 
   @Test
   fun invalidSyntaxTest() {
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
         invoking { eval("junk") } shouldThrow ScriptException::class
       }
+    }
   }
 
   @Test
   fun illegalCallsTest() {
-    PythonScript()
-      .apply {
+    PythonScript().use {
+      it.apply {
         invoking { eval("sys.exit(1)") } shouldThrow ScriptException::class
         invoking { eval("exit(1)") } shouldThrow ScriptException::class
         invoking { eval("quit(1)") } shouldThrow ScriptException::class
       }
+    }
   }
 }

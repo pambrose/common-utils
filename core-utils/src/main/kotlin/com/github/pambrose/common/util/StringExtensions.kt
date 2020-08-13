@@ -29,9 +29,15 @@ import kotlin.math.log10
 
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
 
+fun String.isNotSingleQuoted() = !isSingleQuoted()
+
 fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
 
+fun String.isNotDoubleQuoted() = !isDoubleQuoted()
+
 fun String.isQuoted() = isSingleQuoted() || isDoubleQuoted()
+
+fun String.isNotQuoted() = !isQuoted()
 
 fun String.toSingleQuoted() = "'$this'"
 
@@ -90,7 +96,31 @@ fun List<String>.linesBetween(start: Regex, end: Regex) = subList(firstLineNumbe
 fun String.isBracketed(startChar: Char = '[', endChar: Char = ']') =
   trim().run { startsWith(startChar) && endsWith(endChar) }
 
+fun String.isNotBracketed(startChar: Char = '[', endChar: Char = ']') = !isBracketed(startChar, endChar)
+
 fun String.asBracketed(startChar: Char = '[', endChar: Char = ']') = "$startChar$this$endChar"
+
+fun String.isInt() =
+  try {
+    this.toInt()
+    true
+  }
+  catch (e: Exception) {
+    false
+  }
+
+fun String.isNotInt() = !isInt()
+
+fun String.isDouble() =
+  try {
+    this.toDouble()
+    true
+  }
+  catch (e: Exception) {
+    false
+  }
+
+fun String.isNotDouble() = !isDouble()
 
 fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
 
@@ -120,11 +150,11 @@ fun String.asRegex(ignoreCase: Boolean = false) =
 private val emailPattern by lazy {
   Pattern.compile(
       "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@"
-          + "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
-          + "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\."
-          + "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
-          + "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|"
-          + "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$")
+      + "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+      + "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\."
+      + "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+      + "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|"
+      + "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$")
 }
 
 fun String.isValidEmail() = emailPattern.matcher(this).matches()

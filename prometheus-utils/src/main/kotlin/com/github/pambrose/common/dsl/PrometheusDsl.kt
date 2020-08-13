@@ -21,6 +21,7 @@ package com.github.pambrose.common.dsl
 
 import io.prometheus.client.Counter
 import io.prometheus.client.Gauge
+import io.prometheus.client.Histogram
 import io.prometheus.client.Summary
 
 object PrometheusDsl {
@@ -40,6 +41,13 @@ object PrometheusDsl {
 
   fun gauge(block: Gauge.Builder.() -> Unit): Gauge =
     Gauge.build()
+      .run {
+        block(this)
+        register()
+      }
+
+  fun histogram(block: Histogram.Builder.() -> Unit): Histogram =
+    Histogram.build()
       .run {
         block(this)
         register()

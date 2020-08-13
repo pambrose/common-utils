@@ -22,6 +22,7 @@ package com.github.pambrose.common.util
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.security.SecureRandom
+import kotlin.contracts.contract
 import kotlin.time.Duration
 import kotlin.time.seconds
 
@@ -34,7 +35,8 @@ val hostInfo by lazy {
     val address = InetAddress.getLocalHost().hostAddress!!
     //logger.debug { "Hostname: $hostname Address: $address" }
     HostInfo(hostname, address)
-  } catch (e: UnknownHostException) {
+  }
+  catch (e: UnknownHostException) {
     HostInfo("Unknown", "Unknown")
   }
 }
@@ -45,7 +47,7 @@ fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + 
   SecureRandom().let { random ->
     (1..length)
       .map { random.nextInt(charPool.size) }
-      .map { i -> charPool[i] }
+      .map { charPool[it] }
       .joinToString("")
   }
 
@@ -57,4 +59,18 @@ fun repeatWithSleep(iterations: Int,
     block(i, startMillis)
     sleep(sleepTime)
   }
+}
+
+fun Any?.isNotNull(): Boolean {
+  contract {
+    returns(true) implies (this@isNotNull != null)
+  }
+  return this != null
+}
+
+fun Any?.isNull(): Boolean {
+  contract {
+    returns(false) implies (this@isNull != null)
+  }
+  return this == null
 }

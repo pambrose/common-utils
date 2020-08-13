@@ -48,33 +48,39 @@ object RedisUtils : KLogging() {
 
   fun <T> withRedisPool(block: (Jedis?) -> T): T {
     try {
-      pool.resource.use { redis ->
-        redis.ping("")
-        return block.invoke(redis)
-      }
-    } catch (e: JedisConnectionException) {
+      pool.resource
+        .use { redis ->
+          redis.ping("")
+          return block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
       return block.invoke(null)
     }
   }
 
   suspend fun <T> withSuspendingRedisPool(block: suspend (Jedis?) -> T): T {
     try {
-      pool.resource.use { redis ->
-        redis.ping("")
-        return block.invoke(redis)
-      }
-    } catch (e: JedisConnectionException) {
+      pool.resource
+        .use { redis ->
+          redis.ping("")
+          return block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
       return block.invoke(null)
     }
   }
 
   fun <T> withRedis(block: (Jedis?) -> T): T {
     try {
-      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
-        redis.auth(password)
-        return block.invoke(redis)
-      }
-    } catch (e: JedisConnectionException) {
+      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT)
+        .use { redis ->
+          redis.auth(password)
+          return block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
       logger.info(e) { "" }
       return block.invoke(null)
     }
@@ -82,11 +88,13 @@ object RedisUtils : KLogging() {
 
   suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T {
     try {
-      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT).use { redis ->
-        redis.auth(password)
-        return block.invoke(redis)
-      }
-    } catch (e: JedisConnectionException) {
+      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT)
+        .use { redis ->
+          redis.auth(password)
+          return block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
       logger.info(e) { "" }
       return block.invoke(null)
     }

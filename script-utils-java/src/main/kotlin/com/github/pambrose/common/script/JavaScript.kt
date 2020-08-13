@@ -24,7 +24,7 @@ import kotlin.reflect.typeOf
 // https://github.com/eobermuhlner/java-scriptengine
 // https://gitter.im/java-scriptengine/community
 
-class JavaScript : AbstractScript("java") {
+class JavaScript : AbstractScript("java"), AutoCloseable {
   private val imports = mutableListOf<String>()
 
   val varDecls: String
@@ -63,9 +63,9 @@ class JavaScript : AbstractScript("java") {
 
   @Synchronized
   fun evalScript(script: String): Any {
-    if (!initialized.get()) {
+    if (!initialized) {
       valueMap.forEach { (name, value) -> bindings[name] = value }
-      initialized.set(true)
+      initialized = true
     }
 
     return engine.eval(importDecls + script, bindings)
@@ -89,11 +89,15 @@ $varDecls
 }
 """
 
-    if (!initialized.get()) {
+    if (!initialized) {
       valueMap.forEach { (name, value) -> bindings[name] = value }
-      initialized.set(true)
+      initialized = true
     }
 
     return engine.eval(code, bindings)
+  }
+
+  override fun close() {
+    // Placeholder
   }
 }

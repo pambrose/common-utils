@@ -32,10 +32,7 @@ class SamplerGaugeCollector(private val name: String,
   }
 
   override fun collect(): List<MetricFamilySamples> {
-    val sample = MetricFamilySamples.Sample(name,
-                                            labelNames,
-                                            labelValues,
-                                            data())
+    val sample = MetricFamilySamples.Sample(name, labelNames, labelValues, data())
     return listOf(MetricFamilySamples(name, Type.GAUGE, help, listOf(sample)))
   }
 }
