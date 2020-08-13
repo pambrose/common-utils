@@ -56,10 +56,12 @@ ext {
 
             jna                   : "net.java.dev.jna:jna:$jna_version",
             jna_platform          : "net.java.dev.jna:jna-platform:$jna_version",
+
+            kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jvm",
             script_util           : "org.jetbrains.kotlin:kotlin-script-util",
             script_runtime        : "org.jetbrains.kotlin:kotlin-script-runtime",
-            kotlin_compiler       : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
-            kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",
+            kotlin_compiler_embed : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
+            kotlin_scripting_embed: "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",
 
             python_scripting      : "org.python:jython-standalone:$python_version",
             java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
