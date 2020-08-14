@@ -18,7 +18,7 @@
 package com.github.pambrose.common.script
 
 import com.github.pambrose.common.util.toDoubleQuoted
-//import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
+import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import javax.script.ScriptException
 
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
@@ -29,7 +29,7 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
   init {
-    //setIdeaIoUseFallback()
+    setIdeaIoUseFallback()
   }
 
   val varDecls: String
