@@ -50,9 +50,10 @@ ext {
             kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223",
             script_util           : "org.jetbrains.kotlin:kotlin-script-util",
             script_runtime        : "org.jetbrains.kotlin:kotlin-script-runtime",
-            //kotlin_scripting_jvm  : "org.jetbrains.kotlin:kotlin-scripting-jvm",
-            //kotlin_compiler_embed : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
-            //kotlin_scripting_embed: "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",
+
+            kotlin_scripting_jvm  : "org.jetbrains.kotlin:kotlin-scripting-jvm",
+            kotlin_compiler_embed : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
+            kotlin_scripting_embed: "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",
 
             python_scripting      : "org.python:jython-standalone:$python_version",
             java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
