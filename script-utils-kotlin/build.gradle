@@ -30,12 +30,13 @@ dependencies {
     implementation libraries.script_util
 
     /* 1.4.0-rc*/
-    implementation libraries.kotlin_scripting
+    //implementation libraries.kotlin_scripting
 
     /*
     implementation libraries.kotlin_compiler_embed
     runtime libraries.kotlin_scripting_embed
     */
+    implementation libraries.kotlin_compiler_embed
 
     runtime libraries.kotlin_scripting_embed
 }
