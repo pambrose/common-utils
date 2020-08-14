@@ -21,15 +21,9 @@ dependencies {
     implementation project(':core-utils')
     implementation project(':script-utils-common')
 
-    //implementation libraries.reflect
-
-    //implementation libraries.jna
-    //implementation libraries.jna_platform
-    //implementation libraries.script_util
-    //implementation libraries.script_runtime
     implementation libraries.java_scripting
 
-    runtime libraries.kotlin_scripting
+    runtime libraries.kotlin_scripting_embed
 }
 
 compileKotlin {
