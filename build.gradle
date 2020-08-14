@@ -51,7 +51,6 @@ ext {
             script_runtime        : "org.jetbrains.kotlin:kotlin-script-runtime",
 
             kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223",
-            //kotlin_scripting_jvm  : "org.jetbrains.kotlin:kotlin-scripting-jvm",
 
             kotlin_compiler_embed : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
             kotlin_scripting_embed: "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",

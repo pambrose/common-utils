@@ -22,8 +22,6 @@ dependencies {
     implementation project(':script-utils-common')
 
     implementation libraries.java_scripting
-
-    //runtime libraries.kotlin_scripting_embed
 }
 
 compileKotlin {

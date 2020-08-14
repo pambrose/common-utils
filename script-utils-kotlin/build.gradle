@@ -31,7 +31,6 @@ dependencies {
 
     implementation libraries.kotlin_scripting
     implementation libraries.kotlin_compiler_embed
-
     runtime libraries.kotlin_scripting_embed
 }
 
