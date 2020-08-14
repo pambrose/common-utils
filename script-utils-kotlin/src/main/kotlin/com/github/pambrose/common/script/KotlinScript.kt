@@ -18,20 +18,19 @@
 package com.github.pambrose.common.script
 
 import com.github.pambrose.common.util.toDoubleQuoted
-import org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmLocalScriptEngineFactory
-//import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
+import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import javax.script.ScriptException
 
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting
 
-//class KotlinScript : AbstractScript("kts"), AutoCloseable {
-class KotlinScript : AbstractScript(KotlinJsr223JvmLocalScriptEngineFactory().getScriptEngine()), AutoCloseable {
+class KotlinScript : AbstractScript("kts"), AutoCloseable {
+  //class KotlinScript : AbstractScript(KotlinJsr223JvmLocalScriptEngineFactory().scriptEngine), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
   init {
-    //setIdeaIoUseFallback()
+    setIdeaIoUseFallback()
   }
 
   val varDecls: String
