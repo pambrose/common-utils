@@ -26,18 +26,18 @@ dependencies {
     implementation libraries.jna
     implementation libraries.jna_platform
 
+    implementation libraries.script_runtime
+    implementation libraries.script_util
+
     /* 1.4.0-rc*/
     implementation libraries.kotlin_scripting
-    implementation libraries.script_runtime
-    implementation libraries.script_util
 
-/*
-    implementation libraries.script_util
-    implementation libraries.script_runtime
+    /*
     implementation libraries.kotlin_compiler_embed
-
     runtime libraries.kotlin_scripting_embed
     */
+
+    runtime libraries.kotlin_scripting_embed
 }
 
 compileKotlin {
