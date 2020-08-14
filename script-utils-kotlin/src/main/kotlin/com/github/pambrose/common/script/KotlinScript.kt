@@ -25,6 +25,7 @@ import javax.script.ScriptException
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting
 
+//class KotlinScript : AbstractScript(KotlinJsr223JvmLocalScriptEngineFactory().scriptEngine), AutoCloseable {
 class KotlinScript : AbstractScript("kts"), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
 

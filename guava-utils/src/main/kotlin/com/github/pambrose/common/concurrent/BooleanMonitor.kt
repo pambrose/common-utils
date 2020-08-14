@@ -20,12 +20,12 @@
 package com.github.pambrose.common.concurrent
 
 import com.google.common.base.MoreObjects
-import kotlinx.atomicfu.atomic
 import mu.KLogging
+import java.util.concurrent.atomic.AtomicBoolean
 
 class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
 
-  private val monVal = atomic(false)
+  private val monVal = AtomicBoolean(false)
 
   override val monitorSatisfied get() = get()
 
@@ -33,12 +33,12 @@ class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
     set(initValue)
   }
 
-  fun get() = monVal.value
+  fun get() = monVal.get()
 
   fun set(value: Boolean) {
     monitor.enter()
     try {
-      this.monVal.value = value
+      this.monVal.set(value)
     } finally {
       monitor.leave()
     }
@@ -46,7 +46,7 @@ class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
 
   override fun toString() =
     MoreObjects.toStringHelper(this)
-      .add("value", monVal.value)
+      .add("value", monVal.get())
       .toString()
 
   companion object : KLogging() {

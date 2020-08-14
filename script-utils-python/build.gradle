@@ -22,7 +22,6 @@ dependencies {
     implementation project(':script-utils-common')
 
     implementation libraries.python_scripting
-
 }
 
 compileKotlin {

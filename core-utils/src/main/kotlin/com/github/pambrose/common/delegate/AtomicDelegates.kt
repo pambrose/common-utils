@@ -19,7 +19,9 @@
 
 package com.github.pambrose.common.delegate
 
-import kotlinx.atomicfu.atomic
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -59,33 +61,33 @@ private class NullableAtomicReferenceDelegate<T : Any?>(initValue: T? = null) : 
 
 private class SingleSetAtomicReferenceDelegate<T : Any?>(initValue: T?, private val compareValue: T?) :
   ReadWriteProperty<Any?, T?> {
-  private val atomicVal = atomic<T?>(initValue)
-  override operator fun getValue(thisRef: Any?, property: KProperty<*>): T? = atomicVal.value
+  private val atomicVal = AtomicReference<T?>(initValue)
+  override operator fun getValue(thisRef: Any?, property: KProperty<*>): T? = atomicVal.get()
   override operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T?) {
     atomicVal.compareAndSet(compareValue, value)
   }
 }
 
 private class AtomicBooleanDelegate(initValue: Boolean) : ReadWriteProperty<Any?, Boolean> {
-  private val atomicVal = atomic(initValue)
-  override operator fun getValue(thisRef: Any?, property: KProperty<*>) = atomicVal.value
+  private val atomicVal = AtomicBoolean(initValue)
+  override operator fun getValue(thisRef: Any?, property: KProperty<*>) = atomicVal.get()
   override operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Boolean) {
-    atomicVal.value = value
+    atomicVal.set(value)
   }
 }
 
 private class AtomicIntegerDelegate(initValue: Int) : ReadWriteProperty<Any?, Int> {
-  private val atomicVal = atomic(initValue)
-  override operator fun getValue(thisRef: Any?, property: KProperty<*>) = atomicVal.value
+  private val atomicVal = AtomicInteger(initValue)
+  override operator fun getValue(thisRef: Any?, property: KProperty<*>) = atomicVal.get()
   override operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) {
-    atomicVal.value = value
+    atomicVal.set(value)
   }
 }
 
 private class AtomicLongDelegate(initValue: Long) : ReadWriteProperty<Any?, Long> {
-  private val atomicVal = atomic(initValue)
-  override operator fun getValue(thisRef: Any?, property: KProperty<*>) = atomicVal.value
+  private val atomicVal = AtomicLong(initValue)
+  override operator fun getValue(thisRef: Any?, property: KProperty<*>) = atomicVal.get()
   override operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Long) {
-    atomicVal.value = value
+    atomicVal.set(value)
   }
 }

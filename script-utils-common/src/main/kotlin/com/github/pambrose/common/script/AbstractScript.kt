@@ -20,25 +20,29 @@ package com.github.pambrose.common.script
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
-import kotlinx.atomicfu.atomic
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import javax.script.SimpleBindings
 import kotlin.reflect.KType
 
-abstract class AbstractScript(extension: String) {
-  private val manager = ScriptEngineManager()
-  private val _initialized = atomic(false)
+abstract class AbstractScript(protected val engine: ScriptEngine) {
+  constructor(extension: String) : this(ScriptEngineManager().getEngineByExtension(extension)
+                                        ?: throw ScriptException("Unrecognized script extension: $extension"))
+
+  //private val manager = ScriptEngineManager()
+  private val _initialized = AtomicBoolean(false)
   private val typeMap = mutableMapOf<String, Array<out KType>>()
-  protected val engine =
-    manager.getEngineByExtension(extension) ?: throw ScriptException("Unrecognized script extension: $extension")
+
+  //protected val engine =
   protected val valueMap = mutableMapOf<String, Any>()
   protected val bindings = SimpleBindings(valueMap)
 
   protected var initialized: Boolean
-    get() = _initialized.value
+    get() = _initialized.get()
     set(value) {
-      _initialized.value = value
+      _initialized.set(value)
     }
 
   open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
