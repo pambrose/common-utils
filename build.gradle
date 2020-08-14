@@ -47,7 +47,7 @@ ext {
             jna                   : "net.java.dev.jna:jna:$jna_version",
             jna_platform          : "net.java.dev.jna:jna-platform:$jna_version",
 
-            //kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223",
+            kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223",
             //kotlin_scripting_jvm  : "org.jetbrains.kotlin:kotlin-scripting-jvm",
 
             script_util           : "org.jetbrains.kotlin:kotlin-script-util",

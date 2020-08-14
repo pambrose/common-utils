@@ -23,7 +23,7 @@ dependencies {
 
     implementation libraries.java_scripting
 
-    runtime libraries.kotlin_scripting_embed
+    //runtime libraries.kotlin_scripting_embed
 }
 
 compileKotlin {
