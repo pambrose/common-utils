@@ -121,6 +121,7 @@ subprojects {
         kotlinOptions {
             jvmTarget = '1.8'
             freeCompilerArgs += ['-Xuse-experimental=kotlin.contracts.ExperimentalContracts',
+                                 '-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi',
                                  '-Xuse-experimental=kotlin.time.ExperimentalTime']
         }
     }

@@ -22,6 +22,7 @@ dependencies {
     implementation project(':script-utils-common')
 
     implementation libraries.reflect
+    implementation libraries.coroutines_core
 
     implementation libraries.jna
     implementation libraries.jna_platform

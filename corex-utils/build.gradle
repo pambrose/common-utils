@@ -19,6 +19,4 @@ description = 'corex-utils'
 
 dependencies {
     implementation libraries.coroutines_core
-    implementation libraries.coroutines_jdk8
-    implementation libraries.coroutines_slf4j
 }
