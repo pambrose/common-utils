@@ -21,21 +21,17 @@ import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.script.ScriptEngine
-import javax.script.ScriptEngineManager
-import javax.script.ScriptException
-import javax.script.SimpleBindings
+import javax.script.*
 import kotlin.reflect.KType
 
+
 abstract class AbstractScript(protected val engine: ScriptEngine) {
-  constructor(extension: String) : this(ScriptEngineManager().getEngineByExtension(extension)
+  constructor(extension: String) : this(scriptManager.getEngineByExtension(extension)
                                         ?: throw ScriptException("Unrecognized script extension: $extension"))
 
-  //private val manager = ScriptEngineManager()
   private val _initialized = AtomicBoolean(false)
   private val typeMap = mutableMapOf<String, Array<out KType>>()
 
-  //protected val engine =
   protected val valueMap = mutableMapOf<String, Any>()
   protected val bindings = SimpleBindings(valueMap)
 
@@ -44,6 +40,18 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
     set(value) {
       _initialized.set(value)
     }
+
+  fun reset() {
+    initialized = false
+    /*
+    val newContext = SimpleScriptContext()
+    newContext.setBindings(engine.createBindings(), ScriptContext.ENGINE_SCOPE)
+    val engineScope: Bindings = newContext.getBindings(ScriptContext.ENGINE_SCOPE)
+    engine.setBindings(engineScope, ScriptContext.ENGINE_SCOPE)
+    engine.context = newContext
+     */
+    engine.context = SimpleScriptContext()
+  }
 
   open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
     val params = types.map { type -> type.toString().removePrefix("kotlin.") }
@@ -80,5 +88,9 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
         typeMap[name] = types
       }
     }
+  }
+
+  companion object {
+    val scriptManager by lazy { ScriptEngineManager() }
   }
 }
