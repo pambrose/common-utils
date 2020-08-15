@@ -26,17 +26,29 @@ import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
 object RedisUtils : KLogging() {
+  const val REDIS_MAX_POOL_SIZE = "redis.maxPoolSize"
+  const val REDIS_MAX_IDLE_SIZE = "redis.maxIdleSize"
+  const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
+
   private val colon = Regex(":")
   private val redisURI by lazy { URI(System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379") }
   private val password by lazy { redisURI.userInfo.split(colon, 2)[1] }
 
   private fun newJedisPool(): JedisPool {
+    val maxPoolSize = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10
+    val maxIdleSize = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5
+    val minIdleSize = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1
+
+    logger.info { "Redis max pool size: $maxPoolSize" }
+    logger.info { "Redis max idle size: $maxIdleSize" }
+    logger.info { "Redis min idle size: $minIdleSize" }
+
     val poolConfig =
       JedisPoolConfig()
         .apply {
-          maxTotal = 10
-          maxIdle = 5
-          minIdle = 1
+          maxTotal = maxPoolSize
+          maxIdle = maxIdleSize
+          minIdle = minIdleSize
           testOnBorrow = true
           testOnReturn = true
           testWhileIdle = true
