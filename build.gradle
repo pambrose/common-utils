@@ -27,8 +27,6 @@ ext {
             reflect               : "org.jetbrains.kotlin:kotlin-reflect",
 
             coroutines_core       : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version",
-            coroutines_jdk8       : "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutines_version",
-            coroutines_slf4j      : "org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:$coroutines_version",
 
             guava                 : "com.google.guava:guava:$guava_version",
 
