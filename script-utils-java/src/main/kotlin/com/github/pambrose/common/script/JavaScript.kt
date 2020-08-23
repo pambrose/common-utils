@@ -19,10 +19,10 @@ package com.github.pambrose.common.script
 
 import ch.obermuhlner.scriptengine.java.Isolation
 import ch.obermuhlner.scriptengine.java.JavaScriptEngine
+import com.github.pambrose.common.script.ScriptUtils.engineBindings
 import javax.script.ScriptException
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
-
 
 // https://github.com/eobermuhlner/java-scriptengine
 // https://gitter.im/java-scriptengine/community
@@ -71,11 +71,11 @@ class JavaScript : AbstractScript("java"), AutoCloseable {
   @Synchronized
   fun evalScript(script: String): Any {
     if (!initialized) {
-      valueMap.forEach { (name, value) -> bindings[name] = value }
+      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
 
-    return engine.eval(importDecls + script, bindings)
+    return engine.eval(importDecls + script)
   }
 
   @Synchronized
@@ -97,11 +97,11 @@ $varDecls
 """
 
     if (!initialized) {
-      valueMap.forEach { (name, value) -> bindings[name] = value }
+      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
 
-    return engine.eval(code, bindings)
+    return engine.eval(code)
   }
 
   override fun close() {

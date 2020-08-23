@@ -17,6 +17,7 @@
 
 package com.github.pambrose.common.script
 
+import com.github.pambrose.common.script.ScriptUtils.engineBindings
 import com.github.pambrose.common.util.toDoubleQuoted
 import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import javax.script.ScriptException
@@ -57,11 +58,12 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
       throw ScriptException("Illegal call to System.exit()")
 
     if (!initialized) {
-      engine.eval(varDecls, bindings)
+      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
+      engine.eval(varDecls)
       initialized = true
     }
 
-    return engine.eval("$importDecls\n\n$code", bindings)
+    return engine.eval("$importDecls\n\n$code")
   }
 
   override fun close() {

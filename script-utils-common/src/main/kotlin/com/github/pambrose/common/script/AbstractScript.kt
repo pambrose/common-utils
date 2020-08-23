@@ -17,11 +17,14 @@
 
 package com.github.pambrose.common.script
 
+import com.github.pambrose.common.script.ScriptUtils.resetContext
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.script.*
+import javax.script.ScriptEngine
+import javax.script.ScriptEngineManager
+import javax.script.ScriptException
 import kotlin.reflect.KType
 
 
@@ -33,24 +36,18 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
   private val typeMap = mutableMapOf<String, Array<out KType>>()
 
   protected val valueMap = mutableMapOf<String, Any>()
-  protected val bindings = SimpleBindings(valueMap)
 
   protected var initialized: Boolean
     get() = _initialized.get()
-    set(value) {
-      _initialized.set(value)
-    }
+    set(value) = _initialized.set(value)
+
+  init {
+    reset()
+  }
 
   fun reset() {
     initialized = false
-    /*
-    val newContext = SimpleScriptContext()
-    newContext.setBindings(engine.createBindings(), ScriptContext.ENGINE_SCOPE)
-    val engineScope: Bindings = newContext.getBindings(ScriptContext.ENGINE_SCOPE)
-    engine.setBindings(engineScope, ScriptContext.ENGINE_SCOPE)
-    engine.context = newContext
-     */
-    engine.context = SimpleScriptContext()
+    engine.resetContext()
   }
 
   open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
