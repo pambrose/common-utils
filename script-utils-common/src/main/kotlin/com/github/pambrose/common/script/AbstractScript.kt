@@ -37,15 +37,15 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
 
   protected val valueMap = mutableMapOf<String, Any>()
 
-  protected var initialized: Boolean
+  protected var initialized
     get() = _initialized.get()
     set(value) = _initialized.set(value)
 
   init {
-    reset()
+    resetContext()
   }
 
-  fun reset() {
+  fun resetContext() {
     initialized = false
     engine.resetContext()
   }
