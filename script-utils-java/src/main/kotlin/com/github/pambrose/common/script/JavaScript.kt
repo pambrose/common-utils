@@ -17,9 +17,12 @@
 
 package com.github.pambrose.common.script
 
+import ch.obermuhlner.scriptengine.java.Isolation
+import ch.obermuhlner.scriptengine.java.JavaScriptEngine
 import javax.script.ScriptException
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
+
 
 // https://github.com/eobermuhlner/java-scriptengine
 // https://gitter.im/java-scriptengine/community
@@ -43,6 +46,10 @@ class JavaScript : AbstractScript("java"), AutoCloseable {
 
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it;" }
+
+  fun assignIsolation(isolation: Isolation) {
+    (engine as JavaScriptEngine).setIsolation(isolation)
+  }
 
   fun <T> import(clazz: Class<T>) {
     imports += clazz.name
