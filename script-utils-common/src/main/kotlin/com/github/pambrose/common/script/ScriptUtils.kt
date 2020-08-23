@@ -22,12 +22,17 @@ import javax.script.ScriptEngine
 import javax.script.SimpleScriptContext
 
 object ScriptUtils {
-  val ScriptEngine.engineBindings get() = getBindings(ScriptContext.ENGINE_SCOPE)
-  val ScriptEngine.globalBindings get() = getBindings(ScriptContext.GLOBAL_SCOPE)
+  val ScriptEngine.engineBindings get() = bindings(ScriptContext.ENGINE_SCOPE)
+  val ScriptEngine.globalBindings get() = bindings(ScriptContext.GLOBAL_SCOPE)
 
   fun ScriptEngine.bindings(scope: Int = ScriptContext.ENGINE_SCOPE) = getBindings(scope)
 
-  fun ScriptEngine.resetContext(scope: Int = ScriptContext.ENGINE_SCOPE) {
-    context = SimpleScriptContext().apply { setBindings(createBindings(), scope) }
+  fun ScriptEngine.resetContext() {
+    context =
+      SimpleScriptContext()
+        .apply {
+          setBindings(createBindings(), ScriptContext.ENGINE_SCOPE)
+          setBindings(createBindings(), ScriptContext.GLOBAL_SCOPE)
+        }
   }
 }
