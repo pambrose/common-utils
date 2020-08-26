@@ -27,6 +27,7 @@ import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import kotlin.reflect.KType
 
+// https://docs.oracle.com/en/java/javase/14/scripting/java-scripting-api.html#GUID-C4A6EB7C-0AEA-45EC-8662-099BDEFC361A
 
 abstract class AbstractScript(protected val engine: ScriptEngine) {
   constructor(extension: String) : this(scriptManager.getEngineByExtension(extension)

@@ -31,10 +31,10 @@ object RedisUtils : KLogging() {
   const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
 
   private val colon = Regex(":")
-  private val redisURI by lazy { URI(System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379") }
-  private val password by lazy { redisURI.userInfo.split(colon, 2)[1] }
+  private val redisUrl by lazy { URI(System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379") }
+  private val password by lazy { redisUrl.userInfo.split(colon, 2)[1] }
 
-  private fun newJedisPool(): JedisPool {
+  fun newJedisPool(): JedisPool {
     val maxPoolSize = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10
     val maxIdleSize = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5
     val minIdleSize = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1
@@ -53,14 +53,12 @@ object RedisUtils : KLogging() {
           testOnReturn = true
           testWhileIdle = true
         }
-    return JedisPool(poolConfig, redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT, password)
+    return JedisPool(poolConfig, redisUrl.host, redisUrl.port, Protocol.DEFAULT_TIMEOUT, password)
   }
 
-  private val pool by lazy { newJedisPool() }
-
-  fun <T> withRedisPool(block: (Jedis?) -> T): T =
+  fun <T> JedisPool.withRedisPool(block: (Jedis?) -> T): T =
     try {
-      pool.resource
+      resource
         .use { redis ->
           redis.ping("")
           block.invoke(redis)
@@ -70,9 +68,9 @@ object RedisUtils : KLogging() {
       block.invoke(null)
     }
 
-  suspend fun <T> withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
+  suspend fun <T> JedisPool.withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
     try {
-      pool.resource
+      resource
         .use { redis ->
           redis.ping("")
           block.invoke(redis)
@@ -84,7 +82,7 @@ object RedisUtils : KLogging() {
 
   fun <T> withRedis(block: (Jedis?) -> T): T =
     try {
-      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT)
+      Jedis(redisUrl.host, redisUrl.port, Protocol.DEFAULT_TIMEOUT)
         .use { redis ->
           redis.auth(password)
           block.invoke(redis)
@@ -97,7 +95,7 @@ object RedisUtils : KLogging() {
 
   suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T =
     try {
-      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT)
+      Jedis(redisUrl.host, redisUrl.port, Protocol.DEFAULT_TIMEOUT)
         .use { redis ->
           redis.auth(password)
           block.invoke(redis)
@@ -108,4 +106,3 @@ object RedisUtils : KLogging() {
       block.invoke(null)
     }
 }
-
