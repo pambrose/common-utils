@@ -31,10 +31,14 @@ object RedisUtils : KLogging() {
   const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
 
   private val colon = Regex(":")
-  private val redisUrl by lazy { URI(System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379") }
-  private val password by lazy { redisUrl.userInfo.split(colon, 2)[1] }
+  private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
+  private fun urlDetails(redisUrl: String): Pair<URI, String> {
+    val redisUri = URI(redisUrl)
+    return redisUri to redisUri.userInfo.split(colon, 2)[1]
+  }
 
-  fun newJedisPool(): JedisPool {
+  fun newJedisPool(redisUrl: String = defaultRedisUrl): JedisPool {
+    val (redisUri, password) = urlDetails(redisUrl)
     val maxPoolSize = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10
     val maxIdleSize = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5
     val minIdleSize = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1
@@ -53,7 +57,12 @@ object RedisUtils : KLogging() {
           testOnReturn = true
           testWhileIdle = true
         }
-    return JedisPool(poolConfig, redisUrl.host, redisUrl.port, Protocol.DEFAULT_TIMEOUT, password)
+    return JedisPool(poolConfig,
+                     redisUri.host,
+                     redisUri.port,
+                     Protocol.DEFAULT_TIMEOUT,
+                     password,
+                     redisUrl.startsWith("rediss://"))
   }
 
   fun <T> JedisPool.withRedisPool(block: (Jedis?) -> T): T =
@@ -82,9 +91,10 @@ object RedisUtils : KLogging() {
       block.invoke(null)
     }
 
-  fun <T> withRedis(block: (Jedis?) -> T): T =
+  fun <T> withRedis(redisUrl: String = defaultRedisUrl, block: (Jedis?) -> T): T =
     try {
-      Jedis(redisUrl.host, redisUrl.port, Protocol.DEFAULT_TIMEOUT)
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT)
         .use { redis ->
           redis.auth(password)
           block.invoke(redis)
@@ -95,9 +105,10 @@ object RedisUtils : KLogging() {
       block.invoke(null)
     }
 
-  suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T =
+  suspend fun <T> withSuspendingRedis(redisUrl: String = defaultRedisUrl, block: suspend (Jedis?) -> T): T =
     try {
-      Jedis(redisUrl.host, redisUrl.port, Protocol.DEFAULT_TIMEOUT)
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT)
         .use { redis ->
           redis.auth(password)
           block.invoke(redis)
