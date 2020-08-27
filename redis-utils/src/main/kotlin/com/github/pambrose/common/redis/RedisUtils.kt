@@ -37,11 +37,10 @@ object RedisUtils : KLogging() {
     return redisUri to redisUri.userInfo.split(colon, 2)[1]
   }
 
-  fun newJedisPool(redisUrl: String = defaultRedisUrl): JedisPool {
-    val (redisUri, password) = urlDetails(redisUrl)
-    val maxPoolSize = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10
-    val maxIdleSize = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5
-    val minIdleSize = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1
+  fun newJedisPool(redisUrl: String = defaultRedisUrl,
+                   maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,
+                   maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
+                   minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1): JedisPool {
 
     logger.info { "Redis max pool size: $maxPoolSize" }
     logger.info { "Redis max idle size: $maxIdleSize" }
@@ -57,12 +56,14 @@ object RedisUtils : KLogging() {
           testOnReturn = true
           testWhileIdle = true
         }
+
+    val (redisUri, password) = urlDetails(redisUrl)
     return JedisPool(poolConfig,
                      redisUri.host,
                      redisUri.port,
                      Protocol.DEFAULT_TIMEOUT,
                      password,
-                     redisUrl.startsWith("rediss://"))
+                     redisUrl.toLowerCase().startsWith("rediss://"))
   }
 
   fun <T> JedisPool.withRedisPool(block: (Jedis?) -> T): T =
