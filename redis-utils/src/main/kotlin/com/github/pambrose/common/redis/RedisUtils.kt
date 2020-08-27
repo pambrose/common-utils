@@ -37,6 +37,8 @@ object RedisUtils : KLogging() {
     return redisUri to redisUri.userInfo.split(colon, 2)[1]
   }
 
+  private val String.isSsl: Boolean get() = toLowerCase().startsWith("rediss://")
+
   fun newJedisPool(redisUrl: String = defaultRedisUrl,
                    maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,
                    maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
@@ -58,12 +60,7 @@ object RedisUtils : KLogging() {
         }
 
     val (redisUri, password) = urlDetails(redisUrl)
-    return JedisPool(poolConfig,
-                     redisUri.host,
-                     redisUri.port,
-                     Protocol.DEFAULT_TIMEOUT,
-                     password,
-                     redisUrl.toLowerCase().startsWith("rediss://"))
+    return JedisPool(poolConfig, redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, password, redisUrl.isSsl)
   }
 
   fun <T> JedisPool.withRedisPool(block: (Jedis?) -> T): T =
@@ -95,7 +92,7 @@ object RedisUtils : KLogging() {
   fun <T> withRedis(redisUrl: String = defaultRedisUrl, block: (Jedis?) -> T): T =
     try {
       val (redisUri, password) = urlDetails(redisUrl)
-      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           redis.auth(password)
           block.invoke(redis)
@@ -109,7 +106,7 @@ object RedisUtils : KLogging() {
   suspend fun <T> withSuspendingRedis(redisUrl: String = defaultRedisUrl, block: suspend (Jedis?) -> T): T =
     try {
       val (redisUri, password) = urlDetails(redisUrl)
-      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           redis.auth(password)
           block.invoke(redis)
