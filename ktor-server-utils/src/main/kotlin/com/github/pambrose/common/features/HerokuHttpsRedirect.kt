@@ -4,17 +4,12 @@
 
 package com.github.pambrose.common.features
 
-import io.ktor.application.ApplicationCall
-import io.ktor.application.ApplicationCallPipeline
-import io.ktor.application.ApplicationFeature
-import io.ktor.application.call
-import io.ktor.features.origin
-import io.ktor.http.URLProtocol
-import io.ktor.request.header
-import io.ktor.response.respondRedirect
-import io.ktor.util.AttributeKey
-import io.ktor.util.KtorExperimentalAPI
-import io.ktor.util.url
+import io.ktor.application.*
+import io.ktor.features.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
+import io.ktor.util.*
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -119,7 +114,7 @@ class HerokuHttpsRedirect(config: Configuration) {
           finish()
         }
         else {
-          logger.debug { "Not redirecting: $scheme://${feature.host}${call.request.origin.uri}" }
+          logger.trace { "Not redirecting: $scheme://${feature.host}${call.request.origin.uri}" }
         }
       }
       return feature

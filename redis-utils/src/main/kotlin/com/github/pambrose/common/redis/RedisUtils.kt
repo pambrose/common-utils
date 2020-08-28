@@ -26,78 +26,94 @@ import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
 object RedisUtils : KLogging() {
-  private val colon = Regex(":")
-  private val redisURI by lazy { URI(System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379") }
-  private val password by lazy { redisURI.userInfo.split(colon, 2)[1] }
+  const val REDIS_MAX_POOL_SIZE = "redis.maxPoolSize"
+  const val REDIS_MAX_IDLE_SIZE = "redis.maxIdleSize"
+  const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
 
-  private fun newJedisPool(): JedisPool {
+  private val colon = Regex(":")
+  private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
+  private fun urlDetails(redisUrl: String): Pair<URI, String> {
+    val redisUri = URI(redisUrl)
+    return redisUri to redisUri.userInfo.split(colon, 2)[1]
+  }
+
+  private val String.isSsl: Boolean get() = toLowerCase().startsWith("rediss://")
+
+  fun newJedisPool(redisUrl: String = defaultRedisUrl,
+                   maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,
+                   maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
+                   minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1): JedisPool {
+
+    logger.info { "Redis max pool size: $maxPoolSize" }
+    logger.info { "Redis max idle size: $maxIdleSize" }
+    logger.info { "Redis min idle size: $minIdleSize" }
+
     val poolConfig =
       JedisPoolConfig()
         .apply {
-          maxTotal = 10
-          maxIdle = 5
-          minIdle = 1
+          maxTotal = maxPoolSize
+          maxIdle = maxIdleSize
+          minIdle = minIdleSize
           testOnBorrow = true
           testOnReturn = true
           testWhileIdle = true
         }
-    return JedisPool(poolConfig, redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT, password)
+
+    val (redisUri, password) = urlDetails(redisUrl)
+    return JedisPool(poolConfig, redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, password, redisUrl.isSsl)
   }
 
-  private val pool by lazy { newJedisPool() }
-
-  fun <T> withRedisPool(block: (Jedis?) -> T): T {
+  fun <T> JedisPool.withRedisPool(block: (Jedis?) -> T): T =
     try {
-      pool.resource
+      resource
         .use { redis ->
           redis.ping("")
-          return block.invoke(redis)
+          block.invoke(redis)
         }
     }
     catch (e: JedisConnectionException) {
-      return block.invoke(null)
+      logger.info(e) { "Failed to connect to redis" }
+      block.invoke(null)
     }
-  }
 
-  suspend fun <T> withSuspendingRedisPool(block: suspend (Jedis?) -> T): T {
+  suspend fun <T> JedisPool.withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
     try {
-      pool.resource
+      resource
         .use { redis ->
           redis.ping("")
-          return block.invoke(redis)
+          block.invoke(redis)
         }
     }
     catch (e: JedisConnectionException) {
-      return block.invoke(null)
+      logger.info(e) { "Failed to connect to redis" }
+      block.invoke(null)
     }
-  }
 
-  fun <T> withRedis(block: (Jedis?) -> T): T {
+  fun <T> withRedis(redisUrl: String = defaultRedisUrl, block: (Jedis?) -> T): T =
     try {
-      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT)
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           redis.auth(password)
-          return block.invoke(redis)
+          block.invoke(redis)
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "" }
-      return block.invoke(null)
+      logger.info(e) { "Failed to connect to redis" }
+      block.invoke(null)
     }
-  }
 
-  suspend fun <T> withSuspendingRedis(block: suspend (Jedis?) -> T): T {
+  suspend fun <T> withSuspendingRedis(redisUrl: String = defaultRedisUrl, block: suspend (Jedis?) -> T): T =
     try {
-      Jedis(redisURI.host, redisURI.port, Protocol.DEFAULT_TIMEOUT)
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           redis.auth(password)
-          return block.invoke(redis)
+          block.invoke(redis)
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "" }
-      return block.invoke(null)
+      logger.info(e) { "Failed to connect to redis" }
+      block.invoke(null)
     }
-  }
 }
-

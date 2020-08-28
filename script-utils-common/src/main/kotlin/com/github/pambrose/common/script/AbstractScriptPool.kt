@@ -15,25 +15,27 @@
  *
  */
 
-description = 'script-utils-java'
+package com.github.pambrose.common.script
 
-dependencies {
-    implementation project(':core-utils')
-    implementation project(':script-utils-common')
+import kotlinx.coroutines.channels.Channel
 
-    implementation libraries.coroutines_core
+abstract class AbstractScriptPool<T : AbstractScript>(val size: Int) {
+  protected val channel = Channel<T>(size)
 
-    implementation libraries.java_scripting
-}
+  val isEmpty get() = channel.isEmpty
 
-compileKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
+  suspend private fun borrow() = channel.receive()
+
+  // Reset the context before returning to pool
+  suspend private fun recycle(scriptObject: T) = channel.send(scriptObject.apply { resetContext() })
+
+  suspend fun <R> eval(block: T.() -> R): R {
+    val engine = borrow()
+    try {
+      return block.invoke(engine)
     }
-}
-
-compileTestKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
+    finally {
+      recycle(engine)
     }
+  }
 }

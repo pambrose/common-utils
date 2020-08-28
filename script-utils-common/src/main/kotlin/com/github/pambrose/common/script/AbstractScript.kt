@@ -17,6 +17,7 @@
 
 package com.github.pambrose.common.script
 
+import com.github.pambrose.common.script.ScriptUtils.resetContext
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
@@ -24,26 +25,31 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
-import javax.script.SimpleBindings
 import kotlin.reflect.KType
 
+// https://docs.oracle.com/en/java/javase/14/scripting/java-scripting-api.html#GUID-C4A6EB7C-0AEA-45EC-8662-099BDEFC361A
+
 abstract class AbstractScript(protected val engine: ScriptEngine) {
-  constructor(extension: String) : this(ScriptEngineManager().getEngineByExtension(extension)
+  constructor(extension: String) : this(scriptManager.getEngineByExtension(extension)
                                         ?: throw ScriptException("Unrecognized script extension: $extension"))
 
-  //private val manager = ScriptEngineManager()
   private val _initialized = AtomicBoolean(false)
   private val typeMap = mutableMapOf<String, Array<out KType>>()
 
-  //protected val engine =
   protected val valueMap = mutableMapOf<String, Any>()
-  protected val bindings = SimpleBindings(valueMap)
 
-  protected var initialized: Boolean
+  protected var initialized
     get() = _initialized.get()
-    set(value) {
-      _initialized.set(value)
-    }
+    set(value) = _initialized.set(value)
+
+  init {
+    resetContext()
+  }
+
+  fun resetContext() {
+    initialized = false
+    engine.resetContext()
+  }
 
   open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
     val params = types.map { type -> type.toString().removePrefix("kotlin.") }
@@ -80,5 +86,9 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
         typeMap[name] = types
       }
     }
+  }
+
+  companion object {
+    val scriptManager by lazy { ScriptEngineManager() }
   }
 }

@@ -15,25 +15,14 @@
  *
  */
 
-description = 'script-utils-java'
+package com.github.pambrose.common.script
 
-dependencies {
-    implementation project(':core-utils')
-    implementation project(':script-utils-common')
+import kotlinx.coroutines.runBlocking
 
-    implementation libraries.coroutines_core
-
-    implementation libraries.java_scripting
-}
-
-compileKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
+class JavaScriptPool(size: Int) : AbstractScriptPool<JavaScript>(size) {
+  init {
+    runBlocking {
+      repeat(size) { channel.send(JavaScript()) }
     }
-}
-
-compileTestKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
-    }
+  }
 }

@@ -17,6 +17,9 @@
 
 package com.github.pambrose.common.script
 
+import ch.obermuhlner.scriptengine.java.Isolation
+import ch.obermuhlner.scriptengine.java.JavaScriptEngine
+import com.github.pambrose.common.script.ScriptUtils.engineBindings
 import javax.script.ScriptException
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -44,6 +47,10 @@ class JavaScript : AbstractScript("java"), AutoCloseable {
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it;" }
 
+  fun assignIsolation(isolation: Isolation) {
+    (engine as JavaScriptEngine).setIsolation(isolation)
+  }
+
   fun <T> import(clazz: Class<T>) {
     imports += clazz.name
   }
@@ -64,11 +71,11 @@ class JavaScript : AbstractScript("java"), AutoCloseable {
   @Synchronized
   fun evalScript(script: String): Any {
     if (!initialized) {
-      valueMap.forEach { (name, value) -> bindings[name] = value }
+      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
 
-    return engine.eval(importDecls + script, bindings)
+    return engine.eval(importDecls + script)
   }
 
   @Synchronized
@@ -90,11 +97,11 @@ $varDecls
 """
 
     if (!initialized) {
-      valueMap.forEach { (name, value) -> bindings[name] = value }
+      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
 
-    return engine.eval(code, bindings)
+    return engine.eval(code)
   }
 
   override fun close() {
