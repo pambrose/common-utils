@@ -29,7 +29,8 @@ import kotlinx.coroutines.runBlocking
 
 object KtorDsl {
 
-  fun newHttpClient(): HttpClient = HttpClient(CIO) { install(HttpTimeout) }
+  fun newHttpClient(block: CIOEngineConfig.() -> Unit = {}): HttpClient =
+    HttpClient(CIO.create(block)) { install(HttpTimeout) }
 
   suspend fun withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> Unit) {
     if (httpClient == null) {
