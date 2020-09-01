@@ -62,7 +62,7 @@ object KtorDsl {
     val clientCall =
       request<HttpStatement>(url) {
         method = HttpMethod.Get
-        setUp()
+        setUp.invoke(this)
       }
     clientCall.execute().also { resp -> block(resp) }
   }
