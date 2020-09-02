@@ -72,7 +72,7 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      logger.error(e) { "Failed to connect to redis" }
       block.invoke(null)
     }
 
@@ -85,7 +85,7 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      logger.error(e) { "Failed to connect to redis" }
       block.invoke(null)
     }
 
@@ -99,7 +99,7 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      logger.error(e) { "Failed to connect to redis" }
       block.invoke(null)
     }
 
@@ -113,7 +113,7 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      logger.error(e) { "Failed to connect to redis" }
       block.invoke(null)
     }
 }
