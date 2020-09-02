@@ -32,7 +32,7 @@ object KtorDsl {
   fun newHttpClient(block: CIOEngineConfig.() -> Unit = {}): HttpClient =
     HttpClient(CIO.create(block)) { install(HttpTimeout) }
 
-  suspend fun withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> Unit) {
+  suspend fun <T> withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> T): T =
     if (httpClient == null) {
       newHttpClient()
         .use { client ->
@@ -42,9 +42,8 @@ object KtorDsl {
     else {
       httpClient.block()
     }
-  }
 
-  suspend fun httpClient(httpClient: HttpClient? = null, block: suspend (HttpClient) -> Unit) {
+  suspend fun <T> httpClient(httpClient: HttpClient? = null, block: suspend (HttpClient) -> T): T =
     if (httpClient == null) {
       newHttpClient()
         .use { client ->
@@ -54,7 +53,6 @@ object KtorDsl {
     else {
       block(httpClient)
     }
-  }
 
   suspend fun HttpClient.get(url: String,
                              setUp: HttpRequestBuilder.() -> Unit = {},
