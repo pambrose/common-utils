@@ -54,24 +54,23 @@ object KtorDsl {
       block(httpClient)
     }
 
-  suspend fun HttpClient.get(url: String,
-                             setUp: HttpRequestBuilder.() -> Unit = {},
-                             block: suspend (HttpResponse) -> Unit) {
+  suspend fun <T> HttpClient.get(url: String,
+                                 setUp: HttpRequestBuilder.() -> Unit = {},
+                                 block: suspend (HttpResponse) -> T): T {
     val clientCall =
       request<HttpStatement>(url) {
         method = HttpMethod.Get
         setUp.invoke(this)
       }
-    clientCall.execute().also { resp -> block(resp) }
+    return clientCall.execute().let { resp -> block(resp) }
   }
 
-  fun blockingGet(url: String,
-                  setUp: HttpRequestBuilder.() -> Unit = {},
-                  block: suspend (HttpResponse) -> Unit) {
+  fun <T> blockingGet(url: String,
+                      setUp: HttpRequestBuilder.() -> Unit = {},
+                      block: suspend (HttpResponse) -> T) =
     runBlocking {
       withHttpClient {
         get(url, setUp, block)
       }
     }
-  }
 }
