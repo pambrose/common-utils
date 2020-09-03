@@ -20,7 +20,6 @@
 package com.github.pambrose.common.dsl
 
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.features.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -29,8 +28,8 @@ import kotlinx.coroutines.runBlocking
 
 object KtorDsl {
 
-  fun newHttpClient(block: CIOEngineConfig.() -> Unit = {}): HttpClient =
-    HttpClient(CIO.create(block)) { install(HttpTimeout) }
+  fun newHttpClient(): HttpClient =
+    HttpClient { install(HttpTimeout) }
 
   suspend fun <T> withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> T): T =
     if (httpClient == null) {
