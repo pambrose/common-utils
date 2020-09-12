@@ -34,3 +34,5 @@ inline suspend fun PipelineContext<*, ApplicationCall>.redirectTo(permanent: Boo
   val url = block.invoke()
   call.respondRedirect(url, permanent)
 }
+
+val RequestConnectionPoint.uriPrefix get() = "$scheme://$host:$port"

@@ -30,6 +30,8 @@ object RedisUtils : KLogging() {
   const val REDIS_MAX_IDLE_SIZE = "redis.maxIdleSize"
   const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
 
+  private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
+
   private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
   private fun urlDetails(redisUrl: String): Pair<URI, String> {
@@ -72,8 +74,21 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.error(e) { "Failed to connect to redis" }
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
+    }
+
+  fun <T> JedisPool.withNonNullRedisPool(block: (Jedis) -> T): T? =
+    try {
+      resource
+        .use { redis ->
+          redis.ping("")
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
+      null
     }
 
   suspend fun <T> JedisPool.withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
@@ -85,8 +100,21 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.error(e) { "Failed to connect to redis" }
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
+    }
+
+  suspend fun <T> JedisPool.withSuspendingNonNullRedisPool(block: suspend (Jedis) -> T): T? =
+    try {
+      resource
+        .use { redis ->
+          redis.ping("")
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
+      null
     }
 
   fun <T> withRedis(redisUrl: String = defaultRedisUrl, block: (Jedis?) -> T): T =
@@ -99,8 +127,22 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.error(e) { "Failed to connect to redis" }
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
+    }
+
+  fun <T> withNonNullRedis(redisUrl: String = defaultRedisUrl, block: (Jedis) -> T): T? =
+    try {
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+        .use { redis ->
+          redis.auth(password)
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
+      null
     }
 
   suspend fun <T> withSuspendingRedis(redisUrl: String = defaultRedisUrl, block: suspend (Jedis?) -> T): T =
@@ -113,7 +155,21 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.error(e) { "Failed to connect to redis" }
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
+    }
+
+  suspend fun <T> withSuspendingNonNullRedis(redisUrl: String = defaultRedisUrl, block: suspend (Jedis) -> T): T? =
+    try {
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+        .use { redis ->
+          redis.auth(password)
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
+      null
     }
 }
