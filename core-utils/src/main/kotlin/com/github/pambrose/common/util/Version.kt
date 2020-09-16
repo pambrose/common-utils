@@ -27,7 +27,7 @@ annotation class Version(val version: String, val date: String) {
   companion object {
     internal val jsonStr = { version: String, date: String -> """{"Version": "$version", "Release Date": "$date"}""" }
     internal val plainStr = { version: String, date: String -> "Version: $version Release Date: $date" }
-    internal const val unknown = "unknown"
+    private const val unknown = "unknown"
 
     fun KClass<*>.versionDesc(asJson: Boolean = false): String =
       this.findAnnotation<Version>()

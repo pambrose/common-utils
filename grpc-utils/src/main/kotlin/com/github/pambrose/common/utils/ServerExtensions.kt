@@ -22,13 +22,15 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 
 fun Server.shutdownWithJvm(maxWaitTime: Duration) {
-  Runtime.getRuntime().addShutdownHook(Thread(Runnable {
-    try {
-      shutdownGracefully(maxWaitTime)
-    } catch (e: InterruptedException) {
-      // do nothing
-    }
-  }))
+  Runtime.getRuntime().addShutdownHook(
+      Thread {
+        try {
+          shutdownGracefully(maxWaitTime)
+        }
+        catch (e: InterruptedException) {
+          // do nothing
+        }
+      })
 }
 
 @Throws(InterruptedException::class)
@@ -41,7 +43,8 @@ fun Server.shutdownGracefully(timeout: Long, unit: TimeUnit) {
   shutdown()
   try {
     awaitTermination(timeout, unit)
-  } finally {
+  }
+  finally {
     shutdownNow()
   }
 }

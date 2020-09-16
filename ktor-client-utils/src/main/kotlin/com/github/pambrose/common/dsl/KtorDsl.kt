@@ -61,7 +61,7 @@ object KtorDsl {
         method = HttpMethod.Get
         setUp.invoke(this)
       }
-    return clientCall.execute().let { resp -> block(resp) }
+    return block(clientCall.execute())
   }
 
   fun <T> blockingGet(url: String,
