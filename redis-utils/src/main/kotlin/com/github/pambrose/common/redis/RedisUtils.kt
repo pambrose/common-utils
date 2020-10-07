@@ -18,10 +18,7 @@
 package com.github.pambrose.common.redis
 
 import mu.KLogging
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
-import redis.clients.jedis.JedisPoolConfig
-import redis.clients.jedis.Protocol
+import redis.clients.jedis.*
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
@@ -202,5 +199,20 @@ object RedisUtils : KLogging() {
       else
         logger.error { FAILED_TO_CONNECT_MSG }
       null
+    }
+
+  fun Jedis.scanKeys(pattern: String, count: Int = 100): Sequence<String> =
+    sequence {
+      val scanParams = ScanParams().match(pattern).count(count)
+      var cursorVal = "0"
+      while (true) {
+        cursorVal =
+          scan(cursorVal, scanParams).run {
+            result.forEach { yield(it) }
+            cursor
+          }
+        if (cursorVal == "0")
+          break
+      }
     }
 }

@@ -41,6 +41,10 @@ ext {
             dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:$dropwizard_version",
             dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:$dropwizard_version",
 
+            exposed_core          : "org.jetbrains.exposed:exposed-core:$exposed_version",
+            exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
+            exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
+
             jna                   : "net.java.dev.jna:jna:$jna_version",
             jna_platform          : "net.java.dev.jna:jna-platform:$jna_version",
 
