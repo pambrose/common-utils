@@ -17,12 +17,11 @@
 
 plugins {
     id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '1.4.0' apply false
-    id "com.github.ben-manes.versions" version "0.29.0" apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.4.10' apply false
+    id "com.github.ben-manes.versions" version "0.33.0" apply false
 }
 
 ext {
-
     libraries = [
             reflect               : "org.jetbrains.kotlin:kotlin-reflect",
 
@@ -41,6 +40,10 @@ ext {
             dropwizard_healthcheck: "io.dropwizard.metrics:metrics-healthchecks:$dropwizard_version",
             dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:$dropwizard_version",
             dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:$dropwizard_version",
+
+            exposed_core          : "org.jetbrains.exposed:exposed-core:$exposed_version",
+            exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
+            exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
 
             jna                   : "net.java.dev.jna:jna:$jna_version",
             jna_platform          : "net.java.dev.jna:jna-platform:$jna_version",
@@ -79,7 +82,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.3.0'
+    version '1.4.0'
 
     apply plugin: 'maven' // required for jitpack.io install
     apply plugin: 'org.jetbrains.kotlin.jvm'
@@ -103,6 +106,7 @@ subprojects {
         implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$coroutines_version"
 
         implementation "io.github.microutils:kotlin-logging:$logging_version"
+        implementation "ch.qos.logback:logback-classic:$logback_version"
 
         testImplementation "org.amshove.kluent:kluent:$kluent_version"
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"

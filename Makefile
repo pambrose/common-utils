@@ -14,6 +14,12 @@ publish:
 tests:
 	./gradlew --rerun-tasks check
 
+tree:
+	./gradlew -q dependencies
+
+depends:
+	./gradlew dependencies
+
 refresh:
 	./gradlew --refresh-dependencies dependencyUpdates
 

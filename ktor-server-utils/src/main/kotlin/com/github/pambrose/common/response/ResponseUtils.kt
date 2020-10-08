@@ -17,22 +17,22 @@
 
 package com.github.pambrose.common.response
 
-import io.ktor.application.ApplicationCall
-import io.ktor.application.call
-import io.ktor.http.ContentType
-import io.ktor.http.ContentType.Text
-import io.ktor.response.respondRedirect
-import io.ktor.response.respondText
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.http.ContentType.*
+import io.ktor.response.*
+import io.ktor.util.pipeline.*
 
-suspend fun PipelineContext<Unit, ApplicationCall>.respondWith(contentTye: ContentType = Text.Html,
-                                                               block: suspend () -> String) {
+suspend inline fun PipelineContext<*, ApplicationCall>.respondWith(contentTye: ContentType = Text.Html,
+                                                                   block: () -> String) {
   val html = block.invoke()
   call.respondText(html, contentTye)
 }
 
-suspend fun PipelineContext<Unit, ApplicationCall>.redirectTo(permanent: Boolean = false,
-                                                              block: suspend () -> String) {
+suspend inline fun PipelineContext<*, ApplicationCall>.redirectTo(permanent: Boolean = false,
+                                                                  block: () -> String) {
   val url = block.invoke()
   call.respondRedirect(url, permanent)
 }
+
+val RequestConnectionPoint.uriPrefix get() = "$scheme://$host:$port"

@@ -20,7 +20,6 @@
 package com.github.pambrose.common.dsl
 
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.features.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -29,9 +28,10 @@ import kotlinx.coroutines.runBlocking
 
 object KtorDsl {
 
-  fun newHttpClient(): HttpClient = HttpClient(CIO) { install(HttpTimeout) }
+  fun newHttpClient(): HttpClient =
+    HttpClient { install(HttpTimeout) }
 
-  suspend fun withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> Unit) {
+  suspend fun <T> withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> T): T =
     if (httpClient == null) {
       newHttpClient()
         .use { client ->
@@ -41,9 +41,8 @@ object KtorDsl {
     else {
       httpClient.block()
     }
-  }
 
-  suspend fun httpClient(httpClient: HttpClient? = null, block: suspend (HttpClient) -> Unit) {
+  suspend fun <T> httpClient(httpClient: HttpClient? = null, block: suspend (HttpClient) -> T): T =
     if (httpClient == null) {
       newHttpClient()
         .use { client ->
@@ -53,26 +52,24 @@ object KtorDsl {
     else {
       block(httpClient)
     }
-  }
 
-  suspend fun HttpClient.get(url: String,
-                             setUp: HttpRequestBuilder.() -> Unit = {},
-                             block: suspend (HttpResponse) -> Unit) {
+  suspend fun <T> HttpClient.get(url: String,
+                                 setUp: HttpRequestBuilder.() -> Unit = {},
+                                 block: suspend (HttpResponse) -> T): T {
     val clientCall =
       request<HttpStatement>(url) {
         method = HttpMethod.Get
-        setUp()
+        setUp.invoke(this)
       }
-    clientCall.execute().also { resp -> block(resp) }
+    return block(clientCall.execute())
   }
 
-  fun blockingGet(url: String,
-                  setUp: HttpRequestBuilder.() -> Unit = {},
-                  block: suspend (HttpResponse) -> Unit) {
+  fun <T> blockingGet(url: String,
+                      setUp: HttpRequestBuilder.() -> Unit = {},
+                      block: suspend (HttpResponse) -> T) =
     runBlocking {
       withHttpClient {
         get(url, setUp, block)
       }
     }
-  }
 }

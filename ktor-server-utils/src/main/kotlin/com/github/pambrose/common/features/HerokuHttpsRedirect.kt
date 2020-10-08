@@ -105,10 +105,13 @@ class HerokuHttpsRedirect(config: Configuration) {
       pipeline.intercept(ApplicationCallPipeline.Features) {
         // See https://jaketrent.com/post/https-redirect-node-heroku/
         val scheme = call.request.header("x-forwarded-proto") ?: "none"
-        if (scheme == "http" &&
-          feature.excludePredicates.none { predicate -> predicate(call) }
-        ) {
-          val redirectUrl = call.url { protocol = URLProtocol.HTTPS; host = feature.host; port = feature.redirectPort }
+        if (scheme == "http" && feature.excludePredicates.none { predicate -> predicate(call) }) {
+          val redirectUrl =
+            call.url {
+              protocol = URLProtocol.HTTPS
+              host = feature.host
+              port = feature.redirectPort
+            }
           logger.debug { "Redirecting to: $redirectUrl" }
           call.respondRedirect(redirectUrl, feature.permanent)
           finish()

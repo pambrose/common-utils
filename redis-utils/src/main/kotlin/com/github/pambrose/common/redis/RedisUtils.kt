@@ -18,10 +18,7 @@
 package com.github.pambrose.common.redis
 
 import mu.KLogging
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
-import redis.clients.jedis.JedisPoolConfig
-import redis.clients.jedis.Protocol
+import redis.clients.jedis.*
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
@@ -29,6 +26,8 @@ object RedisUtils : KLogging() {
   const val REDIS_MAX_POOL_SIZE = "redis.maxPoolSize"
   const val REDIS_MAX_IDLE_SIZE = "redis.maxIdleSize"
   const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
+
+  private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
 
   private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
@@ -63,7 +62,7 @@ object RedisUtils : KLogging() {
     return JedisPool(poolConfig, redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, password, redisUrl.isSsl)
   }
 
-  fun <T> JedisPool.withRedisPool(block: (Jedis?) -> T): T =
+  fun <T> JedisPool.withRedisPool(printStackTrace: Boolean = false, block: (Jedis?) -> T): T =
     try {
       resource
         .use { redis ->
@@ -72,11 +71,14 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
     }
 
-  suspend fun <T> JedisPool.withSuspendingRedisPool(block: suspend (Jedis?) -> T): T =
+  fun <T> JedisPool.withNonNullRedisPool(printStackTrace: Boolean = false, block: (Jedis) -> T): T? =
     try {
       resource
         .use { redis ->
@@ -85,11 +87,47 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
+      null
+    }
+
+  suspend fun <T> JedisPool.withSuspendingRedisPool(printStackTrace: Boolean = false, block: suspend (Jedis?) -> T): T =
+    try {
+      resource
+        .use { redis ->
+          redis.ping("")
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
     }
 
-  fun <T> withRedis(redisUrl: String = defaultRedisUrl, block: (Jedis?) -> T): T =
+  suspend fun <T> JedisPool.withSuspendingNonNullRedisPool(printStackTrace: Boolean = false,
+                                                           block: suspend (Jedis) -> T): T? =
+    try {
+      resource
+        .use { redis ->
+          redis.ping("")
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
+      null
+    }
+
+  fun <T> withRedis(redisUrl: String = defaultRedisUrl, printStackTrace: Boolean = false, block: (Jedis?) -> T): T =
     try {
       val (redisUri, password) = urlDetails(redisUrl)
       Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
@@ -99,11 +137,16 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
     }
 
-  suspend fun <T> withSuspendingRedis(redisUrl: String = defaultRedisUrl, block: suspend (Jedis?) -> T): T =
+  fun <T> withNonNullRedis(redisUrl: String = defaultRedisUrl,
+                           printStackTrace: Boolean = false,
+                           block: (Jedis) -> T): T? =
     try {
       val (redisUri, password) = urlDetails(redisUrl)
       Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
@@ -113,7 +156,63 @@ object RedisUtils : KLogging() {
         }
     }
     catch (e: JedisConnectionException) {
-      logger.info(e) { "Failed to connect to redis" }
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
+      null
+    }
+
+  suspend fun <T> withSuspendingRedis(redisUrl: String = defaultRedisUrl,
+                                      printStackTrace: Boolean = false,
+                                      block: suspend (Jedis?) -> T): T =
+    try {
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+        .use { redis ->
+          redis.auth(password)
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
       block.invoke(null)
+    }
+
+  suspend fun <T> withSuspendingNonNullRedis(redisUrl: String = defaultRedisUrl,
+                                             printStackTrace: Boolean = false,
+                                             block: suspend (Jedis) -> T): T? =
+    try {
+      val (redisUri, password) = urlDetails(redisUrl)
+      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+        .use { redis ->
+          redis.auth(password)
+          block.invoke(redis)
+        }
+    }
+    catch (e: JedisConnectionException) {
+      if (printStackTrace)
+        logger.error(e) { FAILED_TO_CONNECT_MSG }
+      else
+        logger.error { FAILED_TO_CONNECT_MSG }
+      null
+    }
+
+  fun Jedis.scanKeys(pattern: String, count: Int = 100): Sequence<String> =
+    sequence {
+      val scanParams = ScanParams().match(pattern).count(count)
+      var cursorVal = "0"
+      while (true) {
+        cursorVal =
+          scan(cursorVal, scanParams).run {
+            result.forEach { yield(it) }
+            cursor
+          }
+        if (cursorVal == "0")
+          break
+      }
     }
 }

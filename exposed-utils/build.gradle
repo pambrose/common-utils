@@ -1,0 +1,8 @@
+description = 'exposed-utils'
+
+dependencies {
+    implementation project(':core-utils')
+
+    implementation libraries.exposed_core
+    implementation libraries.exposed_jodatime
+}
