@@ -187,3 +187,21 @@ fun newByteArraySalt(len: Int = 16): ByteArray = ByteArray(len).apply { SecureRa
 
 fun newStringSalt(len: Int = 16): String = randomId(len)
 
+fun md5Of(vararg keys: Any, separator: String = "|") = keys.joinToString(separator) { it.toString() }.md5()
+
+fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.join("/")
+
+fun String.maskUrlCredentials() =
+  if ("://" in this && "@" in this) {
+    val scheme = split("://")
+    val uri = split("@")
+    "${scheme[0]}://*****:*****@${uri[1]}"
+  }
+  else {
+    this
+  }
+
+fun String.obfuscate(freq: Int = 2) =
+  mapIndexed { i, v -> if (i % freq == 0) '*' else v }.joinToString("")
+
+
