@@ -23,13 +23,9 @@ import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.utils.TlsContext
 import com.github.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
-import io.grpc.Attributes
-import io.grpc.ManagedChannel
-import io.grpc.Server
-import io.grpc.ServerBuilder
+import io.grpc.*
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
-import io.grpc.internal.AbstractManagedChannelImplBuilder
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
@@ -42,7 +38,7 @@ object GrpcDsl : KLogging() {
               tlsContext: TlsContext,
               overrideAuthority: String = "",
               inProcessServerName: String = "",
-              block: AbstractManagedChannelImplBuilder<*>.() -> Unit): ManagedChannel =
+              block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel =
     when {
       inProcessServerName.isEmpty() -> {
         logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
