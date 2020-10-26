@@ -18,7 +18,11 @@
 package com.github.pambrose.common.redis
 
 import mu.KLogging
-import redis.clients.jedis.*
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.JedisPoolConfig
+import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
+import redis.clients.jedis.ScanParams
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
 
@@ -31,10 +35,16 @@ object RedisUtils : KLogging() {
 
   private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
-  private fun urlDetails(redisUrl: String): Pair<URI, String> {
-    val redisUri = URI(redisUrl)
-    return redisUri to redisUri.userInfo.split(colon, 2)[1]
-  }
+
+  class RedisInfo(val uri: URI, val user: String, val password: String)
+
+  private fun urlDetails(redisUrl: String) =
+    URI(redisUrl)
+      .let {
+        RedisInfo(it,
+                  (it.userInfo?.split(colon, 2)?.get(0) ?: ""),
+                  (it.userInfo?.split(colon, 2)?.get(1) ?: ""))
+      }
 
   private val String.isSsl: Boolean get() = toLowerCase().startsWith("rediss://")
 
@@ -58,8 +68,18 @@ object RedisUtils : KLogging() {
           testWhileIdle = true
         }
 
-    val (redisUri, password) = urlDetails(redisUrl)
-    return JedisPool(poolConfig, redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, password, redisUrl.isSsl)
+    val info = urlDetails(redisUrl)
+    val host = info.uri.host
+    val port = info.uri.port
+
+    return if (info.password.isNotBlank()) {
+      if (info.user.isNotBlank())
+        JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.user, info.password, redisUrl.isSsl)
+      else
+        JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.password, redisUrl.isSsl)
+    }
+    else
+      JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, redisUrl.isSsl)
   }
 
   fun <T> JedisPool.withRedisPool(printStackTrace: Boolean = false, block: (Jedis?) -> T): T =
@@ -129,10 +149,15 @@ object RedisUtils : KLogging() {
 
   fun <T> withRedis(redisUrl: String = defaultRedisUrl, printStackTrace: Boolean = false, block: (Jedis?) -> T): T =
     try {
-      val (redisUri, password) = urlDetails(redisUrl)
-      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+      val info = urlDetails(redisUrl)
+      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
-          redis.auth(password)
+          if (info.password.isNotBlank()) {
+            if (info.user.isNotBlank())
+              redis.auth(info.user, info.password)
+            else
+              redis.auth(info.password)
+          }
           block.invoke(redis)
         }
     }
@@ -148,10 +173,15 @@ object RedisUtils : KLogging() {
                            printStackTrace: Boolean = false,
                            block: (Jedis) -> T): T? =
     try {
-      val (redisUri, password) = urlDetails(redisUrl)
-      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+      val info = urlDetails(redisUrl)
+      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
-          redis.auth(password)
+          if (info.password.isNotBlank()) {
+            if (info.user.isNotBlank())
+              redis.auth(info.user, info.password)
+            else
+              redis.auth(info.password)
+          }
           block.invoke(redis)
         }
     }
@@ -167,10 +197,15 @@ object RedisUtils : KLogging() {
                                       printStackTrace: Boolean = false,
                                       block: suspend (Jedis?) -> T): T =
     try {
-      val (redisUri, password) = urlDetails(redisUrl)
-      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+      val info = urlDetails(redisUrl)
+      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
-          redis.auth(password)
+          if (info.password.isNotBlank()) {
+            if (info.user.isNotBlank())
+              redis.auth(info.user, info.password)
+            else
+              redis.auth(info.password)
+          }
           block.invoke(redis)
         }
     }
@@ -186,10 +221,15 @@ object RedisUtils : KLogging() {
                                              printStackTrace: Boolean = false,
                                              block: suspend (Jedis) -> T): T? =
     try {
-      val (redisUri, password) = urlDetails(redisUrl)
-      Jedis(redisUri.host, redisUri.port, Protocol.DEFAULT_TIMEOUT, redisUrl.isSsl)
+      val info = urlDetails(redisUrl)
+      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
-          redis.auth(password)
+          if (info.password.isNotBlank()) {
+            if (info.user.isNotBlank())
+              redis.auth(info.user, info.password)
+            else
+              redis.auth(info.password)
+          }
           block.invoke(redis)
         }
     }
