@@ -36,7 +36,9 @@ object RedisUtils : KLogging() {
   private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
 
-  class RedisInfo(val uri: URI, val user: String, val password: String)
+  class RedisInfo(val uri: URI, val user: String, val password: String) {
+    val includeUserInAuth get() = user.isNotBlank() && user != "default"
+  }
 
   private fun urlDetails(redisUrl: String) =
     URI(redisUrl)
@@ -73,7 +75,7 @@ object RedisUtils : KLogging() {
     val port = info.uri.port
 
     return if (info.password.isNotBlank()) {
-      if (info.user.isNotBlank())
+      if (info.includeUserInAuth)
         JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.user, info.password, redisUrl.isSsl)
       else
         JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.password, redisUrl.isSsl)
@@ -153,7 +155,7 @@ object RedisUtils : KLogging() {
       Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           if (info.password.isNotBlank()) {
-            if (info.user.isNotBlank())
+            if (info.includeUserInAuth)
               redis.auth(info.user, info.password)
             else
               redis.auth(info.password)
@@ -177,7 +179,7 @@ object RedisUtils : KLogging() {
       Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           if (info.password.isNotBlank()) {
-            if (info.user.isNotBlank())
+            if (info.includeUserInAuth)
               redis.auth(info.user, info.password)
             else
               redis.auth(info.password)
@@ -201,7 +203,7 @@ object RedisUtils : KLogging() {
       Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           if (info.password.isNotBlank()) {
-            if (info.user.isNotBlank())
+            if (info.includeUserInAuth)
               redis.auth(info.user, info.password)
             else
               redis.auth(info.password)
@@ -225,7 +227,7 @@ object RedisUtils : KLogging() {
       Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
         .use { redis ->
           if (info.password.isNotBlank()) {
-            if (info.user.isNotBlank())
+            if (info.includeUserInAuth)
               redis.auth(info.user, info.password)
             else
               redis.auth(info.password)
