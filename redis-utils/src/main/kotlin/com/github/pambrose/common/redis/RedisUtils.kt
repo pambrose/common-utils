@@ -37,7 +37,7 @@ object RedisUtils : KLogging() {
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
 
   class RedisInfo(val uri: URI, val user: String, val password: String) {
-    val includeUserInAuth get() = user.isNotBlank() && user != "default"
+    val includeUserInAuth get() = user.isNotBlank() && user != "default" && user != "user" && password != "none"
   }
 
   private fun urlDetails(redisUrl: String) =
