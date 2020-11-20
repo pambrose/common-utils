@@ -111,6 +111,17 @@ fun String.isInt() =
 
 fun String.isNotInt() = !isInt()
 
+fun String.isFloat() =
+  try {
+    this.toFloat()
+    true
+  }
+  catch (e: Exception) {
+    false
+  }
+
+fun String.isNotFloat() = !isFloat()
+
 fun String.isDouble() =
   try {
     this.toDouble()

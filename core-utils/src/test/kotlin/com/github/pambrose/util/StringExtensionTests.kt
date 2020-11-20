@@ -81,6 +81,19 @@ class StringExtensionTests {
   }
 
   @Test
+  fun isFloatTest() {
+    "".isFloat() shouldBeEqualTo false
+    "a".isFloat() shouldBeEqualTo false
+    "4.0".isFloat() shouldBeEqualTo true
+    "4".isFloat() shouldBeEqualTo true
+
+    "".isNotFloat() shouldBeEqualTo true
+    "a".isNotFloat() shouldBeEqualTo true
+    "4.0".isNotFloat() shouldBeEqualTo false
+    "4".isNotFloat() shouldBeEqualTo false
+  }
+
+  @Test
   fun isDoubleTest() {
     "".isDouble() shouldBeEqualTo false
     "a".isDouble() shouldBeEqualTo false
