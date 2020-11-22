@@ -92,8 +92,6 @@ interface ContentSource {
   val source: String
   val content: String
   val remote: Boolean
-
-  val quotedSource get() = source.toDoubleQuoted()
 }
 
 open class GitHubFile(val repo: GitHubRepo,
