@@ -1,9 +1,9 @@
 jdk:
-  - openjdk11
+  - openjdk8
 #before_install:
 #  - ./custom_setup.sh
 #install:
 #  - echo "Running a custom install command"
 #  - ./gradlew clean build -xtest publish publishToMavenLocal
-env:
-  MYVAR: "custom environment variable"
+#env:
+#  MYVAR: "custom environment variable"
