@@ -63,7 +63,8 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
       initialized = true
     }
 
-    return engine.eval("$importDecls\n\n$code")
+    val script = "$importDecls\n\n$code"
+    return engine.eval(script)
   }
 
   override fun close() {

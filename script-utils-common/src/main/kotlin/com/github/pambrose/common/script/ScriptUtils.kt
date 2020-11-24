@@ -28,12 +28,12 @@ object ScriptUtils {
 
   fun ScriptEngine.bindings(scope: Int = ScriptContext.ENGINE_SCOPE): Bindings = getBindings(scope)
 
-  fun ScriptEngine.resetContext() {
+  fun ScriptEngine.resetContext(nullGlobal: Boolean = false) {
     context =
       SimpleScriptContext()
         .apply {
           setBindings(createBindings(), ScriptContext.ENGINE_SCOPE)
-          setBindings(createBindings(), ScriptContext.GLOBAL_SCOPE)
+          setBindings(if (nullGlobal) null else createBindings(), ScriptContext.GLOBAL_SCOPE)
         }
   }
 }
