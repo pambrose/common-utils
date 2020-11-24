@@ -59,7 +59,8 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
 
     if (!initialized) {
       valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
-      engine.eval(varDecls)
+      if (varDecls.isNotBlank())
+        engine.eval(varDecls)
       initialized = true
     }
 
