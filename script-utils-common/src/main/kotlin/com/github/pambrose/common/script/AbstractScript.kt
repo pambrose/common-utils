@@ -46,9 +46,9 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
     resetContext()
   }
 
-  fun resetContext() {
+  fun resetContext(nullGlobal: Boolean = false) {
     initialized = false
-    engine.resetContext()
+    engine.resetContext(nullGlobal)
   }
 
   open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
