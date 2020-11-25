@@ -45,9 +45,6 @@ ext {
             exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
             exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
 
-            jna                   : "net.java.dev.jna:jna:$jna_version",
-            jna_platform          : "net.java.dev.jna:jna-platform:$jna_version",
-
             script_util           : "org.jetbrains.kotlin:kotlin-script-util",
             script_runtime        : "org.jetbrains.kotlin:kotlin-script-runtime",
 
