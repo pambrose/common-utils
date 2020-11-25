@@ -21,8 +21,11 @@ dependencies {
     implementation project(':core-utils')
     implementation project(':script-utils-common')
 
+    implementation libraries.jna
+    implementation libraries.jna_platform
+
     // This makes up for ScriptEngineFactory being renamed
-    implementation libraries.kotlin_scripting
+    //implementation libraries.kotlin_scripting
 
     implementation libraries.script_runtime
     implementation libraries.kotlin_compiler_embed
