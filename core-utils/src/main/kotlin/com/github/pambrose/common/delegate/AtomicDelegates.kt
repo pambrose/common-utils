@@ -47,7 +47,7 @@ private class NonNullAtomicReferenceDelegate<T : Any>(initValue: T? = null) : Re
   private val atomicVal = AtomicReference<T>(initValue)
 
   override operator fun getValue(thisRef: Any?, property: KProperty<*>) =
-    atomicVal.get() ?: throw IllegalStateException("Property ${property.name} must be initialized first")
+    atomicVal.get() ?: error("Property ${property.name} must be initialized first")
 
   override operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) = atomicVal.set(value)
 }
