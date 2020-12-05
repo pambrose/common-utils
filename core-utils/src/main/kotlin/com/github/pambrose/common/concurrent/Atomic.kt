@@ -15,24 +15,17 @@
  *
  */
 
-description = 'script-utils-python'
+package com.github.pambrose.common.concurrent
 
-dependencies {
-    implementation project(':core-utils')
-    implementation project(':script-utils-common')
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-    implementation libraries.coroutines_core
-    implementation libraries.python_scripting
-}
+// See: https://medium.com/swlh/kotlin-for-lunch-atomic-t-261351048fad
 
-compileKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
-    }
-}
+class Atomic<T>(var value: T) : Mutex by Mutex() {
+  suspend inline fun setWithLock(owner: Any? = null, action: (T) -> T): T =
+    (this as Mutex).withLock(owner) { action(value).also { value = it } }
 
-compileTestKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=kotlin.ExperimentalStdlibApi']
-    }
+  suspend inline fun <V> withLock(owner: Any? = null, action: T.() -> V): V =
+    (this as Mutex).withLock(owner) { value.action() }
 }

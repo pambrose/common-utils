@@ -57,7 +57,7 @@ fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
 fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
 
-fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false)
+fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false, separator)
 
 fun List<String>.toRootPath(addTrailing: Boolean = false, separator: CharSequence = "/") =
   toPath(addPrefix = true, addTrailing = addTrailing)
@@ -110,6 +110,17 @@ fun String.isInt() =
   }
 
 fun String.isNotInt() = !isInt()
+
+fun String.isFloat() =
+  try {
+    this.toFloat()
+    true
+  }
+  catch (e: Exception) {
+    false
+  }
+
+fun String.isNotFloat() = !isFloat()
 
 fun String.isDouble() =
   try {
