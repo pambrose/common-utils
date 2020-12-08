@@ -174,26 +174,26 @@ class KotlinScriptTests {
 
   @Test
   fun nullObjectTest() {
-    val list = mutableListOf<Int?>()
+    val list2 = mutableListOf<Int?>()
 
     KotlinScript().use {
       it.apply {
-        add("list", list, typeOf<Int?>())
+        add("list3", list2, typeOf<Int?>())
 
-        varDecls shouldBeEqualTo "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
+        //varDecls shouldBeEqualTo "val list3 = bindings[\"list3\"] as java.util.ArrayList<Int?>"
 
-        list.size shouldBeEqualTo eval("list.size")
+        list2.size shouldBeEqualTo eval("list3.size")
 
         val incEd =
           eval("""
-                repeat(100) { list.add(null) }
-                list
+                repeat(100) { list3.add(null) }
+                list3
               """
           ) as List<*>
 
-        list.size shouldBeEqualTo 100
-        list.size shouldBeEqualTo eval("list.size")
-        list.size shouldBeEqualTo incEd.size
+        list2.size shouldBeEqualTo 100
+        list2.size shouldBeEqualTo eval("list3.size")
+        list2.size shouldBeEqualTo incEd.size
       }
     }
   }

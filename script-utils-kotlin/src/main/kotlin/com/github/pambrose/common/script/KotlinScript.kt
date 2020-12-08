@@ -17,7 +17,6 @@
 
 package com.github.pambrose.common.script
 
-import com.github.pambrose.common.script.ScriptUtils.engineBindings
 import com.github.pambrose.common.util.toDoubleQuoted
 import javax.script.ScriptException
 
@@ -29,10 +28,6 @@ import javax.script.ScriptException
 class KotlinScript : AbstractScript("kts"), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
-  //init {
-  //  setIdeaIoUseFallback()
-  //}
-
   val varDecls: String
     get() {
       val assigns = mutableListOf<String>()
@@ -41,11 +36,13 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
         val kotlinClazz = value.javaClass.kotlin
         val kotlinQualified = kotlinClazz.qualifiedName!!
         val type = kotlinQualified.removePrefix("kotlin.")
-        assigns += "val $name = bindings[${name.toDoubleQuoted()}] as $type${params(name)}"
+        assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type${params(name)}"
       }
 
       return assigns.joinToString("\n")
     }
+
+  private fun String.toTempName() = "${this}_tmp"
 
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it" }
@@ -57,9 +54,8 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
       throw ScriptException("Illegal call to System.exit()")
 
     if (!initialized) {
-      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
-      if (varDecls.isNotBlank())
-        engine.eval(varDecls)
+      valueMap.forEach { (name, value) -> engine.put(name.toTempName(), value) }
+      engine.eval(varDecls)
       initialized = true
     }
 
