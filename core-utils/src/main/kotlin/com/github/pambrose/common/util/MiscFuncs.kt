@@ -55,7 +55,7 @@ fun repeatWithSleep(iterations: Int,
                     sleepTime: Duration = 1.seconds,
                     block: (count: Int, startMillis: Long) -> Unit) {
   val startMillis = System.currentTimeMillis()
-  repeat(iterations) { i ->
+  iterations repeat { i ->
     block(i, startMillis)
     sleep(sleepTime)
   }

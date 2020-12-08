@@ -20,6 +20,7 @@
 package com.github.pambrose.time
 
 import com.github.pambrose.common.time.timeUnitToDuration
+import com.github.pambrose.common.util.repeat
 import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
@@ -29,7 +30,7 @@ class TimeTests {
 
   @Test
   fun conversionTest() {
-    repeat(100) { i ->
+    100 repeat { i ->
       timeUnitToDuration(i.toLong(), TimeUnit.MICROSECONDS) shouldBeEqualTo i.microseconds
       timeUnitToDuration(i.toLong(), TimeUnit.NANOSECONDS) shouldBeEqualTo i.nanoseconds
       timeUnitToDuration(i.toLong(), TimeUnit.MILLISECONDS) shouldBeEqualTo i.milliseconds

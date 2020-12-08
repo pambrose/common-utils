@@ -55,3 +55,7 @@ inline infix operator fun Long.times(action: (Long) -> Unit) {
   var i = 0L
   while (i < this) action(i++)
 }
+
+inline infix fun Int.repeat(block: (Int) -> Unit) {
+  repeat(this, block)
+}

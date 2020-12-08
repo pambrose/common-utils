@@ -19,8 +19,6 @@ package com.github.pambrose.common.script
 
 import com.github.pambrose.common.script.ScriptUtils.engineBindings
 import com.github.pambrose.common.util.toDoubleQuoted
-import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
-import org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmLocalScriptEngine
 import javax.script.ScriptException
 
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
@@ -30,11 +28,10 @@ import javax.script.ScriptException
 //class KotlinScript : AbstractScript(KotlinJsr223JvmLocalScriptEngineFactory().scriptEngine), AutoCloseable {
 class KotlinScript : AbstractScript("kts"), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
-  private val ktengine = engine as KotlinJsr223JvmLocalScriptEngine
 
-  init {
-    setIdeaIoUseFallback()
-  }
+  //init {
+  //  setIdeaIoUseFallback()
+  //}
 
   val varDecls: String
     get() {
@@ -60,14 +57,14 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
       throw ScriptException("Illegal call to System.exit()")
 
     if (!initialized) {
-      valueMap.forEach { (name, value) -> ktengine.engineBindings[name] = value }
+      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       if (varDecls.isNotBlank())
-        ktengine.eval(varDecls)
+        engine.eval(varDecls)
       initialized = true
     }
 
     val script = "$importDecls\n\n$code"
-    return ktengine.eval(script)
+    return engine.eval(script)
   }
 
   override fun close() {
