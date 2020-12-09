@@ -284,8 +284,8 @@ class KotlinScriptTests {
   fun exprEvaluator() {
     KotlinExprEvaluator()
       .apply {
-        repeat(200) { i ->
-          //println("Invocation: $i")
+        repeat(100) { i ->
+          //println("Invocation1: $i")
           invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
           invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
         }
@@ -295,10 +295,10 @@ class KotlinScriptTests {
   @Test
   fun poolExprEvaluator() {
     val pool = KotlinExprEvaluatorPool(5)
-    repeat(200) { i ->
+    repeat(100) { i ->
       pool
         .apply {
-          //println("Invocation: $i")
+          //println("Invocation2: $i")
           invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
           invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
         }

@@ -20,6 +20,7 @@ package com.github.pambrose.common.script
 import com.github.pambrose.common.util.toDoubleQuoted
 import javax.script.ScriptException
 
+// See: https://github.com/Kotlin/kotlin-script-examples/blob/master/jvm/jsr223/jsr223-simple/build.gradle.kts
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting

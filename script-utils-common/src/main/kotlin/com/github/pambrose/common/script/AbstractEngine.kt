@@ -17,10 +17,14 @@
 
 package com.github.pambrose.common.script
 
-import com.github.pambrose.common.script.ScriptUtils.resetContext
+import javax.script.ScriptEngineManager
+import javax.script.ScriptException
 
-abstract class AbstractExprEvaluator(extension: String) : AbstractEngine(extension) {
-  fun eval(expr: String) = engine.eval(expr) as Boolean
+abstract class AbstractEngine(extension: String) {
+  val engine = scriptManager.getEngineByExtension(extension)
+               ?: throw ScriptException("Unrecognized script extension: $extension")
 
-  fun resetContext(nullGloalContext: Boolean = false) = engine.resetContext(nullGloalContext)
+  companion object {
+    private val scriptManager by lazy { ScriptEngineManager() }
+  }
 }

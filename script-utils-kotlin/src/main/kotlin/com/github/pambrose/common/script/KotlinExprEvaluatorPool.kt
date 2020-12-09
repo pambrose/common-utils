@@ -19,8 +19,7 @@ package com.github.pambrose.common.script
 
 import kotlinx.coroutines.runBlocking
 
-class KotlinExprEvaluatorPool(size: Int) :
-  AbstractExprEvaluatorPool<KotlinExprEvaluator>(size) {
+class KotlinExprEvaluatorPool(size: Int) : AbstractExprEvaluatorPool<KotlinExprEvaluator>(size) {
   init {
     runBlocking {
       repeat(size) { channel.send(KotlinExprEvaluator()) }

@@ -29,11 +29,10 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(val size: In
 
   private suspend fun recycle(scriptObject: AbstractExprEvaluator) = channel.send(scriptObject)
 
-  fun <R> blockingEval(expr: String): R {
-    return runBlocking {
+  fun <R> blockingEval(expr: String): R =
+    runBlocking {
       eval(expr)
     }
-  }
 
   suspend fun <R> eval(expr: String): R {
     val engine = borrow()
