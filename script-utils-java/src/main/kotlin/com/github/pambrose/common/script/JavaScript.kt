@@ -27,7 +27,8 @@ import kotlin.reflect.typeOf
 // https://github.com/eobermuhlner/java-scriptengine
 // https://gitter.im/java-scriptengine/community
 
-class JavaScript : AbstractScript("java"), AutoCloseable {
+// Java cannot have a null global context
+class JavaScript : AbstractScript("java", false), AutoCloseable {
   private val imports = mutableListOf<String>()
 
   val varDecls: String

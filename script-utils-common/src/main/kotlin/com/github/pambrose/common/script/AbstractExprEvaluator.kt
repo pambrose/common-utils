@@ -17,25 +17,17 @@
 
 package com.github.pambrose.common.script
 
-import kotlinx.coroutines.channels.Channel
+import javax.script.ScriptEngine
+import javax.script.ScriptEngineManager
+import javax.script.ScriptException
 
-abstract class AbstractScriptPool<T : AbstractScript>(val size: Int, private val nullGlobalContext: Boolean) {
+abstract class AbstractExprEvaluator(protected val engine: ScriptEngine) {
+  constructor(extension: String) : this(scriptManager.getEngineByExtension(extension)
+                                        ?: throw ScriptException("Unrecognized script extension: $extension"))
 
-  protected val channel = Channel<T>(size)
-  private suspend fun borrow() = channel.receive()
+  fun eval(expr: String) = engine.eval(expr) as Boolean
 
-  val isEmpty get() = channel.isEmpty
-
-  // Reset the context before returning to pool
-  private suspend fun recycle(scriptObject: T) = channel.send(scriptObject.apply { resetContext(nullGlobalContext) })
-
-  suspend fun <R> eval(block: T.() -> R): R {
-    val engine = borrow()
-    return try {
-      block.invoke(engine)
-    }
-    finally {
-      recycle(engine)
-    }
+  companion object {
+    val scriptManager by lazy { ScriptEngineManager() }
   }
 }

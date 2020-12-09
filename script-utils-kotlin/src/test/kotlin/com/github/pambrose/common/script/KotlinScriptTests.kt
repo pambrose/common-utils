@@ -19,6 +19,7 @@ package com.github.pambrose.common.script
 
 import org.amshove.kluent.invoking
 import org.amshove.kluent.shouldBeEqualTo
+import org.amshove.kluent.shouldNotThrow
 import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
@@ -174,26 +175,26 @@ class KotlinScriptTests {
 
   @Test
   fun nullObjectTest() {
-    val list2 = mutableListOf<Int?>()
+    val list = mutableListOf<Int?>()
 
     KotlinScript().use {
       it.apply {
-        add("list3", list2, typeOf<Int?>())
+        add("list", list, typeOf<Int?>())
 
-        //varDecls shouldBeEqualTo "val list3 = bindings[\"list3\"] as java.util.ArrayList<Int?>"
+        varDecls shouldBeEqualTo "val list = bindings[\"${"list".toTempName()}\"] as java.util.ArrayList<Int?>"
 
-        list2.size shouldBeEqualTo eval("list3.size")
+        list.size shouldBeEqualTo eval("list.size")
 
         val incEd =
           eval("""
-                repeat(100) { list3.add(null) }
-                list3
+                repeat(100) { list.add(null) }
+                list
               """
           ) as List<*>
 
-        list2.size shouldBeEqualTo 100
-        list2.size shouldBeEqualTo eval("list3.size")
-        list2.size shouldBeEqualTo incEd.size
+        list.size shouldBeEqualTo 100
+        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBeEqualTo incEd.size
       }
     }
   }
@@ -276,6 +277,31 @@ class KotlinScriptTests {
         invoking { eval("System.exit(1)") } shouldThrow ScriptException::class
         invoking { eval("com.lang.System.exit(1)") } shouldThrow ScriptException::class
       }
+    }
+  }
+
+  @Test
+  fun exprEvaluator() {
+    KotlinExprEvaluator()
+      .apply {
+        repeat(200) { i ->
+          //println("Invocation: $i")
+          invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
+          invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
+        }
+      }
+  }
+
+  @Test
+  fun poolExprEvaluator() {
+    val pool = KotlinExprEvaluatorPool(5)
+    repeat(200) { i ->
+      pool
+        .apply {
+          //println("Invocation: $i")
+          invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
+          invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
+        }
     }
   }
 }

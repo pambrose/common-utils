@@ -24,25 +24,25 @@ import javax.script.ScriptException
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting
 
-//class KotlinScript : AbstractScript(KotlinJsr223JvmLocalScriptEngineFactory().scriptEngine), AutoCloseable {
-class KotlinScript : AbstractScript("kts"), AutoCloseable {
+class KotlinScript(nullGlobalContext: Boolean = false) : AbstractScript("kts", nullGlobalContext), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
   val varDecls: String
     get() {
       val assigns = mutableListOf<String>()
 
-      valueMap.forEach { (name, value) ->
-        val kotlinClazz = value.javaClass.kotlin
-        val kotlinQualified = kotlinClazz.qualifiedName!!
-        val type = kotlinQualified.removePrefix("kotlin.")
-        assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type${params(name)}"
-      }
+      valueMap
+        .forEach { (name, value) ->
+          val kotlinClazz = value.javaClass.kotlin
+          val kotlinQualified = kotlinClazz.qualifiedName!!
+          val type = kotlinQualified.removePrefix("kotlin.")
+          assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type${params(name)}"
+        }
 
       return assigns.joinToString("\n")
     }
 
-  private fun String.toTempName() = "${this}_tmp"
+  internal fun String.toTempName() = "${this}_tmp"
 
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it" }
@@ -54,8 +54,10 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
       throw ScriptException("Illegal call to System.exit()")
 
     if (!initialized) {
-      valueMap.forEach { (name, value) -> engine.put(name.toTempName(), value) }
-      engine.eval(varDecls)
+      if (valueMap.isNotEmpty()) {
+        valueMap.forEach { (name, value) -> engine.put(name.toTempName(), value) }
+        engine.eval(varDecls)
+      }
       initialized = true
     }
 
