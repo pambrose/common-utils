@@ -19,7 +19,7 @@ package com.github.pambrose.common.script
 
 import kotlinx.coroutines.channels.Channel
 
-abstract class AbstractScriptPool<T : AbstractScript>(val size: Int) {
+abstract class AbstractScriptPool<T : AbstractScript>(val size: Int, private val nullGlobalContext: Boolean) {
   protected val channel = Channel<T>(size)
 
   val isEmpty get() = channel.isEmpty
@@ -27,7 +27,7 @@ abstract class AbstractScriptPool<T : AbstractScript>(val size: Int) {
   private suspend fun borrow() = channel.receive()
 
   // Reset the context before returning to pool
-  private suspend fun recycle(scriptObject: T) = channel.send(scriptObject.apply { resetContext() })
+  private suspend fun recycle(scriptObject: T) = channel.send(scriptObject.apply { resetContext(nullGlobalContext) })
 
   suspend fun <R> eval(block: T.() -> R): R {
     val engine = borrow()
