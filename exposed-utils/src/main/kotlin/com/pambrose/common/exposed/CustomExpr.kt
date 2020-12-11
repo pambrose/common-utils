@@ -23,7 +23,7 @@ import org.jetbrains.exposed.sql.QueryBuilder
 import org.jetbrains.exposed.sql.jodatime.DateColumnType
 import org.joda.time.DateTime
 
-fun CustomDateTimeConstant(text: String) = CustomExpr<DateTime?>(text, DateColumnType(true))
+fun customDateTimeConstant(text: String) = CustomExpr<DateTime?>(text, DateColumnType(true))
 
 fun dateTimeExpr(str: String): CustomExpr<DateTime> = CustomExpr(str, DateColumnType(true))
 
