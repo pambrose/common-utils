@@ -19,6 +19,7 @@ package com.github.pambrose.common.script
 
 import org.amshove.kluent.invoking
 import org.amshove.kluent.shouldBeEqualTo
+import org.amshove.kluent.shouldNotThrow
 import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
@@ -180,7 +181,7 @@ class KotlinScriptTests {
       it.apply {
         add("list", list, typeOf<Int?>())
 
-        varDecls shouldBeEqualTo "val list = bindings[\"list\"] as java.util.ArrayList<Int?>"
+        varDecls shouldBeEqualTo "val list = bindings[\"${"list".toTempName()}\"] as java.util.ArrayList<Int?>"
 
         list.size shouldBeEqualTo eval("list.size")
 
@@ -276,6 +277,31 @@ class KotlinScriptTests {
         invoking { eval("System.exit(1)") } shouldThrow ScriptException::class
         invoking { eval("com.lang.System.exit(1)") } shouldThrow ScriptException::class
       }
+    }
+  }
+
+  @Test
+  fun exprEvaluator() {
+    KotlinExprEvaluator()
+      .apply {
+        repeat(100) { i ->
+          //println("Invocation1: $i")
+          invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
+          invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
+        }
+      }
+  }
+
+  @Test
+  fun poolExprEvaluator() {
+    val pool = KotlinExprEvaluatorPool(5)
+    repeat(100) { i ->
+      pool
+        .apply {
+          //println("Invocation2: $i")
+          invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
+          invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
+        }
     }
   }
 }

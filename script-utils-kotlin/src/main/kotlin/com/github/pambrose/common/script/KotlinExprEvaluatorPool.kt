@@ -19,11 +19,10 @@ package com.github.pambrose.common.script
 
 import kotlinx.coroutines.runBlocking
 
-class PythonScriptPool(size: Int, nullGlobalContext: Boolean) :
-  AbstractScriptPool<PythonScript>(size, nullGlobalContext) {
+class KotlinExprEvaluatorPool(size: Int) : AbstractExprEvaluatorPool<KotlinExprEvaluator>(size) {
   init {
     runBlocking {
-      repeat(size) { channel.send(PythonScript()) }
+      repeat(size) { channel.send(KotlinExprEvaluator()) }
     }
   }
 }

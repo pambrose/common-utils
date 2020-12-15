@@ -17,38 +17,33 @@
 
 package com.github.pambrose.common.script
 
-import com.github.pambrose.common.script.ScriptUtils.engineBindings
 import com.github.pambrose.common.util.toDoubleQuoted
-import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
-import org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmLocalScriptEngine
 import javax.script.ScriptException
 
+// See: https://github.com/Kotlin/kotlin-script-examples/blob/master/jvm/jsr223/jsr223-simple/build.gradle.kts
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting
 
-//class KotlinScript : AbstractScript(KotlinJsr223JvmLocalScriptEngineFactory().scriptEngine), AutoCloseable {
-class KotlinScript : AbstractScript("kts"), AutoCloseable {
+class KotlinScript(nullGlobalContext: Boolean = false) : AbstractScript("kts", nullGlobalContext), AutoCloseable {
   private val imports = mutableListOf(System::class.qualifiedName)
-  private val ktengine = engine as KotlinJsr223JvmLocalScriptEngine
-
-  init {
-    setIdeaIoUseFallback()
-  }
 
   val varDecls: String
     get() {
       val assigns = mutableListOf<String>()
 
-      valueMap.forEach { (name, value) ->
-        val kotlinClazz = value.javaClass.kotlin
-        val kotlinQualified = kotlinClazz.qualifiedName!!
-        val type = kotlinQualified.removePrefix("kotlin.")
-        assigns += "val $name = bindings[${name.toDoubleQuoted()}] as $type${params(name)}"
-      }
+      valueMap
+        .forEach { (name, value) ->
+          val kotlinClazz = value.javaClass.kotlin
+          val kotlinQualified = kotlinClazz.qualifiedName!!
+          val type = kotlinQualified.removePrefix("kotlin.")
+          assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type${params(name)}"
+        }
 
       return assigns.joinToString("\n")
     }
+
+  internal fun String.toTempName() = "${this}_tmp"
 
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it" }
@@ -60,14 +55,15 @@ class KotlinScript : AbstractScript("kts"), AutoCloseable {
       throw ScriptException("Illegal call to System.exit()")
 
     if (!initialized) {
-      valueMap.forEach { (name, value) -> ktengine.engineBindings[name] = value }
-      if (varDecls.isNotBlank())
-        ktengine.eval(varDecls)
+      if (valueMap.isNotEmpty()) {
+        valueMap.forEach { (name, value) -> engine.put(name.toTempName(), value) }
+        engine.eval(varDecls)
+      }
       initialized = true
     }
 
     val script = "$importDecls\n\n$code"
-    return ktengine.eval(script)
+    return engine.eval(script)
   }
 
   override fun close() {

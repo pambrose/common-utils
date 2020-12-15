@@ -17,12 +17,11 @@
 
 package com.github.pambrose.common.script
 
-import com.github.pambrose.common.script.ScriptUtils.engineBindings
 import org.python.jsr223.PyScriptEngine
 import javax.script.ScriptException
 import kotlin.reflect.KType
 
-class PythonScript : AbstractScript("py"), AutoCloseable {
+class PythonScript(nullGlobalContext: Boolean = false) : AbstractScript("py", nullGlobalContext), AutoCloseable {
 
   override fun add(name: String, value: Any, vararg types: KType) {
     valueMap[name] = value
@@ -41,7 +40,7 @@ class PythonScript : AbstractScript("py"), AutoCloseable {
       throw ScriptException("Illegal call to quit()")
 
     if (!initialized) {
-      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
+      valueMap.forEach { (name, value) -> engine.put(name, value) }
       initialized = true
     }
 

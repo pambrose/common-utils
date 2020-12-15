@@ -17,13 +17,14 @@
 
 package com.github.pambrose.common.script
 
-import kotlinx.coroutines.runBlocking
+import javax.script.ScriptEngineManager
+import javax.script.ScriptException
 
-class PythonScriptPool(size: Int, nullGlobalContext: Boolean) :
-  AbstractScriptPool<PythonScript>(size, nullGlobalContext) {
-  init {
-    runBlocking {
-      repeat(size) { channel.send(PythonScript()) }
-    }
+abstract class AbstractEngine(extension: String) {
+  val engine = scriptManager.getEngineByExtension(extension)
+               ?: throw ScriptException("Unrecognized script extension: $extension")
+
+  companion object {
+    private val scriptManager by lazy { ScriptEngineManager() }
   }
 }

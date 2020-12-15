@@ -17,13 +17,30 @@
 
 package com.github.pambrose.common.script
 
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 
-class PythonScriptPool(size: Int, nullGlobalContext: Boolean) :
-  AbstractScriptPool<PythonScript>(size, nullGlobalContext) {
-  init {
+abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(val size: Int) {
+
+  protected val channel = Channel<AbstractExprEvaluator>(size)
+  private suspend fun borrow() = channel.receive()
+
+  val isEmpty get() = channel.isEmpty
+
+  private suspend fun recycle(scriptObject: AbstractExprEvaluator) = channel.send(scriptObject)
+
+  fun <R> blockingEval(expr: String): R =
     runBlocking {
-      repeat(size) { channel.send(PythonScript()) }
+      eval(expr)
+    }
+
+  suspend fun <R> eval(expr: String): R {
+    val engine = borrow()
+    return try {
+      engine.eval(expr) as R
+    }
+    finally {
+      recycle(engine)
     }
   }
 }

@@ -98,12 +98,8 @@ open class GitHubFile(val repo: GitHubRepo,
                       val branchName: String,
                       val srcPath: String,
                       val fileName: String)
-  : UrlSource(repo.scheme + listOf(githubUserContent,
-                                   repo.ownerName,
-                                   repo.repoName,
-                                   branchName,
-                                   srcPath,
-                                   fileName).join()) {
+  : UrlSource(repo.scheme +
+              listOf(githubUserContent, repo.ownerName, repo.repoName, branchName, srcPath, fileName).join()) {
   override fun toString() = "GitHubFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 
@@ -111,13 +107,8 @@ open class GitLabFile(val repo: GitLabRepo,
                       val branchName: String,
                       val srcPath: String,
                       val fileName: String)
-  : UrlSource(repo.scheme + listOf("gitlab.com",
-                                   repo.ownerName,
-                                   repo.repoName,
-                                   "-/blob",
-                                   branchName,
-                                   srcPath,
-                                   fileName).join()) {
+  : UrlSource(repo.scheme +
+              listOf("gitlab.com", repo.ownerName, repo.repoName, "-/blob", branchName, srcPath, fileName).join()) {
   override fun toString() = "GitLabFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 

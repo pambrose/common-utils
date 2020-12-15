@@ -17,7 +17,7 @@
 
 plugins {
     id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '1.4.10' apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.4.21' apply false
     id "com.github.ben-manes.versions" version "0.36.0" apply false
 }
 
@@ -45,17 +45,8 @@ ext {
             exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
             exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
 
-            jna                   : "net.java.dev.jna:jna:$jna_version",
-            jna_platform          : "net.java.dev.jna:jna-platform:$jna_version",
-
-            script_util           : "org.jetbrains.kotlin:kotlin-script-util",
-            script_runtime        : "org.jetbrains.kotlin:kotlin-script-runtime",
-
             kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223",
-
-            kotlin_compiler_embed : "org.jetbrains.kotlin:kotlin-compiler-embeddable",
-            kotlin_scripting_embed: "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable",
-
+            
             python_scripting      : "org.python:jython-standalone:$python_version",
             java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
 
@@ -82,7 +73,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.5.0'
+    version '1.6.0'
 
     apply plugin: 'maven' // required for jitpack.io install
     apply plugin: 'org.jetbrains.kotlin.jvm'

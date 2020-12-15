@@ -18,22 +18,23 @@
 package com.github.pambrose.common.script
 
 import javax.script.Bindings
-import javax.script.ScriptContext
+import javax.script.ScriptContext.ENGINE_SCOPE
+import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptEngine
 import javax.script.SimpleScriptContext
 
 object ScriptUtils {
-  val ScriptEngine.engineBindings get() = bindings(ScriptContext.ENGINE_SCOPE)
-  val ScriptEngine.globalBindings get() = bindings(ScriptContext.GLOBAL_SCOPE)
+  val ScriptEngine.engineBindings get() = bindings(ENGINE_SCOPE)
+  val ScriptEngine.globalBindings get() = bindings(GLOBAL_SCOPE)
 
-  fun ScriptEngine.bindings(scope: Int = ScriptContext.ENGINE_SCOPE): Bindings = getBindings(scope)
+  fun ScriptEngine.bindings(scope: Int = ENGINE_SCOPE): Bindings = getBindings(scope)
 
-  fun ScriptEngine.resetContext(nullGlobal: Boolean = false) {
+  fun ScriptEngine.resetContext(nullGlobalContext: Boolean = false) {
     context =
       SimpleScriptContext()
         .apply {
-          setBindings(createBindings(), ScriptContext.ENGINE_SCOPE)
-          setBindings(if (nullGlobal) null else createBindings(), ScriptContext.GLOBAL_SCOPE)
+          setBindings(createBindings(), ENGINE_SCOPE)
+          setBindings(if (nullGlobalContext) null else createBindings(), GLOBAL_SCOPE)
         }
   }
 }

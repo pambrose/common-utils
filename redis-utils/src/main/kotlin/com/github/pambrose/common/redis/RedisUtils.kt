@@ -55,6 +55,10 @@ object RedisUtils : KLogging() {
                    maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
                    minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1): JedisPool {
 
+    require(maxPoolSize > 0) { "Max pool size must be a positive number" }
+    require(maxIdleSize > 0) { "Max idle size must be a positive number" }
+    require(minIdleSize >= 0) { "Min idle size canot be a negative number" }
+
     logger.info { "Redis max pool size: $maxPoolSize" }
     logger.info { "Redis max idle size: $maxIdleSize" }
     logger.info { "Redis min idle size: $minIdleSize" }

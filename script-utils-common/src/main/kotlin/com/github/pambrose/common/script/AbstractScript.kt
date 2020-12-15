@@ -22,16 +22,12 @@ import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.script.ScriptEngine
-import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import kotlin.reflect.KType
 
 // https://docs.oracle.com/en/java/javase/14/scripting/java-scripting-api.html#GUID-C4A6EB7C-0AEA-45EC-8662-099BDEFC361A
 
-abstract class AbstractScript(protected val engine: ScriptEngine) {
-  constructor(extension: String) : this(scriptManager.getEngineByExtension(extension)
-                                        ?: throw ScriptException("Unrecognized script extension: $extension"))
+abstract class AbstractScript(extension: String, nullGlobalContext: Boolean) : AbstractEngine(extension) {
 
   private val _initialized = AtomicBoolean(false)
   private val typeMap = mutableMapOf<String, Array<out KType>>()
@@ -43,12 +39,12 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
     set(value) = _initialized.set(value)
 
   init {
-    resetContext()
+    resetContext(nullGlobalContext)
   }
 
-  fun resetContext(nullGlobal: Boolean = false) {
+  fun resetContext(nullGlobalContext: Boolean) {
     initialized = false
-    engine.resetContext(nullGlobal)
+    engine.resetContext(nullGlobalContext)
   }
 
   open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
@@ -86,9 +82,5 @@ abstract class AbstractScript(protected val engine: ScriptEngine) {
         typeMap[name] = types
       }
     }
-  }
-
-  companion object {
-    val scriptManager by lazy { ScriptEngineManager() }
   }
 }

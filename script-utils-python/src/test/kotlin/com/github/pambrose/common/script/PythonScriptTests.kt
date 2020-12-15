@@ -19,6 +19,7 @@ package com.github.pambrose.common.script
 
 import org.amshove.kluent.invoking
 import org.amshove.kluent.shouldBeEqualTo
+import org.amshove.kluent.shouldNotThrow
 import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
@@ -192,6 +193,31 @@ class PythonScriptTests {
         invoking { eval("exit(1)") } shouldThrow ScriptException::class
         invoking { eval("quit(1)") } shouldThrow ScriptException::class
       }
+    }
+  }
+
+  @Test
+  fun exprEvaluator() {
+    PythonExprEvaluator()
+      .apply {
+        repeat(200) { i ->
+          //println("Invocation: $i")
+          invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
+          invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
+        }
+      }
+  }
+
+  @Test
+  fun poolExprEvaluator() {
+    val pool = PythonExprEvaluatorPool(5)
+    repeat(200) { i ->
+      pool
+        .apply {
+          //println("Invocation: $i")
+          invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
+          invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
+        }
     }
   }
 }

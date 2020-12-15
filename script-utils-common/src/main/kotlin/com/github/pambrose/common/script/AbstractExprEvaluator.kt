@@ -17,13 +17,10 @@
 
 package com.github.pambrose.common.script
 
-import kotlinx.coroutines.runBlocking
+import com.github.pambrose.common.script.ScriptUtils.resetContext
 
-class PythonScriptPool(size: Int, nullGlobalContext: Boolean) :
-  AbstractScriptPool<PythonScript>(size, nullGlobalContext) {
-  init {
-    runBlocking {
-      repeat(size) { channel.send(PythonScript()) }
-    }
-  }
+abstract class AbstractExprEvaluator(extension: String) : AbstractEngine(extension) {
+  fun eval(expr: String) = engine.eval(expr) as Boolean
+
+  fun resetContext(nullGloalContext: Boolean = false) = engine.resetContext(nullGloalContext)
 }
