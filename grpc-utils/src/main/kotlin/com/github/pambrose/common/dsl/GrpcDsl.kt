@@ -35,6 +35,8 @@ object GrpcDsl : KLogging() {
 
   fun channel(hostName: String = "",
               port: Int = -1,
+              enableRetry: Boolean = false,
+              maxRetryAttempts: Int = 5,
               tlsContext: TlsContext,
               overrideAuthority: String = "",
               inProcessServerName: String = "",
@@ -54,6 +56,12 @@ object GrpcDsl : KLogging() {
               builder.sslContext(tlsContext.sslContext)
             else
               builder.usePlaintext()
+
+            if (enableRetry)
+              builder.enableRetry()
+
+            if (maxRetryAttempts > -1)
+              builder.maxRetryAttempts(maxRetryAttempts)
           }
       }
       else -> {
