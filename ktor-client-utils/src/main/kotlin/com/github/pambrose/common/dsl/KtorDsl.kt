@@ -28,12 +28,17 @@ import kotlinx.coroutines.runBlocking
 
 object KtorDsl {
 
-  fun newHttpClient(): HttpClient =
-    HttpClient { install(HttpTimeout) }
+  fun newHttpClient(expectSuccess: Boolean = false): HttpClient =
+    HttpClient {
+      this.expectSuccess = expectSuccess
+      install(HttpTimeout)
+    }
 
-  suspend fun <T> withHttpClient(httpClient: HttpClient? = null, block: suspend HttpClient.() -> T): T =
+  suspend fun <T> withHttpClient(httpClient: HttpClient? = null,
+                                 expectSuccess: Boolean = false,
+                                 block: suspend HttpClient.() -> T): T =
     if (httpClient == null) {
-      newHttpClient()
+      newHttpClient(expectSuccess)
         .use { client ->
           client.block()
         }
@@ -42,9 +47,11 @@ object KtorDsl {
       httpClient.block()
     }
 
-  suspend fun <T> httpClient(httpClient: HttpClient? = null, block: suspend (HttpClient) -> T): T =
+  suspend fun <T> httpClient(httpClient: HttpClient? = null,
+                             expectSuccess: Boolean = false,
+                             block: suspend (HttpClient) -> T): T =
     if (httpClient == null) {
-      newHttpClient()
+      newHttpClient(expectSuccess)
         .use { client ->
           block(client)
         }

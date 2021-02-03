@@ -215,4 +215,4 @@ fun String.maskUrlCredentials() =
 fun String.obfuscate(freq: Int = 2) =
   mapIndexed { i, v -> if (i % freq == 0) '*' else v }.joinToString("")
 
-
+fun String.maxLength(len: Int) = if (length <= len) this else this.substring(0, len)
