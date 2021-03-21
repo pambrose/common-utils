@@ -27,7 +27,7 @@ class NumberExtensionTests {
 
   @Test
   fun shortTest() {
-    val cnt: Short = Short.MAX_VALUE
+    val cnt: Short = 1000.toShort()
     var runs: Short = 0
     var index: Short = 0
     cnt times {
@@ -40,7 +40,7 @@ class NumberExtensionTests {
 
   @Test
   fun intTest() {
-    val cnt = Int.MAX_VALUE
+    val cnt = 100000
     var runs = 0
     var index = 0
     cnt times {
