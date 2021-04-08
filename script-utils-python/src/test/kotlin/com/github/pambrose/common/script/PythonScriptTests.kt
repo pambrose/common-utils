@@ -82,7 +82,8 @@ class PythonScriptTests {
 
         aux.i shouldBeEqualTo eval("aux.i")
 
-        eval("""
+        eval(
+          """
                 for i in range(100):
                   aux.inc()
               """.trimIndent()
@@ -106,7 +107,8 @@ class PythonScriptTests {
         list.size shouldBeEqualTo eval("len(list)")
         map.size shouldBeEqualTo eval("len(map)")
 
-        eval("""
+        eval(
+          """
                 map["k2"] = 10
                 for i in range(100):
                   list.add(i)
@@ -142,7 +144,8 @@ class PythonScriptTests {
 
         list.size shouldBeEqualTo eval("len(list)")
 
-        eval("""
+        eval(
+          """
                 for i in range(100):
                   list.add(i)
               """.trimIndent()
@@ -164,7 +167,8 @@ class PythonScriptTests {
 
         list.size shouldBeEqualTo eval("len(list)")
 
-        eval("""
+        eval(
+          """
                 for i in range(100):
                   list.add(None)
               """.trimIndent()

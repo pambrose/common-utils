@@ -20,6 +20,7 @@ package com.github.pambrose.common.script
 import ch.obermuhlner.scriptengine.java.Isolation
 import ch.obermuhlner.scriptengine.java.JavaScriptEngine
 import com.github.pambrose.common.script.ScriptUtils.engineBindings
+import java.io.Closeable
 import javax.script.ScriptException
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -28,7 +29,7 @@ import kotlin.reflect.typeOf
 // https://gitter.im/java-scriptengine/community
 
 // Java cannot have a null global context
-class JavaScript : AbstractScript("java", false), AutoCloseable {
+class JavaScript : AbstractScript("java", false), Closeable {
   private val imports = mutableListOf<String>()
 
   val varDecls: String
