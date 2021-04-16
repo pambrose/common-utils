@@ -22,22 +22,22 @@ package com.github.pambrose.common.time
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.*
-import kotlin.time.*
+import kotlin.time.Duration
 
 fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
   when (timeUnit) {
-    MICROSECONDS -> value.microseconds
-    NANOSECONDS -> value.nanoseconds
-    MILLISECONDS -> value.milliseconds
-    SECONDS -> value.seconds
-    MINUTES -> value.minutes
-    HOURS -> value.hours
-    DAYS -> value.days
+    MICROSECONDS -> Duration.microseconds(value)
+    NANOSECONDS -> Duration.nanoseconds(value)
+    MILLISECONDS -> Duration.milliseconds(value)
+    SECONDS -> Duration.seconds(value)
+    MINUTES -> Duration.minutes(value)
+    HOURS -> Duration.hours(value)
+    DAYS -> Duration.days(value)
   }
 
 
 fun Duration.format(includeMillis: Boolean = false): String {
-  val diff = toLongMilliseconds()
+  val diff = inWholeMilliseconds
   val day = MILLISECONDS.toDays(diff)
   val dayMillis = DAYS.toMillis(day)
   val hr = MILLISECONDS.toHours(diff - dayMillis)

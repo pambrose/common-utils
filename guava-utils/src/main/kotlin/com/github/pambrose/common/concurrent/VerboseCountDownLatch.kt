@@ -32,7 +32,7 @@ class VerboseCountDownLatch(count: Int) : CountDownLatch(count) {
   @Throws(InterruptedException::class)
   fun await(timeout: Duration, msg: () -> Any?) {
     while (true) {
-      val satisfied = await(timeout.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+      val satisfied = await(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
       if (satisfied)
         break
       logger.info(msg)

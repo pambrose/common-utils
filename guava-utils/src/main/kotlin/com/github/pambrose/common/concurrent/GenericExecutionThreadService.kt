@@ -22,16 +22,15 @@ package com.github.pambrose.common.concurrent
 import com.google.common.util.concurrent.AbstractExecutionThreadService
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.time.Duration
-import kotlin.time.seconds
 
 abstract class GenericExecutionThreadService : AbstractExecutionThreadService() {
-  fun startSync(timeout: Duration = 30.seconds) {
+  fun startSync(timeout: Duration = Duration.seconds(30)) {
     startAsync()
-    awaitRunning(timeout.toLongMilliseconds(), MILLISECONDS)
+    awaitRunning(timeout.inWholeMilliseconds, MILLISECONDS)
   }
 
-  fun stopSync(timeout: Duration = 30.seconds) {
+  fun stopSync(timeout: Duration = Duration.seconds(30)) {
     stopAsync()
-    awaitTerminated(timeout.toLongMilliseconds(), MILLISECONDS)
+    awaitTerminated(timeout.inWholeMilliseconds, MILLISECONDS)
   }
 }

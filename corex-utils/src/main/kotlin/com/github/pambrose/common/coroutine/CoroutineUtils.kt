@@ -22,4 +22,4 @@ package com.github.pambrose.common.coroutine
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
 
-suspend fun delay(duration: Duration) = delay(duration.toLongMilliseconds())
+suspend fun delay(duration: Duration) = delay(duration.inWholeMilliseconds)

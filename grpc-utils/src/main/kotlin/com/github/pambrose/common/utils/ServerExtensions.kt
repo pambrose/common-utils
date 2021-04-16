@@ -35,7 +35,7 @@ fun Server.shutdownWithJvm(maxWaitTime: Duration) {
 
 @Throws(InterruptedException::class)
 fun Server.shutdownGracefully(maxWaitTime: Duration) =
-  shutdownGracefully(maxWaitTime.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+  shutdownGracefully(maxWaitTime.inWholeMilliseconds, TimeUnit.MILLISECONDS)
 
 @Throws(InterruptedException::class)
 fun Server.shutdownGracefully(timeout: Long, unit: TimeUnit) {
