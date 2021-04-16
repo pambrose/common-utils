@@ -45,7 +45,7 @@ ext {
             exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
             exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
 
-            kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223",
+            kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223:$kotlin_version",
             
             python_scripting      : "org.python:jython-standalone:$python_version",
             java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
