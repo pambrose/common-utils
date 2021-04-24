@@ -180,7 +180,7 @@ fun String.md5(salt: ByteArray): String = encodedByteArray(this, salt, "MD5").as
 
 fun String.sha256(salt: ByteArray): String = encodedByteArray(this, salt, "SHA-256").asText
 
-val ByteArray.asText get() = fold("", { str, it -> str + "%02x".format(it) })
+val ByteArray.asText get() = fold("") { str, it -> str + "%02x".format(it) }
 
 private fun encodedByteArray(input: String, salt: ByteArray, algorithm: String) =
   with(MessageDigest.getInstance(algorithm)) {
