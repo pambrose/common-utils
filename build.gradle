@@ -75,7 +75,7 @@ allprojects {
     group 'com.github.pambrose.common-utils'
     version '1.9.0'
 
-    apply plugin: 'maven' // required for jitpack.io install
+    apply plugin: 'maven-publish' // required for jitpack.io install
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
 
