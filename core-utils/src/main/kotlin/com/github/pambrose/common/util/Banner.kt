@@ -21,17 +21,14 @@ package com.github.pambrose.common.util
 
 import org.slf4j.Logger
 
+// Banner is from: http://patorjk.com/software/taag/#p=display&f=Big%20Money-nw&t=ReadingBat%0A%20%20%20Server
 fun getBanner(filename: String, logger: Logger) =
   try {
     logger.javaClass.classLoader.getResourceAsStream(filename)
       .use { inputStream ->
-        //val utf8 = Charsets.UTF_8.name()
-        //val utf8 = kotlin.text.Charsets.UTF_8.name()
-        //val banner = CharStreams.toString(InputStreamReader(inputStream ?: throw InternalError(), utf8))
-        val banner =
-          inputStream?.bufferedReader()?.use { it.readText() } ?: throw InternalError("Null InputStream")
+        val banner = inputStream?.bufferedReader()?.use { it.readText() }
+                     ?: throw IllegalArgumentException("Invalid file name: $filename")
 
-        //val lines: List<String> = Splitter.on("\n").splitToList(banner)
         val lines: List<String> = banner.lines()
 
         // Trim initial and trailing blank lines, but preserve blank lines in middle;
@@ -58,10 +55,10 @@ fun getBanner(filename: String, logger: Logger) =
             .map { arg -> "     $arg" }
             .toList()
 
-        //val noNulls = Joiner.on("\n").skipNulls().join(vals)
         val noNulls = vals.joinToString("\n")
         "\n\n$noNulls\n\n"
       }
-  } catch (e: Exception) {
-    "Banner $filename cannot be found"
+  }
+  catch (e: Exception) {
+    "Banner \"$filename\" cannot be found"
   }
