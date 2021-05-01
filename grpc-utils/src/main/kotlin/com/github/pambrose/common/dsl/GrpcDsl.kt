@@ -34,14 +34,16 @@ import mu.KLogging
 
 object GrpcDsl : KLogging() {
 
-  fun channel(hostName: String = "",
-              port: Int = -1,
-              enableRetry: Boolean = false,
-              maxRetryAttempts: Int = 5,
-              tlsContext: TlsContext,
-              overrideAuthority: String = "",
-              inProcessServerName: String = "",
-              block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel =
+  fun channel(
+    hostName: String = "",
+    port: Int = -1,
+    enableRetry: Boolean = false,
+    maxRetryAttempts: Int = 5,
+    tlsContext: TlsContext,
+    overrideAuthority: String = "",
+    inProcessServerName: String = "",
+    block: ManagedChannelBuilder<*>.() -> Unit
+  ): ManagedChannel =
     when {
       inProcessServerName.isEmpty() -> {
         logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
@@ -72,16 +74,17 @@ object GrpcDsl : KLogging() {
             builder.usePlaintext()
           }
       }
+    }.run {
+      block(this)
+      build()
     }
-      .run {
-        block(this)
-        build()
-      }
 
-  fun server(port: Int = -1,
-             tlsContext: TlsContext = PLAINTEXT_CONTEXT,
-             inProcessServerName: String = "",
-             block: ServerBuilder<*>.() -> Unit): Server =
+  fun server(
+    port: Int = -1,
+    tlsContext: TlsContext = PLAINTEXT_CONTEXT,
+    inProcessServerName: String = "",
+    block: ServerBuilder<*>.() -> Unit
+  ): Server =
     when {
       inProcessServerName.isEmpty() -> {
         logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
@@ -95,11 +98,10 @@ object GrpcDsl : KLogging() {
         logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
         InProcessServerBuilder.forName(inProcessServerName)
       }
+    }.run {
+      block(this)
+      build()
     }
-      .run {
-        block(this)
-        build()
-      }
 
   fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
     Attributes.newBuilder()
