@@ -17,6 +17,7 @@
 
 package com.github.pambrose.common.utils
 
+import com.github.pambrose.common.util.isNull
 import com.github.pambrose.common.util.toDoubleQuoted
 import io.grpc.netty.GrpcSslContexts
 import io.netty.handler.ssl.ClientAuth
@@ -30,7 +31,7 @@ data class TlsContextBuilder(val builder: SslContextBuilder, val mutualAuth: Boo
 
 data class TlsContext(val sslContext: SslContext?, val mutualAuth: Boolean) {
   fun desc() =
-    if (sslContext == null)
+    if (sslContext.isNull())
       "plaintext"
     else
       "TLS ${if (mutualAuth) "with mutual auth" else "(no mutual auth)"}"

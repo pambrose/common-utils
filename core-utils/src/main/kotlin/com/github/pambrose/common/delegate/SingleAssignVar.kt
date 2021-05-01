@@ -19,6 +19,7 @@
 
 package com.github.pambrose.common.delegate
 
+import com.github.pambrose.common.util.isNull
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -36,7 +37,7 @@ object SingleAssignVar {
     override fun getValue(thisRef: Any?, property: KProperty<*>) = value
 
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T?) {
-      check(this.value == null) { "Property ${property.name} cannot be assigned more than once." }
+      check(this.value.isNull()) { "Property ${property.name} cannot be assigned more than once." }
       this.value = value
     }
   }

@@ -20,6 +20,7 @@
 package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
+import com.github.pambrose.common.util.isNotNull
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.utils.TlsContext
 import com.github.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
@@ -52,7 +53,7 @@ object GrpcDsl : KLogging() {
               builder.overrideAuthority(override)
             }
 
-            if (tlsContext.sslContext != null)
+            if (tlsContext.sslContext.isNotNull())
               builder.sslContext(tlsContext.sslContext)
             else
               builder.usePlaintext()
@@ -86,7 +87,7 @@ object GrpcDsl : KLogging() {
         logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
         NettyServerBuilder.forPort(port)
           .also { builder ->
-            if (tlsContext.sslContext != null)
+            if (tlsContext.sslContext.isNotNull())
               builder.sslContext(tlsContext.sslContext)
           }
       }
