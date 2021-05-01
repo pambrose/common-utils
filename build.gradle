@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ ext {
             exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
 
             kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223",
-            
+
             python_scripting      : "org.python:jython-standalone:$python_version",
             java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
 

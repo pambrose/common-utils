@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,10 @@ import mu.KLogging
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.okhttp3.OkHttpSender
 
-class ZipkinReporterService(private val url: String,
-                            initBlock: (ZipkinReporterService.() -> Unit) = {}) : GenericIdleService() {
+class ZipkinReporterService(
+  private val url: String,
+  initBlock: (ZipkinReporterService.() -> Unit) = {}
+) : GenericIdleService() {
   private val sender = OkHttpSender.create(url)
   private val reporter = AsyncReporter.create(sender)
 

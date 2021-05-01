@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,10 @@ import javax.servlet.http.HttpServlet
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class LambdaServlet(private val contentType: String,
-                    private val block: () -> String) : HttpServlet() {
+class LambdaServlet(
+  private val contentType: String,
+  private val block: () -> String
+) : HttpServlet() {
 
   // Use 2nd constructor instead of default args to allow lambda to come last
   constructor(block: () -> String) : this("text/plain", block)

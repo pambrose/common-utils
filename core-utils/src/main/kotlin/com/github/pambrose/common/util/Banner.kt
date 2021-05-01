@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ fun getBanner(filename: String, logger: Logger) =
     logger.javaClass.classLoader.getResourceAsStream(filename)
       .use { inputStream ->
         val banner = inputStream?.bufferedReader()?.use { it.readText() }
-                     ?: throw IllegalArgumentException("Invalid file name: $filename")
+          ?: throw IllegalArgumentException("Invalid file name: $filename")
 
         val lines: List<String> = banner.lines()
 
@@ -58,7 +58,6 @@ fun getBanner(filename: String, logger: Logger) =
         val noNulls = vals.joinToString("\n")
         "\n\n$noNulls\n\n"
       }
-  }
-  catch (e: Exception) {
+  } catch (e: Exception) {
     "Banner \"$filename\" cannot be found"
   }

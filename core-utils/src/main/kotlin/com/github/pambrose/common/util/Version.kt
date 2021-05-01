@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,6 @@ annotation class Version(val version: String, val date: String) {
     fun KClass<*>.versionDesc(asJson: Boolean = false): String =
       this.findAnnotation<Version>()
         ?.run { if (asJson) jsonStr(version, date) else plainStr(version, date) }
-      ?: if (asJson) jsonStr(unknown, unknown) else plainStr(unknown, unknown)
+        ?: if (asJson) jsonStr(unknown, unknown) else plainStr(unknown, unknown)
   }
 }

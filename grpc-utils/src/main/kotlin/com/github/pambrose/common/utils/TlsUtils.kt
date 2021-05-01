@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,18 +45,22 @@ object TlsUtils : KLogging() {
   private fun String.doesNotExistMsg() = "File ${toDoubleQuoted()} does not exist"
 
   @Throws(SSLException::class)
-  fun buildClientTlsContext(certChainFilePath: String = "",
-                            privateKeyFilePath: String = "",
-                            trustCertCollectionFilePath: String = ""): TlsContext =
+  fun buildClientTlsContext(
+    certChainFilePath: String = "",
+    privateKeyFilePath: String = "",
+    trustCertCollectionFilePath: String = ""
+  ): TlsContext =
     clientTlsContextBuilder(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
       .run {
         TlsContext(builder.build(), mutualAuth)
       }
 
   @Throws(SSLException::class)
-  fun clientTlsContextBuilder(certChainFilePath: String = "",
-                              privateKeyFilePath: String = "",
-                              trustCertCollectionFilePath: String = ""): TlsContextBuilder =
+  fun clientTlsContextBuilder(
+    certChainFilePath: String = "",
+    privateKeyFilePath: String = "",
+    trustCertCollectionFilePath: String = ""
+  ): TlsContextBuilder =
     GrpcSslContexts.forClient()
       .let { builder ->
         val certPath = certChainFilePath.trim()
@@ -92,18 +96,22 @@ object TlsUtils : KLogging() {
       }
 
   @Throws(SSLException::class)
-  fun buildServerTlsContext(certChainFilePath: String,
-                            privateKeyFilePath: String,
-                            trustCertCollectionFilePath: String = ""): TlsContext =
+  fun buildServerTlsContext(
+    certChainFilePath: String,
+    privateKeyFilePath: String,
+    trustCertCollectionFilePath: String = ""
+  ): TlsContext =
     serverTlsContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
       .run {
         TlsContext(GrpcSslContexts.configure(builder).build(), mutualAuth)
       }
 
   @Throws(SSLException::class)
-  fun serverTlsContext(certChainFilePath: String,
-                       privateKeyFilePath: String,
-                       trustCertCollectionFilePath: String = ""): TlsContextBuilder {
+  fun serverTlsContext(
+    certChainFilePath: String,
+    privateKeyFilePath: String,
+    trustCertCollectionFilePath: String = ""
+  ): TlsContextBuilder {
     val certPath = certChainFilePath.trim()
     val keyPath = privateKeyFilePath.trim()
     val trustPath = trustCertCollectionFilePath.trim()

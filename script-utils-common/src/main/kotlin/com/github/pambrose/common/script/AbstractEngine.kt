@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import javax.script.ScriptException
 
 abstract class AbstractEngine(extension: String) {
   val engine = scriptManager.getEngineByExtension(extension)
-               ?: throw ScriptException("Unrecognized script extension: $extension")
+    ?: throw ScriptException("Unrecognized script extension: $extension")
 
   companion object {
     private val scriptManager by lazy { ScriptEngineManager() }

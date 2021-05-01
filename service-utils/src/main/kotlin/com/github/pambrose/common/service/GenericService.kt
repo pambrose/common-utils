@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,14 @@ import java.io.Closeable
 import kotlin.time.TimeSource.Monotonic
 
 abstract class GenericService<T>
-protected constructor(val configVals: T,
-                      private val adminConfig: AdminConfig,
-                      private val metricsConfig: MetricsConfig,
-                      private val zipkinConfig: ZipkinConfig,
-                      private val versionBlock: () -> String = { "No version" },
-                      val isTestMode: Boolean = false) : GenericExecutionThreadService(), Closeable {
+protected constructor(
+  val configVals: T,
+  private val adminConfig: AdminConfig,
+  private val metricsConfig: MetricsConfig,
+  private val zipkinConfig: ZipkinConfig,
+  private val versionBlock: () -> String = { "No version" },
+  val isTestMode: Boolean = false
+) : GenericExecutionThreadService(), Closeable {
 
   protected val startTime = Monotonic.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
@@ -92,8 +94,7 @@ protected constructor(val configVals: T,
         AdminService(servletGroup = servletGroup) {
           addService(this)
         }
-    }
-    else {
+    } else {
       logger.info { "Admin service disabled" }
     }
 
@@ -103,15 +104,16 @@ protected constructor(val configVals: T,
 
       logger.info { "Enabling JMX metrics" }
       metricsService = MetricsService(metricsConfig.port, metricsConfig.path) { addService(this) }
-      SystemMetrics.initialize(enableStandardExports = metricsConfig.standardExportsEnabled,
-                               enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
-                               enableGarbageCollectorExports = metricsConfig.garbageCollectorExportsEnabled,
-                               enableThreadExports = metricsConfig.threadExportsEnabled,
-                               enableClassLoadingExports = metricsConfig.classLoadingExportsEnabled,
-                               enableVersionInfoExports = metricsConfig.versionInfoExportsEnabled)
+      SystemMetrics.initialize(
+        enableStandardExports = metricsConfig.standardExportsEnabled,
+        enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
+        enableGarbageCollectorExports = metricsConfig.garbageCollectorExportsEnabled,
+        enableThreadExports = metricsConfig.threadExportsEnabled,
+        enableClassLoadingExports = metricsConfig.classLoadingExportsEnabled,
+        enableVersionInfoExports = metricsConfig.versionInfoExportsEnabled
+      )
       jmxReporter = JmxReporter.forRegistry(metricRegistry).build()
-    }
-    else {
+    } else {
       logger.info { "Metrics service disabled" }
     }
 
@@ -119,8 +121,7 @@ protected constructor(val configVals: T,
       val url = "http://${zipkinConfig.hostname}:${zipkinConfig.port}/${zipkinConfig.path}"
       zipkinReporterService =
         ZipkinReporterService(url) { addService(this) }
-    }
-    else {
+    } else {
       logger.info { "Zipkin reporter service disabled" }
     }
 
@@ -132,12 +133,13 @@ protected constructor(val configVals: T,
       serviceManager(services) {
         val clazzname = this@GenericService.simpleClassName
         addListener(
-            serviceManagerListener {
-              healthy { logger.info { "All $clazzname services healthy" } }
-              stopped { logger.info { "All $clazzname services stopped" } }
-              failure { logger.info { "$clazzname service failed: $it" } }
-            },
-            directExecutor())
+          serviceManagerListener {
+            healthy { logger.info { "All $clazzname services healthy" } }
+            stopped { logger.info { "All $clazzname services stopped" } }
+            failure { logger.info { "$clazzname service failed: $it" } }
+          },
+          directExecutor()
+        )
       }
 
     registerHealthChecks()
