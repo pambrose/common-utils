@@ -27,12 +27,14 @@ object SystemMetrics : KLogging() {
   private var initialized = false
 
   @Synchronized
-  fun initialize(enableStandardExports: Boolean = false,
-                 enableMemoryPoolsExports: Boolean = false,
-                 enableGarbageCollectorExports: Boolean = false,
-                 enableThreadExports: Boolean = false,
-                 enableClassLoadingExports: Boolean = false,
-                 enableVersionInfoExports: Boolean = false) {
+  fun initialize(
+    enableStandardExports: Boolean = false,
+    enableMemoryPoolsExports: Boolean = false,
+    enableGarbageCollectorExports: Boolean = false,
+    enableThreadExports: Boolean = false,
+    enableClassLoadingExports: Boolean = false,
+    enableVersionInfoExports: Boolean = false
+  ) {
     if (!initialized) {
       if (enableStandardExports) {
         logger.info { "Enabling standard JMX metrics" }

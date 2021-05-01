@@ -53,33 +53,28 @@ object KtorDsl {
     expectSuccess: Boolean = false,
     block: suspend (HttpClient) -> T
   ): T =
-    if (httpClient.isNull()) {
+    if (httpClient.isNull())
       newHttpClient(expectSuccess)
         .use { client ->
           block(client)
-        }
-    } else {
+        } else
       block(httpClient)
-    }
 
   suspend fun <T> HttpClient.get(
     url: String,
     setUp: HttpRequestBuilder.() -> Unit = {},
     block: suspend (HttpResponse) -> T
-  ): T {
-    val clientCall =
-      request<HttpStatement>(url) {
-        method = HttpMethod.Get
-        setUp.invoke(this)
-      }
-    return block(clientCall.execute())
-  }
+  ): T =
+    request<HttpStatement>(url) {
+      method = HttpMethod.Get
+      setUp.invoke(this)
+    }.let { clientCall -> block(clientCall.execute()) }
 
   fun <T> blockingGet(
     url: String,
     setUp: HttpRequestBuilder.() -> Unit = {},
     block: suspend (HttpResponse) -> T
-  ) =
+  ): T =
     runBlocking {
       withHttpClient {
         get(url, setUp, block)

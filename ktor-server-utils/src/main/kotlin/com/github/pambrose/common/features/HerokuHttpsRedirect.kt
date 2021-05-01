@@ -115,8 +115,7 @@ class HerokuHttpsRedirect(config: Configuration) {
           logger.debug { "Redirecting to: $redirectUrl" }
           call.respondRedirect(redirectUrl, feature.permanent)
           finish()
-        }
-        else {
+        } else {
           logger.trace { "Not redirecting: $scheme://${feature.host}${call.request.origin.uri}" }
         }
       }
