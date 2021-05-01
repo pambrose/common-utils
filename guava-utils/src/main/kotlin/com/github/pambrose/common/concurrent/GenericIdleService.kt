@@ -22,16 +22,16 @@ package com.github.pambrose.common.concurrent
 import com.google.common.util.concurrent.AbstractIdleService
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.time.Duration
-import kotlin.time.seconds
+import kotlin.time.Duration.Companion.seconds
 
 abstract class GenericIdleService : AbstractIdleService() {
-  fun startSync(maxWait: Duration = 15.seconds) {
+  fun startSync(maxWait: Duration = seconds(15)) {
     startAsync()
-    awaitRunning(maxWait.toLongMilliseconds(), MILLISECONDS)
+    awaitRunning(maxWait.inWholeMilliseconds, MILLISECONDS)
   }
 
-  fun stopSync(maxWait: Duration = 15.seconds) {
+  fun stopSync(maxWait: Duration = seconds(15)) {
     stopAsync()
-    awaitTerminated(maxWait.toLongMilliseconds(), MILLISECONDS)
+    awaitTerminated(maxWait.inWholeMilliseconds, MILLISECONDS)
   }
 }

@@ -25,6 +25,7 @@ import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
 import redis.clients.jedis.ScanParams
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
+import java.util.*
 
 object RedisUtils : KLogging() {
   const val REDIS_MAX_POOL_SIZE = "redis.maxPoolSize"
@@ -48,7 +49,7 @@ object RedisUtils : KLogging() {
                   (it.userInfo?.split(colon, 2)?.get(1) ?: ""))
       }
 
-  private val String.isSsl: Boolean get() = toLowerCase().startsWith("rediss://")
+  private val String.isSsl: Boolean get() = lowercase(Locale.getDefault()).startsWith("rediss://")
 
   fun newJedisPool(redisUrl: String = defaultRedisUrl,
                    maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,

@@ -20,6 +20,7 @@ description = 'ktor-server-utils'
 dependencies {
     implementation project(':core-utils')
 
+    implementation libraries.reflect
     implementation libraries.ktor_server_core
 }
 
