@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,14 @@ import org.jetbrains.exposed.sql.statements.expandArgs
 
 object ExposedUtils : KLogging()
 
-class KotlinLoggingSqlLogger(val logger: KLogger = ExposedUtils.logger) : SqlLogger {
-  override
-  fun log(context: StatementContext, transaction: Transaction) {
+class KotlinSqlLogger(val logger: KLogger = ExposedUtils.logger) : SqlLogger {
+  override fun log(context: StatementContext, transaction: Transaction) {
     logger.info { "SQL: ${context.expandArgs(transaction)}" }
   }
 }
 
 operator fun ResultRow.get(index: Int) = fieldIndex.filter { it.value == index }.map { this[it.key] }.firstOrNull()
-                                         ?: throw IllegalArgumentException("No value at index $index")
+  ?: throw IllegalArgumentException("No value at index $index")
 
 fun ResultRow.toRowString() =
   fieldIndex.values.map { this[it].toString() }.filter { it.isNotEmpty() }.joinToString(" - ")

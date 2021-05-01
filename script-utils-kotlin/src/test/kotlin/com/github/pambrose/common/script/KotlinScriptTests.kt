@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,8 @@ class KotlinScriptTests {
         aux.i shouldBeEqualTo eval("aux.i")
 
         val incEd =
-          eval("""
+          eval(
+            """
                 repeat(100) { aux.inc() }
                 aux
               """
@@ -131,7 +132,8 @@ class KotlinScriptTests {
         map.size shouldBeEqualTo eval("map.size")
 
         val incEd =
-          eval("""
+          eval(
+            """
                 map["k2"] = 10
                 repeat(100) { list.add(it) }
                 list
@@ -160,7 +162,8 @@ class KotlinScriptTests {
         list.size shouldBeEqualTo eval("list.size")
 
         val incEd =
-          eval("""
+          eval(
+            """
                 repeat(100) { list.add(it) }
                 list
               """
@@ -186,7 +189,8 @@ class KotlinScriptTests {
         list.size shouldBeEqualTo eval("list.size")
 
         val incEd =
-          eval("""
+          eval(
+            """
                 repeat(100) { list.add(null) }
                 list
               """

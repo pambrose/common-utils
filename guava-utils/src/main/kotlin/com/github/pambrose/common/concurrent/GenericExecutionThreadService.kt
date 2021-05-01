@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,16 @@ package com.github.pambrose.common.concurrent
 import com.google.common.util.concurrent.AbstractExecutionThreadService
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.time.Duration
-import kotlin.time.seconds
+import kotlin.time.Duration.Companion.seconds
 
 abstract class GenericExecutionThreadService : AbstractExecutionThreadService() {
-  fun startSync(timeout: Duration = 30.seconds) {
+  fun startSync(timeout: Duration = seconds(30)) {
     startAsync()
-    awaitRunning(timeout.toLongMilliseconds(), MILLISECONDS)
+    awaitRunning(timeout.inWholeMilliseconds, MILLISECONDS)
   }
 
-  fun stopSync(timeout: Duration = 30.seconds) {
+  fun stopSync(timeout: Duration = seconds(30)) {
     stopAsync()
-    awaitTerminated(timeout.toLongMilliseconds(), MILLISECONDS)
+    awaitTerminated(timeout.inWholeMilliseconds, MILLISECONDS)
   }
 }

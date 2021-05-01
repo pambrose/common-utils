@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +22,29 @@ package com.github.pambrose.common.time
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.*
-import kotlin.time.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.microseconds
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
   when (timeUnit) {
-    MICROSECONDS -> value.microseconds
-    NANOSECONDS -> value.nanoseconds
-    MILLISECONDS -> value.milliseconds
-    SECONDS -> value.seconds
-    MINUTES -> value.minutes
-    HOURS -> value.hours
-    DAYS -> value.days
+    MICROSECONDS -> microseconds(value)
+    NANOSECONDS -> nanoseconds(value)
+    MILLISECONDS -> milliseconds(value)
+    SECONDS -> seconds(value)
+    MINUTES -> minutes(value)
+    HOURS -> hours(value)
+    DAYS -> days(value)
   }
 
 
 fun Duration.format(includeMillis: Boolean = false): String {
-  val diff = toLongMilliseconds()
+  val diff = inWholeMilliseconds
   val day = MILLISECONDS.toDays(diff)
   val dayMillis = DAYS.toMillis(day)
   val hr = MILLISECONDS.toHours(diff - dayMillis)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,4 +22,4 @@ package com.github.pambrose.common.coroutine
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
 
-suspend fun delay(duration: Duration) = delay(duration.toLongMilliseconds())
+suspend fun delay(duration: Duration) = delay(duration.inWholeMilliseconds)

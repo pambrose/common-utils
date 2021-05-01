@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.net.UnknownHostException
 import java.security.SecureRandom
 import kotlin.contracts.contract
 import kotlin.time.Duration
-import kotlin.time.seconds
+import kotlin.time.Duration.Companion.seconds
 
 
 data class HostInfo(val hostName: String, val ipAddress: String)
@@ -35,13 +35,12 @@ val hostInfo by lazy {
     val address = InetAddress.getLocalHost().hostAddress!!
     //logger.debug { "Hostname: $hostname Address: $address" }
     HostInfo(hostname, address)
-  }
-  catch (e: UnknownHostException) {
+  } catch (e: UnknownHostException) {
     HostInfo("Unknown", "Unknown")
   }
 }
 
-fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.toLongMilliseconds())
+fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.inWholeMilliseconds)
 
 fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')) =
   SecureRandom().let { random ->
@@ -51,9 +50,11 @@ fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + 
       .joinToString("")
   }
 
-fun repeatWithSleep(iterations: Int,
-                    sleepTime: Duration = 1.seconds,
-                    block: (count: Int, startMillis: Long) -> Unit) {
+fun repeatWithSleep(
+  iterations: Int,
+  sleepTime: Duration = seconds(1),
+  block: (count: Int, startMillis: Long) -> Unit
+) {
   val startMillis = System.currentTimeMillis()
   iterations repeat { i ->
     block(i, startMillis)

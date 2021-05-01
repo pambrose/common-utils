@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.delegate.SingleAssignVar.singleAssign
+import com.github.pambrose.common.util.isNotNull
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.utils.TlsContext
 import com.github.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
@@ -33,14 +34,16 @@ import mu.KLogging
 
 object GrpcDsl : KLogging() {
 
-  fun channel(hostName: String = "",
-              port: Int = -1,
-              enableRetry: Boolean = false,
-              maxRetryAttempts: Int = 5,
-              tlsContext: TlsContext,
-              overrideAuthority: String = "",
-              inProcessServerName: String = "",
-              block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel =
+  fun channel(
+    hostName: String = "",
+    port: Int = -1,
+    enableRetry: Boolean = false,
+    maxRetryAttempts: Int = 5,
+    tlsContext: TlsContext,
+    overrideAuthority: String = "",
+    inProcessServerName: String = "",
+    block: ManagedChannelBuilder<*>.() -> Unit
+  ): ManagedChannel =
     when {
       inProcessServerName.isEmpty() -> {
         logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
@@ -52,7 +55,7 @@ object GrpcDsl : KLogging() {
               builder.overrideAuthority(override)
             }
 
-            if (tlsContext.sslContext != null)
+            if (tlsContext.sslContext.isNotNull())
               builder.sslContext(tlsContext.sslContext)
             else
               builder.usePlaintext()
@@ -71,22 +74,23 @@ object GrpcDsl : KLogging() {
             builder.usePlaintext()
           }
       }
+    }.run {
+      block(this)
+      build()
     }
-      .run {
-        block(this)
-        build()
-      }
 
-  fun server(port: Int = -1,
-             tlsContext: TlsContext = PLAINTEXT_CONTEXT,
-             inProcessServerName: String = "",
-             block: ServerBuilder<*>.() -> Unit): Server =
+  fun server(
+    port: Int = -1,
+    tlsContext: TlsContext = PLAINTEXT_CONTEXT,
+    inProcessServerName: String = "",
+    block: ServerBuilder<*>.() -> Unit
+  ): Server =
     when {
       inProcessServerName.isEmpty() -> {
         logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
         NettyServerBuilder.forPort(port)
           .also { builder ->
-            if (tlsContext.sslContext != null)
+            if (tlsContext.sslContext.isNotNull())
               builder.sslContext(tlsContext.sslContext)
           }
       }
@@ -94,11 +98,10 @@ object GrpcDsl : KLogging() {
         logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
         InProcessServerBuilder.forName(inProcessServerName)
       }
+    }.run {
+      block(this)
+      build()
     }
-      .run {
-        block(this)
-        build()
-      }
 
   fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
     Attributes.newBuilder()

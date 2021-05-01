@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 package com.github.pambrose.common.script
 
 import com.github.pambrose.common.script.ScriptUtils.resetContext
+import com.github.pambrose.common.util.isNull
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
@@ -57,7 +58,7 @@ abstract class AbstractScript(extension: String, nullGlobalContext: Boolean) : A
     val qname = name.toDoubleQuoted()
 
     return when {
-      value.javaClass.kotlin.qualifiedName == null ->
+      value.javaClass.kotlin.qualifiedName.isNull() ->
         throw ScriptException("Variable $qname is a local or an anonymous class")
 
       paramCnt > 0 && types.isEmpty() -> {

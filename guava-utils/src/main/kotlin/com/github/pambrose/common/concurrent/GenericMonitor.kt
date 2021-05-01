@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ package com.github.pambrose.common.concurrent
 import com.google.common.util.concurrent.Monitor
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource.Monotonic
-import kotlin.time.seconds
 
 typealias MonitorAction = () -> Boolean
 
@@ -62,7 +62,7 @@ abstract class GenericMonitor {
   fun waitUntilTrue(waitTime: Duration): Boolean {
     var satisfied = false
     try {
-      satisfied = monitor.enterWhenUninterruptibly(trueValueGuard, waitTime.toLongMilliseconds(), MILLISECONDS)
+      satisfied = monitor.enterWhenUninterruptibly(trueValueGuard, waitTime.inWholeMilliseconds, MILLISECONDS)
     } finally {
       if (satisfied)
         monitor.leave()
@@ -74,7 +74,7 @@ abstract class GenericMonitor {
   fun waitUntilTrueWithInterruption(waitTime: Duration): Boolean {
     var satisfied = false
     try {
-      satisfied = monitor.enterWhen(trueValueGuard, waitTime.toLongMilliseconds(), MILLISECONDS)
+      satisfied = monitor.enterWhen(trueValueGuard, waitTime.inWholeMilliseconds, MILLISECONDS)
     } finally {
       if (satisfied)
         monitor.leave()
@@ -92,7 +92,7 @@ abstract class GenericMonitor {
   fun waitUntilFalse(waitTime: Duration): Boolean {
     var satisfied = false
     try {
-      satisfied = monitor.enterWhenUninterruptibly(falseValueGuard, waitTime.toLongMilliseconds(), MILLISECONDS)
+      satisfied = monitor.enterWhenUninterruptibly(falseValueGuard, waitTime.inWholeMilliseconds, MILLISECONDS)
     } finally {
       if (satisfied)
         monitor.leave()
@@ -101,14 +101,14 @@ abstract class GenericMonitor {
   }
 
   fun waitUntilTrue(timeout: Duration, block: MonitorAction) =
-    waitUntilTrue(timeout, (-1).seconds, block)
+    waitUntilTrue(timeout, seconds((-1)), block)
 
   fun waitUntilTrue(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
     val start = Monotonic.markNow()
     while (true) {
       when {
         waitUntilTrue(timeout) -> return true
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
+        maxWait > seconds(0) && start.elapsedNow() >= maxWait -> return false
         else ->
           block?.also { monitorAction ->
             val continueToWait = monitorAction()
@@ -121,7 +121,7 @@ abstract class GenericMonitor {
 
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(timeout: Duration, block: MonitorAction) =
-    waitUntilTrueWithInterruption(timeout, (-1).seconds, block)
+    waitUntilTrueWithInterruption(timeout, seconds((-1)), block)
 
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
@@ -129,7 +129,7 @@ abstract class GenericMonitor {
     while (true) {
       when {
         waitUntilTrueWithInterruption(timeout) -> return true
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
+        maxWait > seconds(0) && start.elapsedNow() >= maxWait -> return false
         else ->
           block?.also { monitorAction ->
             val continueToWait = monitorAction()
@@ -141,14 +141,14 @@ abstract class GenericMonitor {
   }
 
   fun waitUntilFalse(timeout: Duration, block: MonitorAction) =
-    waitUntilFalse(timeout, (-1).seconds, block)
+    waitUntilFalse(timeout, seconds((-1)), block)
 
   fun waitUntilFalse(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
     val start = Monotonic.markNow()
     while (true) {
       when {
         waitUntilFalse(timeout) -> return true
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
+        maxWait > seconds(0) && start.elapsedNow() >= maxWait -> return false
         else ->
           block?.also { monitorAction ->
             val continueToWait = monitorAction()

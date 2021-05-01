@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,9 @@ class JavaScriptTests {
         aux.i shouldBeEqualTo eval("aux.getI()")
 
         val retval =
-          eval("aux.getI()",
-               """
+          eval(
+            "aux.getI()",
+            """
                 for (int i = 0; i < 100; i++)
                   aux.inc();
               """.trimIndent()
@@ -114,8 +115,9 @@ class JavaScriptTests {
         map.size shouldBeEqualTo eval("map.size()")
 
         val retval =
-          eval("map.size()",
-               """
+          eval(
+            "map.size()",
+            """
                 map.put("k2", 10);
                 for (int i = 0; i < 100; i++)
                   list.add(i);
@@ -145,7 +147,8 @@ class JavaScriptTests {
 
         list.size shouldBeEqualTo eval("list.size()")
 
-        eval("0", """
+        eval(
+          "0", """
             for (int i = 0; i < 100; i++)
               list.add(i);
               """.trimIndent()
@@ -168,8 +171,9 @@ class JavaScriptTests {
 
         list.size shouldBeEqualTo eval("list.size()")
 
-        eval("0",
-             """
+        eval(
+          "0",
+          """
                 for (int i = 0; i < 100; i++)
                   list.add(null);
               """.trimIndent()

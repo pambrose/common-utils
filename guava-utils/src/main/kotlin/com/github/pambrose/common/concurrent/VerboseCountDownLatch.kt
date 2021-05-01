@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class VerboseCountDownLatch(count: Int) : CountDownLatch(count) {
   @Throws(InterruptedException::class)
   fun await(timeout: Duration, msg: () -> Any?) {
     while (true) {
-      val satisfied = await(timeout.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+      val satisfied = await(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
       if (satisfied)
         break
       logger.info(msg)

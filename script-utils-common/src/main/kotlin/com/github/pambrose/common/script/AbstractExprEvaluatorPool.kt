@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,13 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(val size: In
       eval(expr)
     }
 
-  suspend fun <R> eval(expr: String): R {
-    val engine = borrow()
-    return try {
-      engine.eval(expr) as R
-    }
-    finally {
-      recycle(engine)
-    }
-  }
+  suspend fun <R> eval(expr: String): R =
+    borrow()
+      .let { engine ->
+        try {
+          engine.eval(expr) as R
+        } finally {
+          recycle(engine)
+        }
+      }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,12 @@ abstract class AbstractScriptPool<T : AbstractScript>(val size: Int, private val
   // Reset the context before returning to pool
   private suspend fun recycle(scriptObject: T) = channel.send(scriptObject.apply { resetContext(nullGlobalContext) })
 
-  suspend fun <R> eval(block: T.() -> R): R {
-    val engine = borrow()
-    return try {
-      block.invoke(engine)
+  suspend fun <R> eval(block: T.() -> R): R = borrow()
+    .let { engine ->
+      try {
+        block.invoke(engine)
+      } finally {
+        recycle(engine)
+      }
     }
-    finally {
-      recycle(engine)
-    }
-  }
 }

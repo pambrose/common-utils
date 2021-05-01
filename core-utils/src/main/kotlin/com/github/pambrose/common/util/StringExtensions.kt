@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,11 +60,13 @@ fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
 fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false, separator)
 
 fun List<String>.toRootPath(addTrailing: Boolean = false, separator: CharSequence = "/") =
-  toPath(addPrefix = true, addTrailing = addTrailing)
+  toPath(addPrefix = true, addTrailing = addTrailing, separator = separator)
 
-fun List<String>.toPath(addPrefix: Boolean = true,
-                        addTrailing: Boolean = true,
-                        separator: CharSequence = "/") =
+fun List<String>.toPath(
+  addPrefix: Boolean = true,
+  addTrailing: Boolean = true,
+  separator: CharSequence = "/"
+) =
   mapIndexed { i, s -> if (i == 0 && addPrefix && !s.startsWith(separator)) "$separator$s" else s }
     .mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
     .mapIndexed { i, s -> if (i < size - 1 || addTrailing) s.ensureSuffix(separator) else s }
@@ -104,8 +106,7 @@ fun String.isInt() =
   try {
     this.toInt()
     true
-  }
-  catch (e: Exception) {
+  } catch (e: Exception) {
     false
   }
 
@@ -115,8 +116,7 @@ fun String.isFloat() =
   try {
     this.toFloat()
     true
-  }
-  catch (e: Exception) {
+  } catch (e: Exception) {
     false
   }
 
@@ -126,8 +126,7 @@ fun String.isDouble() =
   try {
     this.toDouble()
     true
-  }
-  catch (e: Exception) {
+  } catch (e: Exception) {
     false
   }
 
@@ -160,12 +159,13 @@ fun String.asRegex(ignoreCase: Boolean = false) =
 
 private val emailPattern by lazy {
   Pattern.compile(
-      "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@"
-      + "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
-      + "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\."
-      + "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
-      + "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|"
-      + "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$")
+    "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@"
+        + "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+        + "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\."
+        + "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+        + "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|"
+        + "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$"
+  )
 }
 
 fun String.isValidEmail() = emailPattern.matcher(this).matches()
@@ -180,7 +180,7 @@ fun String.md5(salt: ByteArray): String = encodedByteArray(this, salt, "MD5").as
 
 fun String.sha256(salt: ByteArray): String = encodedByteArray(this, salt, "SHA-256").asText
 
-val ByteArray.asText get() = fold("", { str, it -> str + "%02x".format(it) })
+val ByteArray.asText get() = fold("") { str, it -> str + "%02x".format(it) }
 
 private fun encodedByteArray(input: String, salt: ByteArray, algorithm: String) =
   with(MessageDigest.getInstance(algorithm)) {
@@ -207,8 +207,7 @@ fun String.maskUrlCredentials() =
     val scheme = split("://")
     val uri = split("@")
     "${scheme[0]}://*****:*****@${uri[1]}"
-  }
-  else {
+  } else {
     this
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,10 @@ import mu.KLogging
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 
-class AdminService(private val servletGroup: ServletGroup,
-                   initBlock: AdminService.() -> Unit = {}) : GenericIdleService() {
+class AdminService(
+  private val servletGroup: ServletGroup,
+  initBlock: AdminService.() -> Unit = {}
+) : GenericIdleService() {
 
   private val server =
     Server(servletGroup.port)

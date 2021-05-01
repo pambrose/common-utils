@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,13 @@ package com.github.pambrose.common.metrics
 
 import io.prometheus.client.Collector
 
-class SamplerGaugeCollector(private val name: String,
-                            private val help: String,
-                            private val labelNames: List<String> = emptyList(),
-                            private val labelValues: List<String> = emptyList(),
-                            private val data: () -> Double) : Collector() {
+class SamplerGaugeCollector(
+  private val name: String,
+  private val help: String,
+  private val labelNames: List<String> = emptyList(),
+  private val labelValues: List<String> = emptyList(),
+  private val data: () -> Double
+) : Collector() {
 
   init {
     register<Collector>()

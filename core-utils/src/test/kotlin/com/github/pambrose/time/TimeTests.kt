@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,27 @@ import com.github.pambrose.common.time.timeUnitToDuration
 import com.github.pambrose.common.util.repeat
 import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
-import java.util.concurrent.TimeUnit
-import kotlin.time.*
+import java.util.concurrent.TimeUnit.*
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.microseconds
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 class TimeTests {
 
   @Test
   fun conversionTest() {
     100 repeat { i ->
-      timeUnitToDuration(i.toLong(), TimeUnit.MICROSECONDS) shouldBeEqualTo i.microseconds
-      timeUnitToDuration(i.toLong(), TimeUnit.NANOSECONDS) shouldBeEqualTo i.nanoseconds
-      timeUnitToDuration(i.toLong(), TimeUnit.MILLISECONDS) shouldBeEqualTo i.milliseconds
-      timeUnitToDuration(i.toLong(), TimeUnit.SECONDS) shouldBeEqualTo i.seconds
-      timeUnitToDuration(i.toLong(), TimeUnit.MINUTES) shouldBeEqualTo i.minutes
-      timeUnitToDuration(i.toLong(), TimeUnit.HOURS) shouldBeEqualTo i.hours
-      timeUnitToDuration(i.toLong(), TimeUnit.DAYS) shouldBeEqualTo i.days
+      timeUnitToDuration(i.toLong(), MICROSECONDS) shouldBeEqualTo microseconds(i)
+      timeUnitToDuration(i.toLong(), NANOSECONDS) shouldBeEqualTo nanoseconds(i)
+      timeUnitToDuration(i.toLong(), MILLISECONDS) shouldBeEqualTo milliseconds(i)
+      timeUnitToDuration(i.toLong(), SECONDS) shouldBeEqualTo seconds(i)
+      timeUnitToDuration(i.toLong(), MINUTES) shouldBeEqualTo minutes(i)
+      timeUnitToDuration(i.toLong(), HOURS) shouldBeEqualTo hours(i)
+      timeUnitToDuration(i.toLong(), DAYS) shouldBeEqualTo days(i)
     }
   }
 }

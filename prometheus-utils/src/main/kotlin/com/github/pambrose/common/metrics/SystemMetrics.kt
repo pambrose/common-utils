@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,14 @@ object SystemMetrics : KLogging() {
   private var initialized = false
 
   @Synchronized
-  fun initialize(enableStandardExports: Boolean = false,
-                 enableMemoryPoolsExports: Boolean = false,
-                 enableGarbageCollectorExports: Boolean = false,
-                 enableThreadExports: Boolean = false,
-                 enableClassLoadingExports: Boolean = false,
-                 enableVersionInfoExports: Boolean = false) {
+  fun initialize(
+    enableStandardExports: Boolean = false,
+    enableMemoryPoolsExports: Boolean = false,
+    enableGarbageCollectorExports: Boolean = false,
+    enableThreadExports: Boolean = false,
+    enableClassLoadingExports: Boolean = false,
+    enableVersionInfoExports: Boolean = false
+  ) {
     if (!initialized) {
       if (enableStandardExports) {
         logger.info { "Enabling standard JMX metrics" }

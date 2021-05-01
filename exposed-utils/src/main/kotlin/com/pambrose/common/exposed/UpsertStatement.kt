@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,18 +25,22 @@ import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 
-inline fun <T : Table> T.upsert(conflictColumn: Column<*>? = null,
-                                conflictIndex: Index? = null,
-                                body: T.(UpsertStatement<Number>) -> Unit) =
+inline fun <T : Table> T.upsert(
+  conflictColumn: Column<*>? = null,
+  conflictIndex: Index? = null,
+  body: T.(UpsertStatement<Number>) -> Unit
+): UpsertStatement<Number> =
   UpsertStatement<Number>(this, conflictColumn, conflictIndex)
     .apply {
       body(this)
       execute(TransactionManager.current())
     }
 
-class UpsertStatement<Key : Any>(table: Table,
-                                 conflictColumn: Column<*>? = null,
-                                 conflictIndex: Index? = null) : InsertStatement<Key>(table, false) {
+class UpsertStatement<Key : Any>(
+  table: Table,
+  conflictColumn: Column<*>? = null,
+  conflictIndex: Index? = null
+) : InsertStatement<Key>(table, false) {
   private val indexName: String
   private val indexColumns: List<Column<*>>
 
@@ -54,7 +58,7 @@ class UpsertStatement<Key : Any>(table: Table,
     }
   }
 
-  override fun prepareSQL(transaction: Transaction) =
+  override fun prepareSQL(transaction: Transaction): String =
     buildString {
       append(super.prepareSQL(transaction))
       append(" ON CONFLICT ON CONSTRAINT $indexName DO UPDATE SET ")

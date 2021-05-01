@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@
 
 package com.github.pambrose.common.service
 
-data class ZipkinConfig(val enabled: Boolean,
-                        val hostname: String,
-                        val port: Int,
-                        val path: String,
-                        val serviceName: String) 
+data class ZipkinConfig(
+  val enabled: Boolean,
+  val hostname: String,
+  val port: Int,
+  val path: String,
+  val serviceName: String
+)

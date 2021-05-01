@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,19 +23,18 @@ import kotlin.time.Duration
 
 fun Server.shutdownWithJvm(maxWaitTime: Duration) {
   Runtime.getRuntime().addShutdownHook(
-      Thread {
-        try {
-          shutdownGracefully(maxWaitTime)
-        }
-        catch (e: InterruptedException) {
-          // do nothing
-        }
-      })
+    Thread {
+      try {
+        shutdownGracefully(maxWaitTime)
+      } catch (e: InterruptedException) {
+        // do nothing
+      }
+    })
 }
 
 @Throws(InterruptedException::class)
 fun Server.shutdownGracefully(maxWaitTime: Duration) =
-  shutdownGracefully(maxWaitTime.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+  shutdownGracefully(maxWaitTime.inWholeMilliseconds, TimeUnit.MILLISECONDS)
 
 @Throws(InterruptedException::class)
 fun Server.shutdownGracefully(timeout: Long, unit: TimeUnit) {
@@ -43,8 +42,7 @@ fun Server.shutdownGracefully(timeout: Long, unit: TimeUnit) {
   shutdown()
   try {
     awaitTermination(timeout, unit)
-  }
-  finally {
+  } finally {
     shutdownNow()
   }
 }

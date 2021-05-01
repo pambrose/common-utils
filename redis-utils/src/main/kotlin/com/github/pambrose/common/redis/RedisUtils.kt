@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
 import redis.clients.jedis.ScanParams
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.net.URI
+import java.util.*
 
 object RedisUtils : KLogging() {
   const val REDIS_MAX_POOL_SIZE = "redis.maxPoolSize"
@@ -43,17 +44,21 @@ object RedisUtils : KLogging() {
   private fun urlDetails(redisUrl: String) =
     URI(redisUrl)
       .let {
-        RedisInfo(it,
-                  (it.userInfo?.split(colon, 2)?.get(0) ?: ""),
-                  (it.userInfo?.split(colon, 2)?.get(1) ?: ""))
+        RedisInfo(
+          it,
+          (it.userInfo?.split(colon, 2)?.get(0) ?: ""),
+          (it.userInfo?.split(colon, 2)?.get(1) ?: "")
+        )
       }
 
-  private val String.isSsl: Boolean get() = toLowerCase().startsWith("rediss://")
+  private val String.isSsl: Boolean get() = lowercase(Locale.getDefault()).startsWith("rediss://")
 
-  fun newJedisPool(redisUrl: String = defaultRedisUrl,
-                   maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,
-                   maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
-                   minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1): JedisPool {
+  fun newJedisPool(
+    redisUrl: String = defaultRedisUrl,
+    maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,
+    maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
+    minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1
+  ): JedisPool {
 
     require(maxPoolSize > 0) { "Max pool size must be a positive number" }
     require(maxIdleSize > 0) { "Max idle size must be a positive number" }
@@ -83,8 +88,7 @@ object RedisUtils : KLogging() {
         JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.user, info.password, redisUrl.isSsl)
       else
         JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.password, redisUrl.isSsl)
-    }
-    else
+    } else
       JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, redisUrl.isSsl)
   }
 
@@ -95,8 +99,7 @@ object RedisUtils : KLogging() {
           redis.ping("")
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else
@@ -111,8 +114,7 @@ object RedisUtils : KLogging() {
           redis.ping("")
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else
@@ -127,8 +129,7 @@ object RedisUtils : KLogging() {
           redis.ping("")
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else
@@ -136,16 +137,17 @@ object RedisUtils : KLogging() {
       block.invoke(null)
     }
 
-  suspend fun <T> JedisPool.withSuspendingNonNullRedisPool(printStackTrace: Boolean = false,
-                                                           block: suspend (Jedis) -> T): T? =
+  suspend fun <T> JedisPool.withSuspendingNonNullRedisPool(
+    printStackTrace: Boolean = false,
+    block: suspend (Jedis) -> T
+  ): T? =
     try {
       resource
         .use { redis ->
           redis.ping("")
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else
@@ -166,8 +168,7 @@ object RedisUtils : KLogging() {
           }
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else
@@ -175,9 +176,11 @@ object RedisUtils : KLogging() {
       block.invoke(null)
     }
 
-  fun <T> withNonNullRedis(redisUrl: String = defaultRedisUrl,
-                           printStackTrace: Boolean = false,
-                           block: (Jedis) -> T): T? =
+  fun <T> withNonNullRedis(
+    redisUrl: String = defaultRedisUrl,
+    printStackTrace: Boolean = false,
+    block: (Jedis) -> T
+  ): T? =
     try {
       val info = urlDetails(redisUrl)
       Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
@@ -190,8 +193,7 @@ object RedisUtils : KLogging() {
           }
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else
@@ -199,9 +201,11 @@ object RedisUtils : KLogging() {
       null
     }
 
-  suspend fun <T> withSuspendingRedis(redisUrl: String = defaultRedisUrl,
-                                      printStackTrace: Boolean = false,
-                                      block: suspend (Jedis?) -> T): T =
+  suspend fun <T> withSuspendingRedis(
+    redisUrl: String = defaultRedisUrl,
+    printStackTrace: Boolean = false,
+    block: suspend (Jedis?) -> T
+  ): T =
     try {
       val info = urlDetails(redisUrl)
       Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
@@ -214,8 +218,7 @@ object RedisUtils : KLogging() {
           }
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else
@@ -223,9 +226,11 @@ object RedisUtils : KLogging() {
       block.invoke(null)
     }
 
-  suspend fun <T> withSuspendingNonNullRedis(redisUrl: String = defaultRedisUrl,
-                                             printStackTrace: Boolean = false,
-                                             block: suspend (Jedis) -> T): T? =
+  suspend fun <T> withSuspendingNonNullRedis(
+    redisUrl: String = defaultRedisUrl,
+    printStackTrace: Boolean = false,
+    block: suspend (Jedis) -> T
+  ): T? =
     try {
       val info = urlDetails(redisUrl)
       Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
@@ -238,8 +243,7 @@ object RedisUtils : KLogging() {
           }
           block.invoke(redis)
         }
-    }
-    catch (e: JedisConnectionException) {
+    } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
       else

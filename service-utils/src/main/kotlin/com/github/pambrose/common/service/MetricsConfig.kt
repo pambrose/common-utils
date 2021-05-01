@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,16 @@
 
 package com.github.pambrose.common.service
 
-data class MetricsConfig(val enabled: Boolean,
-                         val port: Int,
-                         val path: String,
-                         val standardExportsEnabled: Boolean,
-                         val memoryPoolsExportsEnabled: Boolean,
-                         val garbageCollectorExportsEnabled: Boolean,
-                         val threadExportsEnabled: Boolean,
-                         val classLoadingExportsEnabled: Boolean,
-                         val versionInfoExportsEnabled: Boolean)
+data class MetricsConfig(
+  val enabled: Boolean,
+  val port: Int,
+  val path: String,
+  val standardExportsEnabled: Boolean,
+  val memoryPoolsExportsEnabled: Boolean,
+  val garbageCollectorExportsEnabled: Boolean,
+  val threadExportsEnabled: Boolean,
+  val classLoadingExportsEnabled: Boolean,
+  val versionInfoExportsEnabled: Boolean
+)
 
 
