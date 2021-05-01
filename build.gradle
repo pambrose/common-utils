@@ -73,7 +73,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.9.0'
+    version '1.10.0'
 
     apply plugin: 'maven' // required for jitpack.io install
     apply plugin: 'org.jetbrains.kotlin.jvm'
