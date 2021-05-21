@@ -67,7 +67,7 @@ ext {
 
             zipkin                : "io.zipkin.brave:brave:$zipkin_version",
 
-            zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkenSender_version",
+            zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version",
     ]
 }
 
