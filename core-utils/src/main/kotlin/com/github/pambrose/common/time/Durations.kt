@@ -42,7 +42,6 @@ fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
     DAYS -> days(value)
   }
 
-
 fun Duration.format(includeMillis: Boolean = false): String {
   val diff = inWholeMilliseconds
   val day = MILLISECONDS.toDays(diff)

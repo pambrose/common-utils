@@ -20,7 +20,6 @@ package com.github.pambrose.common.util
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 
-
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class Version(val version: String, val date: String) {

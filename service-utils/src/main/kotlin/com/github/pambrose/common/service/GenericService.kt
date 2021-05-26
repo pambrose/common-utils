@@ -222,6 +222,5 @@ protected constructor(
         service.stopAsync()
         System.err.println("*** ${service.simpleClassName} shut down complete ***")
       }
-
   }
 }

@@ -30,5 +30,3 @@ data class MetricsConfig(
   val classLoadingExportsEnabled: Boolean,
   val versionInfoExportsEnabled: Boolean
 )
-
-
