@@ -72,7 +72,6 @@ class GitHubRepo(
     "GitHubRepo(scheme='$scheme', domainName='$domainName', ownerName='$ownerName', repoName='$repoName', rawSourcePrefix='$rawSourcePrefix')"
 }
 
-
 class GitLabRepo(
   ownerType: OwnerType,
   ownerName: String,

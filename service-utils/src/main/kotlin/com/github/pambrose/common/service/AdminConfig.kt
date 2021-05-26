@@ -27,5 +27,3 @@ data class AdminConfig(
   val healthCheckPath: String,
   val threadDumpPath: String
 )
-
-

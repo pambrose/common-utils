@@ -33,4 +33,3 @@ open class CustomExpr<T>(val text: String, _columnType: IColumnType) : Function<
       append(text)
     }
 }
-

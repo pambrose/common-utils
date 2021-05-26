@@ -23,6 +23,10 @@ depends:
 refresh:
 	./gradlew --refresh-dependencies dependencyUpdates
 
+lint:
+	./gradlew lintKotlinMain
+	./gradlew lintKotlinTest
+
 versioncheck:
 	./gradlew dependencyUpdates
 

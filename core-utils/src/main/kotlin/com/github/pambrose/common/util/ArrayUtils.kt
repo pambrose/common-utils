@@ -72,5 +72,4 @@ object ArrayUtils {
 
   @JvmStatic
   fun asString(vals: Array<String>) = vals.joinToString { it.toDoubleQuoted() }.asBracketed()
-
 }
