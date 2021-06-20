@@ -50,7 +50,6 @@ class HerokuHttpsRedirect(config: Configuration) {
    * The list of call predicates for redirect exclusion.
    * Any call matching any of the predicates will not be redirected by this feature.
    */
-  @KtorExperimentalAPI
   val excludePredicates: List<(ApplicationCall) -> Boolean> = config.excludePredicates.toList()
 
   /**
@@ -76,13 +75,11 @@ class HerokuHttpsRedirect(config: Configuration) {
      * The list of call predicates for redirect exclusion.
      * Any call matching any of the predicates will not be redirected by this feature.
      */
-    @KtorExperimentalAPI
     val excludePredicates: MutableList<(ApplicationCall) -> Boolean> = ArrayList()
 
     /**
      * Exclude calls with paths matching the [pathPrefix] from being redirected to https by this feature.
      */
-    @KtorExperimentalAPI
     fun excludePrefix(pathPrefix: String) {
       exclude { call ->
         call.request.origin.uri.startsWith(pathPrefix)
@@ -92,7 +89,6 @@ class HerokuHttpsRedirect(config: Configuration) {
     /**
      * Exclude calls with paths matching the [pathSuffix] from being redirected to https by this feature.
      */
-    @KtorExperimentalAPI
     fun excludeSuffix(pathSuffix: String) {
       exclude { call ->
         call.request.origin.uri.endsWith(pathSuffix)
@@ -102,7 +98,6 @@ class HerokuHttpsRedirect(config: Configuration) {
     /**
      * Exclude calls matching the [predicate] from being redirected to https by this feature.
      */
-    @KtorExperimentalAPI
     fun exclude(predicate: (call: ApplicationCall) -> Boolean) {
       excludePredicates.add(predicate)
     }

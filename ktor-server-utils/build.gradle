@@ -24,14 +24,14 @@ dependencies {
     implementation libraries.ktor_server_core
 }
 
-compileKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
-    }
-}
-
-compileTestKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
-    }
-}
+//compileKotlin {
+//    kotlinOptions {
+//        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+//    }
+//}
+//
+//compileTestKotlin {
+//    kotlinOptions {
+//        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+//    }
+//}
