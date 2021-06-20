@@ -2,7 +2,8 @@ jdk:
   - openjdk11
 
 install:
-  - ./gradlew build publishToMavenLocal
+  - echo "Running custom install command"
+  - ./gradlew clean build -xtest publish publishToMavenLocal
 
 #before_install:
 #  - ./custom_setup.sh
