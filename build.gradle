@@ -76,6 +76,7 @@ allprojects {
     group 'com.github.pambrose.common-utils'
     version '1.13.0'
 
+    apply plugin: 'java-library'
     apply plugin: 'maven-publish' // required for jitpack.io install
     apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
