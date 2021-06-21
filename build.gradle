@@ -17,8 +17,8 @@
 
 plugins {
     id 'java'
-    id 'org.jmailen.kotlinter' version "3.4.4" apply false
-    id 'org.jetbrains.kotlin.jvm' version '1.5.20-M1' apply false
+    id 'org.jmailen.kotlinter' version "3.4.5" apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.5.20-RC' apply false
     id "com.github.ben-manes.versions" version "0.39.0" apply false
 }
 
@@ -74,9 +74,10 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.12.0'
+    version '1.13.0'
 
-    apply plugin: 'maven' // required for jitpack.io install
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish' // required for jitpack.io install
     apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
@@ -108,13 +109,34 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
     }
 
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        archiveClassifier = 'sources'
-        from sourceSets.main.allSource
+//    task sourcesJar(type: Jar, dependsOn: classes) {
+//        archiveClassifier = 'sources'
+//        from sourceSets.main.allSource
+//    }
+
+//    artifacts {
+//        archives sourcesJar
+//    }
+
+    task sourcesJar(type: Jar) {
+        from sourceSets.main.allJava
+        archiveClassifier.set("sources")
+    }
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        archiveClassifier.set("javadoc")
+        from javadoc.destinationDir
     }
 
-    artifacts {
-        archives sourcesJar
+    publishing {
+        publications {
+            mavenAar(MavenPublication) {
+                from components.java
+                afterEvaluate {
+                    artifact javadocJar
+                    artifact sourcesJar
+                }
+            }
+        }
     }
 
     compileKotlin {

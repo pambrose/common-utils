@@ -1,5 +1,12 @@
 jdk:
   - openjdk11
+
+#install:
+#  - echo "Running build command"
+#  - ./gradlew clean build -xtest
+#  - echo "Running publish command"
+#  - ./gradlew publish publishToMavenLocal
+
 #before_install:
 #  - ./custom_setup.sh
 #install:
