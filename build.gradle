@@ -109,15 +109,6 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
     }
 
-//    task sourcesJar(type: Jar, dependsOn: classes) {
-//        archiveClassifier = 'sources'
-//        from sourceSets.main.allSource
-//    }
-
-//    artifacts {
-//        archives sourcesJar
-//    }
-
     task sourcesJar(type: Jar) {
         from sourceSets.main.allJava
         archiveClassifier.set("sources")
