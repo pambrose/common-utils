@@ -22,6 +22,7 @@ package com.github.pambrose.common.util
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.security.SecureRandom
+import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -61,6 +62,7 @@ fun repeatWithSleep(
   }
 }
 
+@ExperimentalContracts
 fun Any?.isNotNull(): Boolean {
   contract {
     returns(true) implies (this@isNotNull != null)
@@ -68,6 +70,7 @@ fun Any?.isNotNull(): Boolean {
   return this != null
 }
 
+@ExperimentalContracts
 fun Any?.isNull(): Boolean {
   contract {
     returns(false) implies (this@isNull != null)
