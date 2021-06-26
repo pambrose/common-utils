@@ -113,14 +113,20 @@ subprojects {
         from sourceSets.main.allJava
         archiveClassifier.set("sources")
     }
+
     task javadocJar(type: Jar, dependsOn: javadoc) {
         archiveClassifier.set("javadoc")
         from javadoc.destinationDir
     }
 
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+
     publishing {
         publications {
-            mavenAar(MavenPublication) {
+            maven(MavenPublication) {
                 from components.java
                 afterEvaluate {
                     artifact javadocJar
@@ -134,9 +140,9 @@ subprojects {
         kotlinOptions {
             useIR = true
             jvmTarget = '1.8'
-            freeCompilerArgs += ['-Xuse-experimental=kotlin.contracts.ExperimentalContracts',
-                                 '-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi',
-                                 '-Xuse-experimental=kotlin.time.ExperimentalTime']
+            freeCompilerArgs += ['-Xopt-in=kotlin.contracts.ExperimentalContracts',
+                                 '-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
+                                 '-Xopt-in=kotlin.time.ExperimentalTime']
         }
     }
 
@@ -144,7 +150,7 @@ subprojects {
         kotlinOptions {
             useIR = true
             jvmTarget = '1.8'
-            freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+            freeCompilerArgs += ['-Xopt-in=kotlin.time.ExperimentalTime']
         }
     }
 
