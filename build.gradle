@@ -109,7 +109,7 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
     }
 
-    task sourcesJar(type: Jar) {
+    task sourcesJar(type: Jar, dependsOn: classes) {
         from sourceSets.main.allJava
         archiveClassifier.set("sources")
     }
@@ -119,26 +119,31 @@ subprojects {
         from javadoc.destinationDir
     }
 
-    jar {
-        from sourceSets.main.output
-        from sourceSets.main.allJava
-    }
-
-    java {
-        withJavadocJar()
-        withSourcesJar()
-    }
+//    jar {
+//        from sourceSets.main.output
+//        from sourceSets.main.allJava
+//    }
+//
+//    java {
+//        withJavadocJar()
+//        withSourcesJar()
+//    }
 
     publishing {
         publications {
             maven(MavenPublication) {
                 from components.java
-//                afterEvaluate {
-//                    artifact javadocJar
-//                    artifact sourcesJar
-//                }
+                afterEvaluate {
+                    artifact javadocJar
+                    artifact sourcesJar
+                }
             }
         }
+    }
+
+    artifacts {
+        archives sourcesJar
+        //archives javadocJar
     }
 
     compileKotlin {
