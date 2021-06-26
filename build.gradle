@@ -119,6 +119,11 @@ subprojects {
         from javadoc.destinationDir
     }
 
+    jar {
+        from sourceSets.main.output
+        from sourceSets.main.allJava
+    }
+
     java {
         withJavadocJar()
         withSourcesJar()
