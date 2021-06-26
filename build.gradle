@@ -133,10 +133,10 @@ subprojects {
         publications {
             maven(MavenPublication) {
                 from components.java
-                afterEvaluate {
-                    artifact javadocJar
-                    artifact sourcesJar
-                }
+//                afterEvaluate {
+//                    artifact javadocJar
+//                    artifact sourcesJar
+//                }
             }
         }
     }
