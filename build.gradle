@@ -74,10 +74,11 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.14.0'
+    version '1.15.0'
 
-    apply plugin: 'java-library'
-    apply plugin: 'maven-publish' // required for jitpack.io install
+//    apply plugin: 'java-library'
+//    apply plugin: 'maven-publish' // required for jitpack.io install
+    apply plugin: 'maven' // required for jitpack.io install
     apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
@@ -109,34 +110,54 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
     }
 
-    task sourcesJar(type: Jar) {
-        from sourceSets.main.allJava
-        archiveClassifier.set("sources")
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
     }
+
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set("javadoc")
+        classifier = 'javadoc'
         from javadoc.destinationDir
     }
 
-    publishing {
-        publications {
-            mavenAar(MavenPublication) {
-                from components.java
-                afterEvaluate {
-                    artifact javadocJar
-                    artifact sourcesJar
-                }
-            }
-        }
+    artifacts {
+        archives sourcesJar
+        //archives javadocJar
     }
+
+    java {
+        withSourcesJar()
+    }
+
+//    task sourcesJar(type: Jar, dependsOn: classes) {
+//        from sourceSets.main.allJava
+//        archiveClassifier.set("sources")
+//    }
+//
+//    task javadocJar(type: Jar, dependsOn: javadoc) {
+//        archiveClassifier.set("javadoc")
+//        from javadoc.destinationDir
+//    }
+
+//    publishing {
+//        publications {
+//            maven(MavenPublication) {
+//                from components.java
+//                afterEvaluate {
+//                    artifact javadocJar
+//                    artifact sourcesJar
+//                }
+//            }
+//        }
+//    }
 
     compileKotlin {
         kotlinOptions {
             useIR = true
             jvmTarget = '1.8'
-            freeCompilerArgs += ['-Xuse-experimental=kotlin.contracts.ExperimentalContracts',
-                                 '-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi',
-                                 '-Xuse-experimental=kotlin.time.ExperimentalTime']
+            freeCompilerArgs += ['-Xopt-in=kotlin.contracts.ExperimentalContracts',
+                                 '-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
+                                 '-Xopt-in=kotlin.time.ExperimentalTime']
         }
     }
 
@@ -144,7 +165,7 @@ subprojects {
         kotlinOptions {
             useIR = true
             jvmTarget = '1.8'
-            freeCompilerArgs += ['-Xuse-experimental=kotlin.time.ExperimentalTime']
+            freeCompilerArgs += ['-Xopt-in=kotlin.time.ExperimentalTime']
         }
     }
 
