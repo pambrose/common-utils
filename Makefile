@@ -31,4 +31,4 @@ versioncheck:
 	./gradlew dependencyUpdates
 
 upgrade-wrapper:
-	./gradlew wrapper --gradle-version=7.1 --distribution-type=bin
+	./gradlew wrapper --gradle-version=6.8.3 --distribution-type=bin

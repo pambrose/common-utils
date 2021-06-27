@@ -76,8 +76,9 @@ allprojects {
     group 'com.github.pambrose.common-utils'
     version '1.15.0'
 
-    apply plugin: 'java-library'
-    apply plugin: 'maven-publish' // required for jitpack.io install
+//    apply plugin: 'java-library'
+//    apply plugin: 'maven-publish' // required for jitpack.io install
+    apply plugin: 'maven' // required for jitpack.io install
     apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
@@ -110,41 +111,45 @@ subprojects {
     }
 
     task sourcesJar(type: Jar, dependsOn: classes) {
-        from sourceSets.main.allJava
-        archiveClassifier.set("sources")
+        classifier = 'sources'
+        from sourceSets.main.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set("javadoc")
+        classifier = 'javadoc'
         from javadoc.destinationDir
-    }
-
-//    jar {
-//        from sourceSets.main.output
-//        from sourceSets.main.allJava
-//    }
-//
-//    java {
-//        withJavadocJar()
-//        withSourcesJar()
-//    }
-
-    publishing {
-        publications {
-            maven(MavenPublication) {
-                from components.java
-                afterEvaluate {
-                    artifact javadocJar
-                    artifact sourcesJar
-                }
-            }
-        }
     }
 
     artifacts {
         archives sourcesJar
         //archives javadocJar
     }
+
+    java {
+        withSourcesJar()
+    }
+
+//    task sourcesJar(type: Jar, dependsOn: classes) {
+//        from sourceSets.main.allJava
+//        archiveClassifier.set("sources")
+//    }
+//
+//    task javadocJar(type: Jar, dependsOn: javadoc) {
+//        archiveClassifier.set("javadoc")
+//        from javadoc.destinationDir
+//    }
+
+//    publishing {
+//        publications {
+//            maven(MavenPublication) {
+//                from components.java
+//                afterEvaluate {
+//                    artifact javadocJar
+//                    artifact sourcesJar
+//                }
+//            }
+//        }
+//    }
 
     compileKotlin {
         kotlinOptions {
