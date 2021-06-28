@@ -26,12 +26,12 @@ dependencies {
 
 //compileKotlin {
 //    kotlinOptions {
-//        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+//        freeCompilerArgs += ['-Xopt-in=io.ktor.util.KtorExperimentalAPI']
 //    }
 //}
 //
 //compileTestKotlin {
 //    kotlinOptions {
-//        freeCompilerArgs += ['-Xuse-experimental=io.ktor.util.KtorExperimentalAPI']
+//        freeCompilerArgs += ['-Xopt-in=io.ktor.util.KtorExperimentalAPI']
 //    }
 //}
