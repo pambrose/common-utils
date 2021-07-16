@@ -20,3 +20,15 @@ description = 'core-utils'
 dependencies {
     implementation libraries.reflect
 }
+
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xopt-in=kotlin.contracts.ExperimentalContracts']
+    }
+}
+
+compileTestKotlin {
+    kotlinOptions {
+        freeCompilerArgs += ['-Xopt-in=kotlin.contracts.ExperimentalContracts']
+    }
+}
