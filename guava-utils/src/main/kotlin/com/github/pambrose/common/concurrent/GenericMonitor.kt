@@ -101,14 +101,14 @@ abstract class GenericMonitor {
   }
 
   fun waitUntilTrue(timeout: Duration, block: MonitorAction) =
-    waitUntilTrue(timeout, seconds((-1)), block)
+    waitUntilTrue(timeout, (-1).seconds, block)
 
   fun waitUntilTrue(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
     val start = Monotonic.markNow()
     while (true) {
       when {
         waitUntilTrue(timeout) -> return true
-        maxWait > seconds(0) && start.elapsedNow() >= maxWait -> return false
+        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
         else ->
           block?.also { monitorAction ->
             val continueToWait = monitorAction()
@@ -121,7 +121,7 @@ abstract class GenericMonitor {
 
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(timeout: Duration, block: MonitorAction) =
-    waitUntilTrueWithInterruption(timeout, seconds((-1)), block)
+    waitUntilTrueWithInterruption(timeout, (-1).seconds, block)
 
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
@@ -129,7 +129,7 @@ abstract class GenericMonitor {
     while (true) {
       when {
         waitUntilTrueWithInterruption(timeout) -> return true
-        maxWait > seconds(0) && start.elapsedNow() >= maxWait -> return false
+        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
         else ->
           block?.also { monitorAction ->
             val continueToWait = monitorAction()
@@ -141,14 +141,14 @@ abstract class GenericMonitor {
   }
 
   fun waitUntilFalse(timeout: Duration, block: MonitorAction) =
-    waitUntilFalse(timeout, seconds((-1)), block)
+    waitUntilFalse(timeout, (-1).seconds, block)
 
   fun waitUntilFalse(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
     val start = Monotonic.markNow()
     while (true) {
       when {
         waitUntilFalse(timeout) -> return true
-        maxWait > seconds(0) && start.elapsedNow() >= maxWait -> return false
+        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
         else ->
           block?.also { monitorAction ->
             val continueToWait = monitorAction()

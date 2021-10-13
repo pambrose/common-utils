@@ -33,13 +33,13 @@ import kotlin.time.Duration.Companion.seconds
 
 fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
   when (timeUnit) {
-    MICROSECONDS -> microseconds(value)
-    NANOSECONDS -> nanoseconds(value)
-    MILLISECONDS -> milliseconds(value)
-    SECONDS -> seconds(value)
-    MINUTES -> minutes(value)
-    HOURS -> hours(value)
-    DAYS -> days(value)
+    MICROSECONDS -> value.microseconds
+    NANOSECONDS -> value.nanoseconds
+    MILLISECONDS -> value.milliseconds
+    SECONDS -> value.seconds
+    MINUTES -> value.minutes
+    HOURS -> value.hours
+    DAYS -> value.days
   }
 
 fun Duration.format(includeMillis: Boolean = false): String {
