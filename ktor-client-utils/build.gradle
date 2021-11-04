@@ -22,6 +22,7 @@ dependencies {
 
     implementation libraries.ktor_client_core
     implementation libraries.ktor_client_cio
+    //implementation libraries.ktor_client_plugins
 }
 
 //compileKotlin {
