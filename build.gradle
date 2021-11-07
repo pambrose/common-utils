@@ -20,7 +20,6 @@ plugins {
     id 'org.jmailen.kotlinter' version "3.6.0" apply false
     id 'org.jetbrains.kotlin.jvm' version '1.6.0-RC2' apply false
     id "com.github.ben-manes.versions" version "0.39.0" apply false
-    //id 'com.github.johnrengelman.shadow' version '7.1.0' apply false // gradle 7
 }
 
 ext {
@@ -79,12 +78,11 @@ allprojects {
     group 'com.github.pambrose.common-utils'
     version '1.19.0'
 
-    apply plugin: 'java-library'  // gradle 7
+    //apply plugin: 'java-library'  // gradle 7
     apply plugin: 'maven-publish' // required for jitpack.io install  // gradle 7
-    // apply plugin: 'maven' // required for jitpack.io install   // gradle 7
+    //apply plugin: 'maven' // required for jitpack.io install   // gradle 7
     apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
-    //apply plugin: 'com.github.johnrengelman.shadow'  // gradle 7
     apply plugin: 'com.github.ben-manes.versions'
 
     repositories {
@@ -99,14 +97,18 @@ allprojects {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
+    // gradle 7
     publishing {
         publications {
             mavenJava(MavenPublication) {
-                //groupId = 'com.github.pambrose.common-utils'
-                //artifactId = 'common-utils'
-                //version = '1.19.0'
-
-                //from components.java
+                versionMapping {
+                    usage('java-api') {
+                        fromResolutionOf('runtimeClasspath')
+                    }
+                    usage('java-runtime') {
+                        fromResolutionResult()
+                    }
+                }
             }
         }
     }
