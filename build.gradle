@@ -79,7 +79,7 @@ allprojects {
     group 'com.github.pambrose.common-utils'
     version '1.19.0'
 
-    apply plugin: 'java-library'  // gradle 7
+    //apply plugin: 'java-library'  // gradle 7
     apply plugin: 'maven-publish' // required for jitpack.io install  // gradle 7
     // apply plugin: 'maven' // required for jitpack.io install   // gradle 7
     apply plugin: 'org.jmailen.kotlinter'
@@ -98,6 +98,18 @@ allprojects {
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                groupId = 'com.github.pambrose.common-utils'
+                artifactId = 'common-utils'
+                version = '1.19.0'
+
+                from components.java
+            }
+        }
+    }
 }
 
 subprojects {
