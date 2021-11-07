@@ -88,6 +88,7 @@ allprojects {
     apply plugin: 'com.github.ben-manes.versions'
 
     repositories {
+        mavenLocal()
         //maven { url "https://maven.pkg.jetbrains.space/public/p/ktor/eap" }
         maven { url = 'https://kotlin.bintray.com/ktor' }
         maven { url = 'https://kotlin.bintray.com/kotlinx' }
