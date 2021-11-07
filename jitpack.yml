@@ -1,7 +1,8 @@
 jdk:
   - openjdk11
 install:
-  - ./gradlew build publishToMavenLocal
+  - ./gradlew build -xtest
+  - ./gradlew publishToMavenLocal
 #  - ./gradlew build :lib:publishToMavenLocal
 
 #install:
