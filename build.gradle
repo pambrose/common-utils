@@ -105,7 +105,8 @@ allprojects {
                 //groupId = 'com.github.pambrose.common-utils'
                 //artifactId = 'common-utils'
                 //version = '1.19.0'
-                from components.java
+
+                //from components.java
             }
         }
     }
