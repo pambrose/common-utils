@@ -1,9 +1,9 @@
 jdk:
   - openjdk11
-install:
-  - ./gradlew build -xtest
-  - ./gradlew publishToMavenLocal
-#  - ./gradlew build :lib:publishToMavenLocal
+#install:
+#  - ./gradlew build -xtest
+#  - ./gradlew publishToMavenLocal
+
 
 #install:
 #  - echo "Running build command"
