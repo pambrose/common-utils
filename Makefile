@@ -30,5 +30,6 @@ lint:
 versioncheck:
 	./gradlew dependencyUpdates
 
+# 6.9.1
 upgrade-wrapper:
-	./gradlew wrapper --gradle-version=6.9.1 --distribution-type=bin
+	./gradlew wrapper --gradle-version=7.2 --distribution-type=bin
