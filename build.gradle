@@ -97,19 +97,19 @@ allprojects {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    // gradle 7
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-//                artifactId = 'com.github.pambrose.common-utils'
-                from components.java
-                versionMapping {
-                    usage('java-api') {
-                        fromResolutionOf('runtimeClasspath')
-                    }
-                    usage('java-runtime') {
-                        fromResolutionResult()
-                    }
+}
+
+// gradle 7
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
                 }
             }
         }
