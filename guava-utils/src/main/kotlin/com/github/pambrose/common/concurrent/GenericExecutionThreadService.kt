@@ -25,12 +25,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 abstract class GenericExecutionThreadService : AbstractExecutionThreadService() {
-  fun startSync(timeout: Duration = seconds(30)) {
+  fun startSync(timeout: Duration = 30.seconds) {
     startAsync()
     awaitRunning(timeout.inWholeMilliseconds, MILLISECONDS)
   }
 
-  fun stopSync(timeout: Duration = seconds(30)) {
+  fun stopSync(timeout: Duration = 30.seconds) {
     stopAsync()
     awaitTerminated(timeout.inWholeMilliseconds, MILLISECONDS)
   }

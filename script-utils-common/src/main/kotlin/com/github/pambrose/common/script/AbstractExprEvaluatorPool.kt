@@ -38,6 +38,7 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(val size: In
     borrow()
       .let { engine ->
         try {
+          @Suppress("UNCHECKED_CAST")
           engine.eval(expr) as R
         } finally {
           recycle(engine)

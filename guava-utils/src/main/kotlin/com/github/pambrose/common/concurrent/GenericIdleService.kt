@@ -25,12 +25,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 abstract class GenericIdleService : AbstractIdleService() {
-  fun startSync(maxWait: Duration = seconds(15)) {
+  fun startSync(maxWait: Duration = 15.seconds) {
     startAsync()
     awaitRunning(maxWait.inWholeMilliseconds, MILLISECONDS)
   }
 
-  fun stopSync(maxWait: Duration = seconds(15)) {
+  fun stopSync(maxWait: Duration = 15.seconds) {
     stopAsync()
     awaitTerminated(maxWait.inWholeMilliseconds, MILLISECONDS)
   }

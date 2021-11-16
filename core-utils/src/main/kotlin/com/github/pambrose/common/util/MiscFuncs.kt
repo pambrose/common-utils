@@ -51,7 +51,7 @@ fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + 
 
 fun repeatWithSleep(
   iterations: Int,
-  sleepTime: Duration = seconds(1),
+  sleepTime: Duration = 1.seconds,
   block: (count: Int, startMillis: Long) -> Unit
 ) {
   val startMillis = System.currentTimeMillis()

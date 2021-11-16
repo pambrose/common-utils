@@ -43,7 +43,7 @@ fun ByteArray.isZipped() =
 
 fun ByteArray.unzip(): String =
   when {
-    size == 0 -> ""
+    isEmpty() -> ""
     !isZipped() -> String(this)
     else ->
       ByteArrayInputStream(this).use { bais ->

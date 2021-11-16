@@ -37,13 +37,13 @@ class TimeTests {
   @Test
   fun conversionTest() {
     100 repeat { i ->
-      timeUnitToDuration(i.toLong(), MICROSECONDS) shouldBeEqualTo microseconds(i)
-      timeUnitToDuration(i.toLong(), NANOSECONDS) shouldBeEqualTo nanoseconds(i)
-      timeUnitToDuration(i.toLong(), MILLISECONDS) shouldBeEqualTo milliseconds(i)
-      timeUnitToDuration(i.toLong(), SECONDS) shouldBeEqualTo seconds(i)
-      timeUnitToDuration(i.toLong(), MINUTES) shouldBeEqualTo minutes(i)
-      timeUnitToDuration(i.toLong(), HOURS) shouldBeEqualTo hours(i)
-      timeUnitToDuration(i.toLong(), DAYS) shouldBeEqualTo days(i)
+      timeUnitToDuration(i.toLong(), MICROSECONDS) shouldBeEqualTo i.microseconds
+      timeUnitToDuration(i.toLong(), NANOSECONDS) shouldBeEqualTo i.nanoseconds
+      timeUnitToDuration(i.toLong(), MILLISECONDS) shouldBeEqualTo i.milliseconds
+      timeUnitToDuration(i.toLong(), SECONDS) shouldBeEqualTo i.seconds
+      timeUnitToDuration(i.toLong(), MINUTES) shouldBeEqualTo i.minutes
+      timeUnitToDuration(i.toLong(), HOURS) shouldBeEqualTo i.hours
+      timeUnitToDuration(i.toLong(), DAYS) shouldBeEqualTo i.days
     }
   }
 }

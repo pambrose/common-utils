@@ -27,6 +27,7 @@ import com.github.pambrose.common.dsl.ZipkinDsl.tracing
 import com.google.common.util.concurrent.MoreExecutors
 import mu.KLogging
 import zipkin2.reporter.AsyncReporter
+import zipkin2.reporter.brave.ZipkinSpanHandler.create
 import zipkin2.reporter.okhttp3.OkHttpSender
 
 class ZipkinReporterService(
@@ -35,6 +36,7 @@ class ZipkinReporterService(
 ) : GenericIdleService() {
   private val sender = OkHttpSender.create(url)
   private val reporter = AsyncReporter.create(sender)
+  private val handler = create(reporter)
 
   init {
     addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
@@ -44,7 +46,7 @@ class ZipkinReporterService(
   fun newTracing(serviceName: String): Tracing =
     tracing {
       localServiceName(serviceName)
-      spanReporter(reporter)
+      addSpanHandler(handler)
     }
 
   override fun startUp() {
