@@ -23,28 +23,30 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.util.pipeline.*
 
-suspend fun PipelineContext<*, ApplicationCall>.respondWith2(
-  contentTye: ContentType = Text.Html,
+suspend inline fun ApplicationCall.respondWith(
+  contentType: ContentType = ContentType.Text.Html,
   block: () -> String
 ) {
   val html = block.invoke()
-  call.respondText(html, contentTye)
+  respondText(html, contentType)
 }
 
-suspend inline fun PipelineContext<*, ApplicationCall>.respondWith(
-  contentTye: ContentType = Text.Html,
-  block: () -> String
-) {
-  val html = block.invoke()
-  call.respondText(html, contentTye)
-}
-
-suspend inline fun PipelineContext<*, ApplicationCall>.redirectTo(
+suspend inline fun ApplicationCall.redirectTo(
   permanent: Boolean = false,
   block: () -> String
 ) {
   val url = block.invoke()
-  call.respondRedirect(url, permanent)
+  respondRedirect(url, permanent)
 }
+
+suspend inline fun PipelineContext<*, ApplicationCall>.respondWith(
+  contentType: ContentType = Text.Html,
+  block: () -> String
+) = call.respondWith(contentType, block)
+
+suspend inline fun PipelineContext<*, ApplicationCall>.redirectTo(
+  permanent: Boolean = false,
+  block: () -> String
+) = call.redirectTo(permanent, block)
 
 val RequestConnectionPoint.uriPrefix get() = "$scheme://$host:$port"
