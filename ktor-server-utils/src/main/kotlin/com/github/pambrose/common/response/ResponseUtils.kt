@@ -23,6 +23,14 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.util.pipeline.*
 
+suspend fun PipelineContext<*, ApplicationCall>.respondWith2(
+  contentTye: ContentType = Text.Html,
+  block: () -> String
+) {
+  val html = block.invoke()
+  call.respondText(html, contentTye)
+}
+
 suspend inline fun PipelineContext<*, ApplicationCall>.respondWith(
   contentTye: ContentType = Text.Html,
   block: () -> String
