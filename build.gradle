@@ -37,11 +37,11 @@ ext {
             jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
             jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
 
-            ktor_server_core      : "io.ktor:ktor-server-core:$ktor_version",
+            ktor_server_core      : "io.ktor:ktor-server:$ktor_version",
             //ktor_server_plugins  : "io.ktor:ktor-server-plugins:$ktor_version",
 
-            ktor_client_core      : "io.ktor:ktor-client-core:$ktor_version",
-            ktor_client_cio       : "io.ktor:ktor-client-cio-jvm:$ktor_version",
+            ktor_client_core      : "io.ktor:ktor-client:$ktor_version",
+            //ktor_client_cio       : "io.ktor:ktor-client-cio-jvm:$ktor_version",
             //ktor_client_plugins   : "io.ktor:ktor-client-plugins:$ktor_version",
 
             prometheus_core       : "io.prometheus:simpleclient:$prometheus_version",
@@ -69,6 +69,7 @@ allprojects {
 
     repositories {
         mavenLocal()
+        maven { url "https://maven.pkg.jetbrains.space/public/p/ktor/eap" }
         mavenCentral()
     }
 

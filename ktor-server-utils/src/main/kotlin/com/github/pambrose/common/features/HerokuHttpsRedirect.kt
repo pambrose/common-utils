@@ -17,11 +17,13 @@
 
 package com.github.pambrose.common.features
 
-import io.ktor.application.*
-import io.ktor.features.*
 import io.ktor.http.*
-import io.ktor.request.*
-import io.ktor.response.*
+import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationCallPipeline.ApplicationPhase.Plugins
+import io.ktor.server.plugins.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.util.*
 import io.ktor.util.*
 import mu.KotlinLogging
 
@@ -106,14 +108,18 @@ class HerokuHttpsRedirect(config: Configuration) {
   /**
    * Feature installation object
    */
-  companion object Feature : ApplicationFeature<ApplicationCallPipeline, Configuration, HerokuHttpsRedirect> {
+  companion object Feature : ApplicationPlugin<ApplicationCallPipeline, Configuration, HerokuHttpsRedirect> {
     override val key = AttributeKey<HerokuHttpsRedirect>("HerokuHttpsRedirect")
     override fun install(pipeline: ApplicationCallPipeline, configure: Configuration.() -> Unit): HerokuHttpsRedirect {
       val feature = HerokuHttpsRedirect(Configuration().apply(configure))
-      pipeline.intercept(ApplicationCallPipeline.Features) {
+      pipeline.intercept(Plugins) {
         // See https://jaketrent.com/post/https-redirect-node-heroku/
         val scheme = call.request.header("x-forwarded-proto") ?: "none"
-        if (scheme == "http" && feature.excludePredicates.none { predicate -> predicate(call) }) {
+        if (scheme == "http" && feature.excludePredicates.none { predicate: (ApplicationCall) -> Boolean ->
+            predicate(
+              call
+            )
+          }) {
           val redirectUrl =
             call.url {
               protocol = URLProtocol.HTTPS

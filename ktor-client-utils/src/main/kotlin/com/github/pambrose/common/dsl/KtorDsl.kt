@@ -21,7 +21,7 @@ package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.util.isNull
 import io.ktor.client.*
-import io.ktor.client.features.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -65,10 +65,10 @@ object KtorDsl {
     setUp: HttpRequestBuilder.() -> Unit = {},
     block: suspend (HttpResponse) -> T
   ): T =
-    request<HttpStatement>(url) {
+    request(url) {
       method = HttpMethod.Get
       setUp.invoke(this)
-    }.let { clientCall -> block(clientCall.execute()) }
+    }.let { clientCall: HttpResponse -> block(clientCall) }
 
   fun <T> blockingGet(
     url: String,
