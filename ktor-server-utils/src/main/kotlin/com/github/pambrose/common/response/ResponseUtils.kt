@@ -24,7 +24,7 @@ import io.ktor.server.response.*
 import io.ktor.util.pipeline.*
 
 suspend inline fun ApplicationCall.respondWith(
-  contentType: ContentType = ContentType.Text.Html,
+  contentType: ContentType = Text.Html,
   block: () -> String
 ) {
   val html = block.invoke()
