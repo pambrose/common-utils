@@ -22,8 +22,8 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
 import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
-import redis.clients.jedis.ScanParams
 import redis.clients.jedis.exceptions.JedisConnectionException
+import redis.clients.jedis.params.ScanParams
 import java.net.URI
 import java.util.*
 

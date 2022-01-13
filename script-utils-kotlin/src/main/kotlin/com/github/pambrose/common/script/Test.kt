@@ -4,9 +4,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *       http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,24 +15,19 @@
  *
  */
 
-description = 'ktor-client-utils'
+package com.github.pambrose.common.script
 
-dependencies {
-    implementation project(':core-utils')
+import javax.script.ScriptException
 
-    implementation libraries.ktor_client_core
-  //  implementation libraries.ktor_client_cio
-    //implementation libraries.ktor_client_plugins
+fun main() {
+
+  repeat(1000) { i ->
+    println("Invocation: $i")
+    try {
+      KotlinExprEvaluator().eval("1 == wrong")
+    } catch (e: ScriptException) {
+      println("Caught it")
+    }
+    println(KotlinExprEvaluator().eval("1 == 1"))
+  }
 }
-
-//compileKotlin {
-//    kotlinOptions {
-//        freeCompilerArgs += ['-Xopt-in=io.ktor.util.KtorExperimentalAPI']
-//    }
-//}
-//
-//compileTestKotlin {
-//    kotlinOptions {
-//        freeCompilerArgs += ['-Xopt-in=io.ktor.util.KtorExperimentalAPI']
-//    }
-//}
