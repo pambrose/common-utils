@@ -26,12 +26,12 @@ dependencies {
 
 compileKotlin {
     kotlinOptions {
-        freeCompilerArgs += ['-Xopt-in=kotlin.ExperimentalStdlibApi']
+        freeCompilerArgs += ['-opt-in=kotlin.ExperimentalStdlibApi']
     }
 }
 
 compileTestKotlin {
     kotlinOptions {
-        freeCompilerArgs += ['-Xopt-in=kotlin.ExperimentalStdlibApi']
+        freeCompilerArgs += ['-opt-in=kotlin.ExperimentalStdlibApi']
     }
 }
