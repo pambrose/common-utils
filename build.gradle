@@ -1,8 +1,8 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.6.10' apply false
-    id 'org.jmailen.kotlinter' version "3.8.0" apply false
-    id "com.github.ben-manes.versions" version "0.41.0" apply false
+    id 'org.jmailen.kotlinter' version "3.9.0" apply false
+    id "com.github.ben-manes.versions" version "0.42.0" apply false
 }
 
 ext {
@@ -59,7 +59,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.21.0'
+    version '1.22.0'
 
     apply plugin: 'java-library'  // gradle 7
     apply plugin: 'maven-publish' // required for jitpack.io install  // gradle 7
@@ -148,9 +148,10 @@ subprojects {
         kotlinOptions {
             //useIR = true
             jvmTarget = '1.8'
-            freeCompilerArgs += ['-Xopt-in=kotlin.contracts.ExperimentalContracts',
-                                 '-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
-                                 '-Xopt-in=kotlin.time.ExperimentalTime']
+            freeCompilerArgs += ['-Xbackend-threads=8',
+                                 '-opt-in=kotlin.contracts.ExperimentalContracts',
+                                 '-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
+                                 '-opt-in=kotlin.time.ExperimentalTime']
         }
     }
 
@@ -158,7 +159,8 @@ subprojects {
         kotlinOptions {
             //useIR = true
             jvmTarget = '1.8'
-            freeCompilerArgs += ['-Xopt-in=kotlin.time.ExperimentalTime']
+            freeCompilerArgs += ['-Xbackend-threads=8',
+                                 '-opt-in=kotlin.time.ExperimentalTime']
         }
     }
 
