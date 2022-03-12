@@ -24,6 +24,7 @@ fun main() {
   repeat(1000) { i ->
     println("Invocation: $i")
     try {
+      val c = 1 * 4
       KotlinExprEvaluator().eval("1 == wrong")
     } catch (e: ScriptException) {
       println("Caught it")

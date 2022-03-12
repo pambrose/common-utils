@@ -28,9 +28,9 @@ import mu.KLogging
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 
-class AdminService(
+class ServletService(
   private val servletGroup: ServletGroup,
-  initBlock: AdminService.() -> Unit = {}
+  initBlock: ServletService.() -> Unit = {}
 ) : GenericIdleService() {
 
   private val server =
