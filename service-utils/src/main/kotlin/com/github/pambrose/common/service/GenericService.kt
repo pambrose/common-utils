@@ -68,34 +68,37 @@ protected constructor(
   private lateinit var servletGroup: ServletGroup
 
   lateinit var jmxReporter: JmxReporter
-  lateinit var adminService: AdminService
+  lateinit var servletService: ServletService
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
 
   val upTime get() = startTime.elapsedNow()
 
-  fun initService(adminServletInit: ServletGroup.() -> Unit = {}) {
-    if (isAdminEnabled) {
+  fun initServletService(initServletGroup: Boolean = false, servletInit: ServletGroup.() -> Unit = {}) {
+    // See if admin servlets are enabled or something within the passed in lambda is enabled
+    if (initServletGroup || isAdminEnabled) {
       adminConfig.apply {
         servletGroup =
           ServletGroup(port)
             .apply {
 
-              addServlet(pingPath, PingServlet())
-              addServlet(versionPath, VersionServlet(versionBlock()))
-              addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
-              addServlet(threadDumpPath, ThreadDumpServlet())
+              if (isAdminEnabled) {
+                addServlet(pingPath, PingServlet())
+                addServlet(versionPath, VersionServlet(versionBlock()))
+                addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
+                addServlet(threadDumpPath, ThreadDumpServlet())
+              } else {
+                logger.info { "Admin service disabled" }
+              }
 
-              adminServletInit(this)
+              servletInit(this)
             }
       }
 
-      adminService =
-        AdminService(servletGroup = servletGroup) {
+      servletService =
+        ServletService(servletGroup = servletGroup) {
           addService(this)
         }
-    } else {
-      logger.info { "Admin service disabled" }
     }
 
     if (isMetricsEnabled) {
@@ -156,14 +159,14 @@ protected constructor(
     }
 
     if (isAdminEnabled)
-      adminService.startSync()
+      servletService.startSync()
 
     Runtime.getRuntime().addShutdownHook(shutDownHookAction(this))
   }
 
   override fun shutDown() {
     if (isAdminEnabled)
-      adminService.stopSync()
+      servletService.stopSync()
 
     if (isMetricsEnabled) {
       metricsService.stopSync()
