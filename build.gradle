@@ -1,5 +1,7 @@
 plugins {
     id 'java'
+    id 'jacoco'
+    id 'com.github.kt3k.coveralls' version '2.12.0' apply false
     id 'org.jetbrains.kotlin.jvm' version '1.6.20' apply false
     id 'org.jmailen.kotlinter' version "3.10.0" apply false
     id "com.github.ben-manes.versions" version "0.42.0" apply false
@@ -63,6 +65,7 @@ allprojects {
 
     apply plugin: 'java-library'  // gradle 7
     apply plugin: 'maven-publish' // required for jitpack.io install  // gradle 7
+    apply plugin: 'com.github.kt3k.coveralls'
     apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
@@ -76,6 +79,8 @@ allprojects {
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
+
+    //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
 
     // gradle 7
     publishing {
@@ -180,5 +185,16 @@ subprojects {
         reporters = ['checkstyle', 'plain']
         experimentalRules = false
         disabledRules = ["no-wildcard-imports", "indent", "final-newline", "comment-spacing", "max-line-length", "wrapping"]
+    }
+
+    jacocoTestReport {
+        reports {
+            xml.enabled = true // coveralls plugin depends on xml format report
+            html.enabled = true
+        }
+    }
+
+    coveralls {
+        jacocoReportPath 'build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
     }
 }

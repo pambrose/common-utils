@@ -7,5 +7,5 @@ notifications:
   email:
     - pambrose@mac.com
 
-after_success:
-  - ./mvnw jacoco:report coveralls:report
+#after_success:
+#  - ./gradlew jacocoTestReport coveralls
