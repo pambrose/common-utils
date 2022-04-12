@@ -52,6 +52,8 @@ fun String.singleToDoubleQuoted() =
     else -> subSequence(1, length - 1).replace(Regex("\""), "\\\"").toDoubleQuoted()
   }
 
+fun String.nullIfBlank() = ifBlank { null }
+
 fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else this + suffix
 
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
