@@ -108,7 +108,7 @@ class HerokuHttpsRedirect(config: Configuration) {
   /**
    * Feature installation object
    */
-  companion object Feature : ApplicationPlugin<ApplicationCallPipeline, Configuration, HerokuHttpsRedirect> {
+  companion object Feature : Plugin<ApplicationCallPipeline, Configuration, HerokuHttpsRedirect> {
     override val key = AttributeKey<HerokuHttpsRedirect>("HerokuHttpsRedirect")
     override fun install(pipeline: ApplicationCallPipeline, configure: Configuration.() -> Unit): HerokuHttpsRedirect {
       val feature = HerokuHttpsRedirect(Configuration().apply(configure))

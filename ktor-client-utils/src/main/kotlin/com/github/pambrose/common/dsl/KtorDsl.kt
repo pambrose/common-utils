@@ -41,10 +41,7 @@ object KtorDsl {
     block: suspend HttpClient.() -> T
   ): T =
     if (httpClient.isNull())
-      newHttpClient(expectSuccess)
-        .use { client ->
-          client.block()
-        }
+      newHttpClient(expectSuccess).use { client -> client.block() }
     else
       httpClient.block()
 
@@ -54,10 +51,8 @@ object KtorDsl {
     block: suspend (HttpClient) -> T
   ): T =
     if (httpClient.isNull())
-      newHttpClient(expectSuccess)
-        .use { client ->
-          block(client)
-        } else
+      newHttpClient(expectSuccess).use { client -> block(client) }
+    else
       block(httpClient)
 
   suspend fun <T> HttpClient.get(
