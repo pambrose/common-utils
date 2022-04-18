@@ -120,6 +120,9 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
     }
 
+    // This is to fix a bizarre gradle error
+    project.getTasks().getByName("jar").setProperty("duplicatesStrategy", DuplicatesStrategy.INCLUDE);
+
     task sourcesJar(type: Jar, dependsOn: classes) {
         classifier = 'sources'
         from sourceSets.main.allSource
