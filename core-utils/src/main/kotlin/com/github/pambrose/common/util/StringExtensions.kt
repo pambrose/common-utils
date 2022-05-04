@@ -24,7 +24,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.log10
 
@@ -59,10 +58,6 @@ fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this 
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
 fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
-
-fun String.toLower(locale: Locale = Locale.getDefault()) = lowercase(locale)
-
-fun String.toUpper(locale: Locale = Locale.getDefault()) = uppercase(locale)
 
 fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false, separator)
 
