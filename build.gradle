@@ -11,7 +11,7 @@ ext {
     libraries = [
             reflect               : "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version",
 
-            coroutines_core       : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version",
+            //coroutines_core       : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version",
 
             guava                 : "com.google.guava:guava:$guava_version",
 
@@ -61,7 +61,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.25.0'
+    version '1.26.0'
 
     apply plugin: 'java-library'  // gradle 7
     apply plugin: 'maven-publish' // required for jitpack.io install  // gradle 7
@@ -159,7 +159,7 @@ subprojects {
             freeCompilerArgs += ['-Xbackend-threads=8',
                                  '-opt-in=kotlin.contracts.ExperimentalContracts',
                                  '-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
-                                 '-opt-in=kotlin.time.ExperimentalTime']
+                                 '-opt-in=kotlin.time.ExperimentalTime',]
         }
     }
 
@@ -168,7 +168,7 @@ subprojects {
             //useIR = true
             jvmTarget = '1.8'
             freeCompilerArgs += ['-Xbackend-threads=8',
-                                 '-opt-in=kotlin.time.ExperimentalTime']
+                                 '-opt-in=kotlin.time.ExperimentalTime',]
         }
     }
 

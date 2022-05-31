@@ -23,28 +23,24 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.util.pipeline.*
 
+typealias PipelineCall = PipelineContext<*, ApplicationCall>
+
 suspend inline fun ApplicationCall.respondWith(
   contentType: ContentType = Text.Html,
   block: () -> String
-) {
-  val html = block.invoke()
-  respondText(html, contentType)
-}
+) = respondText(block.invoke(), contentType)
 
 suspend inline fun ApplicationCall.redirectTo(
   permanent: Boolean = false,
   block: () -> String
-) {
-  val url = block.invoke()
-  respondRedirect(url, permanent)
-}
+) = respondRedirect(block.invoke(), permanent)
 
-suspend inline fun PipelineContext<*, ApplicationCall>.respondWith(
+suspend inline fun PipelineCall.respondWith(
   contentType: ContentType = Text.Html,
   block: () -> String
 ) = call.respondWith(contentType, block)
 
-suspend inline fun PipelineContext<*, ApplicationCall>.redirectTo(
+suspend inline fun PipelineCall.redirectTo(
   permanent: Boolean = false,
   block: () -> String
 ) = call.redirectTo(permanent, block)
