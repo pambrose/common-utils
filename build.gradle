@@ -1,17 +1,15 @@
 plugins {
     id 'java'
-    id 'jacoco'
+    id 'org.jetbrains.kotlinx.kover' version '0.5.0'
     id 'com.github.kt3k.coveralls' version '2.12.0' apply false
     id 'org.jetbrains.kotlin.jvm' version '1.6.21' apply false
-    id 'org.jmailen.kotlinter' version "3.10.0" apply false
-    id "com.github.ben-manes.versions" version "0.42.0" apply false
+    id 'org.jmailen.kotlinter' version '3.10.0' apply false
+    id "com.github.ben-manes.versions" version '0.42.0' apply false
 }
 
 ext {
     libraries = [
             reflect               : "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version",
-
-            //coroutines_core       : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version",
 
             guava                 : "com.google.guava:guava:$guava_version",
 
@@ -71,7 +69,6 @@ allprojects {
     apply plugin: 'com.github.ben-manes.versions'
 
     repositories {
-        mavenLocal()
         maven { url "https://maven.pkg.jetbrains.space/public/p/ktor/eap" }
         google()
         mavenCentral()
@@ -190,14 +187,14 @@ subprojects {
         disabledRules = ["no-wildcard-imports", "indent", "final-newline", "comment-spacing", "max-line-length", "wrapping"]
     }
 
-    jacocoTestReport {
-        reports {
-            xml.enabled = true // coveralls plugin depends on xml format report
-            html.enabled = true
-        }
-    }
-
-    coveralls {
-        jacocoReportPath 'build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
-    }
+//    jacocoTestReport {
+//        reports {
+//            xml.enabled = true // coveralls plugin depends on xml format report
+//            html.enabled = true
+//        }
+//    }
+//
+//    coveralls {
+//        jacocoReportPath 'build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml'
+//    }
 }

@@ -14,6 +14,9 @@ publish:
 tests:
 	./gradlew --rerun-tasks check
 
+reports:
+	./gradlew koverMergedHtmlReport
+
 tree:
 	./gradlew -q dependencies
 

@@ -297,6 +297,18 @@ class KotlinScriptTests {
   }
 
   @Test
+  fun computeEvaluator() {
+    KotlinExprEvaluator()
+      .apply {
+        repeat(100) { i ->
+          invoking { compute("$i * $i") } shouldNotThrow ScriptException::class
+          (compute("$i * $i") as Int) shouldBeEqualTo (i * i)
+        }
+      }
+  }
+
+
+  @Test
   fun poolExprEvaluator() {
     val pool = KotlinExprEvaluatorPool(5)
     repeat(100) { i ->
