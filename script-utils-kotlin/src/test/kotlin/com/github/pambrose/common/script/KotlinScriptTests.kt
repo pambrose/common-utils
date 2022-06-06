@@ -307,7 +307,6 @@ class KotlinScriptTests {
       }
   }
 
-
   @Test
   fun poolExprEvaluator() {
     val pool = KotlinExprEvaluatorPool(5)
