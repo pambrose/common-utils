@@ -77,7 +77,6 @@ class PythonScriptTests {
 
     PythonScript().use {
       it.apply {
-
         add("aux", aux)
 
         aux.i shouldBeEqualTo eval("aux.i")

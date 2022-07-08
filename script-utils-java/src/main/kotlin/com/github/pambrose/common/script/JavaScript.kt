@@ -82,7 +82,6 @@ class JavaScript : AbstractScript("java", false), Closeable {
 
   @Synchronized
   fun eval(expr: String, action: String = ""): Any {
-
     if ("System.exit" in expr)
       throw ScriptException("Illegal call to System.exit()")
 

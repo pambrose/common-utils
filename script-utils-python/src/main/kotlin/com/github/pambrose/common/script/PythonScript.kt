@@ -30,7 +30,6 @@ class PythonScript(nullGlobalContext: Boolean = false) : AbstractScript("py", nu
 
   @Synchronized
   fun eval(code: String): Any? {
-
     if ("sys.exit(" in code)
       throw ScriptException("Illegal call to sys.exit()")
 

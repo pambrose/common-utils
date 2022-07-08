@@ -34,7 +34,6 @@ class JavaScriptTests {
 
   @Test
   fun builtInTypesTest() {
-
     val boolVal = true
     val intVal = 0
     val longVal = 0L
@@ -78,7 +77,6 @@ class JavaScriptTests {
 
     JavaScript().use {
       it.apply {
-
         add("aux", aux)
         import(IncClass::class.java)
 
@@ -148,7 +146,8 @@ class JavaScriptTests {
         list.size shouldBeEqualTo eval("list.size()")
 
         eval(
-          "0", """
+          "0",
+          """
             for (int i = 0; i < 100; i++)
               list.add(i);
               """.trimIndent()

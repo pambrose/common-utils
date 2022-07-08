@@ -183,7 +183,6 @@ class StringExtensionTests {
 
   @Test
   fun bracketTest() {
-
     "  [fddsf]  ".isBracketed() shouldBeEqualTo true
     "[fddsf]".isBracketed() shouldBeEqualTo true
     "[]".isBracketed() shouldBeEqualTo true
