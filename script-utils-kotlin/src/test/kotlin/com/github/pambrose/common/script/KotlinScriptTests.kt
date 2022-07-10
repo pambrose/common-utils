@@ -99,7 +99,6 @@ class KotlinScriptTests {
 
     KotlinScript().use {
       it.apply {
-
         add("aux", aux)
 
         aux.i shouldBeEqualTo eval("aux.i")

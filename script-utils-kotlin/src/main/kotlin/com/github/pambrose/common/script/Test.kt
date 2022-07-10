@@ -20,7 +20,6 @@ package com.github.pambrose.common.script
 import javax.script.ScriptException
 
 fun main() {
-
   repeat(1000) { i ->
     println("Invocation: $i")
     try {

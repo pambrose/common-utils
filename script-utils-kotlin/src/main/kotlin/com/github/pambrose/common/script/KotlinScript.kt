@@ -51,7 +51,6 @@ class KotlinScript(nullGlobalContext: Boolean = false) : AbstractScript("kts", n
 
   @Synchronized
   fun eval(code: String): Any? {
-
     if ("java.lang.System.exit" in code)
       throw ScriptException("Illegal call to System.exit()")
 
