@@ -24,5 +24,5 @@ abstract class AbstractExprEvaluator(extension: String) : AbstractEngine(extensi
 
   fun compute(expr: String) = engine.eval(expr) as Any
 
-  fun resetContext(nullGloalContext: Boolean = false) = engine.resetContext(nullGloalContext)
+  fun resetContext(nullGlobalContext: Boolean = false) = engine.resetContext(nullGlobalContext)
 }
