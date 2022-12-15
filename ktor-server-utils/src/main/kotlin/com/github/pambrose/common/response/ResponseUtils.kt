@@ -45,4 +45,4 @@ suspend inline fun PipelineCall.redirectTo(
   block: () -> String
 ) = call.redirectTo(permanent, block)
 
-val RequestConnectionPoint.uriPrefix get() = "$scheme://$host:$port"
+val RequestConnectionPoint.uriPrefix get() = "$scheme://$serverHost:$serverPort"
