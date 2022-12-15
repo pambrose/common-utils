@@ -38,7 +38,6 @@ ext {
             jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
 
             ktor_server_core      : "io.ktor:ktor-server:$ktor_version",
-
             ktor_client_core      : "io.ktor:ktor-client:$ktor_version",
 
             prometheus_core       : "io.prometheus:simpleclient:$prometheus_version",
@@ -56,7 +55,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.31.0'
+    version '1.32.0'
 
     apply plugin: 'java-library'  // gradle 7
     apply plugin: 'maven-publish' // required for jitpack.io install  // gradle 7
