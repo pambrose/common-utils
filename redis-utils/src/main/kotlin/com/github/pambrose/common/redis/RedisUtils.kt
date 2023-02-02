@@ -17,7 +17,7 @@
 
 package com.github.pambrose.common.redis
 
-import mu.KLogging
+import mu.two.KLogging
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig

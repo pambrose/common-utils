@@ -25,7 +25,7 @@ import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
 import com.github.pambrose.common.dsl.ZipkinDsl.tracing
 import com.google.common.util.concurrent.MoreExecutors
-import mu.KLogging
+import mu.two.KLogging
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.brave.ZipkinSpanHandler.create
 import zipkin2.reporter.okhttp3.OkHttpSender

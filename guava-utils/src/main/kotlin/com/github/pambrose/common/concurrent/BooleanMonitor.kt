@@ -20,7 +20,7 @@
 package com.github.pambrose.common.concurrent
 
 import com.google.common.base.MoreObjects
-import mu.KLogging
+import mu.two.KLogging
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BooleanMonitor(initValue: Boolean) : GenericMonitor() {

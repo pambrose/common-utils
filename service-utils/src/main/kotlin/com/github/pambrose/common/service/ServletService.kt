@@ -24,7 +24,7 @@ import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
 import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.google.common.util.concurrent.MoreExecutors
-import mu.KLogging
+import mu.two.KLogging
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 

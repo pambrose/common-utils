@@ -25,7 +25,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.util.*
 import io.ktor.util.*
-import mu.KotlinLogging
+import mu.two.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 

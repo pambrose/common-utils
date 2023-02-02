@@ -23,7 +23,7 @@ import io.grpc.netty.GrpcSslContexts
 import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContext
 import io.netty.handler.ssl.SslContextBuilder
-import mu.KLogging
+import mu.two.KLogging
 import java.io.File
 import javax.net.ssl.SSLException
 

@@ -17,8 +17,8 @@
 
 package com.pambrose.common.exposed
 
-import mu.KLogger
-import mu.KLogging
+import mu.two.KLogger
+import mu.two.KLogging
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlLogger
 import org.jetbrains.exposed.sql.Transaction

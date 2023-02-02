@@ -21,7 +21,7 @@ package com.github.pambrose.common.metrics
 
 import io.prometheus.client.Collector
 import io.prometheus.client.hotspot.*
-import mu.KLogging
+import mu.two.KLogging
 
 object SystemMetrics : KLogging() {
   private var initialized = false

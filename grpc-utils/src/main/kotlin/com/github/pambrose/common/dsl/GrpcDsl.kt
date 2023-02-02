@@ -30,7 +30,7 @@ import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
-import mu.KLogging
+import mu.two.KLogging
 
 object GrpcDsl : KLogging() {
 
@@ -67,6 +67,7 @@ object GrpcDsl : KLogging() {
               builder.maxRetryAttempts(maxRetryAttempts)
           }
       }
+
       else -> {
         logger.info { "Creating connection for gRPC server with in-process server name $inProcessServerName" }
         InProcessChannelBuilder.forName(inProcessServerName)
@@ -94,6 +95,7 @@ object GrpcDsl : KLogging() {
               builder.sslContext(tlsContext.sslContext)
           }
       }
+
       else -> {
         logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
         InProcessServerBuilder.forName(inProcessServerName)
