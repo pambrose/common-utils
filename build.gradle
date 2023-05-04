@@ -2,7 +2,7 @@ plugins {
     id 'java'
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
     id 'com.github.kt3k.coveralls' version '2.12.2' apply false
-    id 'org.jetbrains.kotlin.jvm' version '1.8.20' apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.8.21' apply false
     id 'org.jmailen.kotlinter' version '3.13.0' apply false
     id "com.github.ben-manes.versions" version '0.46.0' apply false
 }
@@ -55,10 +55,10 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.35.0'
+    version '1.36.0'
 
     apply plugin: 'java-library'  // gradle 7
-    apply plugin: 'maven-publish' // required for jitpack.io install  // gradle 7
+    apply plugin: 'maven-publish' // required for jitpack.io install and gradle 7
     apply plugin: 'com.github.kt3k.coveralls'
     apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
