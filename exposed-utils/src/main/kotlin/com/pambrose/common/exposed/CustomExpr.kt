@@ -27,7 +27,7 @@ fun customDateTimeConstant(text: String) = CustomExpr<DateTime?>(text, DateColum
 
 fun dateTimeExpr(str: String): CustomExpr<DateTime> = CustomExpr(str, DateColumnType(true))
 
-open class CustomExpr<T>(val text: String, _columnType: IColumnType) : Function<T>(_columnType) {
+open class CustomExpr<T>(val text: String, columnType: IColumnType) : Function<T>(columnType) {
   override fun toQueryBuilder(queryBuilder: QueryBuilder): Unit =
     queryBuilder {
       append(text)

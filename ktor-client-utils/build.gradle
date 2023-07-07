@@ -26,13 +26,9 @@ dependencies {
 }
 
 //compileKotlin {
-//    kotlinOptions {
-//        freeCompilerArgs += ['-opt-in=io.ktor.util.KtorExperimentalAPI']
-//    }
+//    kotlinOptions.freeCompilerArgs += ['-opt-in=io.ktor.util.KtorExperimentalAPI']
 //}
 //
 //compileTestKotlin {
-//    kotlinOptions {
-//        freeCompilerArgs += ['-opt-in=io.ktor.util.KtorExperimentalAPI']
-//    }
+//    kotlinOptions.freeCompilerArgs += ['-opt-in=io.ktor.util.KtorExperimentalAPI']
 //}
