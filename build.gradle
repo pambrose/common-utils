@@ -55,7 +55,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.39.4'
+    version '1.39.5'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish' // required for jitpack.io install and gradle 7
@@ -69,7 +69,7 @@ allprojects {
         mavenCentral()
     }
 
-    sourceCompatibility = JavaVersion.VERSION_17.toString()
+    //sourceCompatibility = JavaVersion.VERSION_17.toString()
     targetCompatibility = JavaVersion.VERSION_17.toString()
 
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
