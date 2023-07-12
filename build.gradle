@@ -55,7 +55,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.39.7'
+    version '1.39.8'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish' // required for jitpack.io install and gradle 7
@@ -139,12 +139,12 @@ subprojects {
 //        from javadoc.destinationDir
 //    }
 
-//    kotlin {
-//        jvmToolchain(17)
-//    }
+    kotlin {
+        jvmToolchain(17)
+    }
 
     compileKotlin {
-        kotlinOptions.jvmTarget = JavaVersion.VERSION_17.toString()
+        //kotlinOptions.jvmTarget = JavaVersion.VERSION_17.toString()
         kotlinOptions.freeCompilerArgs += ['-Xbackend-threads=8',
                                            '-opt-in=kotlin.contracts.ExperimentalContracts',
                                            '-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
@@ -152,7 +152,7 @@ subprojects {
     }
 
     compileTestKotlin {
-        kotlinOptions.jvmTarget = JavaVersion.VERSION_17.toString()
+        //kotlinOptions.jvmTarget = JavaVersion.VERSION_17.toString()
         kotlinOptions.freeCompilerArgs += ['-Xbackend-threads=8',
                                            '-opt-in=kotlin.time.ExperimentalTime',]
     }
