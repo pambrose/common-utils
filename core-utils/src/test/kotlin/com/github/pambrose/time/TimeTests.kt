@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
-class TimeTests {
+class wTimeTests {
 
   @Test
   fun conversionTest() {

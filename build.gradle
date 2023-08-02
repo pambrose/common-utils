@@ -55,7 +55,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.39.9'
+    version '1.40.0'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish' // required for jitpack.io install and gradle 7
@@ -102,6 +102,7 @@ subprojects {
 
         testImplementation "org.amshove.kluent:kluent:$kluent_version"
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
+
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
     }
 

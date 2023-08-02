@@ -58,9 +58,9 @@ class UpsertStatement<Key : Any>(
     }
   }
 
-  override fun prepareSQL(transaction: Transaction): String =
+  override fun prepareSQL(transaction: Transaction, prepared: Boolean): String =
     buildString {
-      append(super.prepareSQL(transaction))
+      append(super.prepareSQL(transaction, prepared))
       append(" ON CONFLICT ON CONSTRAINT $indexName DO UPDATE SET ")
       values.keys.filter { it !in indexColumns }
         .joinTo(this) { "${transaction.identity(it)}=EXCLUDED.${transaction.identity(it)}" }
