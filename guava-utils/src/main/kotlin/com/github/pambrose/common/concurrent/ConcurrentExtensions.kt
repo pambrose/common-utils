@@ -49,7 +49,7 @@ fun thread(
   contextClassLoader: ClassLoader? = null,
   name: String? = null,
   priority: Int = -1,
-  block: () -> Unit
+  block: () -> Unit,
 ): Thread {
   return kotlin.concurrent.thread(start, isDaemon, contextClassLoader, name, priority) {
     try {

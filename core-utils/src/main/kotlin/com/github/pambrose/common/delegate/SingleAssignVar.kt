@@ -24,7 +24,6 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 object SingleAssignVar {
-
   /**
    * Returns a property delegate for a read/write property that can be assigned only once. Trying to assign the property
    * a second time results in an exception.

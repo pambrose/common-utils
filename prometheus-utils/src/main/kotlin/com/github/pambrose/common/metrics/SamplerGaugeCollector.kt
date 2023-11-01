@@ -26,9 +26,8 @@ class SamplerGaugeCollector(
   private val help: String,
   private val labelNames: List<String> = emptyList(),
   private val labelValues: List<String> = emptyList(),
-  private val data: () -> Double
+  private val data: () -> Double,
 ) : Collector() {
-
   init {
     register<Collector>()
   }

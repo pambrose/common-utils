@@ -27,22 +27,22 @@ typealias PipelineCall = PipelineContext<*, ApplicationCall>
 
 suspend inline fun ApplicationCall.respondWith(
   contentType: ContentType = Text.Html,
-  block: () -> String
+  block: () -> String,
 ) = respondText(block.invoke(), contentType)
 
 suspend inline fun ApplicationCall.redirectTo(
   permanent: Boolean = false,
-  block: () -> String
+  block: () -> String,
 ) = respondRedirect(block.invoke(), permanent)
 
 suspend inline fun PipelineCall.respondWith(
   contentType: ContentType = Text.Html,
-  block: () -> String
+  block: () -> String,
 ) = call.respondWith(contentType, block)
 
 suspend inline fun PipelineCall.redirectTo(
   permanent: Boolean = false,
-  block: () -> String
+  block: () -> String,
 ) = call.redirectTo(permanent, block)
 
 val RequestConnectionPoint.uriPrefix get() = "$scheme://$serverHost:$serverPort"

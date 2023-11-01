@@ -38,8 +38,9 @@ class KotlinSqlLogger(val logger: KLogger = ExposedUtils.logger) : SqlLogger {
   }
 }
 
-operator fun ResultRow.get(index: Int) = fieldIndex.filter { it.value == index }.map { this[it.key] }.firstOrNull()
-  ?: throw IllegalArgumentException("No value at index $index")
+operator fun ResultRow.get(index: Int) =
+  fieldIndex.filter { it.value == index }.map { this[it.key] }.firstOrNull()
+    ?: throw IllegalArgumentException("No value at index $index")
 
 fun ResultRow.toRowString() =
   fieldIndex.values.map { this[it].toString() }.filter { it.isNotEmpty() }.joinToString(" - ")
@@ -47,13 +48,13 @@ fun ResultRow.toRowString() =
 fun <T> readonlyTx(
   db: Database? = null,
   transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
-  statement: Transaction.() -> T
+  statement: Transaction.() -> T,
 ): T =
   transaction(
-    transactionIsolation,
-    true,
-    db,
-    statement
+    transactionIsolation = transactionIsolation,
+    readOnly = true,
+    db = db,
+    statement = statement,
   )
 
 inline fun <T> AtomicBoolean.criticalSection(block: () -> T) {

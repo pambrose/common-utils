@@ -31,7 +31,6 @@ class IncClass(var i: Int = 0) {
 }
 
 class PythonScriptTests {
-
   @Test
   fun builtInTypesTest() {
     val boolVal = true
@@ -85,7 +84,7 @@ class PythonScriptTests {
           """
                 for i in range(100):
                   aux.inc()
-              """.trimIndent()
+          """.trimIndent(),
         )
 
         aux.i shouldBeEqualTo 100
@@ -111,7 +110,7 @@ class PythonScriptTests {
                 map["k2"] = 10
                 for i in range(100):
                   list.add(i)
-              """.trimIndent()
+          """.trimIndent(),
         )
 
         list.size shouldBeEqualTo 101
@@ -147,7 +146,7 @@ class PythonScriptTests {
           """
                 for i in range(100):
                   list.add(i)
-              """.trimIndent()
+          """.trimIndent(),
         )
 
         list.size shouldBeEqualTo 101
@@ -170,7 +169,7 @@ class PythonScriptTests {
           """
                 for i in range(100):
                   list.add(None)
-              """.trimIndent()
+          """.trimIndent(),
         )
 
         list.size shouldBeEqualTo 100
@@ -204,7 +203,7 @@ class PythonScriptTests {
     PythonExprEvaluator()
       .apply {
         repeat(200) { i ->
-          //println("Invocation: $i")
+          // println("Invocation: $i")
           invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
           invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
         }
@@ -217,7 +216,7 @@ class PythonScriptTests {
     repeat(200) { i ->
       pool
         .apply {
-          //println("Invocation: $i")
+          // println("Invocation: $i")
           invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
           invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
         }

@@ -29,7 +29,7 @@ fun Server.shutdownWithJvm(maxWaitTime: Duration) {
       } catch (e: InterruptedException) {
         // do nothing
       }
-    }
+    },
   )
 }
 

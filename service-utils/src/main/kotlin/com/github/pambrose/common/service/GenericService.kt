@@ -20,7 +20,7 @@
 package com.github.pambrose.common.service
 
 import com.codahale.metrics.MetricRegistry
-import com.codahale.metrics.health.HealthCheck
+import com.codahale.metrics.health.HealthCheck.Result
 import com.codahale.metrics.health.HealthCheckRegistry
 import com.codahale.metrics.health.jvm.ThreadDeadlockHealthCheck
 import com.codahale.metrics.jmx.JmxReporter
@@ -45,16 +45,14 @@ import mu.two.KLogging
 import java.io.Closeable
 import kotlin.time.TimeSource.Monotonic
 
-abstract class GenericService<T>
-protected constructor(
+abstract class GenericService<T> protected constructor(
   val configVals: T,
   private val adminConfig: AdminConfig,
   private val metricsConfig: MetricsConfig,
   private val zipkinConfig: ZipkinConfig,
   private val versionBlock: () -> String = { "No version" },
-  val isTestMode: Boolean = false
+  val isTestMode: Boolean = false,
 ) : GenericExecutionThreadService(), Closeable {
-
   protected val startTime = Monotonic.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
@@ -74,7 +72,10 @@ protected constructor(
 
   val upTime get() = startTime.elapsedNow()
 
-  fun initServletService(initServletGroup: Boolean = false, servletInit: ServletGroup.() -> Unit = {}) {
+  fun initServletService(
+    initServletGroup: Boolean = false,
+    servletInit: ServletGroup.() -> Unit = {},
+  ) {
     // See if admin servlets are enabled or something within the passed in lambda is enabled
     if (initServletGroup || isAdminEnabled) {
       adminConfig.apply {
@@ -112,7 +113,7 @@ protected constructor(
         enableGarbageCollectorExports = metricsConfig.garbageCollectorExportsEnabled,
         enableThreadExports = metricsConfig.threadExportsEnabled,
         enableClassLoadingExports = metricsConfig.classLoadingExportsEnabled,
-        enableVersionInfoExports = metricsConfig.versionInfoExportsEnabled
+        enableVersionInfoExports = metricsConfig.versionInfoExportsEnabled,
       )
       jmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     } else {
@@ -140,7 +141,7 @@ protected constructor(
             stopped { logger.info { "All $clazzname services stopped" } }
             failure { logger.info { "$clazzname service failed: $it" } }
           },
-          directExecutor()
+          directExecutor(),
         )
       }
 
@@ -201,9 +202,9 @@ protected constructor(
         register(
           "all_services_healthy",
           healthCheck {
-            if (serviceManager.isHealthy)
-              HealthCheck.Result.healthy()
-            else {
+            if (serviceManager.isHealthy) {
+              Result.healthy()
+            } else {
               val vals =
                 serviceManager
                   .servicesByState()
@@ -212,9 +213,9 @@ protected constructor(
                   .onEach { logger.warn { "Incorrect state - ${it.key}: ${it.value}" } }
                   .map { "${it.key}: ${it.value}" }
                   .toList()
-              HealthCheck.Result.unhealthy("Incorrect state: ${Joiner.on(", ").join(vals)}")
+              Result.unhealthy("Incorrect state: ${Joiner.on(", ").join(vals)}")
             }
-          }
+          },
         )
       }
   }

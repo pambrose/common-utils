@@ -30,16 +30,17 @@ import org.eclipse.jetty.servlet.ServletHolder
 
 class ServletService(
   private val servletGroup: ServletGroup,
-  initBlock: ServletService.() -> Unit = {}
+  initBlock: ServletService.() -> Unit = {},
 ) : GenericIdleService() {
-
   private val server =
     Server(servletGroup.port)
       .apply {
         handler =
           servletContextHandler {
             contextPath = "/"
-            servletGroup.servletMap.forEach { (path, servlet) -> addServlet(ServletHolder(servlet), "/$path") }
+            servletGroup.servletMap.forEach { (path, servlet) ->
+              addServlet(ServletHolder(servlet), "/$path")
+            }
           }
       }
 

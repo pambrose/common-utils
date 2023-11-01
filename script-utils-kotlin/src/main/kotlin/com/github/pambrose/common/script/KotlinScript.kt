@@ -26,7 +26,9 @@ import javax.script.ScriptException
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting
 
-class KotlinScript(nullGlobalContext: Boolean = false) : AbstractScript("kts", nullGlobalContext), Closeable {
+class KotlinScript(
+  nullGlobalContext: Boolean = false,
+) : AbstractScript("kts", nullGlobalContext), Closeable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
   val varDecls: String
@@ -38,7 +40,8 @@ class KotlinScript(nullGlobalContext: Boolean = false) : AbstractScript("kts", n
           val kotlinClazz = value.javaClass.kotlin
           val kotlinQualified = kotlinClazz.qualifiedName!!
           val type = kotlinQualified.removePrefix("kotlin.")
-          assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type${params(name)}"
+          val p = params(name)
+          assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type$p"
         }
 
       return assigns.joinToString("\n")

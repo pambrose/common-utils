@@ -28,7 +28,6 @@ import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 
 object KtorDsl {
-
   fun newHttpClient(expectSuccess: Boolean = false): HttpClient =
     HttpClient {
       this.expectSuccess = expectSuccess
@@ -38,7 +37,7 @@ object KtorDsl {
   suspend fun <T> withHttpClient(
     httpClient: HttpClient? = null,
     expectSuccess: Boolean = false,
-    block: suspend HttpClient.() -> T
+    block: suspend HttpClient.() -> T,
   ): T =
     if (httpClient.isNull())
       newHttpClient(expectSuccess).use { client -> client.block() }
@@ -48,7 +47,7 @@ object KtorDsl {
   suspend fun <T> httpClient(
     httpClient: HttpClient? = null,
     expectSuccess: Boolean = false,
-    block: suspend (HttpClient) -> T
+    block: suspend (HttpClient) -> T,
   ): T =
     if (httpClient.isNull())
       newHttpClient(expectSuccess).use { client -> block(client) }
@@ -58,7 +57,7 @@ object KtorDsl {
   suspend fun <T> HttpClient.get(
     url: String,
     setUp: HttpRequestBuilder.() -> Unit = {},
-    block: suspend (HttpResponse) -> T
+    block: suspend (HttpResponse) -> T,
   ): T =
     request(url) {
       method = HttpMethod.Get
@@ -68,7 +67,7 @@ object KtorDsl {
   fun <T> blockingGet(
     url: String,
     setUp: HttpRequestBuilder.() -> Unit = {},
-    block: suspend (HttpResponse) -> T
+    block: suspend (HttpResponse) -> T,
   ): T =
     runBlocking {
       withHttpClient {

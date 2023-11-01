@@ -33,7 +33,6 @@ import io.grpc.stub.StreamObserver
 import mu.two.KLogging
 
 object GrpcDsl : KLogging() {
-
   fun channel(
     hostName: String = "",
     port: Int = -1,
@@ -42,11 +41,13 @@ object GrpcDsl : KLogging() {
     tlsContext: TlsContext,
     overrideAuthority: String = "",
     inProcessServerName: String = "",
-    block: ManagedChannelBuilder<*>.() -> Unit
+    block: ManagedChannelBuilder<*>.() -> Unit,
   ): ManagedChannel =
     when {
       inProcessServerName.isEmpty() -> {
-        logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
+        logger.info {
+          "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}"
+        }
         NettyChannelBuilder.forAddress(hostName, port)
           .also { builder ->
             val override = overrideAuthority.trim()
@@ -69,11 +70,12 @@ object GrpcDsl : KLogging() {
       }
 
       else -> {
-        logger.info { "Creating connection for gRPC server with in-process server name $inProcessServerName" }
-        InProcessChannelBuilder.forName(inProcessServerName)
-          .also { builder ->
-            builder.usePlaintext()
-          }
+        logger.info {
+          "Creating connection for gRPC server with in-process server name $inProcessServerName"
+        }
+        InProcessChannelBuilder.forName(inProcessServerName).also { builder ->
+          builder.usePlaintext()
+        }
       }
     }.run {
       block(this)
@@ -84,7 +86,7 @@ object GrpcDsl : KLogging() {
     port: Int = -1,
     tlsContext: TlsContext = PLAINTEXT_CONTEXT,
     inProcessServerName: String = "",
-    block: ServerBuilder<*>.() -> Unit
+    block: ServerBuilder<*>.() -> Unit,
   ): Server =
     when {
       inProcessServerName.isEmpty() -> {
@@ -97,7 +99,9 @@ object GrpcDsl : KLogging() {
       }
 
       else -> {
-        logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
+        logger.info {
+          "Listening for gRPC traffic with in-process server name $inProcessServerName"
+        }
         InProcessServerBuilder.forName(inProcessServerName)
       }
     }.run {

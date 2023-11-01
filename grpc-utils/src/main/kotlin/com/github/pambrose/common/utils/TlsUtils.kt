@@ -48,7 +48,7 @@ object TlsUtils : KLogging() {
   fun buildClientTlsContext(
     certChainFilePath: String = "",
     privateKeyFilePath: String = "",
-    trustCertCollectionFilePath: String = ""
+    trustCertCollectionFilePath: String = "",
   ): TlsContext =
     clientTlsContextBuilder(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
       .run {
@@ -59,7 +59,7 @@ object TlsUtils : KLogging() {
   fun clientTlsContextBuilder(
     certChainFilePath: String = "",
     privateKeyFilePath: String = "",
-    trustCertCollectionFilePath: String = ""
+    trustCertCollectionFilePath: String = "",
   ): TlsContextBuilder =
     GrpcSslContexts.forClient()
       .let { builder ->
@@ -77,14 +77,20 @@ object TlsUtils : KLogging() {
           }
 
         if (certPath.isNotEmpty())
-          require(keyPath.isNotEmpty()) { "privateKeyFilePath required if certChainFilePath specified" }
+          require(keyPath.isNotEmpty()) {
+            "privateKeyFilePath required if certChainFilePath specified"
+          }
 
         if (keyPath.isNotEmpty())
-          require(certPath.isNotEmpty()) { "certChainFilePath required if privateKeyFilePath specified" }
+          require(certPath.isNotEmpty()) {
+            "certChainFilePath required if privateKeyFilePath specified"
+          }
 
         if (certPath.isNotEmpty() && keyPath.isNotEmpty()) {
-          val certFile = File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
-          val keyFile = File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
+          val certFile =
+            File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
+          val keyFile =
+            File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
 
           logger.info { "Reading certChainFilePath: ${certPath.toDoubleQuoted()}" }
           logger.info { "Reading privateKeyFilePath: ${keyPath.toDoubleQuoted()}" }
@@ -99,7 +105,7 @@ object TlsUtils : KLogging() {
   fun buildServerTlsContext(
     certChainFilePath: String,
     privateKeyFilePath: String,
-    trustCertCollectionFilePath: String = ""
+    trustCertCollectionFilePath: String = "",
   ): TlsContext =
     serverTlsContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
       .run {
@@ -110,7 +116,7 @@ object TlsUtils : KLogging() {
   fun serverTlsContext(
     certChainFilePath: String,
     privateKeyFilePath: String,
-    trustCertCollectionFilePath: String = ""
+    trustCertCollectionFilePath: String = "",
   ): TlsContextBuilder {
     val certPath = certChainFilePath.trim()
     val keyPath = privateKeyFilePath.trim()
@@ -119,7 +125,8 @@ object TlsUtils : KLogging() {
     require(certPath.isNotEmpty()) { "Server certChainFilePath is required for TLS" }
     require(keyPath.isNotEmpty()) { "Server privateKeyFilePath is required for TLS" }
 
-    val certFile = File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
+    val certFile =
+      File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
     val keyFile = File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
 
     logger.info { "Reading certChainFilePath: ${certPath.toDoubleQuoted()}" }

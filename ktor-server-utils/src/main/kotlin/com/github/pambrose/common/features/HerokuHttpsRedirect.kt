@@ -27,6 +27,8 @@ import io.ktor.server.util.*
 import io.ktor.util.*
 import mu.two.KotlinLogging
 
+typealias CallPredicate = (ApplicationCall) -> Boolean
+
 private val logger = KotlinLogging.logger {}
 
 /**
@@ -52,7 +54,7 @@ class HerokuHttpsRedirect(config: Configuration) {
    * The list of call predicates for redirect exclusion.
    * Any call matching any of the predicates will not be redirected by this feature.
    */
-  val excludePredicates: List<(ApplicationCall) -> Boolean> = config.excludePredicates.toList()
+  val excludePredicates: List<CallPredicate> = config.excludePredicates.toList()
 
   /**
    * Redirect feature configuration
@@ -77,7 +79,7 @@ class HerokuHttpsRedirect(config: Configuration) {
      * The list of call predicates for redirect exclusion.
      * Any call matching any of the predicates will not be redirected by this feature.
      */
-    val excludePredicates: MutableList<(ApplicationCall) -> Boolean> = ArrayList()
+    val excludePredicates: MutableList<CallPredicate> = ArrayList()
 
     /**
      * Exclude calls with paths matching the [pathPrefix] from being redirected to https by this feature.
@@ -110,16 +112,18 @@ class HerokuHttpsRedirect(config: Configuration) {
    */
   companion object Feature : Plugin<ApplicationCallPipeline, Configuration, HerokuHttpsRedirect> {
     override val key = AttributeKey<HerokuHttpsRedirect>("HerokuHttpsRedirect")
-    override fun install(pipeline: ApplicationCallPipeline, configure: Configuration.() -> Unit): HerokuHttpsRedirect {
+
+    override fun install(
+      pipeline: ApplicationCallPipeline,
+      configure: Configuration.() -> Unit,
+    ): HerokuHttpsRedirect {
       val feature = HerokuHttpsRedirect(Configuration().apply(configure))
       pipeline.intercept(Plugins) {
         // See https://jaketrent.com/post/https-redirect-node-heroku/
         val scheme = call.request.header("x-forwarded-proto") ?: "none"
-        if (scheme == "http" && feature.excludePredicates.none { predicate: (ApplicationCall) -> Boolean ->
-            predicate(
-              call
-            )
-          }) {
+        if (scheme == "http" &&
+          feature.excludePredicates.none { predicate: CallPredicate -> predicate(call) }
+        ) {
           val redirectUrl =
             call.url {
               protocol = URLProtocol.HTTPS

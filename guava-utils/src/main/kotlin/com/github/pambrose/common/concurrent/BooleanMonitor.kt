@@ -24,7 +24,6 @@ import mu.two.KLogging
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
-
   private val monVal = AtomicBoolean(false)
 
   override val monitorSatisfied get() = get()

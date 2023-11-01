@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class VersionServlet(private val version: String) : HttpServlet() {
-
   @Throws(ServletException::class, IOException::class)
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
     resp.apply {

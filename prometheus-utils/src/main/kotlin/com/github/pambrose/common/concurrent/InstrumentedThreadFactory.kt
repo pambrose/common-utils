@@ -22,8 +22,11 @@ package com.github.pambrose.common.concurrent
 import com.github.pambrose.common.dsl.PrometheusDsl
 import java.util.concurrent.ThreadFactory
 
-class InstrumentedThreadFactory(private val delegate: ThreadFactory, name: String, help: String) : ThreadFactory {
-
+class InstrumentedThreadFactory(
+  private val delegate: ThreadFactory,
+  name: String,
+  help: String,
+) : ThreadFactory {
   private val created =
     PrometheusDsl.counter {
       name("${name}_threads_created")

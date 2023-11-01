@@ -28,5 +28,5 @@ data class MetricsConfig(
   val garbageCollectorExportsEnabled: Boolean,
   val threadExportsEnabled: Boolean,
   val classLoadingExportsEnabled: Boolean,
-  val versionInfoExportsEnabled: Boolean
+  val versionInfoExportsEnabled: Boolean,
 )
