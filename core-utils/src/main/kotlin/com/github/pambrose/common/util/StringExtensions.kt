@@ -59,7 +59,8 @@ fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
 fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
 
-fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false, separator)
+fun List<String>.join(separator: CharSequence = "/") =
+  toPath(addPrefix = false, addTrailing = false, separator)
 
 fun List<String>.toRootPath(addTrailing: Boolean = false, separator: CharSequence = "/") =
   toPath(addPrefix = true, addTrailing = addTrailing, separator = separator)
@@ -67,7 +68,7 @@ fun List<String>.toRootPath(addTrailing: Boolean = false, separator: CharSequenc
 fun List<String>.toPath(
   addPrefix: Boolean = true,
   addTrailing: Boolean = true,
-  separator: CharSequence = "/"
+  separator: CharSequence = "/",
 ) =
   mapIndexed { i, s -> if (i == 0 && addPrefix && !s.startsWith(separator)) "$separator$s" else s }
     .mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
@@ -95,12 +96,14 @@ fun List<String>.lastLineNumberOf(regex: Regex) =
 
 fun String.linesBetween(start: Regex, end: Regex) = lines().linesBetween(start, end)
 
-fun List<String>.linesBetween(start: Regex, end: Regex) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
+fun List<String>.linesBetween(start: Regex, end: Regex) =
+  subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
 
 fun String.isBracketed(startChar: Char = '[', endChar: Char = ']') =
   trim().run { startsWith(startChar) && endsWith(endChar) }
 
-fun String.isNotBracketed(startChar: Char = '[', endChar: Char = ']') = !isBracketed(startChar, endChar)
+fun String.isNotBracketed(startChar: Char = '[', endChar: Char = ']') =
+  !isBracketed(startChar, endChar)
 
 fun String.asBracketed(startChar: Char = '[', endChar: Char = ']') = "$startChar$this$endChar"
 
@@ -136,20 +139,26 @@ fun String.isNotDouble() = !isDouble()
 
 fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
 
-fun String.substringBetween(begin: String, end: String) = substringAfter(begin).substringBeforeLast(end)
+fun String.substringBetween(begin: String, end: String) =
+  substringAfter(begin).substringBeforeLast(end)
 
 fun String.withLineNumbers(separator: Char = ':'): String {
   val lines = lines()
   val len = (log10(lines.size.toDouble()) + 1).toInt()
-  return lines.mapIndexed { i, s -> "${(i + 1).toString().padEnd(len + 1)}$separator $s" }.joinToString("\n")
+  return lines.mapIndexed { i, s -> "${(i + 1).toString().padEnd(len + 1)}$separator $s" }
+    .joinToString("\n")
 }
 
-private const val dot = "__SINGLE__DOT__"
+private const val DOT = "__SINGLE__DOT__"
 
 val String.toPattern: String
   get() {
     // First protect the period and then convert back at end
-    val pattern = this.replace(".", dot).replace("*", ".*").replace("?", ".").replace(dot, """\.""")
+    val pattern =
+      replace(".", DOT)
+        .replace("*", ".*")
+        .replace("?", ".")
+        .replace(DOT, """\.""")
     return """^$pattern$"""
   }
 
@@ -162,11 +171,11 @@ fun String.asRegex(ignoreCase: Boolean = false) =
 private val emailPattern by lazy {
   Pattern.compile(
     "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@" +
-        "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
-        "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\." +
-        "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
-        "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|" +
-        "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$"
+      "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
+      "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\." +
+      "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
+      "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|" +
+      "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$",
   )
 }
 
@@ -196,13 +205,16 @@ private fun encodedByteArray(input: String, salt: (String) -> String, algorithm:
     digest(input.toByteArray())
   }
 
-fun newByteArraySalt(len: Int = 16): ByteArray = ByteArray(len).apply { SecureRandom().nextBytes(this) }
+fun newByteArraySalt(len: Int = 16): ByteArray =
+  ByteArray(len).apply { SecureRandom().nextBytes(this) }
 
 fun newStringSalt(len: Int = 16): String = randomId(len)
 
-fun md5Of(vararg keys: Any, separator: String = "|") = keys.joinToString(separator) { it.toString() }.md5()
+fun md5Of(vararg keys: Any, separator: String = "|") =
+  keys.joinToString(separator) { it.toString() }.md5()
 
-fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.filter { it.isNotEmpty() }.join("/")
+fun pathOf(vararg elems: Any): String =
+  elems.toList().map { it.toString() }.filter { it.isNotEmpty() }.join("/")
 
 fun String.maskUrlCredentials() =
   if ("://" in this && "@" in this) {

@@ -18,7 +18,6 @@
 package com.github.pambrose.common.util
 
 object ListUtils {
-
   @JvmStatic
   fun <T> listPrint(vals: List<T>) {
     val hasString = vals.any { it is String }

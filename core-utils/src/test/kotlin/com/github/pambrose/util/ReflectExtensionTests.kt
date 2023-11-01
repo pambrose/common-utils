@@ -24,7 +24,6 @@ import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 
 class ReflectExtensionTests {
-
   @Test
   fun tyeParamCountTest() {
     4.typeParameterCount shouldBeEqualTo 0

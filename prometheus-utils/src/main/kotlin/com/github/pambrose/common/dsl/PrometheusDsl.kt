@@ -26,30 +26,26 @@ import io.prometheus.client.Summary
 
 object PrometheusDsl {
   fun counter(block: Counter.Builder.() -> Unit): Counter =
-    Counter.build()
-      .run {
-        block(this)
-        register()
-      }
+    Counter.build().run {
+      block(this)
+      register()
+    }
 
   fun summary(block: Summary.Builder.() -> Unit): Summary =
-    Summary.build()
-      .run {
-        block(this)
-        register()
-      }
+    Summary.build().run {
+      block(this)
+      register()
+    }
 
   fun gauge(block: Gauge.Builder.() -> Unit): Gauge =
-    Gauge.build()
-      .run {
-        block(this)
-        register()
-      }
+    Gauge.build().run {
+      block(this)
+      register()
+    }
 
   fun histogram(block: Histogram.Builder.() -> Unit): Histogram =
-    Histogram.build()
-      .run {
-        block(this)
-        register()
-      }
+    Histogram.build().run {
+      block(this)
+      register()
+    }
 }

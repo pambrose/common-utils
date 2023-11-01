@@ -31,7 +31,6 @@ class IncClass(var i: Int = 0) {
 }
 
 class JavaScriptTests {
-
   @Test
   fun builtInTypesTest() {
     val boolVal = true
@@ -88,7 +87,7 @@ class JavaScriptTests {
             """
                 for (int i = 0; i < 100; i++)
                   aux.inc();
-              """.trimIndent()
+            """.trimIndent(),
           )
 
         retval shouldBeEqualTo 100
@@ -119,7 +118,7 @@ class JavaScriptTests {
                 map.put("k2", 10);
                 for (int i = 0; i < 100; i++)
                   list.add(i);
-              """.trimIndent()
+            """.trimIndent(),
           )
 
         retval shouldBeEqualTo map.size
@@ -150,7 +149,7 @@ class JavaScriptTests {
           """
             for (int i = 0; i < 100; i++)
               list.add(i);
-              """.trimIndent()
+          """.trimIndent(),
         )
 
         list.size shouldBeEqualTo 101
@@ -175,7 +174,7 @@ class JavaScriptTests {
           """
                 for (int i = 0; i < 100; i++)
                   list.add(null);
-              """.trimIndent()
+          """.trimIndent(),
         )
 
         list.size shouldBeEqualTo 100
@@ -201,7 +200,14 @@ class JavaScriptTests {
 
     JavaScript().use {
       it.apply {
-        invoking { add("list", list, typeOf<Int?>(), typeOf<Int>()) } shouldThrow ScriptException::class
+        invoking {
+          add(
+            "list",
+            list,
+            typeOf<Int?>(),
+            typeOf<Int>(),
+          )
+        } shouldThrow ScriptException::class
       }
     }
   }

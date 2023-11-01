@@ -24,7 +24,6 @@ import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 
 class StringExtensionTests {
-
   @Test
   fun lengthTests() {
     repeat(10_000_000) { i -> i.length shouldBeEqualTo i.toString().length }
@@ -145,7 +144,8 @@ class StringExtensionTests {
 
   @Test
   fun testLineIndexes() {
-    val s = """
+    val s =
+      """
       aaa
       bbb
       ccc
@@ -156,7 +156,7 @@ class StringExtensionTests {
       ccc
       ddd
       eee
-    """.trimIndent()
+      """.trimIndent()
 
     s.firstLineNumberOf(Regex("zzz")) shouldBeEqualTo -1
     s.firstLineNumberOf(Regex("bbb")) shouldBeEqualTo 1
@@ -167,14 +167,15 @@ class StringExtensionTests {
 
   @Test
   fun testLinesBetween() {
-    val s = """
+    val s =
+      """
       aaa
       bbb
       ccc
       aaa
       bbb
       ccc
-    """.trimIndent()
+      """.trimIndent()
 
     s.linesBetween(Regex("aaa"), Regex("ccc")) shouldBeEqualTo listOf("bbb", "ccc", "aaa", "bbb")
     s.linesBetween(Regex("ccc"), Regex("bbb")) shouldBeEqualTo listOf("aaa")

@@ -18,7 +18,6 @@
 package com.github.pambrose.common.util
 
 object ArrayUtils {
-
   @JvmStatic
   fun arrayPrint(vals: BooleanArray) = println(asString(vals))
 

@@ -35,7 +35,7 @@ class ZipExtensionTests {
   @Test
   fun longStringZipTest() {
     val s =
-      "kjwkjfhwekfjhwwewewerrr cdsc  ##444445 wekfnkfn ew fwefwejfewkjfwef  qweqweqweqwe wef wef w ef wefwef ezzzzxdweere\n"
+      "kjwkjfhwekf cdsc  ##444445 wekfnkfn ew fwefwejfewkjfwef  qweqweqweqwe wef w ef wefwef ezzzzxdweere\n"
     val g = buildString { repeat(100_000) { append(s) } }
     g.zip().unzip() shouldBeEqualTo g
   }

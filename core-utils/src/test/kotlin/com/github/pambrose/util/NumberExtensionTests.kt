@@ -24,7 +24,6 @@ import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 
 class NumberExtensionTests {
-
   @Test
   fun shortTest() {
     val cnt: Short = 1000.toShort()

@@ -24,5 +24,5 @@ data class ZipkinConfig(
   val hostname: String,
   val port: Int,
   val path: String,
-  val serviceName: String
+  val serviceName: String,
 )

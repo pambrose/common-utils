@@ -32,7 +32,6 @@ class IncClass(var i: Int = 0) {
 }
 
 class KotlinScriptTests {
-
   @Test
   fun builtInTypesTest() {
     val boolVal = true
@@ -108,7 +107,7 @@ class KotlinScriptTests {
             """
                 repeat(100) { aux.inc() }
                 aux
-              """
+              """,
           ) as IncClass
 
         aux.i shouldBeEqualTo 100
@@ -136,7 +135,7 @@ class KotlinScriptTests {
                 map["k2"] = 10
                 repeat(100) { list.add(it) }
                 list
-              """
+              """,
           ) as List<*>
 
         list.size shouldBeEqualTo 101
@@ -165,7 +164,7 @@ class KotlinScriptTests {
             """
                 repeat(100) { list.add(it) }
                 list
-              """
+              """,
           ) as List<*>
 
         list.size shouldBeEqualTo 101
@@ -183,7 +182,8 @@ class KotlinScriptTests {
       it.apply {
         add("list", list, typeOf<Int?>())
 
-        varDecls shouldBeEqualTo "val list = bindings[\"${"list".toTempName()}\"] as java.util.ArrayList<Int?>"
+        val s = "list".toTempName()
+        varDecls shouldBeEqualTo "val list = bindings[\"$s\"] as java.util.ArrayList<Int?>"
 
         list.size shouldBeEqualTo eval("list.size")
 
@@ -192,7 +192,7 @@ class KotlinScriptTests {
             """
                 repeat(100) { list.add(null) }
                 list
-              """
+              """,
           ) as List<*>
 
         list.size shouldBeEqualTo 100
@@ -248,7 +248,14 @@ class KotlinScriptTests {
 
     KotlinScript().use {
       it.apply {
-        invoking { add("list", list, typeOf<Int?>(), typeOf<Int>()) } shouldThrow ScriptException::class
+        invoking {
+          add(
+            name = "list",
+            list,
+            typeOf<Int?>(),
+            typeOf<Int>(),
+          )
+        } shouldThrow ScriptException::class
       }
     }
   }
@@ -288,7 +295,7 @@ class KotlinScriptTests {
     KotlinExprEvaluator()
       .apply {
         repeat(100) { i ->
-          //println("Invocation1: $i")
+          // println("Invocation1: $i")
           invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
           invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
         }
@@ -312,7 +319,7 @@ class KotlinScriptTests {
     repeat(100) { i ->
       pool
         .apply {
-          //println("Invocation2: $i")
+          // println("Invocation2: $i")
           invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
           invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
         }

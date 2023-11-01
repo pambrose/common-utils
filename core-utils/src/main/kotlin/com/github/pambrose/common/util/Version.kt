@@ -24,13 +24,17 @@ import kotlin.reflect.full.findAnnotation
 @Target(AnnotationTarget.CLASS)
 annotation class Version(val version: String, val date: String) {
   companion object {
-    internal val jsonStr = { version: String, date: String -> """{"Version": "$version", "Release Date": "$date"}""" }
-    internal val plainStr = { version: String, date: String -> "Version: $version Release Date: $date" }
-    private const val unknown = "unknown"
+    internal val jsonStr = { version: String, date: String ->
+      """{"Version": "$version", "Release Date": "$date"}"""
+    }
+    internal val plainStr = { version: String, date: String ->
+      "Version: $version Release Date: $date"
+    }
+    private const val UNKNOWN = "unknown"
 
     fun KClass<*>.versionDesc(asJson: Boolean = false): String =
       this.findAnnotation<Version>()
         ?.run { if (asJson) jsonStr(version, date) else plainStr(version, date) }
-        ?: if (asJson) jsonStr(unknown, unknown) else plainStr(unknown, unknown)
+        ?: if (asJson) jsonStr(UNKNOWN, UNKNOWN) else plainStr(UNKNOWN, UNKNOWN)
   }
 }

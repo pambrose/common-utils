@@ -32,7 +32,7 @@ val hostInfo by lazy {
   try {
     val hostname = InetAddress.getLocalHost().hostName!!
     val address = InetAddress.getLocalHost().hostAddress!!
-    //logger.debug { "Hostname: $hostname Address: $address" }
+    // logger.debug { "Hostname: $hostname Address: $address" }
     HostInfo(hostname, address)
   } catch (e: UnknownHostException) {
     HostInfo("Unknown", "Unknown")
@@ -52,7 +52,7 @@ fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + 
 fun repeatWithSleep(
   iterations: Int,
   sleepTime: Duration = 1.seconds,
-  block: (count: Int, startMillis: Long) -> Unit
+  block: (count: Int, startMillis: Long) -> Unit,
 ) {
   val startMillis = System.currentTimeMillis()
   iterations repeat { i ->

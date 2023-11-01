@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPInputStream.GZIP_MAGIC
 import java.util.zip.GZIPOutputStream
 
 val EMPTY_BYTE_ARRAY = ByteArray(0)
@@ -38,8 +39,7 @@ fun String.zip(): ByteArray =
       baos.toByteArray()
     }
 
-fun ByteArray.isZipped() =
-  this[0] == GZIPInputStream.GZIP_MAGIC.toByte() && this[1] == (GZIPInputStream.GZIP_MAGIC shr 8).toByte()
+fun ByteArray.isZipped() = this[0] == GZIP_MAGIC.toByte() && this[1] == (GZIP_MAGIC shr 8).toByte()
 
 fun ByteArray.unzip(): String =
   when {

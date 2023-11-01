@@ -25,5 +25,5 @@ data class AdminConfig(
   val pingPath: String,
   val versionPath: String,
   val healthCheckPath: String,
-  val threadDumpPath: String
+  val threadDumpPath: String,
 )

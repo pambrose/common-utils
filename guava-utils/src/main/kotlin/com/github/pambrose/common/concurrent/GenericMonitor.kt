@@ -28,7 +28,6 @@ import kotlin.time.TimeSource.Monotonic
 typealias MonitorAction = () -> Boolean
 
 abstract class GenericMonitor {
-
   protected val monitor = Monitor()
 
   private val trueValueGuard =
@@ -62,7 +61,12 @@ abstract class GenericMonitor {
   fun waitUntilTrue(waitTime: Duration): Boolean {
     var satisfied = false
     try {
-      satisfied = monitor.enterWhenUninterruptibly(trueValueGuard, waitTime.inWholeMilliseconds, MILLISECONDS)
+      satisfied =
+        monitor.enterWhenUninterruptibly(
+          trueValueGuard,
+          waitTime.inWholeMilliseconds,
+          MILLISECONDS,
+        )
     } finally {
       if (satisfied)
         monitor.leave()
@@ -92,7 +96,12 @@ abstract class GenericMonitor {
   fun waitUntilFalse(waitTime: Duration): Boolean {
     var satisfied = false
     try {
-      satisfied = monitor.enterWhenUninterruptibly(falseValueGuard, waitTime.inWholeMilliseconds, MILLISECONDS)
+      satisfied =
+        monitor.enterWhenUninterruptibly(
+          falseValueGuard,
+          waitTime.inWholeMilliseconds,
+          MILLISECONDS,
+        )
     } finally {
       if (satisfied)
         monitor.leave()
@@ -124,7 +133,11 @@ abstract class GenericMonitor {
     waitUntilTrueWithInterruption(timeout, (-1).seconds, block)
 
   @Throws(InterruptedException::class)
-  fun waitUntilTrueWithInterruption(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
+  fun waitUntilTrueWithInterruption(
+    timeout: Duration,
+    maxWait: Duration,
+    block: MonitorAction?,
+  ): Boolean {
     val start = Monotonic.markNow()
     while (true) {
       when {

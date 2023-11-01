@@ -3,6 +3,9 @@ default: versioncheck
 clean:
 	./gradlew clean
 
+stop:
+	./gradlew --stop
+
 compile:
 	./gradlew build -xtest
 

@@ -33,7 +33,7 @@ object SystemMetrics : KLogging() {
     enableGarbageCollectorExports: Boolean = false,
     enableThreadExports: Boolean = false,
     enableClassLoadingExports: Boolean = false,
-    enableVersionInfoExports: Boolean = false
+    enableVersionInfoExports: Boolean = false,
   ) {
     if (!initialized) {
       if (enableStandardExports) {

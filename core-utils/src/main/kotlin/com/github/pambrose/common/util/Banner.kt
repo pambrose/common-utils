@@ -26,8 +26,9 @@ fun getBanner(filename: String, logger: KLogger) =
   try {
     logger.javaClass.classLoader.getResourceAsStream(filename)
       .use { inputStream ->
-        val banner = inputStream?.bufferedReader()?.use { it.readText() }
-          ?: throw IllegalArgumentException("Invalid file name: $filename")
+        val banner =
+          inputStream?.bufferedReader()?.use { it.readText() }
+            ?: throw IllegalArgumentException("Invalid file name: $filename")
 
         val lines: List<String> = banner.lines()
 

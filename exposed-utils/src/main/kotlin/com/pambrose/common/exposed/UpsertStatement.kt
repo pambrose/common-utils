@@ -28,7 +28,7 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 inline fun <T : Table> T.upsert(
   conflictColumn: Column<*>? = null,
   conflictIndex: Index? = null,
-  body: T.(UpsertStatement<Number>) -> Unit
+  body: T.(UpsertStatement<Number>) -> Unit,
 ): UpsertStatement<Number> =
   UpsertStatement<Number>(this, conflictColumn, conflictIndex)
     .apply {
@@ -39,7 +39,7 @@ inline fun <T : Table> T.upsert(
 class UpsertStatement<Key : Any>(
   table: Table,
   conflictColumn: Column<*>? = null,
-  conflictIndex: Index? = null
+  conflictIndex: Index? = null,
 ) : InsertStatement<Key>(table, false) {
   private val indexName: String
   private val indexColumns: List<Column<*>>
@@ -50,10 +50,12 @@ class UpsertStatement<Key : Any>(
         indexName = conflictIndex.indexName
         indexColumns = conflictIndex.columns
       }
+
       conflictColumn.isNotNull() -> {
         indexName = conflictColumn.name
         indexColumns = listOf(conflictColumn)
       }
+
       else -> throw IllegalArgumentException()
     }
   }
@@ -62,7 +64,8 @@ class UpsertStatement<Key : Any>(
     buildString {
       append(super.prepareSQL(transaction, prepared))
       append(" ON CONFLICT ON CONSTRAINT $indexName DO UPDATE SET ")
-      values.keys.filter { it !in indexColumns }
+      values.keys
+        .filter { it !in indexColumns }
         .joinTo(this) { "${transaction.identity(it)}=EXCLUDED.${transaction.identity(it)}" }
     }
 }
