@@ -50,10 +50,10 @@ fun <T> readonlyTx(
   statement: Transaction.() -> T
 ): T =
   transaction(
-    transactionIsolation,
-    true,
-    db,
-    statement
+    transactionIsolation = transactionIsolation,
+    readOnly = true,
+    db = db,
+    statement = statement
   )
 
 inline fun <T> AtomicBoolean.criticalSection(block: () -> T) {
