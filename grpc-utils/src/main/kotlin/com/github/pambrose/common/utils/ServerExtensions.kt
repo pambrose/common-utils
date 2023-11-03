@@ -38,7 +38,10 @@ fun Server.shutdownGracefully(maxWaitTime: Duration) =
   shutdownGracefully(maxWaitTime.inWholeMilliseconds, TimeUnit.MILLISECONDS)
 
 @Throws(InterruptedException::class)
-fun Server.shutdownGracefully(timeout: Long, unit: TimeUnit) {
+fun Server.shutdownGracefully(
+  timeout: Long,
+  unit: TimeUnit,
+) {
   require(timeout > 0) { "timeout must be greater than 0" }
   shutdown()
   try {

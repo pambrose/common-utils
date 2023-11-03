@@ -30,8 +30,7 @@ abstract class AbstractScriptPool<T : AbstractScript>(
   val isEmpty get() = channel.isEmpty
 
   // Reset the context before returning to pool
-  private suspend fun recycle(scriptObject: T) =
-    channel.send(scriptObject.apply { resetContext(nullGlobalContext) })
+  private suspend fun recycle(scriptObject: T) = channel.send(scriptObject.apply { resetContext(nullGlobalContext) })
 
   suspend fun <R> eval(block: T.() -> R): R =
     borrow().let { engine ->

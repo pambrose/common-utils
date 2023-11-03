@@ -116,8 +116,7 @@ object GrpcDsl : KLogging() {
         build()
       }
 
-  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
-    StreamObserverHelper<T>().apply { init() }
+  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) = StreamObserverHelper<T>().apply { init() }
 
   class StreamObserverHelper<T> : StreamObserver<T> {
     private var onNextBlock: ((T) -> Unit)? by singleAssign()

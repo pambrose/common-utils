@@ -32,8 +32,10 @@ object GuavaDsl {
         toString()
       }
 
-  fun serviceManager(services: List<Service>, block: ServiceManager.() -> Unit) =
-    ServiceManager(services).apply { block(this) }
+  fun serviceManager(
+    services: List<Service>,
+    block: ServiceManager.() -> Unit,
+  ) = ServiceManager(services).apply { block(this) }
 
   fun serviceManagerListener(init: ServiceManagerListenerHelper.() -> Unit) =
     ServiceManagerListenerHelper().apply { init() }
@@ -71,8 +73,7 @@ object GuavaDsl {
     }
   }
 
-  fun serviceListener(init: ServiceListenerHelper.() -> Unit) =
-    ServiceListenerHelper().apply { init() }
+  fun serviceListener(init: ServiceListenerHelper.() -> Unit) = ServiceListenerHelper().apply { init() }
 
   class ServiceListenerHelper : Service.Listener() {
     private var startingBlock: (() -> Unit)? by singleAssign()
@@ -101,7 +102,10 @@ object GuavaDsl {
       terminatedBlock?.invoke(from)
     }
 
-    override fun failed(from: Service.State, failure: Throwable) {
+    override fun failed(
+      from: Service.State,
+      failure: Throwable,
+    ) {
       super.failed(from, failure)
       failedBlock?.invoke(from, failure)
     }

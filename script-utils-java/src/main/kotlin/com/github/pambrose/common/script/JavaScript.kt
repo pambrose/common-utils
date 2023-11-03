@@ -65,7 +65,10 @@ class JavaScript : AbstractScript("java", false), Closeable {
         else -> this.toString().removePrefix("kotlin.").replace("?", "")
       }
 
-  override fun params(name: String, types: Array<out KType>): String {
+  override fun params(
+    name: String,
+    types: Array<out KType>,
+  ): String {
     val params = types.map { type -> type.javaEquiv }
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
@@ -81,7 +84,10 @@ class JavaScript : AbstractScript("java", false), Closeable {
   }
 
   @Synchronized
-  fun eval(expr: String, action: String = ""): Any {
+  fun eval(
+    expr: String,
+    action: String = "",
+  ): Any {
     if ("System.exit" in expr)
       throw ScriptException("Illegal call to System.exit()")
 

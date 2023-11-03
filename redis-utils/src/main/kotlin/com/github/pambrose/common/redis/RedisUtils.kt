@@ -92,7 +92,10 @@ object RedisUtils : KLogging() {
     }
   }
 
-  fun <T> JedisPool.withRedisPool(printStackTrace: Boolean = false, block: (Jedis?) -> T): T =
+  fun <T> JedisPool.withRedisPool(
+    printStackTrace: Boolean = false,
+    block: (Jedis?) -> T,
+  ): T =
     try {
       resource
         .use { redis ->
@@ -260,7 +263,10 @@ object RedisUtils : KLogging() {
       null
     }
 
-  fun Jedis.scanKeys(pattern: String, count: Int = 100): Sequence<String> =
+  fun Jedis.scanKeys(
+    pattern: String,
+    count: Int = 100,
+  ): Sequence<String> =
     sequence {
       val scanParams = ScanParams().match(pattern).count(count)
       var cursorVal = "0"

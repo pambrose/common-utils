@@ -31,7 +31,10 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
-fun timeUnitToDuration(value: Long, timeUnit: TimeUnit): Duration =
+fun timeUnitToDuration(
+  value: Long,
+  timeUnit: TimeUnit,
+): Duration =
   when (timeUnit) {
     MICROSECONDS -> value.microseconds
     NANOSECONDS -> value.nanoseconds

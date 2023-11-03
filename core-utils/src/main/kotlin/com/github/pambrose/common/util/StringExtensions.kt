@@ -43,7 +43,10 @@ fun String.toSingleQuoted() = "'$this'"
 
 fun String.toDoubleQuoted() = "\"$this\""
 
-fun String.pluralize(cnt: Int, suffix: String = "s") = if (cnt == 1) this else "$this$suffix"
+fun String.pluralize(
+  cnt: Int,
+  suffix: String = "s",
+) = if (cnt == 1) this else "$this$suffix"
 
 fun String.singleToDoubleQuoted() =
   when {
@@ -59,21 +62,21 @@ fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
 fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
 
-fun List<String>.join(separator: CharSequence = "/") =
-  toPath(addPrefix = false, addTrailing = false, separator)
+fun List<String>.join(separator: CharSequence = "/") = toPath(addPrefix = false, addTrailing = false, separator)
 
-fun List<String>.toRootPath(addTrailing: Boolean = false, separator: CharSequence = "/") =
-  toPath(addPrefix = true, addTrailing = addTrailing, separator = separator)
+fun List<String>.toRootPath(
+  addTrailing: Boolean = false,
+  separator: CharSequence = "/",
+) = toPath(addPrefix = true, addTrailing = addTrailing, separator = separator)
 
 fun List<String>.toPath(
   addPrefix: Boolean = true,
   addTrailing: Boolean = true,
   separator: CharSequence = "/",
-) =
-  mapIndexed { i, s -> if (i == 0 && addPrefix && !s.startsWith(separator)) "$separator$s" else s }
-    .mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
-    .mapIndexed { i, s -> if (i < size - 1 || addTrailing) s.ensureSuffix(separator) else s }
-    .joinToString("")
+) = mapIndexed { i, s -> if (i == 0 && addPrefix && !s.startsWith(separator)) "$separator$s" else s }
+  .mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
+  .mapIndexed { i, s -> if (i < size - 1 || addTrailing) s.ensureSuffix(separator) else s }
+  .joinToString("")
 
 fun String.firstLineNumberOf(regex: Regex) = lines().firstLineNumberOf(regex)
 
@@ -94,18 +97,30 @@ fun List<String>.lastLineNumberOf(regex: Regex) =
     .map { it.first }
     .firstOrNull() ?: -1
 
-fun String.linesBetween(start: Regex, end: Regex) = lines().linesBetween(start, end)
+fun String.linesBetween(
+  start: Regex,
+  end: Regex,
+) = lines().linesBetween(start, end)
 
-fun List<String>.linesBetween(start: Regex, end: Regex) =
-  subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
+fun List<String>.linesBetween(
+  start: Regex,
+  end: Regex,
+) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
 
-fun String.isBracketed(startChar: Char = '[', endChar: Char = ']') =
-  trim().run { startsWith(startChar) && endsWith(endChar) }
+fun String.isBracketed(
+  startChar: Char = '[',
+  endChar: Char = ']',
+) = trim().run { startsWith(startChar) && endsWith(endChar) }
 
-fun String.isNotBracketed(startChar: Char = '[', endChar: Char = ']') =
-  !isBracketed(startChar, endChar)
+fun String.isNotBracketed(
+  startChar: Char = '[',
+  endChar: Char = ']',
+) = !isBracketed(startChar, endChar)
 
-fun String.asBracketed(startChar: Char = '[', endChar: Char = ']') = "$startChar$this$endChar"
+fun String.asBracketed(
+  startChar: Char = '[',
+  endChar: Char = ']',
+) = "$startChar$this$endChar"
 
 fun String.isInt() =
   try {
@@ -139,8 +154,10 @@ fun String.isNotDouble() = !isDouble()
 
 fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
 
-fun String.substringBetween(begin: String, end: String) =
-  substringAfter(begin).substringBeforeLast(end)
+fun String.substringBetween(
+  begin: String,
+  end: String,
+) = substringAfter(begin).substringBeforeLast(end)
 
 fun String.withLineNumbers(separator: Char = ':'): String {
   val lines = lines()
@@ -193,28 +210,34 @@ fun String.sha256(salt: ByteArray): String = encodedByteArray(this, salt, "SHA-2
 
 val ByteArray.asText get() = fold("") { str, it -> str + "%02x".format(it) }
 
-private fun encodedByteArray(input: String, salt: ByteArray, algorithm: String) =
-  with(MessageDigest.getInstance(algorithm)) {
-    update(salt)
-    digest(input.toByteArray())
-  }
+private fun encodedByteArray(
+  input: String,
+  salt: ByteArray,
+  algorithm: String,
+) = with(MessageDigest.getInstance(algorithm)) {
+  update(salt)
+  digest(input.toByteArray())
+}
 
-private fun encodedByteArray(input: String, salt: (String) -> String, algorithm: String) =
-  with(MessageDigest.getInstance(algorithm)) {
-    update(salt(input).toByteArray())
-    digest(input.toByteArray())
-  }
+private fun encodedByteArray(
+  input: String,
+  salt: (String) -> String,
+  algorithm: String,
+) = with(MessageDigest.getInstance(algorithm)) {
+  update(salt(input).toByteArray())
+  digest(input.toByteArray())
+}
 
-fun newByteArraySalt(len: Int = 16): ByteArray =
-  ByteArray(len).apply { SecureRandom().nextBytes(this) }
+fun newByteArraySalt(len: Int = 16): ByteArray = ByteArray(len).apply { SecureRandom().nextBytes(this) }
 
 fun newStringSalt(len: Int = 16): String = randomId(len)
 
-fun md5Of(vararg keys: Any, separator: String = "|") =
-  keys.joinToString(separator) { it.toString() }.md5()
+fun md5Of(
+  vararg keys: Any,
+  separator: String = "|",
+) = keys.joinToString(separator) { it.toString() }.md5()
 
-fun pathOf(vararg elems: Any): String =
-  elems.toList().map { it.toString() }.filter { it.isNotEmpty() }.join("/")
+fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.filter { it.isNotEmpty() }.join("/")
 
 fun String.maskUrlCredentials() =
   if ("://" in this && "@" in this) {
@@ -225,7 +248,6 @@ fun String.maskUrlCredentials() =
     this
   }
 
-fun String.obfuscate(freq: Int = 2) =
-  mapIndexed { i, v -> if (i % freq == 0) '*' else v }.joinToString("")
+fun String.obfuscate(freq: Int = 2) = mapIndexed { i, v -> if (i % freq == 0) '*' else v }.joinToString("")
 
 fun String.maxLength(len: Int) = if (length <= len) this else this.substring(0, len)
