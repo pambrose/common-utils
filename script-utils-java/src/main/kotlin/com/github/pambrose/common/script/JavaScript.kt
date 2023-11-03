@@ -92,7 +92,7 @@ public class Main {
 $varDecls
   public Object getValue() {
     $action
-    return $expr; 
+    return $expr;
   }
 }
 """
