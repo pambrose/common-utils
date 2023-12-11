@@ -46,8 +46,8 @@ object RedisUtils : KLogging() {
     URI(redisUrl).let {
       RedisInfo(
         it,
-        (it.userInfo?.split(colon, 2)?.get(0) ?: ""),
-        (it.userInfo?.split(colon, 2)?.get(1) ?: ""),
+        (it.userInfo?.split(colon, 2)?.get(0).orEmpty()),
+        (it.userInfo?.split(colon, 2)?.get(1).orEmpty()),
       )
     }
 
