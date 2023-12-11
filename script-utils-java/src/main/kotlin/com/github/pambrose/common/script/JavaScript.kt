@@ -49,12 +49,12 @@ class JavaScript : AbstractScript("java", false), Closeable {
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it;" }
 
-  fun assignIsolation(isolation: Isolation) {
-    (engine as JavaScriptEngine).setIsolation(isolation)
-  }
-
   fun <T> import(clazz: Class<T>) {
     imports += clazz.name
+  }
+
+  fun assignIsolation(isolation: Isolation) {
+    (engine as JavaScriptEngine).setIsolation(isolation)
   }
 
   private val KType.javaEquiv: String
@@ -73,17 +73,8 @@ class JavaScript : AbstractScript("java", false), Closeable {
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
-  @Synchronized
-  fun evalScript(script: String): Any {
-    if (!initialized) {
-      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
-      initialized = true
-    }
+  fun evalScript(code: String): Any = evalScriptInternal(code)
 
-    return engine.eval(importDecls + script)
-  }
-
-  @Synchronized
   fun eval(
     expr: String,
     action: String = "",
@@ -102,13 +93,16 @@ $varDecls
   }
 }
 """
+    return evalScriptInternal(code)
+  }
 
+  @Synchronized
+  private fun evalScriptInternal(script: String): Any {
     if (!initialized) {
       valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
-
-    return engine.eval(code)
+    return engine.eval(script)
   }
 
   override fun close() {
