@@ -33,7 +33,10 @@ class LambdaServlet(
   constructor(block: () -> String) : this("text/plain", block)
 
   @Throws(ServletException::class, IOException::class)
-  override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+  override fun doGet(
+    req: HttpServletRequest,
+    resp: HttpServletResponse,
+  ) {
     resp.apply {
       status = HttpServletResponse.SC_OK
       setHeader("Cache-Control", "must-revalidate,no-cache,no-store")

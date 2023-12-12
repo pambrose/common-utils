@@ -49,12 +49,12 @@ class JavaScript : AbstractScript("java", false), Closeable {
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it;" }
 
-  fun assignIsolation(isolation: Isolation) {
-    (engine as JavaScriptEngine).setIsolation(isolation)
-  }
-
   fun <T> import(clazz: Class<T>) {
     imports += clazz.name
+  }
+
+  fun assignIsolation(isolation: Isolation) {
+    (engine as JavaScriptEngine).setIsolation(isolation)
   }
 
   private val KType.javaEquiv: String
@@ -65,23 +65,20 @@ class JavaScript : AbstractScript("java", false), Closeable {
         else -> this.toString().removePrefix("kotlin.").replace("?", "")
       }
 
-  override fun params(name: String, types: Array<out KType>): String {
+  override fun params(
+    name: String,
+    types: Array<out KType>,
+  ): String {
     val params = types.map { type -> type.javaEquiv }
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
-  @Synchronized
-  fun evalScript(script: String): Any {
-    if (!initialized) {
-      valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
-      initialized = true
-    }
+  fun evalScript(code: String): Any = evalScriptInternal(code)
 
-    return engine.eval(importDecls + script)
-  }
-
-  @Synchronized
-  fun eval(expr: String, action: String = ""): Any {
+  fun eval(
+    expr: String,
+    action: String = "",
+  ): Any {
     if ("System.exit" in expr)
       throw ScriptException("Illegal call to System.exit()")
 
@@ -92,17 +89,20 @@ public class Main {
 $varDecls
   public Object getValue() {
     $action
-    return $expr; 
+    return $expr;
   }
 }
 """
+    return evalScriptInternal(code)
+  }
 
+  @Synchronized
+  private fun evalScriptInternal(script: String): Any {
     if (!initialized) {
       valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
-
-    return engine.eval(code)
+    return engine.eval(script)
   }
 
   override fun close() {

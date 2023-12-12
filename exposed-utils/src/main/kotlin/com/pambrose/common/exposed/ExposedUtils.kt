@@ -33,7 +33,10 @@ import kotlin.time.measureTimedValue
 object ExposedUtils : KLogging()
 
 class KotlinSqlLogger(val logger: KLogger = ExposedUtils.logger) : SqlLogger {
-  override fun log(context: StatementContext, transaction: Transaction) {
+  override fun log(
+    context: StatementContext,
+    transaction: Transaction,
+  ) {
     logger.info { "SQL: ${context.expandArgs(transaction)}" }
   }
 }

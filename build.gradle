@@ -2,61 +2,61 @@ plugins {
     id 'java'
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
     id 'com.github.kt3k.coveralls' version '2.12.2' apply false
-    id 'org.jetbrains.kotlin.jvm' version '1.9.20' apply false
-    id 'org.jmailen.kotlinter' version '4.0.0' apply false
-    id "com.github.ben-manes.versions" version '0.49.0' apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.9.21' apply false
+    id 'org.jmailen.kotlinter' version '4.1.0' apply false
+    id "com.github.ben-manes.versions" version '0.50.0' apply false
 }
 
 ext {
     libraries = [
-            reflect               : "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version",
+        reflect               : "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version",
 
-            guava                 : "com.google.guava:guava:$guava_version",
+        guava                 : "com.google.guava:guava:$guava_version",
 
-            grpc_netty            : "io.grpc:grpc-netty:$grpc_version",
-            grpc_inprocess: "io.grpc:grpc-inprocess:$grpc_version",
-            grpc_protobuf         : "io.grpc:grpc-protobuf:$grpc_version",
-            grpc_stub             : "io.grpc:grpc-stub:$grpc_version",
-            grpc_services         : "io.grpc:grpc-services:$grpc_version",
+        grpc_netty            : "io.grpc:grpc-netty:$grpc_version",
+        grpc_inprocess        : "io.grpc:grpc-inprocess:$grpc_version",
+        grpc_protobuf         : "io.grpc:grpc-protobuf:$grpc_version",
+        grpc_stub             : "io.grpc:grpc-stub:$grpc_version",
+        grpc_services         : "io.grpc:grpc-services:$grpc_version",
 
-            netty_ssl             : "io.netty:netty-tcnative-boringssl-static:$nettyTcNative_version",
+        netty_ssl             : "io.netty:netty-tcnative-boringssl-static:$nettyTcNative_version",
 
-            dropwizard_core       : "io.dropwizard.metrics:metrics-core:$dropwizard_version",
-            dropwizard_healthcheck: "io.dropwizard.metrics:metrics-healthchecks:$dropwizard_version",
-            dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:$dropwizard_version",
-            dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:$dropwizard_version",
+        dropwizard_core       : "io.dropwizard.metrics:metrics-core:$dropwizard_version",
+        dropwizard_healthcheck: "io.dropwizard.metrics:metrics-healthchecks:$dropwizard_version",
+        dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:$dropwizard_version",
+        dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:$dropwizard_version",
 
-            exposed_core          : "org.jetbrains.exposed:exposed-core:$exposed_version",
-            exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
-            exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
+        exposed_core          : "org.jetbrains.exposed:exposed-core:$exposed_version",
+        exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
+        exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
 
-            kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223:$kotlin_version",
+        kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223:$kotlin_version",
 
-            python_scripting      : "org.python:jython-standalone:$python_version",
-            java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
+        python_scripting      : "org.python:jython-standalone:$python_version",
+        java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
 
-            jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
-            jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
+        jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
+        jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
 
-            ktor_server_core      : "io.ktor:ktor-server:$ktor_version",
-            ktor_client_core      : "io.ktor:ktor-client:$ktor_version",
+        ktor_server_core      : "io.ktor:ktor-server:$ktor_version",
+        ktor_client_core      : "io.ktor:ktor-client:$ktor_version",
 
-            prometheus_core       : "io.prometheus:simpleclient:$prometheus_version",
-            prometheus_hotspot    : "io.prometheus:simpleclient_hotspot:$prometheus_version",
-            prometheus_servlet    : "io.prometheus:simpleclient_servlet:$prometheus_version",
-            prometheus_dropwizard : "io.prometheus:simpleclient_dropwizard:$prometheus_version",
+        prometheus_core       : "io.prometheus:simpleclient:$prometheus_version",
+        prometheus_hotspot    : "io.prometheus:simpleclient_hotspot:$prometheus_version",
+        prometheus_servlet    : "io.prometheus:simpleclient_servlet:$prometheus_version",
+        prometheus_dropwizard : "io.prometheus:simpleclient_dropwizard:$prometheus_version",
 
-            redis                 : "redis.clients:jedis:$redis_version",
+        redis                 : "redis.clients:jedis:$redis_version",
 
-            zipkin                : "io.zipkin.brave:brave:$zipkin_version",
+        zipkin                : "io.zipkin.brave:brave:$zipkin_version",
 
-            zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version",
+        zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version",
     ]
 }
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-  version '1.42.1'
+    version '1.43.0'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish' // required for jitpack.io install and gradle 7
@@ -170,15 +170,6 @@ subprojects {
     kotlinter {
         ignoreFailures = false
         reporters = ['checkstyle', 'plain']
-//        experimentalRules = false
-//        disabledRules = ["no-wildcard-imports",
-//                         "indent",
-//                         "final-newline",
-//                         "comment-spacing",
-//                         "max-line-length",
-//                         "wrapping",
-//                         "multiline-if-else",
-//                         "filename",]
     }
 
 //    jacocoTestReport {

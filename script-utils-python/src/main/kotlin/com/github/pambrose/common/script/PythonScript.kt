@@ -25,7 +25,11 @@ import kotlin.reflect.KType
 class PythonScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("py", nullGlobalContext), Closeable {
-  override fun add(name: String, value: Any, vararg types: KType) {
+  override fun add(
+    name: String,
+    value: Any,
+    vararg types: KType,
+  ) {
     valueMap[name] = value
   }
 

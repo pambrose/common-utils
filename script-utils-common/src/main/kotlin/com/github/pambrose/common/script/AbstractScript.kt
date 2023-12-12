@@ -50,12 +50,19 @@ abstract class AbstractScript(
     engine.resetContext(nullGlobalContext)
   }
 
-  open fun params(name: String, types: Array<out KType> = typeMap[name]!!): String {
+  open fun params(
+    name: String,
+    types: Array<out KType> = typeMap[name]!!,
+  ): String {
     val params = types.map { type -> type.toString().removePrefix("kotlin.") }
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
-  open fun add(name: String, value: Any, vararg types: KType) {
+  open fun add(
+    name: String,
+    value: Any,
+    vararg types: KType,
+  ) {
     val paramCnt = value.typeParameterCount
     val qname = name.toDoubleQuoted()
 

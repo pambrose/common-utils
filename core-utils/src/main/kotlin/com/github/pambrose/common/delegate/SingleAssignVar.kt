@@ -33,9 +33,16 @@ object SingleAssignVar {
   private class SingleAssignVar<T : Any?> : ReadWriteProperty<Any?, T?> {
     private var value: T? = null
 
-    override fun getValue(thisRef: Any?, property: KProperty<*>) = value
+    override fun getValue(
+      thisRef: Any?,
+      property: KProperty<*>,
+    ) = value
 
-    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T?) {
+    override fun setValue(
+      thisRef: Any?,
+      property: KProperty<*>,
+      value: T?,
+    ) {
       check(this.value.isNull()) { "Property ${property.name} cannot be assigned more than once." }
       this.value = value
     }

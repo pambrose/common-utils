@@ -188,7 +188,10 @@ abstract class GenericService<T> protected constructor(
     services += service
   }
 
-  protected fun addServices(service: Service, vararg services: Service) {
+  protected fun addServices(
+    service: Service,
+    vararg services: Service,
+  ) {
     addService(service)
     services.forEach { addService(it) }
   }

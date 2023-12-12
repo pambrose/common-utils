@@ -23,19 +23,23 @@ import com.codahale.metrics.health.HealthCheck
 import com.github.pambrose.common.dsl.MetricsDsl
 
 object MetricsUtils {
-  fun newBacklogHealthCheck(backlogSize: Int, size: Int) =
-    MetricsDsl.healthCheck {
-      if (backlogSize < size)
-        HealthCheck.Result.healthy()
-      else
-        HealthCheck.Result.unhealthy("Large size: $backlogSize")
-    }
+  fun newBacklogHealthCheck(
+    backlogSize: Int,
+    size: Int,
+  ) = MetricsDsl.healthCheck {
+    if (backlogSize < size)
+      HealthCheck.Result.healthy()
+    else
+      HealthCheck.Result.unhealthy("Large size: $backlogSize")
+  }
 
-  fun newMapHealthCheck(map: Map<*, *>, size: Int) =
-    MetricsDsl.healthCheck {
-      if (map.size < size)
-        HealthCheck.Result.healthy()
-      else
-        HealthCheck.Result.unhealthy("Large size: ${map.size}")
-    }
+  fun newMapHealthCheck(
+    map: Map<*, *>,
+    size: Int,
+  ) = MetricsDsl.healthCheck {
+    if (map.size < size)
+      HealthCheck.Result.healthy()
+    else
+      HealthCheck.Result.unhealthy("Large size: ${map.size}")
+  }
 }

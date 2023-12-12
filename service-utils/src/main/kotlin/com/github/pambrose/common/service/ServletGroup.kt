@@ -24,7 +24,10 @@ import javax.servlet.Servlet
 class ServletGroup(val port: Int) {
   internal val servletMap: MutableMap<String, Servlet> = mutableMapOf()
 
-  fun addServlet(path: String, servlet: Servlet) {
+  fun addServlet(
+    path: String,
+    servlet: Servlet,
+  ) {
     if (path.isNotEmpty() && path.isNotBlank())
       servletMap[path] = servlet
   }

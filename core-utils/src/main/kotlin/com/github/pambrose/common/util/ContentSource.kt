@@ -113,8 +113,7 @@ open class GitHubFile(
       fileName,
     ).join(),
   ) {
-  override fun toString() =
-    "GitHubFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
+  override fun toString() = "GitHubFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 
 open class GitLabFile(
@@ -134,8 +133,7 @@ open class GitLabFile(
       fileName,
     ).join(),
   ) {
-  override fun toString() =
-    "GitLabFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
+  override fun toString() = "GitLabFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 
 open class UrlSource(override val source: String) : ContentSource {

@@ -109,10 +109,16 @@ abstract class GenericMonitor {
     return satisfied
   }
 
-  fun waitUntilTrue(timeout: Duration, block: MonitorAction) =
-    waitUntilTrue(timeout, (-1).seconds, block)
+  fun waitUntilTrue(
+    timeout: Duration,
+    block: MonitorAction,
+  ) = waitUntilTrue(timeout, (-1).seconds, block)
 
-  fun waitUntilTrue(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
+  fun waitUntilTrue(
+    timeout: Duration,
+    maxWait: Duration,
+    block: MonitorAction?,
+  ): Boolean {
     val start = Monotonic.markNow()
     while (true) {
       when {
@@ -129,8 +135,10 @@ abstract class GenericMonitor {
   }
 
   @Throws(InterruptedException::class)
-  fun waitUntilTrueWithInterruption(timeout: Duration, block: MonitorAction) =
-    waitUntilTrueWithInterruption(timeout, (-1).seconds, block)
+  fun waitUntilTrueWithInterruption(
+    timeout: Duration,
+    block: MonitorAction,
+  ) = waitUntilTrueWithInterruption(timeout, (-1).seconds, block)
 
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(
@@ -153,10 +161,16 @@ abstract class GenericMonitor {
     }
   }
 
-  fun waitUntilFalse(timeout: Duration, block: MonitorAction) =
-    waitUntilFalse(timeout, (-1).seconds, block)
+  fun waitUntilFalse(
+    timeout: Duration,
+    block: MonitorAction,
+  ) = waitUntilFalse(timeout, (-1).seconds, block)
 
-  fun waitUntilFalse(timeout: Duration, maxWait: Duration, block: MonitorAction?): Boolean {
+  fun waitUntilFalse(
+    timeout: Duration,
+    maxWait: Duration,
+    block: MonitorAction?,
+  ): Boolean {
     val start = Monotonic.markNow()
     while (true) {
       when {
@@ -172,8 +186,10 @@ abstract class GenericMonitor {
     }
   }
 
-  fun waitUntil(value: Boolean, waitTime: Duration) =
-    if (value) waitUntilTrue(waitTime) else waitUntilFalse(waitTime)
+  fun waitUntil(
+    value: Boolean,
+    waitTime: Duration,
+  ) = if (value) waitUntilTrue(waitTime) else waitUntilFalse(waitTime)
 
   fun waitUntil(value: Boolean) = if (value) waitUntilTrue() else waitUntilFalse()
 }

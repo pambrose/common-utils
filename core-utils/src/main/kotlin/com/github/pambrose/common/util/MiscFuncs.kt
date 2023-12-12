@@ -41,13 +41,15 @@ val hostInfo by lazy {
 
 fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.inWholeMilliseconds)
 
-fun randomId(length: Int = 10, charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')) =
-  SecureRandom().let { random ->
-    (1..length)
-      .map { random.nextInt(charPool.size) }
-      .map { charPool[it] }
-      .joinToString("")
-  }
+fun randomId(
+  length: Int = 10,
+  charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9'),
+) = SecureRandom().let { random ->
+  (1..length)
+    .map { random.nextInt(charPool.size) }
+    .map { charPool[it] }
+    .joinToString("")
+}
 
 fun repeatWithSleep(
   iterations: Int,

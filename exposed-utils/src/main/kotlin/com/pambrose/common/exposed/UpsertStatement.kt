@@ -60,7 +60,10 @@ class UpsertStatement<Key : Any>(
     }
   }
 
-  override fun prepareSQL(transaction: Transaction, prepared: Boolean): String =
+  override fun prepareSQL(
+    transaction: Transaction,
+    prepared: Boolean,
+  ): String =
     buildString {
       append(super.prepareSQL(transaction, prepared))
       append(" ON CONFLICT ON CONSTRAINT $indexName DO UPDATE SET ")

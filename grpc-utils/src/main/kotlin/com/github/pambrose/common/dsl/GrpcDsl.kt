@@ -42,72 +42,89 @@ object GrpcDsl : KLogging() {
     overrideAuthority: String = "",
     inProcessServerName: String = "",
     block: ManagedChannelBuilder<*>.() -> Unit,
-  ): ManagedChannel =
-    when {
-      inProcessServerName.isEmpty() -> {
-        logger.info {
-          "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}"
-        }
-        NettyChannelBuilder.forAddress(hostName, port)
-          .also { builder ->
-            val override = overrideAuthority.trim()
-            if (override.isNotEmpty()) {
-              logger.info { "Assigning overrideAuthority: ${override.toDoubleQuoted()}" }
-              builder.overrideAuthority(override)
-            }
+  ): ManagedChannel {
+    val channelBuilder =
+      if (inProcessServerName.isEmpty())
+        createNettChannel(hostName, port, tlsContext, overrideAuthority, enableRetry, maxRetryAttempts)
+      else
+        createInProcessChannel(inProcessServerName)
 
-            if (tlsContext.sslContext.isNotNull())
-              builder.sslContext(tlsContext.sslContext)
-            else
-              builder.usePlaintext()
-
-            if (enableRetry)
-              builder.enableRetry()
-
-            if (maxRetryAttempts > -1)
-              builder.maxRetryAttempts(maxRetryAttempts)
-          }
-      }
-
-      else -> {
-        logger.info {
-          "Creating connection for gRPC server with in-process server name $inProcessServerName"
-        }
-        InProcessChannelBuilder.forName(inProcessServerName).also { builder ->
-          builder.usePlaintext()
-        }
-      }
-    }.run {
+    return channelBuilder.run {
       block(this)
       build()
     }
+  }
+
+  private fun createInProcessChannel(inProcessServerName: String): InProcessChannelBuilder {
+    logger.info { "Creating connection for gRPC server with in-process server name $inProcessServerName" }
+    return InProcessChannelBuilder.forName(inProcessServerName).also { builder ->
+      builder.usePlaintext()
+    }
+  }
+
+  private fun createNettChannel(
+    hostName: String,
+    port: Int,
+    tlsContext: TlsContext,
+    overrideAuthority: String,
+    enableRetry: Boolean,
+    maxRetryAttempts: Int,
+  ): NettyChannelBuilder {
+    logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
+    return NettyChannelBuilder.forAddress(hostName, port)
+      .also { builder ->
+        val override = overrideAuthority.trim()
+        if (override.isNotEmpty()) {
+          logger.info { "Assigning overrideAuthority: ${override.toDoubleQuoted()}" }
+          builder.overrideAuthority(override)
+        }
+
+        if (tlsContext.sslContext.isNotNull())
+          builder.sslContext(tlsContext.sslContext)
+        else
+          builder.usePlaintext()
+
+        if (enableRetry)
+          builder.enableRetry()
+
+        if (maxRetryAttempts > -1)
+          builder.maxRetryAttempts(maxRetryAttempts)
+      }
+  }
 
   fun server(
     port: Int = -1,
     tlsContext: TlsContext = PLAINTEXT_CONTEXT,
     inProcessServerName: String = "",
     block: ServerBuilder<*>.() -> Unit,
-  ): Server =
-    when {
-      inProcessServerName.isEmpty() -> {
-        logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
-        NettyServerBuilder.forPort(port)
-          .also { builder ->
-            if (tlsContext.sslContext.isNotNull())
-              builder.sslContext(tlsContext.sslContext)
-          }
-      }
+  ): Server {
+    val serverBuilder =
+      if (inProcessServerName.isEmpty())
+        createNettyServer(port, tlsContext)
+      else
+        createInProcessServer(inProcessServerName)
 
-      else -> {
-        logger.info {
-          "Listening for gRPC traffic with in-process server name $inProcessServerName"
-        }
-        InProcessServerBuilder.forName(inProcessServerName)
-      }
-    }.run {
+    return serverBuilder.run {
       block(this)
       build()
     }
+  }
+
+  private fun createNettyServer(
+    port: Int,
+    tlsContext: TlsContext,
+  ): NettyServerBuilder {
+    logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
+    return NettyServerBuilder.forPort(port).also { builder ->
+      if (tlsContext.sslContext.isNotNull())
+        builder.sslContext(tlsContext.sslContext)
+    }
+  }
+
+  private fun createInProcessServer(inProcessServerName: String): InProcessServerBuilder {
+    logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }
+    return InProcessServerBuilder.forName(inProcessServerName)
+  }
 
   fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
     Attributes.newBuilder()
@@ -116,8 +133,7 @@ object GrpcDsl : KLogging() {
         build()
       }
 
-  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) =
-    StreamObserverHelper<T>().apply { init() }
+  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) = StreamObserverHelper<T>().apply { init() }
 
   class StreamObserverHelper<T> : StreamObserver<T> {
     private var onNextBlock: ((T) -> Unit)? by singleAssign()
