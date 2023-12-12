@@ -68,7 +68,7 @@ object GrpcDsl : KLogging() {
     tlsContext: TlsContext,
     overrideAuthority: String,
     enableRetry: Boolean,
-    maxRetryAttempts: Int
+    maxRetryAttempts: Int,
   ): NettyChannelBuilder {
     logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
     return NettyChannelBuilder.forAddress(hostName, port)
@@ -110,7 +110,10 @@ object GrpcDsl : KLogging() {
     }
   }
 
-  private fun createNettyServer(port: Int, tlsContext: TlsContext): NettyServerBuilder {
+  private fun createNettyServer(
+    port: Int,
+    tlsContext: TlsContext,
+  ): NettyServerBuilder {
     logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
     return NettyServerBuilder.forPort(port).also { builder ->
       if (tlsContext.sslContext.isNotNull())
