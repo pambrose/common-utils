@@ -56,7 +56,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.44.1'
+    version '1.44.2'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish' // required for jitpack.io install and gradle 7
