@@ -20,6 +20,7 @@ package com.github.pambrose.common.script
 import ch.obermuhlner.scriptengine.java.Isolation
 import ch.obermuhlner.scriptengine.java.JavaScriptEngine
 import com.github.pambrose.common.script.ScriptUtils.engineBindings
+import mu.two.KLogging
 import java.io.Closeable
 import javax.script.ScriptException
 import kotlin.reflect.KType
@@ -73,11 +74,15 @@ class JavaScript : AbstractScript("java", false), Closeable {
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
-  fun evalScript(code: String): Any = evalScriptInternal(code)
+  fun evalScript(
+    code: String,
+    verbose: Boolean = false,
+  ): Any = evalScriptInternal(code, verbose)
 
   fun eval(
     expr: String,
     action: String = "",
+    verbose: Boolean = false,
   ): Any {
     if ("System.exit" in expr)
       throw ScriptException("Illegal call to System.exit()")
@@ -93,11 +98,17 @@ $varDecls
   }
 }
 """
-    return evalScriptInternal(code)
+    return evalScriptInternal(code, verbose)
   }
 
   @Synchronized
-  private fun evalScriptInternal(script: String): Any {
+  private fun evalScriptInternal(
+    script: String,
+    verbose: Boolean = false,
+  ): Any {
+    if (verbose)
+      logger.info { "Script:\n$script" }
+
     if (!initialized) {
       valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
@@ -108,4 +119,6 @@ $varDecls
   override fun close() {
     // Placeholder
   }
+
+  companion object : KLogging()
 }
