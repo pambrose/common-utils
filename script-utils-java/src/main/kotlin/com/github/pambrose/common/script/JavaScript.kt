@@ -75,17 +75,29 @@ class JavaScript : AbstractScript("java", false), Closeable {
   }
 
   @Synchronized
-  fun evalScript(script: String): Any {
+  fun evalScript(
+    script: String,
+    verbose: Boolean = false,
+  ): Any {
     if (!initialized) {
       valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
 
-    return engine.eval(importDecls + script)
+    val code = importDecls + script
+
+    if (verbose)
+      logger.info { "Script:\n$code" }
+
+    return engine.eval(code)
   }
 
   @Synchronized
-  fun eval(expr: String, action: String = ""): Any {
+  fun eval(
+    expr: String,
+    action: String = "",
+    verbose: Boolean = false,
+  ): Any {
     if ("System.exit" in expr)
       throw ScriptException("Illegal call to System.exit()")
 
@@ -105,6 +117,9 @@ $varDecls
       valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
     }
+
+    if (verbose)
+      logger.info { "Script:\n$code" }
 
     return engine.eval(code)
   }
