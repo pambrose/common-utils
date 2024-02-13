@@ -1,4 +1,4 @@
-# Handy Kotlin and Java utility functions
+# Handy Kotlin and Java Utility Functions
 
 [![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
 [![Build Status](https://app.travis-ci.com/pambrose/common-utils.svg?branch=master)](https://app.travis-ci.com/pambrose/common-utils)
