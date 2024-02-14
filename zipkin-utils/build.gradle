@@ -20,5 +20,6 @@ description = 'zipkin-utils'
 dependencies {
     implementation project(':core-utils')
 
+    implementation libraries.brave
     implementation libraries.zipkin
 }

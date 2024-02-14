@@ -48,7 +48,8 @@ ext {
 
         redis                 : "redis.clients:jedis:$redis_version",
 
-        zipkin                : "io.zipkin.brave:brave:$zipkin_version",
+        brave : "io.zipkin.brave:brave:$brave_version",
+        zipkin: "io.zipkin.reporter2:zipkin-reporter-brave:$zipkin_version",
 
         zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version",
     ]

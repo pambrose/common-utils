@@ -27,16 +27,17 @@ import com.github.pambrose.common.dsl.ZipkinDsl.tracing
 import com.google.common.util.concurrent.MoreExecutors
 import mu.two.KLogging
 import zipkin2.reporter.AsyncReporter
-import zipkin2.reporter.brave.ZipkinSpanHandler.create
+import zipkin2.reporter.BytesMessageSender
+import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.okhttp3.OkHttpSender
 
 class ZipkinReporterService(
   private val url: String,
   initBlock: (ZipkinReporterService.() -> Unit) = {},
 ) : GenericIdleService() {
-  private val sender = OkHttpSender.create(url)
+  private val sender = OkHttpSender.create(url) as BytesMessageSender
   private val reporter = AsyncReporter.create(sender)
-  private val handler = create(reporter)
+  private val handler = ZipkinSpanHandler.create(reporter)
 
   init {
     addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
