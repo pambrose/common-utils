@@ -2,9 +2,9 @@ plugins {
     id 'java'
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
     id 'com.github.kt3k.coveralls' version '2.12.2' apply false
-    id 'org.jetbrains.kotlin.jvm' version '1.9.22' apply false
-    id 'org.jmailen.kotlinter' version '4.1.1' apply false
-    id "com.github.ben-manes.versions" version '0.50.0' apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.9.23' apply false
+    id 'org.jmailen.kotlinter' version '4.3.0' apply false
+    id "com.github.ben-manes.versions" version '0.51.0' apply false
 }
 
 ext {
@@ -48,7 +48,8 @@ ext {
 
         redis                 : "redis.clients:jedis:$redis_version",
 
-        zipkin                : "io.zipkin.brave:brave:$zipkin_version",
+        brave : "io.zipkin.brave:brave:$brave_version",
+        zipkin: "io.zipkin.reporter2:zipkin-reporter-brave:$zipkin_version",
 
         zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version",
     ]
@@ -56,7 +57,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '1.44.2'
+    version '1.50.0'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish' // required for jitpack.io install and gradle 7
