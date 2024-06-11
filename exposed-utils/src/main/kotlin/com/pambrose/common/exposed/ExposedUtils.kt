@@ -17,8 +17,8 @@
 
 package com.pambrose.common.exposed
 
-import mu.two.KLogger
-import mu.two.KLogging
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlLogger
@@ -30,7 +30,9 @@ import org.jetbrains.exposed.sql.transactions.transactionManager
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.measureTimedValue
 
-object ExposedUtils : KLogging()
+object ExposedUtils {
+  internal val logger = KotlinLogging.logger {}
+}
 
 class KotlinSqlLogger(val logger: KLogger = ExposedUtils.logger) : SqlLogger {
   override fun log(

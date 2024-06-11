@@ -24,7 +24,7 @@ import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
 import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.google.common.util.concurrent.MoreExecutors
-import mu.two.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 
@@ -59,5 +59,7 @@ class ServletService(
       add("paths", servletGroup.servletMap.keys.map { "/$it" })
     }
 
-  companion object : KLogging()
+  companion object {
+    private val logger = KotlinLogging.logger {}
+  }
 }

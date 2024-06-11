@@ -20,7 +20,7 @@
 package com.github.pambrose.common.concurrent
 
 import com.google.common.base.MoreObjects
-import mu.two.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
@@ -48,7 +48,9 @@ class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
       .add("value", monVal.get())
       .toString()
 
-  companion object : KLogging() {
+  companion object {
+    private val logger = KotlinLogging.logger {}
+
     @JvmStatic
     fun debug(msg: () -> Any?): MonitorAction =
       {

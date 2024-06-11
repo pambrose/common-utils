@@ -19,11 +19,11 @@ package com.github.pambrose.common.utils
 
 import com.github.pambrose.common.util.isNull
 import com.github.pambrose.common.util.toDoubleQuoted
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.netty.GrpcSslContexts
 import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContext
 import io.netty.handler.ssl.SslContextBuilder
-import mu.two.KLogging
 import java.io.File
 import javax.net.ssl.SSLException
 
@@ -41,7 +41,9 @@ data class TlsContext(val sslContext: SslContext?, val mutualAuth: Boolean) {
   }
 }
 
-object TlsUtils : KLogging() {
+object TlsUtils {
+  private val logger = KotlinLogging.logger {}
+
   private fun String.doesNotExistMsg() = "File ${toDoubleQuoted()} does not exist"
 
   @Throws(SSLException::class)

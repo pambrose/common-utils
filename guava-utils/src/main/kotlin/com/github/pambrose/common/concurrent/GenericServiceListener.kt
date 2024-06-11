@@ -21,7 +21,7 @@ package com.github.pambrose.common.concurrent
 
 import com.github.pambrose.common.dsl.GuavaDsl.serviceListener
 import com.google.common.util.concurrent.Service
-import mu.two.KLogger
+import io.github.oshai.kotlinlogging.KLogger
 
 fun Service.genericServiceListener(logger: KLogger) =
   serviceListener {

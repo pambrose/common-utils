@@ -17,6 +17,7 @@
 
 package com.github.pambrose.common.features
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.application.ApplicationCallPipeline.ApplicationPhase.Plugins
@@ -25,7 +26,6 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.util.*
 import io.ktor.util.*
-import mu.two.KotlinLogging
 
 typealias CallPredicate = (ApplicationCall) -> Boolean
 

@@ -39,9 +39,9 @@ import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors.directExecutor
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
-import mu.two.KLogging
 import java.io.Closeable
 import kotlin.time.TimeSource.Monotonic
 
@@ -223,7 +223,9 @@ abstract class GenericService<T> protected constructor(
       }
   }
 
-  companion object : KLogging() {
+  companion object {
+    private val logger = KotlinLogging.logger {}
+
     fun shutDownHookAction(service: Service) =
       Thread {
         System.err.println("*** ${service.simpleClassName} shutting down ***")

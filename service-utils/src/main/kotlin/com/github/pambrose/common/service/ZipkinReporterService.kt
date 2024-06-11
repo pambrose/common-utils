@@ -25,7 +25,7 @@ import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
 import com.github.pambrose.common.dsl.ZipkinDsl.tracing
 import com.google.common.util.concurrent.MoreExecutors
-import mu.two.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.BytesMessageSender
 import zipkin2.reporter.brave.ZipkinSpanHandler
@@ -61,5 +61,7 @@ class ZipkinReporterService(
 
   override fun toString() = toStringElements { add("url", url) }
 
-  companion object : KLogging()
+  companion object {
+    private val logger = KotlinLogging.logger {}
+  }
 }
