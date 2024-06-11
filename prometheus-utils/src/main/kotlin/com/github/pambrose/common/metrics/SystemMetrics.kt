@@ -19,11 +19,12 @@
 
 package com.github.pambrose.common.metrics
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.Collector
 import io.prometheus.client.hotspot.*
-import mu.two.KLogging
 
-object SystemMetrics : KLogging() {
+object SystemMetrics {
+  private val logger = KotlinLogging.logger {}
   private var initialized = false
 
   @Synchronized

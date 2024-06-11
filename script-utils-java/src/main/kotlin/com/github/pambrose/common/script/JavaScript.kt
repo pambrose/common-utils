@@ -20,7 +20,7 @@ package com.github.pambrose.common.script
 import ch.obermuhlner.scriptengine.java.Isolation
 import ch.obermuhlner.scriptengine.java.JavaScriptEngine
 import com.github.pambrose.common.script.ScriptUtils.engineBindings
-import mu.two.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.Closeable
 import javax.script.ScriptException
 import kotlin.reflect.KType
@@ -128,5 +128,7 @@ $varDecls
     // Placeholder
   }
 
-  companion object : KLogging()
+  companion object {
+    private val logger = KotlinLogging.logger {}
+  }
 }

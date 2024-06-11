@@ -19,7 +19,7 @@
 
 package com.github.pambrose.common.util
 
-import mu.two.KLogger
+import io.github.oshai.kotlinlogging.KLogger
 
 // Banner is from: http://patorjk.com/software/taag/#p=display&f=Big%20Money-nw&t=ReadingBat%0A%20%20%20Server
 fun getBanner(

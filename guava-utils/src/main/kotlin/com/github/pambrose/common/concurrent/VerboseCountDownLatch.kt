@@ -19,7 +19,7 @@
 
 package com.github.pambrose.common.concurrent
 
-import mu.two.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
@@ -44,5 +44,7 @@ class VerboseCountDownLatch(count: Int) : CountDownLatch(count) {
     }
   }
 
-  companion object : KLogging()
+  companion object {
+    private val logger = KotlinLogging.logger {}
+  }
 }

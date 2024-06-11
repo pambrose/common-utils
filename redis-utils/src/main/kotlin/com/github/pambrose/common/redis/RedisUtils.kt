@@ -17,7 +17,7 @@
 
 package com.github.pambrose.common.redis
 
-import mu.two.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
@@ -27,7 +27,9 @@ import redis.clients.jedis.params.ScanParams
 import java.net.URI
 import java.util.*
 
-object RedisUtils : KLogging() {
+object RedisUtils {
+  private val logger = KotlinLogging.logger {}
+
   const val REDIS_MAX_POOL_SIZE = "redis.maxPoolSize"
   const val REDIS_MAX_IDLE_SIZE = "redis.maxIdleSize"
   const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
