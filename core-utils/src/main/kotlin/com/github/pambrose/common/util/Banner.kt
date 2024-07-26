@@ -27,7 +27,7 @@ fun getBanner(
   logger: KLogger,
 ): String {
   val banner = logger.javaClass.classLoader.getResource(filename)?.readText()
-    ?: throw IllegalArgumentException("Banner \"$filename\" not found")
+    ?: throw IllegalArgumentException("Banner not found: \"$filename\"")
 
   val lines = banner.lines()
 
