@@ -26,8 +26,10 @@ fun getBanner(
   filename: String,
   logger: KLogger,
 ): String {
-  val banner = logger::class.java.getResource(filename)?.readText() ?: error("Banner \"$filename\" cannot be found")
-  val lines: List<String> = banner.lines()
+  val banner = logger.javaClass.classLoader.getResource(filename)?.readText()
+    ?: throw IllegalArgumentException("Banner \"$filename\" not found")
+
+  val lines = banner.lines()
 
   // Trim initial and trailing blank lines, but preserve blank lines in middle;
   var first = -1

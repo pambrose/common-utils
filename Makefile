@@ -14,6 +14,9 @@ build: compile
 publish:
 	./gradlew publish
 
+publishLocal:
+	./gradlew publishToMavenLocal
+
 tests:
 	./gradlew --rerun-tasks check
 
