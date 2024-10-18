@@ -27,7 +27,6 @@ import org.jetbrains.exposed.sql.statements.StatementContext
 import org.jetbrains.exposed.sql.statements.expandArgs
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.transactions.transactionManager
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.measureTimedValue
 
 object ExposedUtils {
@@ -62,18 +61,27 @@ fun <T> readonlyTx(
     statement = statement,
   )
 
-inline fun <T> AtomicBoolean.criticalSection(block: () -> T) {
-  set(true)
-  try {
-    block()
-  } finally {
-    set(false)
-  }
-}
-
-fun <T> timedTransaction(block: () -> T) =
+fun <T> timedTransaction(
+  db: Database? = null,
+  transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
+  statement: Transaction.() -> T
+) =
   measureTimedValue {
-    transaction {
-      block()
+    transaction(
+      transactionIsolation = transactionIsolation,
+      db = db,
+    ) {
+      statement()
+    }
+  }
+
+fun <T> timedReadOnlyTx(
+  db: Database? = null,
+  transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
+  statement: Transaction.() -> T
+) =
+  measureTimedValue {
+    readonlyTx(db, transactionIsolation) {
+      statement()
     }
   }
