@@ -22,6 +22,7 @@ package com.github.pambrose.common.concurrent
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
+import kotlin.concurrent.thread
 
 val CountDownLatch.isFinished: Boolean get() = count == 0L
 
@@ -50,12 +51,11 @@ fun thread(
   name: String? = null,
   priority: Int = -1,
   block: () -> Unit,
-): Thread {
-  return kotlin.concurrent.thread(start, isDaemon, contextClassLoader, name, priority) {
+): Thread =
+  thread(start, isDaemon, contextClassLoader, name, priority) {
     try {
       block()
     } finally {
       latch.countDown()
     }
   }
-}

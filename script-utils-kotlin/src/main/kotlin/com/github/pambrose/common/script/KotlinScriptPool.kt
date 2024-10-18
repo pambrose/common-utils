@@ -19,8 +19,10 @@ package com.github.pambrose.common.script
 
 import kotlinx.coroutines.runBlocking
 
-class KotlinScriptPool(size: Int, nullGlobalContext: Boolean) :
-  AbstractScriptPool<KotlinScript>(size, nullGlobalContext) {
+class KotlinScriptPool(
+  size: Int,
+  nullGlobalContext: Boolean,
+) : AbstractScriptPool<KotlinScript>(size, nullGlobalContext) {
   init {
     runBlocking {
       repeat(size) { channel.send(KotlinScript()) }

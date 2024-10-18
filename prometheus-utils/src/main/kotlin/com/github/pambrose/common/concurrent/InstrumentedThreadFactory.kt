@@ -50,7 +50,9 @@ class InstrumentedThreadFactory(
     return thread
   }
 
-  private inner class InstrumentedRunnable(private val runnable: Runnable) : Runnable {
+  private inner class InstrumentedRunnable(
+    private val runnable: Runnable,
+  ) : Runnable {
     override fun run() {
       running.inc()
       try {

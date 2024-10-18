@@ -22,5 +22,7 @@ package com.github.pambrose.common.util
 import com.google.common.base.StandardSystemProperty
 
 val isWindows by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Windows") }
+
 val isMac by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Mac OS X") }
+
 val isJava6 by lazy { StandardSystemProperty.JAVA_VERSION.value().orEmpty().startsWith("1.6") }

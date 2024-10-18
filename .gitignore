@@ -3,6 +3,7 @@
 .wercker/
 target/
 build/
+.kotlin/
 
 *.iml
 

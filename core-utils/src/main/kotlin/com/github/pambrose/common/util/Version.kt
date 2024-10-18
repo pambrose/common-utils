@@ -22,7 +22,10 @@ import kotlin.reflect.full.findAnnotation
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class Version(val version: String, val date: String) {
+annotation class Version(
+  val version: String,
+  val date: String,
+) {
   companion object {
     internal val jsonStr = { version: String, date: String ->
       """{"Version": "$version", "Release Date": "$date"}"""

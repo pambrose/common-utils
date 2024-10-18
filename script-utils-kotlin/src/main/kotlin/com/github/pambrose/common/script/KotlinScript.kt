@@ -28,7 +28,8 @@ import javax.script.ScriptException
 
 class KotlinScript(
   nullGlobalContext: Boolean = false,
-) : AbstractScript("kts", nullGlobalContext), Closeable {
+) : AbstractScript("kts", nullGlobalContext),
+    Closeable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
   val varDecls: String

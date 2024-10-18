@@ -45,8 +45,9 @@ object AtomicDelegates {
   fun atomicLong(initValue: Long = -1L): ReadWriteProperty<Any?, Long> = AtomicLongDelegate(initValue)
 }
 
-private class NonNullAtomicReferenceDelegate<T : Any>(initValue: T? = null) :
-  ReadWriteProperty<Any?, T> {
+private class NonNullAtomicReferenceDelegate<T : Any>(
+  initValue: T? = null,
+) : ReadWriteProperty<Any?, T> {
   private val atomicVal = AtomicReference<T>(initValue)
 
   override operator fun getValue(
@@ -61,8 +62,9 @@ private class NonNullAtomicReferenceDelegate<T : Any>(initValue: T? = null) :
   ) = atomicVal.set(value)
 }
 
-private class NullableAtomicReferenceDelegate<T : Any?>(initValue: T? = null) :
-  ReadWriteProperty<Any?, T> {
+private class NullableAtomicReferenceDelegate<T : Any?>(
+  initValue: T? = null,
+) : ReadWriteProperty<Any?, T> {
   private val atomicVal = AtomicReference<T>(initValue)
 
   override operator fun getValue(
@@ -97,7 +99,9 @@ private class SingleSetAtomicReferenceDelegate<T : Any?>(
   }
 }
 
-private class AtomicBooleanDelegate(initValue: Boolean) : ReadWriteProperty<Any?, Boolean> {
+private class AtomicBooleanDelegate(
+  initValue: Boolean,
+) : ReadWriteProperty<Any?, Boolean> {
   private val atomicVal = AtomicBoolean(initValue)
 
   override operator fun getValue(
@@ -114,7 +118,9 @@ private class AtomicBooleanDelegate(initValue: Boolean) : ReadWriteProperty<Any?
   }
 }
 
-private class AtomicIntegerDelegate(initValue: Int) : ReadWriteProperty<Any?, Int> {
+private class AtomicIntegerDelegate(
+  initValue: Int,
+) : ReadWriteProperty<Any?, Int> {
   private val atomicVal = AtomicInteger(initValue)
 
   override operator fun getValue(
@@ -131,7 +137,9 @@ private class AtomicIntegerDelegate(initValue: Int) : ReadWriteProperty<Any?, In
   }
 }
 
-private class AtomicLongDelegate(initValue: Long) : ReadWriteProperty<Any?, Long> {
+private class AtomicLongDelegate(
+  initValue: Long,
+) : ReadWriteProperty<Any?, Long> {
   private val atomicVal = AtomicLong(initValue)
 
   override operator fun getValue(

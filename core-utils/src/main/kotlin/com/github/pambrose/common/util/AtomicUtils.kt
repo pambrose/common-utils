@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2024 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
  *
  */
 
-package com.github.pambrose.common.script
+package com.github.pambrose.common.util
 
-import kotlinx.coroutines.runBlocking
+import java.util.concurrent.atomic.AtomicBoolean
 
-class PythonScriptPool(
-  size: Int,
-  nullGlobalContext: Boolean,
-) : AbstractScriptPool<PythonScript>(size, nullGlobalContext) {
-  init {
-    runBlocking {
-      repeat(size) { channel.send(PythonScript()) }
+object AtomicUtils {
+  inline fun <T> AtomicBoolean.criticalSection(block: () -> T) {
+    set(true)
+    try {
+      block()
+    } finally {
+      set(false)
     }
   }
 }

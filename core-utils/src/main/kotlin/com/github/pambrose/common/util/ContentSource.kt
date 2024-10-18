@@ -27,7 +27,9 @@ interface ContentRoot {
   fun file(path: String): ContentSource
 }
 
-class FileSystemSource(val pathPrefix: String) : ContentRoot {
+class FileSystemSource(
+  val pathPrefix: String,
+) : ContentRoot {
   override val sourcePrefix = pathPrefix
   override val remote = false
 
@@ -102,17 +104,16 @@ open class GitHubFile(
   val branchName: String,
   val srcPath: String,
   val fileName: String,
-) :
-  UrlSource(
-    repo.scheme + listOf(
-      GITHUB_USER_CONTENT,
-      repo.ownerName,
-      repo.repoName,
-      branchName,
-      srcPath,
-      fileName,
-    ).join(),
-  ) {
+) : UrlSource(
+  repo.scheme + listOf(
+    GITHUB_USER_CONTENT,
+    repo.ownerName,
+    repo.repoName,
+    branchName,
+    srcPath,
+    fileName,
+  ).join(),
+) {
   override fun toString() = "GitHubFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 
@@ -121,29 +122,32 @@ open class GitLabFile(
   val branchName: String,
   val srcPath: String,
   val fileName: String,
-) :
-  UrlSource(
-    repo.scheme + listOf(
-      "gitlab.com",
-      repo.ownerName,
-      repo.repoName,
-      "-/blob",
-      branchName,
-      srcPath,
-      fileName,
-    ).join(),
-  ) {
+) : UrlSource(
+  repo.scheme + listOf(
+    "gitlab.com",
+    repo.ownerName,
+    repo.repoName,
+    "-/blob",
+    branchName,
+    srcPath,
+    fileName,
+  ).join(),
+) {
   override fun toString() = "GitLabFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 
-open class UrlSource(override val source: String) : ContentSource {
+open class UrlSource(
+  override val source: String,
+) : ContentSource {
   override val content: String
     get() = URL(source).readText()
 
   override val remote = true
 }
 
-open class FileSource(val fileName: String) : ContentSource {
+open class FileSource(
+  val fileName: String,
+) : ContentSource {
   override val source: String
     get() = fileName
 

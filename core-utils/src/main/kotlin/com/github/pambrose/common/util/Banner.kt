@@ -21,46 +21,38 @@ package com.github.pambrose.common.util
 
 import io.github.oshai.kotlinlogging.KLogger
 
-// Banner is from: http://patorjk.com/software/taag/#p=display&f=Big%20Money-nw&t=ReadingBat%0A%20%20%20Server
+// Banner is from: http://patorjk.com/software/taag/#p=display&f=Big%20Money-nw&t=My%0A%20%20%20Server
 fun getBanner(
   filename: String,
   logger: KLogger,
-) = try {
-  logger.javaClass.classLoader.getResourceAsStream(filename)
-    .use { inputStream ->
-      val banner =
-        inputStream?.bufferedReader()?.use { it.readText() }
-          ?: throw IllegalArgumentException("Invalid file name: $filename")
+): String {
+  val banner = logger.javaClass.classLoader.getResource(filename)?.readText()
+    ?: throw IllegalArgumentException("Banner not found: \"$filename\"")
 
-      val lines: List<String> = banner.lines()
+  val lines = banner.lines()
 
-      // Trim initial and trailing blank lines, but preserve blank lines in middle;
-      var first = -1
-      var last = -1
-      var lineNum = 0
-      lines.forEach { arg1 ->
-        if (arg1.trim { arg2 -> arg2 <= ' ' }.isNotEmpty()) {
-          if (first == -1)
-            first = lineNum
-          last = lineNum
-        }
-        lineNum++
-      }
-
-      lineNum = 0
-
-      val vals =
-        lines
-          .filter {
-            val currLine = lineNum++
-            currLine in first..last
-          }
-          .map { arg -> "     $arg" }
-          .toList()
-
-      val noNulls = vals.joinToString("\n")
-      "\n\n$noNulls\n\n"
+  // Trim initial and trailing blank lines, but preserve blank lines in middle;
+  var first = -1
+  var last = -1
+  var lineNum = 0
+  lines.forEach { arg1 ->
+    if (arg1.trim { arg2 -> arg2 <= ' ' }.isNotEmpty()) {
+      if (first == -1)
+        first = lineNum
+      last = lineNum
     }
-} catch (e: Exception) {
-  "Banner \"$filename\" cannot be found"
+    lineNum++
+  }
+
+  lineNum = 0
+
+  val vals =
+    lines
+      .filter {
+        val currLine = lineNum++
+        currLine in first..last
+      }
+      .map { arg -> "     $arg" }
+
+  return "\n\n${vals.joinToString("\n")}\n\n"
 }

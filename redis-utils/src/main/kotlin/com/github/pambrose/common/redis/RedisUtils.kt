@@ -39,7 +39,11 @@ object RedisUtils {
   private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
 
-  class RedisInfo(val uri: URI, val user: String, val password: String) {
+  class RedisInfo(
+    val uri: URI,
+    val user: String,
+    val password: String,
+  ) {
     val includeUserInAuth
       get() = user.isNotBlank() && user != "default" && user != "user" && password != "none"
   }

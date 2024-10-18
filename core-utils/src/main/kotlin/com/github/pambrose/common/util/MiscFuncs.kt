@@ -26,7 +26,10 @@ import kotlin.contracts.contract
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-data class HostInfo(val hostName: String, val ipAddress: String)
+data class HostInfo(
+  val hostName: String,
+  val ipAddress: String,
+)
 
 val hostInfo by lazy {
   try {

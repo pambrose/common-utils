@@ -20,7 +20,9 @@ package com.github.pambrose.common.script
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 
-abstract class AbstractEngine(extension: String) {
+abstract class AbstractEngine(
+  extension: String,
+) {
   val engine =
     scriptManager.getEngineByExtension(extension)
       ?: throw ScriptException("Unrecognized script extension: $extension")

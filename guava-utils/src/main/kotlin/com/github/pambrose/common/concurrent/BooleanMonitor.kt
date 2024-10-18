@@ -23,7 +23,9 @@ import com.google.common.base.MoreObjects
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.atomic.AtomicBoolean
 
-class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
+class BooleanMonitor(
+  initValue: Boolean,
+) : GenericMonitor() {
   private val monVal = AtomicBoolean(false)
 
   override val monitorSatisfied get() = get()
@@ -44,7 +46,8 @@ class BooleanMonitor(initValue: Boolean) : GenericMonitor() {
   }
 
   override fun toString() =
-    MoreObjects.toStringHelper(this)
+    MoreObjects
+      .toStringHelper(this)
       .add("value", monVal.get())
       .toString()
 

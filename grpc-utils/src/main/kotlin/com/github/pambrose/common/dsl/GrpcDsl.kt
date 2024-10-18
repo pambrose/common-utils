@@ -73,7 +73,8 @@ object GrpcDsl {
     maxRetryAttempts: Int,
   ): NettyChannelBuilder {
     logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
-    return NettyChannelBuilder.forAddress(hostName, port)
+    return NettyChannelBuilder
+      .forAddress(hostName, port)
       .also { builder ->
         val override = overrideAuthority.trim()
         if (override.isNotEmpty()) {
@@ -129,7 +130,8 @@ object GrpcDsl {
   }
 
   fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
-    Attributes.newBuilder()
+    Attributes
+      .newBuilder()
       .run {
         block(this)
         build()

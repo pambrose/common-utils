@@ -24,7 +24,9 @@ import org.amshove.kluent.shouldThrow
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 
-class IncClass(var i: Int = 0) {
+class IncClass(
+  var i: Int = 0,
+) {
   fun inc() {
     i++
   }

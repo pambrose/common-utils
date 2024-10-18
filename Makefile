@@ -14,6 +14,9 @@ build: compile
 publish:
 	./gradlew publish
 
+publishLocal:
+	./gradlew publishToMavenLocal
+
 tests:
 	./gradlew --rerun-tasks check
 
@@ -37,4 +40,4 @@ versioncheck:
 	./gradlew dependencyUpdates
 
 upgrade-wrapper:
-	./gradlew wrapper --gradle-version=8.8 --distribution-type=bin
+	./gradlew wrapper --gradle-version=8.10.2 --distribution-type=bin

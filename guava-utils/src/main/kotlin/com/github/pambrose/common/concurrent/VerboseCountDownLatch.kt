@@ -24,7 +24,9 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 
-class VerboseCountDownLatch(count: Int) : CountDownLatch(count) {
+class VerboseCountDownLatch(
+  count: Int,
+) : CountDownLatch(count) {
   @Throws(InterruptedException::class)
   fun await(
     timeout: Duration,

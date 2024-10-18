@@ -20,7 +20,9 @@ package com.github.pambrose.common.script
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 
-abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(val size: Int) {
+abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
+  val size: Int,
+) {
   protected val channel = Channel<AbstractExprEvaluator>(size)
 
   private suspend fun borrow() = channel.receive()

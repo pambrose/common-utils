@@ -52,7 +52,8 @@ abstract class GenericService<T> protected constructor(
   private val zipkinConfig: ZipkinConfig,
   private val versionBlock: () -> String = { "No version" },
   val isTestMode: Boolean = false,
-) : GenericExecutionThreadService(), Closeable {
+) : GenericExecutionThreadService(),
+    Closeable {
   protected val startTime = Monotonic.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
