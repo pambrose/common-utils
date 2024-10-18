@@ -30,7 +30,9 @@ import kotlin.reflect.typeOf
 // https://gitter.im/java-scriptengine/community
 
 // Java cannot have a null global context
-class JavaScript : AbstractScript("java", false), Closeable {
+class JavaScript :
+  AbstractScript("java", false),
+  Closeable {
   private val imports = mutableListOf<String>()
 
   val varDecls: String

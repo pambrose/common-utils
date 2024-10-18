@@ -24,7 +24,9 @@ import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 
-class IncClass(var i: Int = 0) {
+class IncClass(
+  var i: Int = 0,
+) {
   fun inc() {
     i++
   }

@@ -27,9 +27,15 @@ import io.netty.handler.ssl.SslContextBuilder
 import java.io.File
 import javax.net.ssl.SSLException
 
-data class TlsContextBuilder(val builder: SslContextBuilder, val mutualAuth: Boolean)
+data class TlsContextBuilder(
+  val builder: SslContextBuilder,
+  val mutualAuth: Boolean,
+)
 
-data class TlsContext(val sslContext: SslContext?, val mutualAuth: Boolean) {
+data class TlsContext(
+  val sslContext: SslContext?,
+  val mutualAuth: Boolean,
+) {
   fun desc() =
     if (sslContext.isNull())
       "plaintext"

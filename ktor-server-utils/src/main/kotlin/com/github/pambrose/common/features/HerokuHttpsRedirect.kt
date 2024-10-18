@@ -34,7 +34,9 @@ private val logger = KotlinLogging.logger {}
 /**
  * Redirect non-secure requests to HTTPS
  */
-class HerokuHttpsRedirect(config: Configuration) {
+class HerokuHttpsRedirect(
+  config: Configuration,
+) {
   /**
    * HTTPS host to redirect to
    */

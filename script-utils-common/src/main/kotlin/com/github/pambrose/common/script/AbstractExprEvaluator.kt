@@ -19,7 +19,9 @@ package com.github.pambrose.common.script
 
 import com.github.pambrose.common.script.ScriptUtils.resetContext
 
-abstract class AbstractExprEvaluator(extension: String) : AbstractEngine(extension) {
+abstract class AbstractExprEvaluator(
+  extension: String,
+) : AbstractEngine(extension) {
   fun eval(expr: String) = engine.eval(expr) as Boolean
 
   fun compute(expr: String) = engine.eval(expr) as Any

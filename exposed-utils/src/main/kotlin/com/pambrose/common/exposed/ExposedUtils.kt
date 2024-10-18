@@ -27,13 +27,16 @@ import org.jetbrains.exposed.sql.statements.StatementContext
 import org.jetbrains.exposed.sql.statements.expandArgs
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.transactions.transactionManager
+import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
 object ExposedUtils {
   internal val logger = KotlinLogging.logger {}
 }
 
-class KotlinSqlLogger(val logger: KLogger = ExposedUtils.logger) : SqlLogger {
+class KotlinSqlLogger(
+  val logger: KLogger = ExposedUtils.logger,
+) : SqlLogger {
   override fun log(
     context: StatementContext,
     transaction: Transaction,
@@ -64,8 +67,8 @@ fun <T> readonlyTx(
 fun <T> timedTransaction(
   db: Database? = null,
   transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
-  statement: Transaction.() -> T
-) =
+  statement: Transaction.() -> T,
+): TimedValue<T> =
   measureTimedValue {
     transaction(
       transactionIsolation = transactionIsolation,
@@ -78,8 +81,8 @@ fun <T> timedTransaction(
 fun <T> timedReadOnlyTx(
   db: Database? = null,
   transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
-  statement: Transaction.() -> T
-) =
+  statement: Transaction.() -> T,
+): TimedValue<T> =
   measureTimedValue {
     readonlyTx(db, transactionIsolation) {
       statement()

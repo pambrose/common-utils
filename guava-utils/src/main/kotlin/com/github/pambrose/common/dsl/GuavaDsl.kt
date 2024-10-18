@@ -26,7 +26,8 @@ import com.google.common.util.concurrent.ServiceManager
 
 object GuavaDsl {
   fun Any.toStringElements(block: MoreObjects.ToStringHelper.() -> Unit) =
-    MoreObjects.toStringHelper(this)
+    MoreObjects
+      .toStringHelper(this)
       .run {
         block(this)
         toString()
