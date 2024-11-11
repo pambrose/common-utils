@@ -33,6 +33,7 @@ object RedisUtils {
   const val REDIS_MAX_POOL_SIZE = "redis.maxPoolSize"
   const val REDIS_MAX_IDLE_SIZE = "redis.maxIdleSize"
   const val REDIS_MIN_IDLE_SIZE = "redis.minIdleSize"
+  const val REDIS_MAX_WAIT_SECS = "redis.maxWaitSecs"
 
   private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
 
@@ -64,14 +65,17 @@ object RedisUtils {
     maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,
     maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
     minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1,
+    maxWaitSecs: Long = System.getProperty(REDIS_MAX_WAIT_SECS)?.toLong() ?: 1L,
   ): JedisPool {
     require(maxPoolSize > 0) { "Max pool size must be a positive number" }
     require(maxIdleSize > 0) { "Max idle size must be a positive number" }
-    require(minIdleSize >= 0) { "Min idle size canot be a negative number" }
+    require(minIdleSize >= 0) { "Min idle size cannot be a negative number" }
+    require(maxWaitSecs > 0) { "Max wait secs must be a positive number" }
 
     logger.info { "Redis max pool size: $maxPoolSize" }
     logger.info { "Redis max idle size: $maxIdleSize" }
     logger.info { "Redis min idle size: $minIdleSize" }
+    logger.info { "Redis max wait secs: $maxWaitSecs" }
 
     val poolConfig =
       JedisPoolConfig()
@@ -79,6 +83,7 @@ object RedisUtils {
           maxTotal = maxPoolSize
           maxIdle = maxIdleSize
           minIdle = minIdleSize
+          setMaxWait(java.time.Duration.ofSeconds(maxWaitSecs))
           testOnBorrow = true
           testOnReturn = true
           testWhileIdle = true
