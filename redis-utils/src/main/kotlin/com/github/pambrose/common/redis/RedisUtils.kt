@@ -111,11 +111,10 @@ object RedisUtils {
     block: (Jedis?) -> T,
   ): T =
     try {
-      resource
-        .use { redis ->
-          redis.ping("")
-          block.invoke(redis)
-        }
+      resource.use { redis ->
+        redis.ping("")
+        block.invoke(redis)
+      }
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
@@ -146,11 +145,10 @@ object RedisUtils {
     block: suspend (Jedis?) -> T,
   ): T =
     try {
-      resource
-        .use { redis ->
-          redis.ping("")
-          block.invoke(redis)
-        }
+      resource.use { redis ->
+        redis.ping("")
+        block.invoke(redis)
+      }
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
@@ -164,11 +162,10 @@ object RedisUtils {
     block: suspend (Jedis) -> T,
   ): T? =
     try {
-      resource
-        .use { redis ->
-          redis.ping("")
-          block.invoke(redis)
-        }
+      resource.use { redis ->
+        redis.ping("")
+        block.invoke(redis)
+      }
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }

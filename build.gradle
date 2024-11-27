@@ -4,8 +4,8 @@ plugins {
 
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
     id 'com.github.kt3k.coveralls' version '2.12.2' apply false
-    id 'org.jetbrains.kotlin.jvm' version '2.0.21' apply false
-    id 'org.jmailen.kotlinter' version '4.5.0' apply false
+    id 'org.jetbrains.kotlin.jvm' version '2.1.0' apply false
+    //id 'org.jmailen.kotlinter' version '4.5.0' apply false
     id "com.github.ben-manes.versions" version '0.51.0' apply false
 }
 
@@ -50,21 +50,21 @@ ext {
 
         redis                 : "redis.clients:jedis:$redis_version",
 
-        brave : "io.zipkin.brave:brave:$brave_version",
-        zipkin: "io.zipkin.reporter2:zipkin-reporter-brave:$zipkin_version",
-
+        brave          : "io.zipkin.brave:brave:$brave_version",
+        zipkin_core    : "io.zipkin.zipkin2:zipkin:$zipkin_version",
+        zipkin_reporter: "io.zipkin.reporter2:zipkin-reporter-brave:$zipkin_version",
         zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version",
     ]
 }
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '2.1.3'
+    version '2.2.0'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
     apply plugin: 'com.github.kt3k.coveralls'
-    apply plugin: 'org.jmailen.kotlinter'
+    //apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
 
@@ -73,8 +73,8 @@ allprojects {
         mavenCentral()
     }
 
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+//    sourceCompatibility = JavaVersion.VERSION_17
+//    targetCompatibility = JavaVersion.VERSION_17
 
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
 
@@ -170,10 +170,10 @@ subprojects {
         }
     }
 
-    kotlinter {
-        ignoreFailures = false
-        reporters = ['checkstyle', 'plain']
-    }
+//    kotlinter {
+//        ignoreFailures = false
+//        reporters = ['checkstyle', 'plain']
+//    }
 
 //    jacocoTestReport {
 //        reports {

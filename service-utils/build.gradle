@@ -35,6 +35,7 @@ dependencies {
     implementation libraries.jetty_server
     implementation libraries.jetty_servlet
     implementation libraries.brave
-    implementation libraries.zipkin
+    implementation libraries.zipkin_core
+    implementation libraries.zipkin_reporter
     implementation libraries.zipkin_sender_okhttp
 }

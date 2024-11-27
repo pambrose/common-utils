@@ -21,5 +21,6 @@ dependencies {
     implementation project(':core-utils')
 
     implementation libraries.brave
-    implementation libraries.zipkin
+    implementation libraries.zipkin_core
+    implementation libraries.zipkin_reporter
 }
