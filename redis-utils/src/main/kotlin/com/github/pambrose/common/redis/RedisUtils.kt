@@ -87,6 +87,9 @@ object RedisUtils {
           testOnBorrow = true
           testOnReturn = true
           testWhileIdle = true
+
+          timeBetweenEvictionRuns = java.time.Duration.ofMinutes(1) // Run the eviction thread every minute
+          minEvictableIdleDuration = java.time.Duration.ofMinutes(5) // Evict connections idle for 5 minutes
         }
 
     val info = urlDetails(redisUrl)
