@@ -21,9 +21,7 @@ import io.ktor.http.*
 import io.ktor.http.ContentType.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
-import io.ktor.util.pipeline.*
-
-typealias PipelineCall = PipelineContext<*, ApplicationCall>
+import io.ktor.server.routing.*
 
 suspend inline fun ApplicationCall.respondWith(
   contentType: ContentType = Text.Html,
@@ -35,12 +33,12 @@ suspend inline fun ApplicationCall.redirectTo(
   block: () -> String,
 ) = respondRedirect(block.invoke(), permanent)
 
-suspend inline fun PipelineCall.respondWith(
+suspend inline fun RoutingContext.respondWith(
   contentType: ContentType = Text.Html,
   block: () -> String,
 ) = call.respondWith(contentType, block)
 
-suspend inline fun PipelineCall.redirectTo(
+suspend inline fun RoutingContext.redirectTo(
   permanent: Boolean = false,
   block: () -> String,
 ) = call.redirectTo(permanent, block)
