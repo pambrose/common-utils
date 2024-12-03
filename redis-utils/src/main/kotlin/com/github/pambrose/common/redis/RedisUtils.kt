@@ -67,10 +67,10 @@ object RedisUtils {
     minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1,
     maxWaitSecs: Long = System.getProperty(REDIS_MAX_WAIT_SECS)?.toLong() ?: 1L,
   ): JedisPool {
-    require(maxPoolSize > 0) { "Max pool size must be a positive number" }
-    require(maxIdleSize > 0) { "Max idle size must be a positive number" }
+    require(maxPoolSize >= 0) { "Max pool size cannot be a negative number" }
+    require(maxIdleSize >= 0) { "Max idle size cannot be a negative number" }
     require(minIdleSize >= 0) { "Min idle size cannot be a negative number" }
-    require(maxWaitSecs > 0) { "Max wait secs must be a positive number" }
+    require(maxWaitSecs >= 0) { "Max wait secs cannot be a negative number" }
 
     logger.info { "Redis max pool size: $maxPoolSize" }
     logger.info { "Redis max idle size: $maxIdleSize" }
