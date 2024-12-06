@@ -47,7 +47,7 @@ object GrpcDsl {
   ): ManagedChannel {
     val channelBuilder =
       if (inProcessServerName.isEmpty())
-        createNettChannel(hostName, port, tlsContext, overrideAuthority, enableRetry, maxRetryAttempts)
+        createNettyChannel(hostName, port, tlsContext, overrideAuthority, enableRetry, maxRetryAttempts)
       else
         createInProcessChannel(inProcessServerName)
 
@@ -64,7 +64,7 @@ object GrpcDsl {
     }
   }
 
-  private fun createNettChannel(
+  private fun createNettyChannel(
     hostName: String,
     port: Int,
     tlsContext: TlsContext,
