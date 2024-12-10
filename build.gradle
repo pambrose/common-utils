@@ -59,7 +59,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '2.3.4'
+    version '2.3.5'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
@@ -72,9 +72,6 @@ allprojects {
         google()
         mavenCentral()
     }
-
-//    sourceCompatibility = JavaVersion.VERSION_17
-//    targetCompatibility = JavaVersion.VERSION_17
 
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
 
