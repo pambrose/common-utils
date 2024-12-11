@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2024 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,11 @@
 
 package com.github.pambrose.common.util
 
+import kotlinx.datetime.Instant.Companion.fromEpochMilliseconds
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 
@@ -24,20 +29,43 @@ import kotlin.reflect.full.findAnnotation
 @Target(AnnotationTarget.CLASS)
 annotation class Version(
   val version: String,
-  val date: String,
+  val releaseDate: String,
+  val buildTime: Long,
 ) {
   companion object {
-    internal val jsonStr = { version: String, date: String ->
-      """{"Version": "$version", "Release Date": "$date"}"""
+    private const val UNKNOWN = "Unknown"
+    private const val ZONE_ID = "America/Los_Angeles"
+    val TIME_ZONE: TimeZone = TimeZone.of(ZONE_ID)
+
+    private fun buildDateTime(buildTime: Long) = fromEpochMilliseconds(buildTime).toLocalDateTime(TIME_ZONE)
+
+    private fun buildDateTimeStr(buildTime: Long) = buildDateTime(buildTime).toFullDateString()
+
+    val jsonStr = { version: String, buildDate: String, buildTime: Long ->
+      buildJsonObject {
+        put("version", version)
+        put("release_date", buildDate)
+        put("build_time: ", buildDateTimeStr(buildTime))
+      }.toString()
     }
-    internal val plainStr = { version: String, date: String ->
-      "Version: $version Release Date: $date"
+    val plainStr = { version: String, buildDate: String, buildTime: Long ->
+      "Version: $version Release Date: $buildDate Build Date: ${buildDateTimeStr(buildTime)}"
     }
-    private const val UNKNOWN = "unknown"
+
+    fun KClass<*>.buildString() = findAnnotation<Version>()?.run { buildDateTimeStr(buildTime) } ?: UNKNOWN
+
+    fun KClass<*>.buildDateTime() = findAnnotation<Version>()?.run { buildDateTime(buildTime) }
+
+    fun KClass<*>.version() = findAnnotation<Version>()?.run { version } ?: UNKNOWN
 
     fun KClass<*>.versionDesc(asJson: Boolean = false): String =
-      this.findAnnotation<Version>()
-        ?.run { if (asJson) jsonStr(version, date) else plainStr(version, date) }
-        ?: if (asJson) jsonStr(UNKNOWN, UNKNOWN) else plainStr(UNKNOWN, UNKNOWN)
+      findAnnotation<Version>()
+        ?.run {
+          if (asJson)
+            jsonStr(version, releaseDate, buildTime)
+          else
+            plainStr(version, releaseDate, buildTime)
+        }
+        ?: if (asJson) jsonStr(UNKNOWN, UNKNOWN, 0) else plainStr(UNKNOWN, UNKNOWN, 0)
   }
 }
