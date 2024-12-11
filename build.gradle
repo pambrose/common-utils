@@ -5,6 +5,7 @@ plugins {
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
     id 'com.github.kt3k.coveralls' version '2.12.2' apply false
     id 'org.jetbrains.kotlin.jvm' version '2.1.0' apply false
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.1.0' apply false
     //id 'org.jmailen.kotlinter' version '4.5.0' apply false
     id "com.github.ben-manes.versions" version '0.51.0' apply false
 }
@@ -12,6 +13,8 @@ plugins {
 ext {
     libraries = [
         reflect               : "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version",
+
+        serialization   : "org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version",
 
         guava                 : "com.google.guava:guava:$guava_version",
 
@@ -40,6 +43,8 @@ ext {
         jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
         jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
 
+        kotlinx_datetime: "org.jetbrains.kotlinx:kotlinx-datetime:$datetime_version",
+
         ktor_server_core      : "io.ktor:ktor-server:$ktor_version",
         ktor_client_core      : "io.ktor:ktor-client:$ktor_version",
 
@@ -50,16 +55,16 @@ ext {
 
         redis                 : "redis.clients:jedis:$redis_version",
 
-        brave          : "io.zipkin.brave:brave:$brave_version",
-        zipkin_core    : "io.zipkin.zipkin2:zipkin:$zipkin_version",
-        zipkin_reporter: "io.zipkin.reporter2:zipkin-reporter-brave:$zipkinReporter_version",
+        brave           : "io.zipkin.brave:brave:$brave_version",
+        zipkin_core     : "io.zipkin.zipkin2:zipkin:$zipkin_version",
+        zipkin_reporter : "io.zipkin.reporter2:zipkin-reporter-brave:$zipkinReporter_version",
         zipkin_sender_okhttp  : "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version",
     ]
 }
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '2.3.5'
+    version '2.3.6'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
@@ -67,6 +72,7 @@ allprojects {
     //apply plugin: 'org.jmailen.kotlinter'
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'com.github.ben-manes.versions'
+    apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 
     repositories {
         google()

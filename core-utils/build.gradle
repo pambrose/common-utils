@@ -19,12 +19,18 @@ description = 'core-utils'
 
 dependencies {
     implementation libraries.reflect
+    implementation libraries.kotlinx_datetime
+    implementation libraries.serialization
 }
 
 compileKotlin {
-    kotlinOptions.freeCompilerArgs += ['-opt-in=kotlin.contracts.ExperimentalContracts']
+    kotlinOptions {
+        freeCompilerArgs += ['-opt-in=kotlin.contracts.ExperimentalContracts']
+    }
 }
 
 compileTestKotlin {
-    kotlinOptions.freeCompilerArgs += ['-opt-in=kotlin.contracts.ExperimentalContracts']
+    kotlinOptions {
+        freeCompilerArgs += ['-opt-in=kotlin.contracts.ExperimentalContracts']
+    }
 }
