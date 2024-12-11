@@ -64,7 +64,7 @@ ext {
 
 allprojects {
     group 'com.github.pambrose.common-utils'
-    version '2.3.6'
+    version '2.3.7'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'

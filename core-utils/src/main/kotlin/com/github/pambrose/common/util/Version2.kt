@@ -58,7 +58,7 @@ annotation class Version2(
 
     fun KClass<*>.version() = findAnnotation<Version2>()?.run { version } ?: UNKNOWN
 
-    fun KClass<*>.versionDesc2(asJson: Boolean = false): String =
+    fun KClass<*>.versionDesc(asJson: Boolean = false): String =
       findAnnotation<Version2>()
         ?.run {
           if (asJson)
