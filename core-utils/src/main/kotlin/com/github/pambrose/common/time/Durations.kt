@@ -15,7 +15,7 @@
  *
  */
 
-@file:JvmName("DurationUtils")
+@file:JvmName("Durations")
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.github.pambrose.common.time
