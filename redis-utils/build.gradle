@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Paul Ambrose (pambrose@mac.com)
+ * Copyright © 2025 Paul Ambrose (pambrose@mac.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,5 +20,5 @@ description = 'redis-utils'
 dependencies {
     //implementation project(':core-utils')
 
-    implementation libraries.redis
+    implementation rootProject.libraries.redis
 }
