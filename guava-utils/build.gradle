@@ -20,5 +20,5 @@ description = 'guava-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation libraries.guava
+    implementation rootProject.libraries.guava
 }

@@ -20,6 +20,6 @@ description = 'prometheus-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation libraries.prometheus_core
-    implementation libraries.prometheus_hotspot
+    implementation rootProject.libraries.prometheus_core
+    implementation rootProject.libraries.prometheus_hotspot
 }

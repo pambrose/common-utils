@@ -21,7 +21,7 @@ dependencies {
     implementation project(':core-utils')
     implementation project(':script-utils-common')
 
-    runtimeOnly libraries.kotlin_scripting
+    runtimeOnly rootProject.libraries.kotlin_scripting
 }
 
 compileKotlin {

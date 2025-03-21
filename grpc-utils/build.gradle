@@ -20,11 +20,11 @@ description = 'grpc-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation libraries.grpc_netty
-    implementation libraries.grpc_inprocess
-    implementation libraries.grpc_protobuf
-    implementation libraries.grpc_stub
-    implementation libraries.grpc_services
+    implementation rootProject.libraries.grpc_netty
+    implementation rootProject.libraries.grpc_inprocess
+    implementation rootProject.libraries.grpc_protobuf
+    implementation rootProject.libraries.grpc_stub
+    implementation rootProject.libraries.grpc_services
 
-    runtimeOnly libraries.netty_ssl
+    runtimeOnly rootProject.libraries.netty_ssl
 }

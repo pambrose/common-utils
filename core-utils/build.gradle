@@ -18,9 +18,9 @@
 description = 'core-utils'
 
 dependencies {
-    implementation libraries.reflect
-    implementation libraries.kotlinx_datetime
-    implementation libraries.serialization
+    implementation rootProject.libraries.reflect
+    implementation rootProject.libraries.kotlinx_datetime
+    implementation rootProject.libraries.serialization
 }
 
 compileKotlin {

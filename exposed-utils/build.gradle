@@ -20,7 +20,7 @@ description = 'exposed-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation libraries.reflect
-    implementation libraries.exposed_core
-    implementation libraries.exposed_jodatime
+    implementation rootProject.libraries.reflect
+    implementation rootProject.libraries.exposed_core
+    implementation rootProject.libraries.exposed_jodatime
 }

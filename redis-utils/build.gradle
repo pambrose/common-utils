@@ -20,5 +20,5 @@ description = 'redis-utils'
 dependencies {
     //implementation project(':core-utils')
 
-    implementation libraries.redis
+    implementation rootProject.libraries.redis
 }

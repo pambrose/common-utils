@@ -18,5 +18,5 @@
 description = 'corex-utils'
 
 dependencies {
-    //implementation libraries.coroutines_core
+    //implementation rootProject.libraries.coroutines_core
 }

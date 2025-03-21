@@ -20,9 +20,9 @@ description = 'ktor-server-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation libraries.reflect
-    implementation libraries.ktor_server_core
-    //implementation libraries.ktor_server_plugins
+    implementation rootProject.libraries.reflect
+    implementation rootProject.libraries.ktor_server_core
+    // implementation rootProject.libraries.ktor_server_plugins
 }
 
 //compileKotlin {

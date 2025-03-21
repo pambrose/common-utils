@@ -21,8 +21,7 @@ dependencies {
     implementation project(':core-utils')
     implementation project(':script-utils-common')
 
-    //implementation libraries.coroutines_core
-    implementation libraries.python_scripting
+    implementation rootProject.libraries.python_scripting
 }
 
 compileKotlin {

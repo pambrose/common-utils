@@ -20,9 +20,9 @@ description = 'ktor-client-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation libraries.ktor_client_core
-  //  implementation libraries.ktor_client_cio
-    //implementation libraries.ktor_client_plugins
+    implementation rootProject.libraries.ktor_client_core
+    // implementation rootProject.libraries.ktor_client_cio
+    // implementation rootProject.libraries.ktor_client_plugins
 }
 
 //compileKotlin {

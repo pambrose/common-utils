@@ -20,6 +20,6 @@ description = 'dropwizard-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation libraries.dropwizard_core
-    implementation libraries.dropwizard_healthcheck
+    implementation rootProject.libraries.dropwizard_core
+    implementation rootProject.libraries.dropwizard_healthcheck
 }
