@@ -19,19 +19,19 @@
 
 package com.github.pambrose.common.delegate
 
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 object AtomicDelegates {
   fun <T : Any> nonNullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
-    NonNullAtomicReferenceDelegate(initValue)
+    NonNullableAtomicReferenceDelegate(initValue)
 
-  fun <T : Any?> nullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
-    NullableAtomicReferenceDelegate(initValue)
+//  fun <T : Any?> nullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
+//    NullableAtomicReferenceDelegate(initValue)
 
   fun <T : Any?> singleSetReference(
     initValue: T? = null,
@@ -45,39 +45,39 @@ object AtomicDelegates {
   fun atomicLong(initValue: Long = -1L): ReadWriteProperty<Any?, Long> = AtomicLongDelegate(initValue)
 }
 
-private class NonNullAtomicReferenceDelegate<T : Any>(
+private class NonNullableAtomicReferenceDelegate<T : Any>(
   initValue: T? = null,
 ) : ReadWriteProperty<Any?, T> {
-  private val atomicVal = AtomicReference<T>(initValue)
+  private val atomicVal = AtomicReference(initValue)
 
   override operator fun getValue(
     thisRef: Any?,
     property: KProperty<*>,
-  ) = atomicVal.get() ?: error("Property ${property.name} must be initialized first")
+  ) = atomicVal.load() ?: error("Property ${property.name} must be initialized first")
 
   override operator fun setValue(
     thisRef: Any?,
     property: KProperty<*>,
     value: T,
-  ) = atomicVal.set(value)
+  ) = atomicVal.store(value)
 }
 
-private class NullableAtomicReferenceDelegate<T : Any?>(
-  initValue: T? = null,
-) : ReadWriteProperty<Any?, T> {
-  private val atomicVal = AtomicReference<T>(initValue)
-
-  override operator fun getValue(
-    thisRef: Any?,
-    property: KProperty<*>,
-  ): T = atomicVal.get()
-
-  override operator fun setValue(
-    thisRef: Any?,
-    property: KProperty<*>,
-    value: T,
-  ) = atomicVal.set(value)
-}
+// private class NullableAtomicReferenceDelegate<T : Any?>(
+//   initValue: T? = null,
+// ) : ReadWriteProperty<Any?, T> {
+//   private val atomicVal = AtomicReference(initValue)
+//
+//   override operator fun getValue(
+//     thisRef: Any?,
+//     property: KProperty<*>,
+//   ): T = atomicVal.load()
+//
+//   override operator fun setValue(
+//     thisRef: Any?,
+//     property: KProperty<*>,
+//     value: T,
+//   ) = atomicVal.store(value)
+// }
 
 private class SingleSetAtomicReferenceDelegate<T : Any?>(
   initValue: T?,
@@ -88,7 +88,7 @@ private class SingleSetAtomicReferenceDelegate<T : Any?>(
   override operator fun getValue(
     thisRef: Any?,
     property: KProperty<*>,
-  ): T? = atomicVal.get()
+  ): T? = atomicVal.load()
 
   override operator fun setValue(
     thisRef: Any?,
@@ -107,33 +107,33 @@ private class AtomicBooleanDelegate(
   override operator fun getValue(
     thisRef: Any?,
     property: KProperty<*>,
-  ) = atomicVal.get()
+  ) = atomicVal.load()
 
   override operator fun setValue(
     thisRef: Any?,
     property: KProperty<*>,
     value: Boolean,
   ) {
-    atomicVal.set(value)
+    atomicVal.store(value)
   }
 }
 
 private class AtomicIntegerDelegate(
   initValue: Int,
 ) : ReadWriteProperty<Any?, Int> {
-  private val atomicVal = AtomicInteger(initValue)
+  private val atomicVal = AtomicInt(initValue)
 
   override operator fun getValue(
     thisRef: Any?,
     property: KProperty<*>,
-  ) = atomicVal.get()
+  ) = atomicVal.load()
 
   override operator fun setValue(
     thisRef: Any?,
     property: KProperty<*>,
     value: Int,
   ) {
-    atomicVal.set(value)
+    atomicVal.store(value)
   }
 }
 
@@ -145,13 +145,13 @@ private class AtomicLongDelegate(
   override operator fun getValue(
     thisRef: Any?,
     property: KProperty<*>,
-  ) = atomicVal.get()
+  ) = atomicVal.load()
 
   override operator fun setValue(
     thisRef: Any?,
     property: KProperty<*>,
     value: Long,
   ) {
-    atomicVal.set(value)
+    atomicVal.store(value)
   }
 }

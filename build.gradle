@@ -50,7 +50,7 @@ ext {
 
 allprojects {
     group = 'com.github.pambrose.common-utils'
-    version = '2.3.9'
+    version = '2.3.10'
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
@@ -143,7 +143,9 @@ subprojects {
             freeCompilerArgs += ['-Xbackend-threads=8',
                                  '-opt-in=kotlin.contracts.ExperimentalContracts',
                                  '-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
-                                 '-opt-in=kotlin.time.ExperimentalTime',]
+                                 '-opt-in=kotlin.time.ExperimentalTime',
+                                 '-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi,'
+            ]
         }
     }
 
