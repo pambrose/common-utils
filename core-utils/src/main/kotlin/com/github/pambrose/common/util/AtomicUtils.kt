@@ -17,15 +17,15 @@
 
 package com.github.pambrose.common.util
 
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicBoolean
 
 object AtomicUtils {
   inline fun <T> AtomicBoolean.criticalSection(block: () -> T) {
-    set(true)
+    store(true)
     try {
       block()
     } finally {
-      set(false)
+      store(false)
     }
   }
 }

@@ -22,8 +22,8 @@ import com.github.pambrose.common.util.isNull
 import com.github.pambrose.common.util.pluralize
 import com.github.pambrose.common.util.toDoubleQuoted
 import com.github.pambrose.common.util.typeParameterCount
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.script.ScriptException
+import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.reflect.KType
 
 // https://docs.oracle.com/en/java/javase/14/scripting/java-scripting-api.html#GUID-C4A6EB7C-0AEA-45EC-8662-099BDEFC361A
@@ -38,8 +38,8 @@ abstract class AbstractScript(
   protected val valueMap = mutableMapOf<String, Any>()
 
   protected var initialized
-    get() = _initialized.get()
-    set(value) = _initialized.set(value)
+    get() = _initialized.load()
+    set(value) = _initialized.store(value)
 
   init {
     resetContext(nullGlobalContext)
