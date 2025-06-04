@@ -15,6 +15,10 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'zipkin-utils'
 
 dependencies {
@@ -23,4 +27,5 @@ dependencies {
     implementation rootProject.libraries.brave
     implementation rootProject.libraries.zipkin_core
     implementation rootProject.libraries.zipkin_reporter
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

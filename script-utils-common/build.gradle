@@ -15,22 +15,14 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'script-utils-common'
 
 dependencies {
     implementation project(':core-utils')
-
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
     // implementation rootProject.libraries.coroutines_core
-}
-
-compileKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-opt-in=kotlin.ExperimentalStdlibApi']
-    }
-}
-
-compileTestKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-opt-in=kotlin.ExperimentalStdlibApi']
-    }
 }

@@ -15,10 +15,15 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'guava-utils'
 
 dependencies {
     implementation project(':core-utils')
 
     implementation rootProject.libraries.guava
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

@@ -15,6 +15,10 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'grpc-utils'
 
 dependencies {
@@ -27,4 +31,5 @@ dependencies {
     implementation rootProject.libraries.grpc_services
 
     runtimeOnly rootProject.libraries.netty_ssl
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

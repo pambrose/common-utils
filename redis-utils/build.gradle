@@ -15,10 +15,15 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'redis-utils'
 
 dependencies {
     //implementation project(':core-utils')
 
     implementation rootProject.libraries.redis
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

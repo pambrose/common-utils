@@ -1,12 +1,15 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+
 plugins {
     id 'java-library'
     id 'maven-publish'
 
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
     id 'com.github.kt3k.coveralls' version '2.12.2' apply false
-    id 'org.jetbrains.kotlin.jvm' version '2.1.20' apply false
-    id 'org.jetbrains.kotlin.plugin.serialization' version '2.1.20' apply false
-    id 'org.jmailen.kotlinter' version '5.0.1' apply false
+    id 'org.jetbrains.kotlin.jvm' version '2.2.0-RC2' apply false
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.2.0-RC2' apply false
+    id 'org.jmailen.kotlinter' version '5.1.0' apply false
     id "com.github.ben-manes.versions" version '0.52.0' apply false
 }
 
@@ -138,23 +141,34 @@ subprojects {
         jvmToolchain(11)
     }
 
-    compileKotlin {
-        kotlinOptions {
-            freeCompilerArgs += ['-Xbackend-threads=8',
-                                 '-opt-in=kotlin.contracts.ExperimentalContracts',
-                                 '-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
-                                 '-opt-in=kotlin.time.ExperimentalTime',
-                                 '-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi,'
-            ]
+    tasks.withType(KotlinJvmCompile).configureEach {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xbackend-threads=8")
+            freeCompilerArgs.add("-opt-in=kotlin.contracts.ExperimentalContracts")
+            freeCompilerArgs.add("-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
+            freeCompilerArgs.add("-opt-in=kotlin.time.ExperimentalTime")
+            freeCompilerArgs.add("-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi")
         }
     }
 
-    compileTestKotlin {
-        kotlinOptions {
-            freeCompilerArgs += ['-Xbackend-threads=8',
-                                 '-opt-in=kotlin.time.ExperimentalTime',]
-        }
-    }
+//    compileKotlin {
+//        kotlinOptions {
+//            freeCompilerArgs += ['-Xbackend-threads=8',
+//                                 '-opt-in=kotlin.contracts.ExperimentalContracts',
+//                                 '-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
+//                                 '-opt-in=kotlin.time.ExperimentalTime',
+//                                 '-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi',
+//            ]
+//        }
+//    }
+//
+//    compileTestKotlin {
+//        kotlinOptions {
+//            freeCompilerArgs += ['-Xbackend-threads=8',
+//                                 '-opt-in=kotlin.time.ExperimentalTime',]
+//        }
+//    }
 
     test {
         useJUnitPlatform()

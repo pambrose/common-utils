@@ -15,6 +15,10 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'jetty-utils'
 
 dependencies {
@@ -22,4 +26,5 @@ dependencies {
 
     implementation rootProject.libraries.jetty_server
     implementation rootProject.libraries.jetty_servlet
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

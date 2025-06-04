@@ -15,22 +15,15 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'core-utils'
 
 dependencies {
     implementation rootProject.libraries.reflect
     implementation rootProject.libraries.kotlinx_datetime
     implementation rootProject.libraries.serialization
-}
-
-compileKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-opt-in=kotlin.contracts.ExperimentalContracts']
-    }
-}
-
-compileTestKotlin {
-    kotlinOptions {
-        freeCompilerArgs += ['-opt-in=kotlin.contracts.ExperimentalContracts']
-    }
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

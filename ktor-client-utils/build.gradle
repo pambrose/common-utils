@@ -15,20 +15,17 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'ktor-client-utils'
 
 dependencies {
     implementation project(':core-utils')
 
     implementation rootProject.libraries.ktor_client_core
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
     // implementation rootProject.libraries.ktor_client_cio
     // implementation rootProject.libraries.ktor_client_plugins
 }
-
-//compileKotlin {
-//    kotlinOptions.freeCompilerArgs += ['-opt-in=io.ktor.util.KtorExperimentalAPI']
-//}
-//
-//compileTestKotlin {
-//    kotlinOptions.freeCompilerArgs += ['-opt-in=io.ktor.util.KtorExperimentalAPI']
-//}

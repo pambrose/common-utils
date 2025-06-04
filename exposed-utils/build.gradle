@@ -15,6 +15,10 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'exposed-utils'
 
 dependencies {
@@ -23,4 +27,5 @@ dependencies {
     implementation rootProject.libraries.reflect
     implementation rootProject.libraries.exposed_core
     implementation rootProject.libraries.exposed_jodatime
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

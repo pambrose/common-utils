@@ -15,8 +15,13 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'corex-utils'
 
 dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
     //implementation rootProject.libraries.coroutines_core
 }

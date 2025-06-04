@@ -15,6 +15,10 @@
  *
  */
 
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
 description = 'dropwizard-utils'
 
 dependencies {
@@ -22,4 +26,5 @@ dependencies {
 
     implementation rootProject.libraries.dropwizard_core
     implementation rootProject.libraries.dropwizard_healthcheck
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }
