@@ -41,8 +41,8 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 # Logging
-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 # Guava
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
