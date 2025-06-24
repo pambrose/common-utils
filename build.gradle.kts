@@ -16,6 +16,9 @@ plugins {
 }
 
 val versionStr: String by extra
+val kotlinLib = libs.plugins.kotlin.jvm.get().toString().split(":").first()
+val serializationLib = libs.plugins.kotlin.serialization.get().toString().split(":").first()
+val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 
 allprojects {
     extra["versionStr"] = "2.3.11"
@@ -38,79 +41,6 @@ fun Project.configureKotlin() {
     kotlin {
         jvmToolchain(11)
     }
-}
-
-fun Project.configurePublishing() {
-    apply {
-        plugin("java-library")
-        plugin("maven-publish")
-    }
-
-//    val versionStr: String by extra
-//
-//    publishing {
-//        publications {
-//            create<MavenPublication>("maven") {
-//                groupId = group.toString()
-//                artifactId = project.name
-//                version = versionStr
-//                from(components["java"])
-//
-//                // Add sources jar to publication
-//                artifact(tasks["sourcesJar"])
-//            }
-//        }
-//    }
-    // This is to fix a bizarre gradle error
-    tasks.named<Jar>("jar") {
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-
-    java {
-        withSourcesJar()
-    }
-}
-
-val kotlinLib = libs.plugins.kotlin.jvm.get().toString().split(":").first()
-val serializationLib = libs.plugins.kotlin.serialization.get().toString().split(":").first()
-val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
-
-subprojects {
-    configureKotlin()
-    configurePublishing()
-
-    apply {
-        plugin(kotlinLib)
-        plugin(serializationLib)
-        plugin(ktlinterLib)
-    }
-
-    // This is to fix a bizarre gradle error
-//    tasks.named<Jar>("jar") {
-//        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-//    }
-
-//    tasks.register<Jar>("sourcesJar") {
-//        dependsOn("classes")
-//        from(sourceSets["main"].allSource)
-//        archiveClassifier.set("sources")
-//    }
-//
-//    tasks.register<Jar>("javadocJar") {
-//        dependsOn("javadoc")
-//        from(tasks.named<Javadoc>("javadoc").get().destinationDir)
-//        archiveClassifier.set("javadoc")
-//    }
-
-//    artifacts {
-//        add("archives", tasks.named("sourcesJar"))
-//        // add("archives", tasks.named("javadocJar"))
-//    }
-
-
-//    java {
-//        withSourcesJar()
-//    }
 
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
@@ -125,7 +55,68 @@ subprojects {
             )
         }
     }
+}
 
+fun Project.configurePublishing() {
+    apply {
+        plugin("java-library")
+        plugin("maven-publish")
+    }
+
+    // This is to fix a bizarre gradle error
+    tasks.named<Jar>("jar") {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+
+    tasks.register<Jar>("sourcesJar") {
+        dependsOn("classes")
+        from(sourceSets["main"].allSource)
+        archiveClassifier.set("sources")
+    }
+
+    tasks.register<Jar>("javadocJar") {
+        dependsOn("javadoc")
+        from(tasks.named<Javadoc>("javadoc").get().destinationDir)
+        archiveClassifier.set("javadoc")
+    }
+
+    artifacts {
+        add("archives", tasks.named("sourcesJar"))
+        // add("archives", tasks.named("javadocJar"))
+    }
+
+    val versionStr: String by extra
+
+    publishing {
+        publications {
+            create<MavenPublication>("maven") {
+                groupId = group.toString()
+                artifactId = project.name
+                version = versionStr
+                from(components["java"])
+
+                // Add sources jar to publication
+                artifact(tasks["sourcesJar"])
+            }
+        }
+    }
+
+    java {
+        withSourcesJar()
+    }
+}
+
+fun Project.configureKotlinter() {
+    apply {
+        plugin(ktlinterLib)
+    }
+
+    configure<KotlinterExtension> {
+        reporters = arrayOf("checkstyle", "plain")
+    }
+}
+
+fun Project.configureTesting() {
     tasks.withType<Test> {
         useJUnitPlatform()
 
@@ -135,8 +126,11 @@ subprojects {
             showStandardStreams = true
         }
     }
+}
 
-    configure<KotlinterExtension> {
-        reporters = arrayOf("checkstyle", "plain")
-    }
+subprojects {
+    configureKotlin()
+    configurePublishing()
+    configureTesting()
+    configureKotlinter()
 }
