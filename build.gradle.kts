@@ -73,7 +73,7 @@ fun Project.configurePublishing() {
                 from(components["java"])
 
                 // Add sources jar to publication
-                artifact(tasks["sourcesJar"])
+                // artifact(tasks["sourcesJar"])
             }
         }
     }
