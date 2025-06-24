@@ -1,5 +1,5 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    alias(libs.plugins.kotlin.jvm)
 }
 
 description = "corex-utils"
@@ -18,7 +18,7 @@ publishing {
 }
 
 dependencies {
-    implementation(libs.kotlin.stdlib)
+    // implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines)
 }
 

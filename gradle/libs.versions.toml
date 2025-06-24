@@ -4,7 +4,6 @@ kotlinPlugin = "2.1.21"
 kotlinterPlugin = "5.1.1"
 versionsPlugin = "0.52.0"
 coverallsPlugin = "2.12.2"
-serializationPlugin = "2.1.21"
 
 # Library versions
 kotlin = "2.1.21"
@@ -29,7 +28,7 @@ zipkinSender = "3.5.1"
 logging = "7.0.7"
 logback = "1.5.18"
 kluent = "1.73"
-platform = "1.13.0-M2"
+platform = "1.13.1"
 
 [libraries]
 # Kotlin
@@ -100,7 +99,7 @@ junit-platform = { module = "org.junit.platform:junit-platform-launcher", versio
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinPlugin" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "serializationPlugin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinPlugin" }
 kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinterPlugin" }
 versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
 coveralls = { id = "com.github.kt3k.coveralls", version.ref = "coverallsPlugin" }

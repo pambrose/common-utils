@@ -1,5 +1,5 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    alias(libs.plugins.kotlin.jvm)
 }
 
 description = "script-utils-kotlin"
@@ -26,7 +26,6 @@ dependencies {
     testImplementation(libs.kluent)
     testImplementation(libs.kotlin.test)
     testRuntimeOnly(libs.junit.platform)
-
 }
 
 kotlin {

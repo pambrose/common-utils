@@ -1,5 +1,5 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    alias(libs.plugins.kotlin.jvm)
 }
 
 description = "core-utils"
@@ -18,18 +18,20 @@ publishing {
 }
 
 dependencies {
-    implementation(libs.kotlin.reflect)
-    implementation(libs.kotlinx.datetime)
-    implementation(libs.kotlinx.serialization)
-
-    api(libs.kotlin.stdlib)
     api(libs.kotlinx.coroutines)
     api(libs.kotlin.logging)
     api(libs.logback.classic)
 
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.serialization)
+
     testImplementation(libs.kluent)
     testImplementation(libs.kotlin.test)
-    testRuntimeOnly(libs.junit.platform)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 kotlin {

@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
@@ -27,22 +28,6 @@ allprojects {
     }
 
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
-
-//    publishing {
-//        publications {
-//            create<MavenPublication>("mavenJava") {
-//                from(components["java"])
-//                versionMapping {
-//                    usage("java-api") {
-//                        fromResolutionOf("runtimeClasspath")
-//                    }
-//                    usage("java-runtime") {
-//                        fromResolutionResult()
-//                    }
-//                }
-//            }
-//        }
-//    }
 }
 
 val kotlinLib = libs.plugins.kotlin.jvm.get().toString().split(":").first()
@@ -53,7 +38,7 @@ subprojects {
     apply {
         plugin("java-library")
         plugin("maven-publish")
-        //plugin(kotlinLib)
+        plugin(kotlinLib)
         plugin(serializationLib)
         plugin(ktlinterLib)
     }
@@ -105,7 +90,7 @@ subprojects {
 
         testLogging {
             events("passed", "skipped", "failed", "standardOut", "standardError")
-            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+            exceptionFormat = TestExceptionFormat.FULL
             showStandardStreams = true
         }
     }
