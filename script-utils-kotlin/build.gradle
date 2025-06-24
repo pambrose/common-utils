@@ -25,6 +25,6 @@ dependencies {
     implementation project(':core-utils')
     implementation project(':script-utils-common')
 
-    runtimeOnly rootProject.libraries.kotlin_scripting
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    runtimeOnly libs.kotlin.scripting
+    implementation libs.kotlin.stdlib
 }

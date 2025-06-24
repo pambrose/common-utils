@@ -24,7 +24,7 @@ description = 'dropwizard-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation rootProject.libraries.dropwizard_core
-    implementation rootProject.libraries.dropwizard_healthcheck
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.dropwizard.core
+    implementation libs.dropwizard.healthcheck
+    implementation libs.kotlin.stdlib
 }

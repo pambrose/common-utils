@@ -24,8 +24,8 @@ description = 'ktor-client-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation rootProject.libraries.ktor_client_core
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
-    // implementation rootProject.libraries.ktor_client_cio
-    // implementation rootProject.libraries.ktor_client_plugins
+    implementation libs.ktor.client.core
+    implementation libs.kotlin.stdlib
+    // implementation libs.ktor.client.cio
+    // implementation libs.ktor.client.plugins
 }

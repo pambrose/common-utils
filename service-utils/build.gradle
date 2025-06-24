@@ -29,18 +29,18 @@ dependencies {
     implementation project(':dropwizard-utils')
     implementation project(':zipkin-utils')
 
-    implementation rootProject.libraries.guava
-    implementation rootProject.libraries.prometheus_servlet
-    implementation rootProject.libraries.prometheus_dropwizard
-    implementation rootProject.libraries.dropwizard_core
-    implementation rootProject.libraries.dropwizard_healthcheck
-    implementation rootProject.libraries.dropwizard_servlets
-    implementation rootProject.libraries.dropwizard_jmx
-    implementation rootProject.libraries.jetty_server
-    implementation rootProject.libraries.jetty_servlet
-    implementation rootProject.libraries.brave
-    implementation rootProject.libraries.zipkin_core
-    implementation rootProject.libraries.zipkin_reporter
-    implementation rootProject.libraries.zipkin_sender_okhttp
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.guava
+    implementation libs.prometheus.servlet
+    implementation libs.prometheus.dropwizard
+    implementation libs.dropwizard.core
+    implementation libs.dropwizard.healthcheck
+    implementation libs.dropwizard.servlets
+    implementation libs.dropwizard.jmx
+    implementation libs.jetty.server
+    implementation libs.jetty.servlet
+    implementation libs.brave
+    implementation libs.zipkin.core
+    implementation libs.zipkin.reporter
+    implementation libs.zipkin.sender.okhttp
+    implementation libs.kotlin.stdlib
 }

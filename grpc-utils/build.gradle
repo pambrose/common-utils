@@ -24,12 +24,12 @@ description = 'grpc-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation rootProject.libraries.grpc_netty
-    implementation rootProject.libraries.grpc_inprocess
-    implementation rootProject.libraries.grpc_protobuf
-    implementation rootProject.libraries.grpc_stub
-    implementation rootProject.libraries.grpc_services
+    implementation libs.grpc.netty
+    implementation libs.grpc.inprocess
+    implementation libs.grpc.protobuf
+    implementation libs.grpc.stub
+    implementation libs.grpc.services
 
-    runtimeOnly rootProject.libraries.netty_ssl
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    runtimeOnly libs.netty.ssl
+    implementation libs.kotlin.stdlib
 }

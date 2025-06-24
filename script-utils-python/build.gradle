@@ -25,6 +25,6 @@ dependencies {
     implementation project(':core-utils')
     implementation project(':script-utils-common')
 
-    implementation rootProject.libraries.python_scripting
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.python.scripting
+    implementation libs.kotlin.stdlib
 }

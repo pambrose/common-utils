@@ -24,6 +24,6 @@ description = 'redis-utils'
 dependencies {
     //implementation project(':core-utils')
 
-    implementation rootProject.libraries.redis
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.redis
+    implementation libs.kotlin.stdlib
 }

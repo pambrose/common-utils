@@ -22,8 +22,8 @@ plugins {
 description = 'core-utils'
 
 dependencies {
-    implementation rootProject.libraries.reflect
-    implementation rootProject.libraries.kotlinx_datetime
-    implementation rootProject.libraries.serialization
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.kotlin.reflect
+    implementation libs.kotlinx.datetime
+    implementation libs.kotlinx.serialization
+    implementation libs.kotlin.stdlib
 }

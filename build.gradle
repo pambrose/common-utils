@@ -6,49 +6,11 @@ plugins {
     id 'maven-publish'
 
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
-    id 'com.github.kt3k.coveralls' version '2.12.2' apply false
-    id 'org.jetbrains.kotlin.jvm' version '2.2.0' apply false
-    id 'org.jetbrains.kotlin.plugin.serialization' version '2.2.0' apply false
-    id 'org.jmailen.kotlinter' version '5.1.1' apply false
-    id "com.github.ben-manes.versions" version '0.52.0' apply false
-}
-
-ext {
-    libraries = [
-        reflect               : "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version",
-        serialization       : "org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version",
-        guava                 : "com.google.guava:guava:$guava_version",
-        grpc_netty            : "io.grpc:grpc-netty:$grpc_version",
-        grpc_inprocess        : "io.grpc:grpc-inprocess:$grpc_version",
-        grpc_protobuf         : "io.grpc:grpc-protobuf:$grpc_version",
-        grpc_stub             : "io.grpc:grpc-stub:$grpc_version",
-        grpc_services         : "io.grpc:grpc-services:$grpc_version",
-        netty_ssl             : "io.netty:netty-tcnative-boringssl-static:$nettyTcNative_version",
-        dropwizard_core       : "io.dropwizard.metrics:metrics-core:$dropwizard_version",
-        dropwizard_healthcheck: "io.dropwizard.metrics:metrics-healthchecks:$dropwizard_version",
-        dropwizard_servlets   : "io.dropwizard.metrics:metrics-servlets:$dropwizard_version",
-        dropwizard_jmx        : "io.dropwizard.metrics:metrics-jmx:$dropwizard_version",
-        exposed_core          : "org.jetbrains.exposed:exposed-core:$exposed_version",
-        exposed_jdbc          : "org.jetbrains.exposed:exposed-jdbc:$exposed_version",
-        exposed_jodatime      : "org.jetbrains.exposed:exposed-jodatime:$exposed_version",
-        kotlin_scripting      : "org.jetbrains.kotlin:kotlin-scripting-jsr223:$kotlin_version",
-        python_scripting      : "org.python:jython-standalone:$python_version",
-        java_scripting        : "ch.obermuhlner:java-scriptengine:$java_version",
-        jetty_server          : "org.eclipse.jetty:jetty-server:$jetty_version",
-        jetty_servlet         : "org.eclipse.jetty:jetty-servlet:$jetty_version",
-        kotlinx_datetime    : "org.jetbrains.kotlinx:kotlinx-datetime:$datetime_version",
-        ktor_server_core      : "io.ktor:ktor-server:$ktor_version",
-        ktor_client_core      : "io.ktor:ktor-client:$ktor_version",
-        prometheus_core       : "io.prometheus:simpleclient:$prometheus_version",
-        prometheus_hotspot    : "io.prometheus:simpleclient_hotspot:$prometheus_version",
-        prometheus_servlet    : "io.prometheus:simpleclient_servlet:$prometheus_version",
-        prometheus_dropwizard : "io.prometheus:simpleclient_dropwizard:$prometheus_version",
-        redis                 : "redis.clients:jedis:$redis_version",
-        brave               : "io.zipkin.brave:brave:$brave_version",
-        zipkin_core         : "io.zipkin.zipkin2:zipkin:$zipkin_version",
-        zipkin_reporter     : "io.zipkin.reporter2:zipkin-reporter-brave:$zipkinReporter_version",
-        zipkin_sender_okhttp: "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinSender_version"
-    ]
+    alias(libs.plugins.coveralls) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.kotlinter) apply false
+    alias(libs.plugins.versions) apply false
 }
 
 allprojects {
@@ -57,11 +19,11 @@ allprojects {
 
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
-    apply plugin: 'com.github.kt3k.coveralls'
-    apply plugin: 'org.jmailen.kotlinter'
-    apply plugin: 'org.jetbrains.kotlin.jvm'
-    apply plugin: 'com.github.ben-manes.versions'
-    apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
+    apply plugin: libs.plugins.coveralls.get().pluginId
+    apply plugin: libs.plugins.kotlinter.get().pluginId
+    apply plugin: libs.plugins.kotlin.jvm.get().pluginId
+    apply plugin: libs.plugins.versions.get().pluginId
+    apply plugin: libs.plugins.kotlin.serialization.get().pluginId
 
     repositories {
         google()
@@ -91,17 +53,15 @@ subprojects {
 
     dependencies {
         // This is required for the ExperimentalCoroutinesApi arg below
-        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$coroutines_version"
+        implementation libs.kotlinx.coroutines
 
-        implementation "io.github.oshai:kotlin-logging-jvm:$logging_version"
-        implementation "ch.qos.logback:logback-classic:$logback_version"
+        implementation libs.logging
+        implementation libs.logback
 
-        testImplementation "org.amshove.kluent:kluent:$kluent_version"
-//        testImplementation platform("org.junit:junit-bom:$junit_version")
-//        testImplementation "org.junit.jupiter:junit-jupiter:$junit_version"
-        testImplementation 'org.jetbrains.kotlin:kotlin-test'
+        testImplementation libs.kluent
+        testImplementation libs.kotlin.test
 
-        testRuntimeOnly "org.junit.platform:junit-platform-launcher:$platform_version"
+        testRuntimeOnly libs.junit.platform
     }
 
     // This is to fix a bizarre gradle error
@@ -145,31 +105,15 @@ subprojects {
     tasks.withType(KotlinJvmCompile).configureEach {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
-            freeCompilerArgs.add("-Xbackend-threads=8")
-            freeCompilerArgs.add("-opt-in=kotlin.contracts.ExperimentalContracts")
-            freeCompilerArgs.add("-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
-            freeCompilerArgs.add("-opt-in=kotlin.time.ExperimentalTime")
-            freeCompilerArgs.add("-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi")
+            freeCompilerArgs.addAll([
+                "-Xbackend-threads=8",
+                "-opt-in=kotlin.contracts.ExperimentalContracts",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=kotlin.time.ExperimentalTime",
+                "-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi"
+            ])
         }
     }
-
-//    compileKotlin {
-//        kotlinOptions {
-//            freeCompilerArgs += ['-Xbackend-threads=8',
-//                                 '-opt-in=kotlin.contracts.ExperimentalContracts',
-//                                 '-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi',
-//                                 '-opt-in=kotlin.time.ExperimentalTime',
-//                                 '-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi',
-//            ]
-//        }
-//    }
-//
-//    compileTestKotlin {
-//        kotlinOptions {
-//            freeCompilerArgs += ['-Xbackend-threads=8',
-//                                 '-opt-in=kotlin.time.ExperimentalTime',]
-//        }
-//    }
 
     test {
         useJUnitPlatform()

@@ -24,7 +24,7 @@ description = 'prometheus-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation rootProject.libraries.prometheus_core
-    implementation rootProject.libraries.prometheus_hotspot
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.prometheus.core
+    implementation libs.prometheus.hotspot
+    implementation libs.kotlin.stdlib
 }

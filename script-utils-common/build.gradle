@@ -23,6 +23,6 @@ description = 'script-utils-common'
 
 dependencies {
     implementation project(':core-utils')
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
-    // implementation rootProject.libraries.coroutines_core
+    implementation libs.kotlin.stdlib
+    // implementation libs.kotlinx.coroutines
 }

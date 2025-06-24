@@ -24,8 +24,8 @@ description = 'zipkin-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation rootProject.libraries.brave
-    implementation rootProject.libraries.zipkin_core
-    implementation rootProject.libraries.zipkin_reporter
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.brave
+    implementation libs.zipkin.core
+    implementation libs.zipkin.reporter
+    implementation libs.kotlin.stdlib
 }

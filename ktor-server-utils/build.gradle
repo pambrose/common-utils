@@ -24,8 +24,8 @@ description = 'ktor-server-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation rootProject.libraries.reflect
-    implementation rootProject.libraries.ktor_server_core
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
-    // implementation rootProject.libraries.ktor_server_plugins
+    implementation libs.kotlin.reflect
+    implementation libs.ktor.server.core
+    implementation libs.kotlin.stdlib
+    // implementation libs.ktor.server.plugins
 }

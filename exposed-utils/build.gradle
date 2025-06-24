@@ -24,8 +24,8 @@ description = 'exposed-utils'
 dependencies {
     implementation project(':core-utils')
 
-    implementation rootProject.libraries.reflect
-    implementation rootProject.libraries.exposed_core
-    implementation rootProject.libraries.exposed_jodatime
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation libs.kotlin.reflect
+    implementation libs.exposed.core
+    implementation libs.exposed.jodatime
+    implementation libs.kotlin.stdlib
 }
