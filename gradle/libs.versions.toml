@@ -1,38 +1,37 @@
 [versions]
 # Plugin versions
+coverallsPlugin = "2.12.2"
 kotlinPlugin = "2.1.21"
 kotlinterPlugin = "5.1.1"
 versionsPlugin = "0.52.0"
-coverallsPlugin = "2.12.2"
 
 # Library versions
-kotlin = "2.1.21"
+brave = "6.3.0"
 coroutines = "1.10.2"
 datetime = "0.6.2"
-serialization = "1.8.1"
-guava = "32.1.3-android"
-grpc = "1.73.0"
-nettyTcNative = "2.0.70.Final"
 dropwizard = "4.2.33"
 exposed = "0.61.0"
-python = "2.7.4"
+grpc = "1.73.0"
+guava = "32.1.3-android"
 java = "2.0.0"
 jetty = "10.0.25"
+kluent = "1.73"
+kotlin = "2.1.21"
 ktor = "3.2.0"
+logback = "1.5.18"
+logging = "7.0.7"
+nettyTcNative = "2.0.70.Final"
+platform = "1.13.1"
 prometheus = "0.16.0"
+python = "2.7.4"
 redis = "6.0.0"
-brave = "6.3.0"
+serialization = "1.8.1"
 zipkin = "3.5.1"
 zipkinReporter = "3.5.1"
 zipkinSender = "3.5.1"
-logging = "7.0.7"
-logback = "1.5.18"
-kluent = "1.73"
-platform = "1.13.1"
 
 [libraries]
 # Kotlin
-kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
@@ -47,18 +46,18 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 # gRPC
-grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
+grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
-grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 netty-ssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "nettyTcNative" }
 
 # Dropwizard
 dropwizard-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard" }
 dropwizard-healthcheck = { module = "io.dropwizard.metrics:metrics-healthchecks", version.ref = "dropwizard" }
-dropwizard-servlets = { module = "io.dropwizard.metrics:metrics-servlets", version.ref = "dropwizard" }
 dropwizard-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard" }
+dropwizard-servlets = { module = "io.dropwizard.metrics:metrics-servlets", version.ref = "dropwizard" }
 
 # Exposed
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
@@ -66,22 +65,22 @@ exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "e
 exposed-jodatime = { module = "org.jetbrains.exposed:exposed-jodatime", version.ref = "exposed" }
 
 # Scripting
-python-scripting = { module = "org.python:jython-standalone", version.ref = "python" }
 java-scripting = { module = "ch.obermuhlner:java-scriptengine", version.ref = "java" }
+python-scripting = { module = "org.python:jython-standalone", version.ref = "python" }
 
 # Jetty
 jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "jetty" }
 jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "jetty" }
 
 # Ktor
-ktor-server-core = { module = "io.ktor:ktor-server", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server", version.ref = "ktor" }
 
 # Prometheus
 prometheus-core = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
+prometheus-dropwizard = { module = "io.prometheus:simpleclient_dropwizard", version.ref = "prometheus" }
 prometheus-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
 prometheus-servlet = { module = "io.prometheus:simpleclient_servlet", version.ref = "prometheus" }
-prometheus-dropwizard = { module = "io.prometheus:simpleclient_dropwizard", version.ref = "prometheus" }
 
 # Redis
 redis = { module = "redis.clients:jedis", version.ref = "redis" }
@@ -98,8 +97,8 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test" }
 junit-platform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "platform" }
 
 [plugins]
+coveralls = { id = "com.github.kt3k.coveralls", version.ref = "coverallsPlugin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinPlugin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinPlugin" }
 kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinterPlugin" }
 versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
-coveralls = { id = "com.github.kt3k.coveralls", version.ref = "coverallsPlugin" }
