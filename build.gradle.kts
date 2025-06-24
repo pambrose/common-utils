@@ -1,6 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+import org.jmailen.gradle.kotlinter.KotlinterExtension
 
 plugins {
     `java-library`
@@ -45,19 +46,29 @@ fun Project.configurePublishing() {
         plugin("maven-publish")
     }
 
-    val versionStr: String by extra
-
-    publishing {
-        publications {
-            create<MavenPublication>("maven") {
-                groupId = group.toString()
-                artifactId = project.name
-                version = versionStr
-                from(components["java"])
-            }
-        }
+//    val versionStr: String by extra
+//
+//    publishing {
+//        publications {
+//            create<MavenPublication>("maven") {
+//                groupId = group.toString()
+//                artifactId = project.name
+//                version = versionStr
+//                from(components["java"])
+//
+//                // Add sources jar to publication
+//                artifact(tasks["sourcesJar"])
+//            }
+//        }
+//    }
+    // This is to fix a bizarre gradle error
+    tasks.named<Jar>("jar") {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
 
+    java {
+        withSourcesJar()
+    }
 }
 
 val kotlinLib = libs.plugins.kotlin.jvm.get().toString().split(":").first()
@@ -75,30 +86,30 @@ subprojects {
     }
 
     // This is to fix a bizarre gradle error
-    tasks.named<Jar>("jar") {
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
+//    tasks.named<Jar>("jar") {
+//        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+//    }
 
-    tasks.register<Jar>("sourcesJar") {
-        dependsOn("classes")
-        from(sourceSets["main"].allSource)
-        archiveClassifier.set("sources")
-    }
+//    tasks.register<Jar>("sourcesJar") {
+//        dependsOn("classes")
+//        from(sourceSets["main"].allSource)
+//        archiveClassifier.set("sources")
+//    }
+//
+//    tasks.register<Jar>("javadocJar") {
+//        dependsOn("javadoc")
+//        from(tasks.named<Javadoc>("javadoc").get().destinationDir)
+//        archiveClassifier.set("javadoc")
+//    }
 
-    tasks.register<Jar>("javadocJar") {
-        dependsOn("javadoc")
-        from(tasks.named<Javadoc>("javadoc").get().destinationDir)
-        archiveClassifier.set("javadoc")
-    }
+//    artifacts {
+//        add("archives", tasks.named("sourcesJar"))
+//        // add("archives", tasks.named("javadocJar"))
+//    }
 
-    artifacts {
-        add("archives", tasks.named("sourcesJar"))
-        // add("archives", tasks.named("javadocJar"))
-    }
-
-    java {
-        withSourcesJar()
-    }
+//    java {
+//        withSourcesJar()
+//    }
 
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
@@ -124,7 +135,7 @@ subprojects {
         }
     }
 
-    configure<org.jmailen.gradle.kotlinter.KotlinterExtension> {
+    configure<KotlinterExtension> {
         reporters = arrayOf("checkstyle", "plain")
     }
 }
