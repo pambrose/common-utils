@@ -6,11 +6,11 @@ plugins {
     id 'maven-publish'
 
     //id 'org.jetbrains.kotlinx.kover' version '0.5.0'
-    alias(libs.plugins.coveralls) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlinter) apply false
-    alias(libs.plugins.versions) apply false
+    alias(libs.plugins.versions) apply true
+    alias(libs.plugins.coveralls) apply false
 }
 
 allprojects {
@@ -54,7 +54,6 @@ subprojects {
     dependencies {
         // This is required for the ExperimentalCoroutinesApi arg below
         implementation libs.kotlinx.coroutines
-
         implementation libs.logging
         implementation libs.logback
 
@@ -81,22 +80,12 @@ subprojects {
 
     artifacts {
         archives sourcesJar
-        //archives javadocJar
+        // archives javadocJar
     }
 
     java {
         withSourcesJar()
     }
-
-//    task sourcesJar(type: Jar, dependsOn: classes) {
-//        from sourceSets.main.allJava
-//        archiveClassifier.set("sources")
-//    }
-//
-//    task javadocJar(type: Jar, dependsOn: javadoc) {
-//        archiveClassifier.set("javadoc")
-//        from javadoc.destinationDir
-//    }
 
     kotlin {
         jvmToolchain(11)
