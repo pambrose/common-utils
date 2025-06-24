@@ -75,7 +75,7 @@ subprojects {
             jvmTarget.set(JvmTarget.JVM_11)
             freeCompilerArgs.addAll(
                 listOf(
-                    "-Xbackend-threads=8",
+//                    "-Xbackend-threads=8",
                     "-opt-in=kotlin.contracts.ExperimentalContracts",
                     "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
                     "-opt-in=kotlin.time.ExperimentalTime",

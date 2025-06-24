@@ -25,7 +25,6 @@ dependencies {
 
     testImplementation(libs.kluent)
     testImplementation(libs.kotlin.test)
-    testRuntimeOnly(libs.junit.platform)
 }
 
 kotlin {
