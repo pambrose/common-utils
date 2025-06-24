@@ -1,21 +1,4 @@
-plugins {
-    alias(libs.plugins.kotlin.jvm)
-}
-
 description = "core-utils"
-
-val versionStr: String by extra
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = group.toString()
-            artifactId = project.name
-            version = versionStr
-            from(components["java"])
-        }
-    }
-}
 
 dependencies {
     api(libs.kotlinx.coroutines)
@@ -28,8 +11,4 @@ dependencies {
 
     testImplementation(libs.kluent)
     testImplementation(libs.kotlin.test)
-}
-
-kotlin {
-    jvmToolchain(11)
 }

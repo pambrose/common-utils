@@ -10,7 +10,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlinter) apply true
     alias(libs.plugins.versions) apply true
-    alias(libs.plugins.coveralls) apply false
 
     // id("org.jetbrains.kotlinx.kover") version "0.5.0"
 }
@@ -30,19 +29,50 @@ allprojects {
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
 }
 
+fun Project.configureKotlin() {
+    apply {
+        plugin(kotlinLib)
+    }
+
+    kotlin {
+        jvmToolchain(11)
+    }
+}
+
+fun Project.configurePublishing() {
+    apply {
+        plugin("java-library")
+        plugin("maven-publish")
+    }
+
+    val versionStr: String by extra
+
+    publishing {
+        publications {
+            create<MavenPublication>("maven") {
+                groupId = group.toString()
+                artifactId = project.name
+                version = versionStr
+                from(components["java"])
+            }
+        }
+    }
+
+}
+
 val kotlinLib = libs.plugins.kotlin.jvm.get().toString().split(":").first()
 val serializationLib = libs.plugins.kotlin.serialization.get().toString().split(":").first()
 val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 
 subprojects {
+    configureKotlin()
+    configurePublishing()
+
     apply {
-        plugin("java-library")
-        plugin("maven-publish")
         plugin(kotlinLib)
         plugin(serializationLib)
         plugin(ktlinterLib)
     }
-
 
     // This is to fix a bizarre gradle error
     tasks.named<Jar>("jar") {
@@ -75,7 +105,6 @@ subprojects {
             jvmTarget.set(JvmTarget.JVM_11)
             freeCompilerArgs.addAll(
                 listOf(
-//                    "-Xbackend-threads=8",
                     "-opt-in=kotlin.contracts.ExperimentalContracts",
                     "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
                     "-opt-in=kotlin.time.ExperimentalTime",
@@ -98,15 +127,4 @@ subprojects {
     configure<org.jmailen.gradle.kotlinter.KotlinterExtension> {
         reporters = arrayOf("checkstyle", "plain")
     }
-
-//    tasks.jacocoTestReport {
-//        reports {
-//            xml.required.set(true) // coveralls plugin depends on xml format report
-//            html.required.set(true)
-//        }
-//    }
-//
-//    coveralls {
-//        jacocoReportPath = "build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml"
-//    }
 }
