@@ -50,7 +50,8 @@ fun Project.configureKotlin() {
                     "-opt-in=kotlin.contracts.ExperimentalContracts",
                     "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
                     "-opt-in=kotlin.time.ExperimentalTime",
-                    "-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi"
+                    "-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi",
+                    "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
                 )
             )
         }
