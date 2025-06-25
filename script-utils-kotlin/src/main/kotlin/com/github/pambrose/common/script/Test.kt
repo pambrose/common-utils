@@ -20,7 +20,7 @@ package com.github.pambrose.common.script
 import javax.script.ScriptException
 
 fun main() {
-  repeat(1000) { i ->
+  repeat(100) { i ->
     println("Invocation: $i")
     try {
       val c = 1 * 4

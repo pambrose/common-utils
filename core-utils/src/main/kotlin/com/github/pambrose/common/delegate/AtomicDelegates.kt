@@ -83,7 +83,7 @@ private class SingleSetAtomicReferenceDelegate<T : Any?>(
   initValue: T?,
   private val compareValue: T?,
 ) : ReadWriteProperty<Any?, T?> {
-  private val atomicVal = AtomicReference<T?>(initValue)
+  private val atomicVal = AtomicReference(initValue)
 
   override operator fun getValue(
     thisRef: Any?,

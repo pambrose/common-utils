@@ -1,0 +1,104 @@
+[versions]
+# Plugin versions
+coverallsPlugin = "2.12.2"
+kotlinPlugin = "2.2.0"
+kotlinterPlugin = "5.1.1"
+versionsPlugin = "0.52.0"
+
+# Library versions
+brave = "6.3.0"
+coroutines = "1.10.2"
+datetime = "0.6.2"
+dropwizard = "4.2.33"
+exposed = "0.61.0"
+grpc = "1.73.0"
+guava = "32.1.3-android"
+java = "2.0.0"
+jetty = "10.0.25"
+kluent = "1.73"
+kotlin = "2.2.0"
+ktor = "3.2.0"
+logback = "1.5.18"
+logging = "7.0.7"
+nettyTcNative = "2.0.70.Final"
+platform = "1.13.1"
+prometheus = "0.16.0"
+python = "2.7.4"
+redis = "6.0.0"
+serialization = "1.8.1"
+zipkin = "3.5.1"
+zipkinReporter = "3.5.1"
+zipkinSender = "3.5.1"
+
+[libraries]
+# Kotlin
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", version.ref = "kotlin" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+
+# Logging
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# Guava
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+# gRPC
+grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
+grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+netty-ssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "nettyTcNative" }
+
+# Dropwizard
+dropwizard-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard" }
+dropwizard-healthcheck = { module = "io.dropwizard.metrics:metrics-healthchecks", version.ref = "dropwizard" }
+dropwizard-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard" }
+dropwizard-servlets = { module = "io.dropwizard.metrics:metrics-servlets", version.ref = "dropwizard" }
+
+# Exposed
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-jodatime = { module = "org.jetbrains.exposed:exposed-jodatime", version.ref = "exposed" }
+
+# Scripting
+java-scripting = { module = "ch.obermuhlner:java-scriptengine", version.ref = "java" }
+python-scripting = { module = "org.python:jython-standalone", version.ref = "python" }
+
+# Jetty
+jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "jetty" }
+jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "jetty" }
+
+# Ktor
+ktor-client-core = { module = "io.ktor:ktor-client", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server", version.ref = "ktor" }
+
+# Prometheus
+prometheus-core = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
+prometheus-dropwizard = { module = "io.prometheus:simpleclient_dropwizard", version.ref = "prometheus" }
+prometheus-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
+prometheus-servlet = { module = "io.prometheus:simpleclient_servlet", version.ref = "prometheus" }
+
+# Redis
+redis = { module = "redis.clients:jedis", version.ref = "redis" }
+
+# Zipkin
+brave = { module = "io.zipkin.brave:brave", version.ref = "brave" }
+zipkin-core = { module = "io.zipkin.zipkin2:zipkin", version.ref = "zipkin" }
+zipkin-reporter = { module = "io.zipkin.reporter2:zipkin-reporter-brave", version.ref = "zipkinReporter" }
+zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", version.ref = "zipkinSender" }
+
+# Testing
+kluent = { module = "org.amshove.kluent:kluent", version.ref = "kluent" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test" }
+junit-platform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "platform" }
+
+[plugins]
+coveralls = { id = "com.github.kt3k.coveralls", version.ref = "coverallsPlugin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinPlugin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinPlugin" }
+kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinterPlugin" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
