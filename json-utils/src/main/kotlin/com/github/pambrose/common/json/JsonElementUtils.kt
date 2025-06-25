@@ -22,6 +22,19 @@ val JsonElement.booleanValue get() = jsonPrimitive.content.toBoolean()
 // Json object values
 val JsonElement.jsonObjectValue: JsonObject get() = jsonObject
 
+val JsonElement.isObject get() = this is JsonObject
+val JsonElement.isArray get() = this is JsonArray
+val JsonElement.isPrimitive get() = this is JsonPrimitive
+val JsonElement.isString get() = this is JsonPrimitive && !jsonPrimitive.isString
+val JsonElement.isNumber get() = this is JsonPrimitive && !(jsonPrimitive.content.toDoubleOrNull() != null)
+
+fun JsonElement.getByPath(path: String): JsonElement? =
+  path.split("/")
+    .filter { it.isNotEmpty() }
+    .fold(this as JsonElement?) { acc, key ->
+      acc?.jsonObject?.get(key)
+    }
+
 operator fun JsonElement.get(vararg keys: String): JsonElement =
   keys.flatMap { it.split(".") }
     .fold(this) { acc, key -> acc.element(key) }
@@ -67,11 +80,29 @@ fun JsonElement.containsKey(vararg keys: String): Boolean {
   return true
 }
 
+fun JsonElement.forEachJsonObject(action: (JsonObject) -> Unit) {
+  when (this) {
+    is JsonObject -> action(this)
+    is JsonArray -> forEach { if (it is JsonObject) action(it) }
+    else -> throw IllegalArgumentException("Not an object or array")
+  }
+}
+
+fun JsonElement.deepCopy(): JsonElement = Json.decodeFromString(Json.encodeToString(this))
+
 val JsonElement.size get() = jsonObject.size
 
 fun JsonElement.isEmpty() = if (this is JsonPrimitive) true else jsonObject.isEmpty()
 
 fun JsonElement.isNotEmpty() = !isEmpty()
+
+private fun prettyPrinted(indent: String) =
+  Json {
+    prettyPrint = true
+    prettyPrintIndent = indent
+  }
+
+fun JsonElement.toFormattedString(indent: String = "  "): String = prettyPrinted(indent).encodeToString(this)
 
 fun String.toJsonString() = toJsonElement().toJsonString(true)
 
@@ -104,6 +135,8 @@ fun JsonElement.toMap(): Map<String, Any?> {
 }
 
 internal fun JsonElement.element(key: String) =
-  elementOrNull(key) ?: throw IllegalArgumentException("""JsonElement key "$key" not found""")
+  elementOrNull(key) ?: throw IllegalArgumentException(
+    """JsonElement key "$key" not found in ${this.toString().take(100)}...""",
+  )
 
 private fun JsonElement.elementOrNull(key: String) = jsonObject.get(key)

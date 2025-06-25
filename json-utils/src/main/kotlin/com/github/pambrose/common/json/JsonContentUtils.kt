@@ -16,4 +16,21 @@ object JsonContentUtils {
     Json {
       defaultJsonConfig()
     }
+
+  val lenientFormat by lazy {
+    Json {
+      defaultJsonConfig()
+      isLenient = true
+      ignoreUnknownKeys = true
+    }
+  }
+
+  val strictFormat by lazy {
+    Json {
+      defaultJsonConfig()
+      isLenient = false
+      ignoreUnknownKeys = false
+      encodeDefaults = true
+    }
+  }
 }
