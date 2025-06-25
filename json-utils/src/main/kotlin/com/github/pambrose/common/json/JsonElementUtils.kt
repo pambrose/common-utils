@@ -1,6 +1,5 @@
-package com.github.pambrose.common.json.json
+package com.github.pambrose.common.json
 
-import com.github.pambrose.common.json.common.JsonContentUtils
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement

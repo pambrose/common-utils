@@ -1,4 +1,4 @@
-package com.github.pambrose.common.json.common
+package com.github.pambrose.common.json
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonBuilder
