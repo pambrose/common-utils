@@ -71,34 +71,9 @@ fun Project.configurePublishing() {
                 artifactId = project.name
                 version = versionStr
                 from(components["java"])
-
-                // Add sources jar to publication
-                // artifact(tasks["sourcesJar"])
             }
         }
     }
-
-    // This is to fix a bizarre gradle error
-//    tasks.named<Jar>("jar") {
-//        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-//    }
-
-//    tasks.register<Jar>("sourcesJar") {
-//        dependsOn("classes")
-//        from(sourceSets["main"].allSource)
-//        archiveClassifier.set("sources")
-//    }
-//
-//    tasks.register<Jar>("javadocJar") {
-//        dependsOn("javadoc")
-//        from(tasks.named<Javadoc>("javadoc").get().destinationDir)
-//        archiveClassifier.set("javadoc")
-//    }
-//
-//    artifacts {
-//        add("archives", tasks.named("sourcesJar"))
-//        // add("archives", tasks.named("javadocJar"))
-//    }
 
     java {
         withSourcesJar()
