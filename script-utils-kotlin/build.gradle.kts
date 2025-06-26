@@ -7,5 +7,5 @@ dependencies {
     runtimeOnly(libs.kotlin.scripting)
 
     testImplementation(libs.kluent)
-    testImplementation(libs.kotlin.test)
+    testImplementation(kotlin("test"))
 }

@@ -21,7 +21,7 @@ val serializationLib = libs.plugins.kotlin.serialization.get().toString().split(
 val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = "2.3.11"
+    extra["versionStr"] = "2.4.0"
     group = "com.github.pambrose.common-utils"
     version = versionStr
 
@@ -92,7 +92,7 @@ fun Project.configureKotlinter() {
 }
 
 fun Project.configureTesting() {
-    tasks.withType<Test> {
+    tasks.test {
         useJUnitPlatform()
 
         testLogging {

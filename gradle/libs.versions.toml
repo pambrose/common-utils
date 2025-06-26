@@ -21,7 +21,6 @@ ktor = "3.2.0"
 logback = "1.5.18"
 logging = "7.0.7"
 nettyTcNative = "2.0.70.Final"
-platform = "1.13.1"
 prometheus = "0.16.0"
 python = "2.7.4"
 redis = "6.0.0"
@@ -93,8 +92,6 @@ zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", v
 
 # Testing
 kluent = { module = "org.amshove.kluent:kluent", version.ref = "kluent" }
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test" }
-junit-platform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "platform" }
 
 [plugins]
 coveralls = { id = "com.github.kt3k.coveralls", version.ref = "coverallsPlugin" }

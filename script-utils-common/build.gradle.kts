@@ -4,5 +4,5 @@ dependencies {
     implementation(project(":core-utils"))
 
     testImplementation(libs.kluent)
-    testImplementation(libs.kotlin.test)
+    testImplementation(kotlin("test"))
 }
