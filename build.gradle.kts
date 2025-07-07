@@ -1,7 +1,6 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-import org.jmailen.gradle.kotlinter.KotlinterExtension
 
 plugins {
     `java-library`
@@ -11,7 +10,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlinter) apply true
     alias(libs.plugins.versions) apply true
-
     // id("org.jetbrains.kotlinx.kover") version "0.5.0"
 }
 
@@ -33,6 +31,13 @@ allprojects {
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
 }
 
+subprojects {
+    configureKotlin()
+    configurePublishing()
+    configureTesting()
+    configureKotlinter()
+}
+
 fun Project.configureKotlin() {
     apply {
         plugin(kotlinLib)
@@ -40,20 +45,23 @@ fun Project.configureKotlin() {
 
     kotlin {
         jvmToolchain(11)
+
+        sourceSets.all {
+            listOf(
+                "kotlin.contracts.ExperimentalContracts",
+                "kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "kotlin.time.ExperimentalTime",
+                "kotlin.concurrent.atomics.ExperimentalAtomicApi",
+                "kotlinx.serialization.ExperimentalSerializationApi",
+            ).forEach {
+                languageSettings.optIn(it)
+            }
+        }
     }
 
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
-            freeCompilerArgs.addAll(
-                listOf(
-                    "-opt-in=kotlin.contracts.ExperimentalContracts",
-                    "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-                    "-opt-in=kotlin.time.ExperimentalTime",
-                    "-opt-in=kotlin.concurrent.atomics.ExperimentalAtomicApi",
-                    "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-                )
-            )
         }
     }
 }
@@ -86,7 +94,9 @@ fun Project.configureKotlinter() {
         plugin(ktlinterLib)
     }
 
-    configure<KotlinterExtension> {
+    kotlinter {
+        ignoreFormatFailures = false
+        ignoreLintFailures = false
         reporters = arrayOf("checkstyle", "plain")
     }
 }
@@ -101,11 +111,4 @@ fun Project.configureTesting() {
             showStandardStreams = true
         }
     }
-}
-
-subprojects {
-    configureKotlin()
-    configurePublishing()
-    configureTesting()
-    configureKotlinter()
 }
