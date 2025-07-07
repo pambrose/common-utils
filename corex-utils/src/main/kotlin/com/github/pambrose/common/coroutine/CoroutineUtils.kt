@@ -22,4 +22,11 @@ package com.github.pambrose.common.coroutine
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
 
-suspend fun delay(duration: Duration) = delay(duration.inWholeMilliseconds)
+/**
+ * Delays coroutine execution for the specified duration.
+ *
+ * Note: Sub-millisecond precision is lost due to conversion to milliseconds.
+ *
+ * @param duration the duration to delay
+ */
+suspend fun delayFor(duration: Duration) = delay(duration.inWholeMilliseconds)

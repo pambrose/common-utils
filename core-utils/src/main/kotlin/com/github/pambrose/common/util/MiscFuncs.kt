@@ -20,6 +20,7 @@
 package com.github.pambrose.common.util
 
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.number
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.security.SecureRandom
@@ -82,7 +83,7 @@ fun Any?.isNull(): Boolean {
 }
 
 fun LocalDateTime.toFullDateString(): String =
-  "${abbrevDayOfWeek()} ${monthNumber.lpad(2)}/${dayOfMonth.lpad(2)}/${(year - 2000).lpad(2)} " +
+  "${abbrevDayOfWeek()} ${month.number.lpad(2)}/${day.lpad(2)}/${(year - 2000).lpad(2)} " +
     "${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)} PST"
 
 fun Int.lpad(

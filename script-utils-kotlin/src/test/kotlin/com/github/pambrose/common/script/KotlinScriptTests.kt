@@ -17,10 +17,9 @@
 
 package com.github.pambrose.common.script
 
-import org.amshove.kluent.invoking
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldNotThrow
-import org.amshove.kluent.shouldThrow
+import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
@@ -52,23 +51,23 @@ class KotlinScriptTests {
         add("floatVal", floatVal)
         add("strVal", strVal)
 
-        boolVal shouldBeEqualTo eval("boolVal")
-        !boolVal shouldBeEqualTo eval("!boolVal")
+        boolVal shouldBe eval("boolVal")
+        !boolVal shouldBe eval("!boolVal")
 
-        intVal shouldBeEqualTo eval("intVal")
-        intVal + 1 shouldBeEqualTo eval("intVal + 1")
+        intVal shouldBe eval("intVal")
+        intVal + 1 shouldBe eval("intVal + 1")
 
-        longVal shouldBeEqualTo eval("longVal")
-        longVal + 1 shouldBeEqualTo eval("longVal + 1")
+        longVal shouldBe eval("longVal")
+        longVal + 1 shouldBe eval("longVal + 1")
 
-        doubleVal shouldBeEqualTo eval("doubleVal")
-        doubleVal + 1 shouldBeEqualTo eval("doubleVal + 1")
+        doubleVal shouldBe eval("doubleVal")
+        doubleVal + 1 shouldBe eval("doubleVal + 1")
 
-        floatVal shouldBeEqualTo eval("floatVal")
-        floatVal + 1 shouldBeEqualTo eval("floatVal + 1")
+        floatVal shouldBe eval("floatVal")
+        floatVal + 1 shouldBe eval("floatVal + 1")
 
-        strVal shouldBeEqualTo eval("strVal")
-        strVal.length shouldBeEqualTo eval("strVal.length")
+        strVal shouldBe eval("strVal")
+        strVal.length shouldBe eval("strVal.length")
       }
     }
   }
@@ -83,13 +82,13 @@ class KotlinScriptTests {
         add("intVal", intVal)
         add("intVar", intVar)
 
-        intVal shouldBeEqualTo eval("intVal")
-        intVal + 1 shouldBeEqualTo eval("intVal + 1")
-        intVal shouldBeEqualTo 0
+        intVal shouldBe eval("intVal")
+        intVal + 1 shouldBe eval("intVal + 1")
+        intVal shouldBe 0
 
-        intVar shouldBeEqualTo eval("intVar")
-        intVar + 1 shouldBeEqualTo eval("intVar + 1")
-        intVar shouldBeEqualTo 0
+        intVar shouldBe eval("intVar")
+        intVar + 1 shouldBe eval("intVar + 1")
+        intVar shouldBe 0
       }
     }
   }
@@ -102,7 +101,7 @@ class KotlinScriptTests {
       it.apply {
         add("aux", aux)
 
-        aux.i shouldBeEqualTo eval("aux.i")
+        aux.i shouldBe eval("aux.i")
 
         val incEd =
           eval(
@@ -112,8 +111,8 @@ class KotlinScriptTests {
               """,
           ) as IncClass
 
-        aux.i shouldBeEqualTo 100
-        aux.i shouldBeEqualTo incEd.i
+        aux.i shouldBe 100
+        aux.i shouldBe incEd.i
       }
     }
   }
@@ -128,8 +127,8 @@ class KotlinScriptTests {
         add("list", list, typeOf<Int>())
         add("map", map, typeOf<String>(), typeOf<Int>())
 
-        list.size shouldBeEqualTo eval("list.size")
-        map.size shouldBeEqualTo eval("map.size")
+        list.size shouldBe eval("list.size")
+        map.size shouldBe eval("map.size")
 
         val incEd =
           eval(
@@ -140,13 +139,13 @@ class KotlinScriptTests {
               """,
           ) as List<*>
 
-        list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("list.size")
-        list.size shouldBeEqualTo incEd.size
+        list.size shouldBe 101
+        list.size shouldBe eval("list.size")
+        list.size shouldBe incEd.size
 
-        map.size shouldBeEqualTo eval("map.size")
-        map.size shouldBeEqualTo 2
-        map["k2"] shouldBeEqualTo 10
+        map.size shouldBe eval("map.size")
+        map.size shouldBe 2
+        map["k2"] shouldBe 10
       }
     }
   }
@@ -159,7 +158,7 @@ class KotlinScriptTests {
       it.apply {
         add("list", list, typeOf<Int>())
 
-        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBe eval("list.size")
 
         val incEd =
           eval(
@@ -169,9 +168,9 @@ class KotlinScriptTests {
               """,
           ) as List<*>
 
-        list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("list.size")
-        list.size shouldBeEqualTo incEd.size
+        list.size shouldBe 101
+        list.size shouldBe eval("list.size")
+        list.size shouldBe incEd.size
       }
     }
   }
@@ -185,9 +184,9 @@ class KotlinScriptTests {
         add("list", list, typeOf<Int?>())
 
         val s = "list".toTempName()
-        varDecls shouldBeEqualTo "val list = bindings[\"$s\"] as java.util.ArrayList<Int?>"
+        varDecls shouldBe "val list = bindings[\"$s\"] as java.util.ArrayList<Int?>"
 
-        list.size shouldBeEqualTo eval("list.size")
+        list.size shouldBe eval("list.size")
 
         val incEd =
           eval(
@@ -197,9 +196,9 @@ class KotlinScriptTests {
               """,
           ) as List<*>
 
-        list.size shouldBeEqualTo 100
-        list.size shouldBeEqualTo eval("list.size")
-        list.size shouldBeEqualTo incEd.size
+        list.size shouldBe 100
+        list.size shouldBe eval("list.size")
+        list.size shouldBe incEd.size
       }
     }
   }
@@ -208,14 +207,14 @@ class KotlinScriptTests {
   fun listCompareTest() {
     KotlinScript().use {
       it.apply {
-        eval("listOf(1,2,3) == listOf(1, 2, 3)") shouldBeEqualTo true
-        eval("listOf(1,2) == listOf(1, 2, 3)") shouldBeEqualTo false
+        eval("listOf(1,2,3) == listOf(1, 2, 3)") shouldBe true
+        eval("listOf(1,2) == listOf(1, 2, 3)") shouldBe false
 
-        eval("listOf(true,true) == listOf(true, true)") shouldBeEqualTo true
-        eval("listOf(true,false) == listOf(true, true)") shouldBeEqualTo false
+        eval("listOf(true,true) == listOf(true, true)") shouldBe true
+        eval("listOf(true,false) == listOf(true, true)") shouldBe false
 
-        eval("""listOf("aaa","bbb") == listOf("aaa", "bbb")""") shouldBeEqualTo true
-        eval("""listOf("aaa","bbb") == listOf("aaa", "aaa")""") shouldBeEqualTo false
+        eval("""listOf("aaa","bbb") == listOf("aaa", "bbb")""") shouldBe true
+        eval("""listOf("aaa","bbb") == listOf("aaa", "aaa")""") shouldBe false
       }
     }
   }
@@ -228,7 +227,7 @@ class KotlinScriptTests {
 
     KotlinScript().use {
       it.apply {
-        invoking { add("inner", inner) } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { add("inner", inner) }
       }
     }
   }
@@ -239,7 +238,7 @@ class KotlinScriptTests {
 
     KotlinScript().use {
       it.apply {
-        invoking { add("value", value, typeOf<Int?>()) } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { add("value", value, typeOf<Int?>()) }
       }
     }
   }
@@ -250,14 +249,14 @@ class KotlinScriptTests {
 
     KotlinScript().use {
       it.apply {
-        invoking {
+        shouldThrow<ScriptException> {
           add(
             name = "list",
             list,
             typeOf<Int?>(),
             typeOf<Int>(),
           )
-        } shouldThrow ScriptException::class
+        }
       }
     }
   }
@@ -268,7 +267,7 @@ class KotlinScriptTests {
 
     KotlinScript().use {
       it.apply {
-        invoking { add("list", list) } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { add("list", list) }
       }
     }
   }
@@ -277,7 +276,7 @@ class KotlinScriptTests {
   fun invalidSyntaxTest() {
     KotlinScript().use {
       it.apply {
-        invoking { eval("junk") } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { eval("junk") }
       }
     }
   }
@@ -286,8 +285,8 @@ class KotlinScriptTests {
   fun illegalCallsTest() {
     KotlinScript().use {
       it.apply {
-        invoking { eval("System.exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("com.lang.System.exit(1)") } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { eval("System.exit(1)") }
+        shouldThrow<ScriptException> { eval("com.lang.System.exit(1)") }
       }
     }
   }
@@ -298,8 +297,8 @@ class KotlinScriptTests {
       .apply {
         repeat(100) { i ->
           // println("Invocation1: $i")
-          invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
-          invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
+          shouldThrow<ScriptException> { eval("$i == [wrong]") }
+          shouldNotThrow<ScriptException> { eval("$i == $i") }
         }
       }
   }
@@ -309,8 +308,8 @@ class KotlinScriptTests {
     KotlinExprEvaluator()
       .apply {
         repeat(100) { i ->
-          invoking { compute("$i * $i") } shouldNotThrow ScriptException::class
-          (compute("$i * $i") as Int) shouldBeEqualTo (i * i)
+          shouldNotThrow<ScriptException> { compute("$i * $i") }
+          (compute("$i * $i") as Int) shouldBe (i * i)
         }
       }
   }
@@ -322,8 +321,8 @@ class KotlinScriptTests {
       pool
         .apply {
           // println("Invocation2: $i")
-          invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
-          invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
+          shouldThrow<ScriptException> { blockingEval("$i == [wrong]") }
+          shouldNotThrow<ScriptException> { blockingEval("$i == $i") }
         }
     }
   }

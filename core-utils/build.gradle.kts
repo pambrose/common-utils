@@ -9,6 +9,6 @@ dependencies {
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlinx.datetime)
 
-    testImplementation(libs.kluent)
+    testImplementation(libs.kotest)
     testImplementation(kotlin("test"))
 }

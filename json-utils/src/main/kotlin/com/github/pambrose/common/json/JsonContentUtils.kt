@@ -3,19 +3,24 @@ package com.github.pambrose.common.json
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonBuilder
 
+fun JsonBuilder.defaultJsonConfig() {
+  prettyPrint = true
+  prettyPrintIndent = "  "
+}
+
 object JsonContentUtils {
-  val prettyFormat by lazy { defaultJson() }
-  val rawFormat by lazy { Json { prettyPrint = false } }
-
-  fun JsonBuilder.defaultJsonConfig() {
-    prettyPrint = true
-    prettyPrintIndent = "  "
-  }
-
-  fun defaultJson() =
+  val prettyFormat by lazy {
     Json {
       defaultJsonConfig()
+      encodeDefaults = true
     }
+  }
+  val rawFormat by lazy {
+    Json {
+      prettyPrint = false
+      encodeDefaults = true
+    }
+  }
 
   val lenientFormat by lazy {
     Json {

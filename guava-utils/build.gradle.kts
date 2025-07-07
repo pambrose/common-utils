@@ -5,6 +5,6 @@ dependencies {
 
     implementation(libs.guava)
 
-    testImplementation(libs.kluent)
+    testImplementation(libs.kotest)
     testImplementation(kotlin("test"))
 }

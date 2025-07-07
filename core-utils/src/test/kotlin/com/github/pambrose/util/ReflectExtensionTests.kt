@@ -20,18 +20,18 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.typeParameterCount
-import org.amshove.kluent.shouldBeEqualTo
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 class ReflectExtensionTests {
   @Test
   fun tyeParamCountTest() {
-    4.typeParameterCount shouldBeEqualTo 0
-    "dd".typeParameterCount shouldBeEqualTo 0
-    listOf(3).typeParameterCount shouldBeEqualTo 1
-    mapOf(3 to "d").typeParameterCount shouldBeEqualTo 2
-    mutableMapOf("k1" to 1).typeParameterCount shouldBeEqualTo 2
-    arrayOf(4).typeParameterCount shouldBeEqualTo 1
-    (IntArray(1) { 2 }).typeParameterCount shouldBeEqualTo 0
+    4.typeParameterCount shouldBe 0
+    "dd".typeParameterCount shouldBe 0
+    listOf(3).typeParameterCount shouldBe 1
+    mapOf(3 to "d").typeParameterCount shouldBe 2
+    mutableMapOf("k1" to 1).typeParameterCount shouldBe 2
+    arrayOf(4).typeParameterCount shouldBe 1
+    (IntArray(1) { 2 }).typeParameterCount shouldBe 0
   }
 }

@@ -17,10 +17,9 @@
 
 package com.github.pambrose.common.script
 
-import org.amshove.kluent.invoking
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldNotThrow
-import org.amshove.kluent.shouldThrow
+import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 
@@ -51,23 +50,23 @@ class PythonScriptTests {
         add("floatVal", floatVal)
         add("strVal", strVal)
 
-        boolVal shouldBeEqualTo eval("boolVal")
-        !boolVal shouldBeEqualTo eval("not boolVal")
+        boolVal shouldBe eval("boolVal")
+        !boolVal shouldBe eval("not boolVal")
 
-        intVal shouldBeEqualTo eval("intVal")
-        intVal + 1 shouldBeEqualTo eval("intVal + 1")
+        intVal shouldBe eval("intVal")
+        intVal + 1 shouldBe eval("intVal + 1")
 
-        longVal.toBigInteger() shouldBeEqualTo eval("longVal")
-        (longVal + 1).toBigInteger() shouldBeEqualTo eval("longVal + 1")
+        longVal.toBigInteger() shouldBe eval("longVal")
+        (longVal + 1).toBigInteger() shouldBe eval("longVal + 1")
 
-        doubleVal shouldBeEqualTo eval("doubleVal")
-        doubleVal + 1 shouldBeEqualTo eval("doubleVal + 1")
+        doubleVal shouldBe eval("doubleVal")
+        doubleVal + 1 shouldBe eval("doubleVal + 1")
 
-        floatVal.toDouble() shouldBeEqualTo eval("floatVal")
-        floatVal.toDouble() + 1 shouldBeEqualTo eval("floatVal + 1")
+        floatVal.toDouble() shouldBe eval("floatVal")
+        floatVal.toDouble() + 1 shouldBe eval("floatVal + 1")
 
-        strVal shouldBeEqualTo eval("strVal")
-        strVal.length shouldBeEqualTo eval("len(strVal)")
+        strVal shouldBe eval("strVal")
+        strVal.length shouldBe eval("len(strVal)")
       }
     }
   }
@@ -80,7 +79,7 @@ class PythonScriptTests {
       it.apply {
         add("aux", aux)
 
-        aux.i shouldBeEqualTo eval("aux.i")
+        aux.i shouldBe eval("aux.i")
 
         eval(
           """
@@ -89,7 +88,7 @@ class PythonScriptTests {
           """.trimIndent(),
         )
 
-        aux.i shouldBeEqualTo 100
+        aux.i shouldBe 100
       }
     }
   }
@@ -104,8 +103,8 @@ class PythonScriptTests {
         add("list", list)
         add("map", map)
 
-        list.size shouldBeEqualTo eval("len(list)")
-        map.size shouldBeEqualTo eval("len(map)")
+        list.size shouldBe eval("len(list)")
+        map.size shouldBe eval("len(map)")
 
         eval(
           """
@@ -115,12 +114,12 @@ class PythonScriptTests {
           """.trimIndent(),
         )
 
-        list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBe 101
+        list.size shouldBe eval("len(list)")
 
-        map.size shouldBeEqualTo eval("len(map)")
-        map.size shouldBeEqualTo 2
-        map["k2"] shouldBeEqualTo 10
+        map.size shouldBe eval("len(map)")
+        map.size shouldBe 2
+        map["k2"] shouldBe 10
       }
     }
   }
@@ -129,7 +128,7 @@ class PythonScriptTests {
   fun listCompareTest() {
     PythonScript().use {
       it.apply {
-        eval("[True] == [True]") shouldBeEqualTo true
+        eval("[True] == [True]") shouldBe true
       }
     }
   }
@@ -142,7 +141,7 @@ class PythonScriptTests {
       it.apply {
         add("list", list)
 
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBe eval("len(list)")
 
         eval(
           """
@@ -151,8 +150,8 @@ class PythonScriptTests {
           """.trimIndent(),
         )
 
-        list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBe 101
+        list.size shouldBe eval("len(list)")
       }
     }
   }
@@ -165,7 +164,7 @@ class PythonScriptTests {
       it.apply {
         add("list", list)
 
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBe eval("len(list)")
 
         eval(
           """
@@ -174,8 +173,8 @@ class PythonScriptTests {
           """.trimIndent(),
         )
 
-        list.size shouldBeEqualTo 100
-        list.size shouldBeEqualTo eval("len(list)")
+        list.size shouldBe 100
+        list.size shouldBe eval("len(list)")
       }
     }
   }
@@ -184,7 +183,7 @@ class PythonScriptTests {
   fun invalidSyntaxTest() {
     PythonScript().use {
       it.apply {
-        invoking { eval("junk") } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { eval("junk") }
       }
     }
   }
@@ -193,9 +192,9 @@ class PythonScriptTests {
   fun illegalCallsTest() {
     PythonScript().use {
       it.apply {
-        invoking { eval("sys.exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("quit(1)") } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { eval("sys.exit(1)") }
+        shouldThrow<ScriptException> { eval("exit(1)") }
+        shouldThrow<ScriptException> { eval("quit(1)") }
       }
     }
   }
@@ -206,8 +205,8 @@ class PythonScriptTests {
       .apply {
         repeat(200) { i ->
           // println("Invocation: $i")
-          invoking { eval("$i == [wrong]") } shouldThrow ScriptException::class
-          invoking { eval("$i == $i") } shouldNotThrow ScriptException::class
+          shouldThrow<ScriptException> { eval("$i == [wrong]") }
+          shouldNotThrow<ScriptException> { eval("$i == $i") }
         }
       }
   }
@@ -219,8 +218,8 @@ class PythonScriptTests {
       pool
         .apply {
           // println("Invocation: $i")
-          invoking { blockingEval("$i == [wrong]") } shouldThrow ScriptException::class
-          invoking { blockingEval("$i == $i") } shouldNotThrow ScriptException::class
+          shouldThrow<ScriptException> { blockingEval("$i == [wrong]") }
+          shouldNotThrow<ScriptException> { blockingEval("$i == $i") }
         }
     }
   }

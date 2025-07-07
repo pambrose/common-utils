@@ -9,5 +9,6 @@ dependencies {
 
     implementation(libs.kotlinx.serialization)
 
+    testImplementation(libs.kotest)
     testImplementation(kotlin("test"))
 }
