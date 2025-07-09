@@ -8,8 +8,7 @@
 [![Kotlin](https://img.shields.io/badge/%20language-Kotlin-red.svg)](https://kotlinlang.org/)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
 
-A comprehensive collection of utility libraries for Kotlin and Java development, providing reusable components for
-common programming tasks across various frameworks and technologies.
+A collection of utility libraries for Kotlin and Java development.
 
 ## Overview
 
