@@ -46,10 +46,12 @@ val hostInfo by lazy {
 
 fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.inWholeMilliseconds)
 
+private val secureRandom = SecureRandom()
+
 fun randomId(
   length: Int = 10,
   charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9'),
-) = SecureRandom().let { random ->
+) = secureRandom.let { random ->
   (1..length)
     .map { random.nextInt(charPool.size) }
     .map { charPool[it] }
