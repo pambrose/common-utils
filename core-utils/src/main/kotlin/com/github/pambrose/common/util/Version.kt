@@ -17,14 +17,13 @@
 
 package com.github.pambrose.common.util
 
-import kotlinx.datetime.Instant.Companion.fromEpochMilliseconds
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.toStdlibInstant
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
+import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
@@ -38,8 +37,7 @@ annotation class Version(
     private const val ZONE_ID = "America/Los_Angeles"
     val TIME_ZONE: TimeZone = TimeZone.of(ZONE_ID)
 
-    private fun buildDateTime(buildTime: Long) =
-      fromEpochMilliseconds(buildTime).toStdlibInstant().toLocalDateTime(TIME_ZONE)
+    private fun buildDateTime(buildTime: Long) = fromEpochMilliseconds(buildTime).toLocalDateTime(TIME_ZONE)
 
     private fun buildDateTimeStr(buildTime: Long) = buildDateTime(buildTime).toFullDateString()
 
