@@ -30,13 +30,6 @@ Fundamental utility functions and extensions for common programming tasks.
 - Time duration helpers
 - Reflection utilities
 
-#### [**corex-utils**](corex-utils/README.md)
-
-Kotlin Coroutines utilities for asynchronous programming.
-
-- Enhanced delay functions with Duration support
-- Coroutine-specific extension functions
-
 ### Framework Integration
 
 #### [**dropwizard-utils**](dropwizard-utils/README.md)

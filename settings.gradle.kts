@@ -3,7 +3,6 @@ plugins {
 }
 
 include("core-utils")
-include("corex-utils")
 include("dropwizard-utils")
 include("exposed-utils")
 include("grpc-utils")
