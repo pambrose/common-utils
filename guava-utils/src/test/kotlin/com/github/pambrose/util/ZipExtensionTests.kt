@@ -19,17 +19,17 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.util.unzip
 import com.github.pambrose.common.util.zip
-import org.amshove.kluent.shouldBeEqualTo
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 class ZipExtensionTests {
   @Test
   fun shortStringZipTest() {
     val s = "kjwkjfhwekfjhwwewewerrr\nwdfwefwefwef\n"
-    s.zip().unzip() shouldBeEqualTo s
+    s.zip().unzip() shouldBe s
 
     val t = "kjwkjfhwekfjhwwewewerrr\nwdfwefwefwef\n"
-    t.zip().unzip() shouldBeEqualTo t
+    t.zip().unzip() shouldBe t
   }
 
   @Test
@@ -37,13 +37,13 @@ class ZipExtensionTests {
     val s =
       "kjwkjfhwekf cdsc  ##444445 wekfnkfn ew fwefwejfewkjfwef  qweqweqweqwe wef w ef wefwef ezzzzxdweere\n"
     val g = buildString { repeat(100_000) { append(s) } }
-    g.zip().unzip() shouldBeEqualTo g
+    g.zip().unzip() shouldBe g
   }
 
   @Test
   fun empyStringZipTest() {
-    "".zip() shouldBeEqualTo ByteArray(0)
-    "".zip().unzip() shouldBeEqualTo ""
-    ByteArray(0).unzip() shouldBeEqualTo ""
+    "".zip() shouldBe ByteArray(0)
+    "".zip().unzip() shouldBe ""
+    ByteArray(0).unzip() shouldBe ""
   }
 }

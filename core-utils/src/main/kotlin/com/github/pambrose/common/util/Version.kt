@@ -17,13 +17,13 @@
 
 package com.github.pambrose.common.util
 
-import kotlinx.datetime.Instant.Companion.fromEpochMilliseconds
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
+import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)

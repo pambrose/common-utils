@@ -1,5 +1,6 @@
 package com.github.pambrose.common.json
 
+import com.github.pambrose.common.json.JsonDefaults.json
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -25,8 +26,8 @@ val JsonElement.jsonObjectValue: JsonObject get() = jsonObject
 val JsonElement.isObject get() = this is JsonObject
 val JsonElement.isArray get() = this is JsonArray
 val JsonElement.isPrimitive get() = this is JsonPrimitive
-val JsonElement.isString get() = this is JsonPrimitive && !jsonPrimitive.isString
-val JsonElement.isNumber get() = this is JsonPrimitive && !(jsonPrimitive.content.toDoubleOrNull() != null)
+val JsonElement.isString get() = this is JsonPrimitive && jsonPrimitive.isString
+val JsonElement.isNumber get() = this is JsonPrimitive && jsonPrimitive.content.toDoubleOrNull() != null
 
 fun JsonElement.getByPath(path: String): JsonElement? =
   path.split("/")
@@ -39,7 +40,8 @@ operator fun JsonElement.get(vararg keys: String): JsonElement =
   keys.flatMap { it.split(".") }
     .fold(this) { acc, key -> acc.element(key) }
 
-fun JsonElement.getOrNull(vararg keys: String): JsonElement? = if (containsKey(*keys)) get(*keys) else null
+fun JsonElement.getOrNull(vararg keys: String): JsonElement? =
+  if (containsKeys(*keys)) get(*keys).takeIf { it != JsonNull } else null
 
 // Primitive values
 fun JsonElement.stringValue(vararg keys: String) = get(*keys).stringValue
@@ -68,7 +70,7 @@ fun JsonElement.jsonElementList(vararg keys: String) = get(*keys).toJsonElementL
 
 fun JsonElement.jsonElementListOrNull(vararg keys: String) = getOrNull(*keys)?.toJsonElementList()
 
-fun JsonElement.containsKey(vararg keys: String): Boolean {
+fun JsonElement.containsKeys(vararg keys: String): Boolean {
   val ks = keys.flatMap { it.split(".") }
   var currElement: JsonElement = this
   for (k in ks) {
@@ -109,9 +111,13 @@ fun String.toJsonString() = toJsonElement().toJsonString(true)
 inline fun <reified T> T.toJsonString(prettyPrint: Boolean = true) =
   (if (prettyPrint) JsonContentUtils.prettyFormat else JsonContentUtils.rawFormat).encodeToString(this)
 
-inline fun <reified T> T.toJsonElement() = Json.encodeToJsonElement(this)
+object JsonDefaults {
+  val json = Json { encodeDefaults = true }
+}
 
-fun String.toJsonElement() = Json.parseToJsonElement(this)
+inline fun <reified T> T.toJsonElement() = json.encodeToJsonElement(this)
+
+fun String.toJsonElement() = json.parseToJsonElement(this)
 
 fun JsonElement.toJsonElementList() = jsonArray.toList()
 
@@ -139,4 +145,4 @@ internal fun JsonElement.element(key: String) =
     """JsonElement key "$key" not found in ${this.toString().take(100)}...""",
   )
 
-private fun JsonElement.elementOrNull(key: String) = jsonObject.get(key)
+private fun JsonElement.elementOrNull(key: String) = jsonObject[key]

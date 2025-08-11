@@ -19,127 +19,149 @@
 
 package com.github.pambrose.util
 
-import com.github.pambrose.common.util.*
-import org.amshove.kluent.shouldBeEqualTo
+import com.github.pambrose.common.util.asRegex
+import com.github.pambrose.common.util.firstLineNumberOf
+import com.github.pambrose.common.util.isBracketed
+import com.github.pambrose.common.util.isDouble
+import com.github.pambrose.common.util.isDoubleQuoted
+import com.github.pambrose.common.util.isFloat
+import com.github.pambrose.common.util.isInt
+import com.github.pambrose.common.util.isNotDouble
+import com.github.pambrose.common.util.isNotFloat
+import com.github.pambrose.common.util.isNotInt
+import com.github.pambrose.common.util.isNotQuoted
+import com.github.pambrose.common.util.isQuoted
+import com.github.pambrose.common.util.isSingleQuoted
+import com.github.pambrose.common.util.join
+import com.github.pambrose.common.util.lastLineNumberOf
+import com.github.pambrose.common.util.length
+import com.github.pambrose.common.util.linesBetween
+import com.github.pambrose.common.util.pluralize
+import com.github.pambrose.common.util.singleToDoubleQuoted
+import com.github.pambrose.common.util.toPath
+import com.github.pambrose.common.util.toPattern
+import com.github.pambrose.common.util.toRootPath
+import com.github.pambrose.common.util.trimEnds
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 class StringExtensionTests {
   @Test
   fun lengthTests() {
-    repeat(10_000_000) { i -> i.length shouldBeEqualTo i.toString().length }
-    for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldBeEqualTo i.toString().length
+    repeat(10_000_000) { i -> i.length shouldBe i.toString().length }
+    for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldBe i.toString().length
 
-    for (i in 0L..10000000L) i.length shouldBeEqualTo i.toString().length
-    for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldBeEqualTo i.toString().length
+    for (i in 0L..10000000L) i.length shouldBe i.toString().length
+    for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldBe i.toString().length
   }
 
   @Test
   fun quoteTests() {
-    "".isSingleQuoted() shouldBeEqualTo false
-    "".isDoubleQuoted() shouldBeEqualTo false
-    "".isQuoted() shouldBeEqualTo false
-    "".isNotQuoted() shouldBeEqualTo true
+    "".isSingleQuoted() shouldBe false
+    "".isDoubleQuoted() shouldBe false
+    "".isQuoted() shouldBe false
+    "".isNotQuoted() shouldBe true
 
-    " ".isSingleQuoted() shouldBeEqualTo false
-    " ".isDoubleQuoted() shouldBeEqualTo false
-    " ".isQuoted() shouldBeEqualTo false
-    " ".isNotQuoted() shouldBeEqualTo true
+    " ".isSingleQuoted() shouldBe false
+    " ".isDoubleQuoted() shouldBe false
+    " ".isQuoted() shouldBe false
+    " ".isNotQuoted() shouldBe true
 
-    "'".isSingleQuoted() shouldBeEqualTo false
-    "'".isDoubleQuoted() shouldBeEqualTo false
-    "'".isQuoted() shouldBeEqualTo false
-    "'".isNotQuoted() shouldBeEqualTo true
+    "'".isSingleQuoted() shouldBe false
+    "'".isDoubleQuoted() shouldBe false
+    "'".isQuoted() shouldBe false
+    "'".isNotQuoted() shouldBe true
 
-    """ " """.isSingleQuoted() shouldBeEqualTo false
-    """ " """.isDoubleQuoted() shouldBeEqualTo false
-    """ " """.isQuoted() shouldBeEqualTo false
-    """ " """.isNotQuoted() shouldBeEqualTo true
+    """ " """.isSingleQuoted() shouldBe false
+    """ " """.isDoubleQuoted() shouldBe false
+    """ " """.isQuoted() shouldBe false
+    """ " """.isNotQuoted() shouldBe true
 
-    """ "" """.isSingleQuoted() shouldBeEqualTo false
-    """ "" """.isDoubleQuoted() shouldBeEqualTo true
-    """ "" """.isQuoted() shouldBeEqualTo true
-    """ "" """.isNotQuoted() shouldBeEqualTo false
+    """ "" """.isSingleQuoted() shouldBe false
+    """ "" """.isDoubleQuoted() shouldBe true
+    """ "" """.isQuoted() shouldBe true
+    """ "" """.isNotQuoted() shouldBe false
 
-    "''".isSingleQuoted() shouldBeEqualTo true
-    "''".isDoubleQuoted() shouldBeEqualTo false
-    "''".isQuoted() shouldBeEqualTo true
-    "''".isNotQuoted() shouldBeEqualTo false
+    "''".isSingleQuoted() shouldBe true
+    "''".isDoubleQuoted() shouldBe false
+    "''".isQuoted() shouldBe true
+    "''".isNotQuoted() shouldBe false
   }
 
   @Test
   fun isIntTest() {
-    "".isInt() shouldBeEqualTo false
-    "a".isInt() shouldBeEqualTo false
-    "4".isInt() shouldBeEqualTo true
-    "4.0".isInt() shouldBeEqualTo false
+    "".isInt() shouldBe false
+    "a".isInt() shouldBe false
+    "4".isInt() shouldBe true
+    "4.0".isInt() shouldBe false
 
-    "".isNotInt() shouldBeEqualTo true
-    "a".isNotInt() shouldBeEqualTo true
-    "4".isNotInt() shouldBeEqualTo false
-    "4.0".isNotInt() shouldBeEqualTo true
+    "".isNotInt() shouldBe true
+    "a".isNotInt() shouldBe true
+    "4".isNotInt() shouldBe false
+    "4.0".isNotInt() shouldBe true
   }
 
   @Test
   fun isFloatTest() {
-    "".isFloat() shouldBeEqualTo false
-    "a".isFloat() shouldBeEqualTo false
-    "4.0".isFloat() shouldBeEqualTo true
-    "4".isFloat() shouldBeEqualTo true
+    "".isFloat() shouldBe false
+    "a".isFloat() shouldBe false
+    "4.0".isFloat() shouldBe true
+    "4".isFloat() shouldBe true
 
-    "".isNotFloat() shouldBeEqualTo true
-    "a".isNotFloat() shouldBeEqualTo true
-    "4.0".isNotFloat() shouldBeEqualTo false
-    "4".isNotFloat() shouldBeEqualTo false
+    "".isNotFloat() shouldBe true
+    "a".isNotFloat() shouldBe true
+    "4.0".isNotFloat() shouldBe false
+    "4".isNotFloat() shouldBe false
   }
 
   @Test
   fun isDoubleTest() {
-    "".isDouble() shouldBeEqualTo false
-    "a".isDouble() shouldBeEqualTo false
-    "4.0".isDouble() shouldBeEqualTo true
-    "4".isDouble() shouldBeEqualTo true
+    "".isDouble() shouldBe false
+    "a".isDouble() shouldBe false
+    "4.0".isDouble() shouldBe true
+    "4".isDouble() shouldBe true
 
-    "".isNotDouble() shouldBeEqualTo true
-    "a".isNotDouble() shouldBeEqualTo true
-    "4.0".isNotDouble() shouldBeEqualTo false
-    "4".isNotDouble() shouldBeEqualTo false
+    "".isNotDouble() shouldBe true
+    "a".isNotDouble() shouldBe true
+    "4.0".isNotDouble() shouldBe false
+    "4".isNotDouble() shouldBe false
   }
 
   @Test
   fun convertTest() {
-    "".singleToDoubleQuoted() shouldBeEqualTo ""
-    "'".singleToDoubleQuoted() shouldBeEqualTo "'"
-    "'test'".singleToDoubleQuoted() shouldBeEqualTo """"test""""
-    """'te"st'""".singleToDoubleQuoted() shouldBeEqualTo """"te"st""""
-    """"test"""".singleToDoubleQuoted() shouldBeEqualTo """"test""""
+    "".singleToDoubleQuoted() shouldBe ""
+    "'".singleToDoubleQuoted() shouldBe "'"
+    "'test'".singleToDoubleQuoted() shouldBe """"test""""
+    """'te"st'""".singleToDoubleQuoted() shouldBe """"te"st""""
+    """"test"""".singleToDoubleQuoted() shouldBe """"test""""
   }
 
   @Test
   fun pluralTest() {
-    "car".pluralize(0) shouldBeEqualTo "cars"
-    "car".pluralize(1) shouldBeEqualTo "car"
-    "car".pluralize(2) shouldBeEqualTo "cars"
+    "car".pluralize(0) shouldBe "cars"
+    "car".pluralize(1) shouldBe "car"
+    "car".pluralize(2) shouldBe "cars"
 
-    "ski".pluralize(1, "es") shouldBeEqualTo "ski"
-    "ski".pluralize(2, "es") shouldBeEqualTo "skies"
+    "ski".pluralize(1, "es") shouldBe "ski"
+    "ski".pluralize(2, "es") shouldBe "skies"
   }
 
   @Test
   fun testPaths() {
-    listOf("a", "b", "c").join() shouldBeEqualTo "a/b/c"
-    listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
-    listOf("a", "b", "c").toRootPath() shouldBeEqualTo "/a/b/c"
-    listOf("a", "b", "c").toRootPath(true) shouldBeEqualTo "/a/b/c/"
-    listOf("a", "b", "c").toPath(addPrefix = false, addTrailing = true) shouldBeEqualTo "a/b/c/"
-    listOf("a", "b", "c").toPath() shouldBeEqualTo "/a/b/c/"
-    listOf("/a", "/b", "c").toPath() shouldBeEqualTo "/a/b/c/"
-    listOf("/a", "/b", "c/").toPath() shouldBeEqualTo "/a/b/c/"
-    listOf("a", "/b", "c/").toPath() shouldBeEqualTo "/a/b/c/"
+    listOf("a", "b", "c").join() shouldBe "a/b/c"
+    listOf("a", "b", "c").toPath() shouldBe "/a/b/c/"
+    listOf("a", "b", "c").toRootPath() shouldBe "/a/b/c"
+    listOf("a", "b", "c").toRootPath(true) shouldBe "/a/b/c/"
+    listOf("a", "b", "c").toPath(addPrefix = false, addTrailing = true) shouldBe "a/b/c/"
+    listOf("a", "b", "c").toPath() shouldBe "/a/b/c/"
+    listOf("/a", "/b", "c").toPath() shouldBe "/a/b/c/"
+    listOf("/a", "/b", "c/").toPath() shouldBe "/a/b/c/"
+    listOf("a", "/b", "c/").toPath() shouldBe "/a/b/c/"
 
-    listOf("a", "b", "c").join() shouldBeEqualTo "a/b/c"
-    listOf("a/", "/b/", "c").join() shouldBeEqualTo "a/b/c"
-    listOf("/a/", "/b/", "c").join() shouldBeEqualTo "/a/b/c"
-    listOf("/a/", "/b/", "/c").join() shouldBeEqualTo "/a/b/c"
+    listOf("a", "b", "c").join() shouldBe "a/b/c"
+    listOf("a/", "/b/", "c").join() shouldBe "a/b/c"
+    listOf("/a/", "/b/", "c").join() shouldBe "/a/b/c"
+    listOf("/a/", "/b/", "/c").join() shouldBe "/a/b/c"
   }
 
   @Test
@@ -158,11 +180,11 @@ class StringExtensionTests {
       eee
       """.trimIndent()
 
-    s.firstLineNumberOf(Regex("zzz")) shouldBeEqualTo -1
-    s.firstLineNumberOf(Regex("bbb")) shouldBeEqualTo 1
+    s.firstLineNumberOf(Regex("zzz")) shouldBe -1
+    s.firstLineNumberOf(Regex("bbb")) shouldBe 1
 
-    s.lastLineNumberOf(Regex("zzz")) shouldBeEqualTo -1
-    s.lastLineNumberOf(Regex("bbb")) shouldBeEqualTo 6
+    s.lastLineNumberOf(Regex("zzz")) shouldBe -1
+    s.lastLineNumberOf(Regex("bbb")) shouldBe 6
   }
 
   @Test
@@ -177,47 +199,47 @@ class StringExtensionTests {
       ccc
       """.trimIndent()
 
-    s.linesBetween(Regex("aaa"), Regex("ccc")) shouldBeEqualTo listOf("bbb", "ccc", "aaa", "bbb")
-    s.linesBetween(Regex("ccc"), Regex("bbb")) shouldBeEqualTo listOf("aaa")
-    s.linesBetween(Regex("ccc"), Regex("aaa")) shouldBeEqualTo listOf()
+    s.linesBetween(Regex("aaa"), Regex("ccc")) shouldBe listOf("bbb", "ccc", "aaa", "bbb")
+    s.linesBetween(Regex("ccc"), Regex("bbb")) shouldBe listOf("aaa")
+    s.linesBetween(Regex("ccc"), Regex("aaa")) shouldBe listOf()
   }
 
   @Test
   fun bracketTest() {
-    "  [fddsf]  ".isBracketed() shouldBeEqualTo true
-    "[fddsf]".isBracketed() shouldBeEqualTo true
-    "[]".isBracketed() shouldBeEqualTo true
-    "[".isBracketed() shouldBeEqualTo false
-    "]".isBracketed() shouldBeEqualTo false
-    "".isBracketed() shouldBeEqualTo false
+    "  [fddsf]  ".isBracketed() shouldBe true
+    "[fddsf]".isBracketed() shouldBe true
+    "[]".isBracketed() shouldBe true
+    "[".isBracketed() shouldBe false
+    "]".isBracketed() shouldBe false
+    "".isBracketed() shouldBe false
 
-    "{fddsf}".isBracketed('{', '}') shouldBeEqualTo true
-    "{}}".isBracketed('{', '}') shouldBeEqualTo true
-    "{".isBracketed('{', '}') shouldBeEqualTo false
-    "}".isBracketed('{', '}') shouldBeEqualTo false
-    "".isBracketed('{', '}') shouldBeEqualTo false
+    "{fddsf}".isBracketed('{', '}') shouldBe true
+    "{}}".isBracketed('{', '}') shouldBe true
+    "{".isBracketed('{', '}') shouldBe false
+    "}".isBracketed('{', '}') shouldBe false
+    "".isBracketed('{', '}') shouldBe false
   }
 
   @Test
   fun trimEndsTest() {
-    "  [fddsf]  ".trimEnds() shouldBeEqualTo "fddsf"
-    "  [fddsf]  ".trimEnds(2) shouldBeEqualTo "dds"
+    "  [fddsf]  ".trimEnds() shouldBe "fddsf"
+    "  [fddsf]  ".trimEnds(2) shouldBe "dds"
   }
 
   @Test
   fun patternMatchTest() {
-    "*st*".toPattern shouldBeEqualTo "^.*st.*$"
-    "?.*".toPattern shouldBeEqualTo "^.\\..*$"
+    "*st*".toPattern shouldBe "^.*st.*$"
+    "?.*".toPattern shouldBe "^.\\..*$"
 
-    "Test.java".contains("*st*".asRegex()) shouldBeEqualTo true
-    "Test.java".contains("*.j".asRegex()) shouldBeEqualTo false
-    "Test.java".contains("*.java".asRegex()) shouldBeEqualTo true
-    "Test.java".contains("T?s?.java".asRegex()) shouldBeEqualTo true
-    "Test.java".contains("T?s?*java".asRegex()) shouldBeEqualTo true
-    "Test.java".contains("T?s?*jav?".asRegex()) shouldBeEqualTo true
-    "Test.java".contains("T?s?.*".asRegex()) shouldBeEqualTo true
-    "Test.java".contains("T?s?.*a".asRegex()) shouldBeEqualTo true
-    "Test.java".contains("t?s?.*a".asRegex()) shouldBeEqualTo false
-    "Test.java".contains("t?s?.*a".asRegex(true)) shouldBeEqualTo true
+    "Test.java".contains("*st*".asRegex()) shouldBe true
+    "Test.java".contains("*.j".asRegex()) shouldBe false
+    "Test.java".contains("*.java".asRegex()) shouldBe true
+    "Test.java".contains("T?s?.java".asRegex()) shouldBe true
+    "Test.java".contains("T?s?*java".asRegex()) shouldBe true
+    "Test.java".contains("T?s?*jav?".asRegex()) shouldBe true
+    "Test.java".contains("T?s?.*".asRegex()) shouldBe true
+    "Test.java".contains("T?s?.*a".asRegex()) shouldBe true
+    "Test.java".contains("t?s?.*a".asRegex()) shouldBe false
+    "Test.java".contains("t?s?.*a".asRegex(true)) shouldBe true
   }
 }

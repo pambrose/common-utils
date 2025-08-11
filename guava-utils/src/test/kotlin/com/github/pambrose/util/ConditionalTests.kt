@@ -19,13 +19,13 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.concurrent.ConditionalBoolean
 import com.github.pambrose.common.concurrent.ConditionalValue
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
-import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 
 class ConditionalTests {
@@ -61,7 +61,7 @@ class ConditionalTests {
 
       jobs.forEach { it.join() }
 
-      results shouldBeEqualTo listOf(3, 1, 2)
+      results shouldBe listOf(3, 1, 2)
     }
   }
 
@@ -88,7 +88,7 @@ class ConditionalTests {
 
       jobs.forEach { it.join() }
 
-      results shouldBeEqualTo expected
+      results shouldBe expected
     }
   }
 
@@ -115,7 +115,7 @@ class ConditionalTests {
 
       jobs.forEach { it.join() }
 
-      results shouldBeEqualTo expected
+      results shouldBe expected
     }
   }
 
@@ -144,7 +144,7 @@ class ConditionalTests {
 
       jobs.forEach { it.join() }
 
-      results shouldBeEqualTo expected
+      results shouldBe expected
     }
   }
 }

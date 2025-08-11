@@ -17,9 +17,8 @@
 
 package com.github.pambrose.common.script
 
-import org.amshove.kluent.invoking
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldThrow
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
@@ -51,23 +50,23 @@ class JavaScriptTests {
         add("floatVal", floatVal)
         add("strVal", strVal)
 
-        boolVal shouldBeEqualTo eval("boolVal")
-        !boolVal shouldBeEqualTo eval("!boolVal")
+        boolVal shouldBe eval("boolVal")
+        !boolVal shouldBe eval("!boolVal")
 
-        intVal shouldBeEqualTo eval("intVal")
-        intVal + 1 shouldBeEqualTo eval("intVal + 1")
+        intVal shouldBe eval("intVal")
+        intVal + 1 shouldBe eval("intVal + 1")
 
-        longVal shouldBeEqualTo eval("longVal")
-        (longVal + 1) shouldBeEqualTo eval("longVal + 1")
+        longVal shouldBe eval("longVal")
+        (longVal + 1) shouldBe eval("longVal + 1")
 
-        doubleVal shouldBeEqualTo eval("doubleVal")
-        doubleVal + 1 shouldBeEqualTo eval("doubleVal + 1")
+        doubleVal shouldBe eval("doubleVal")
+        doubleVal + 1 shouldBe eval("doubleVal + 1")
 
-        floatVal shouldBeEqualTo eval("floatVal")
-        floatVal + 1 shouldBeEqualTo eval("floatVal + 1")
+        floatVal shouldBe eval("floatVal")
+        floatVal + 1 shouldBe eval("floatVal + 1")
 
-        strVal shouldBeEqualTo eval("strVal")
-        strVal.length shouldBeEqualTo eval("strVal.length()")
+        strVal shouldBe eval("strVal")
+        strVal.length shouldBe eval("strVal.length()")
       }
     }
   }
@@ -81,7 +80,7 @@ class JavaScriptTests {
         add("aux", aux)
         import(IncClass::class.java)
 
-        aux.i shouldBeEqualTo eval("aux.getI()")
+        aux.i shouldBe eval("aux.getI()")
 
         val retval =
           eval(
@@ -92,8 +91,8 @@ class JavaScriptTests {
             """.trimIndent(),
           )
 
-        retval shouldBeEqualTo 100
-        aux.i shouldBeEqualTo 100
+        retval shouldBe 100
+        aux.i shouldBe 100
       }
     }
   }
@@ -110,8 +109,8 @@ class JavaScriptTests {
         import(ArrayList::class.java)
         import(LinkedHashMap::class.java)
 
-        list.size shouldBeEqualTo eval("list.size()")
-        map.size shouldBeEqualTo eval("map.size()")
+        list.size shouldBe eval("list.size()")
+        map.size shouldBe eval("map.size()")
 
         val retval =
           eval(
@@ -123,14 +122,14 @@ class JavaScriptTests {
             """.trimIndent(),
           )
 
-        retval shouldBeEqualTo map.size
+        retval shouldBe map.size
 
-        list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("list.size()")
+        list.size shouldBe 101
+        list.size shouldBe eval("list.size()")
 
-        map.size shouldBeEqualTo eval("map.size()")
-        map.size shouldBeEqualTo 2
-        map["k2"] shouldBeEqualTo 10
+        map.size shouldBe eval("map.size()")
+        map.size shouldBe 2
+        map["k2"] shouldBe 10
       }
     }
   }
@@ -144,7 +143,7 @@ class JavaScriptTests {
         add("list", list, typeOf<Int>())
         import(ArrayList::class.java)
 
-        list.size shouldBeEqualTo eval("list.size()")
+        list.size shouldBe eval("list.size()")
 
         eval(
           "0",
@@ -154,8 +153,8 @@ class JavaScriptTests {
           """.trimIndent(),
         )
 
-        list.size shouldBeEqualTo 101
-        list.size shouldBeEqualTo eval("list.size()")
+        list.size shouldBe 101
+        list.size shouldBe eval("list.size()")
       }
     }
   }
@@ -169,7 +168,7 @@ class JavaScriptTests {
         add("list", list, typeOf<Int?>())
         import(ArrayList::class.java)
 
-        list.size shouldBeEqualTo eval("list.size()")
+        list.size shouldBe eval("list.size()")
 
         eval(
           "0",
@@ -179,8 +178,8 @@ class JavaScriptTests {
           """.trimIndent(),
         )
 
-        list.size shouldBeEqualTo 100
-        list.size shouldBeEqualTo eval("list.size()")
+        list.size shouldBe 100
+        list.size shouldBe eval("list.size()")
       }
     }
   }
@@ -191,7 +190,7 @@ class JavaScriptTests {
 
     JavaScript().use {
       it.apply {
-        invoking { add("value", value, typeOf<Int?>()) } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { add("value", value, typeOf<Int?>()) }
       }
     }
   }
@@ -202,14 +201,14 @@ class JavaScriptTests {
 
     JavaScript().use {
       it.apply {
-        invoking {
+        shouldThrow<ScriptException> {
           add(
             "list",
             list,
             typeOf<Int?>(),
             typeOf<Int>(),
           )
-        } shouldThrow ScriptException::class
+        }
       }
     }
   }
@@ -219,7 +218,7 @@ class JavaScriptTests {
     val list = mutableListOf(1)
     JavaScript().use {
       it.apply {
-        invoking { add("list", list) } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { add("list", list) }
       }
     }
   }
@@ -228,7 +227,7 @@ class JavaScriptTests {
   fun invalidSyntaxTest() {
     JavaScript().use {
       it.apply {
-        invoking { eval("junk") } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { eval("junk") }
       }
     }
   }
@@ -237,9 +236,9 @@ class JavaScriptTests {
   fun illegalCallsTest() {
     JavaScript().use {
       it.apply {
-        invoking { eval("sys.exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("exit(1)") } shouldThrow ScriptException::class
-        invoking { eval("quit(1)") } shouldThrow ScriptException::class
+        shouldThrow<ScriptException> { eval("sys.exit(1)") }
+        shouldThrow<ScriptException> { eval("exit(1)") }
+        shouldThrow<ScriptException> { eval("quit(1)") }
       }
     }
   }

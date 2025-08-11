@@ -20,6 +20,7 @@
 package com.github.pambrose.common.util
 
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.number
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.security.SecureRandom
@@ -45,10 +46,12 @@ val hostInfo by lazy {
 
 fun sleep(sleepTime: Duration) = Thread.sleep(sleepTime.inWholeMilliseconds)
 
+private val secureRandom = SecureRandom()
+
 fun randomId(
   length: Int = 10,
   charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9'),
-) = SecureRandom().let { random ->
+) = secureRandom.let { random ->
   (1..length)
     .map { random.nextInt(charPool.size) }
     .map { charPool[it] }
@@ -82,7 +85,7 @@ fun Any?.isNull(): Boolean {
 }
 
 fun LocalDateTime.toFullDateString(): String =
-  "${abbrevDayOfWeek()} ${monthNumber.lpad(2)}/${dayOfMonth.lpad(2)}/${(year - 2000).lpad(2)} " +
+  "${abbrevDayOfWeek()} ${month.number.lpad(2)}/${day.lpad(2)}/${(year - 2000).lpad(2)} " +
     "${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)} PST"
 
 fun Int.lpad(

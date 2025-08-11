@@ -21,9 +21,15 @@ package com.github.pambrose.time
 
 import com.github.pambrose.common.time.timeUnitToDuration
 import com.github.pambrose.common.util.repeat
-import org.amshove.kluent.shouldBeEqualTo
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
-import java.util.concurrent.TimeUnit.*
+import java.util.concurrent.TimeUnit.DAYS
+import java.util.concurrent.TimeUnit.HOURS
+import java.util.concurrent.TimeUnit.MICROSECONDS
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.MINUTES
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.microseconds
@@ -36,13 +42,13 @@ class TimeTests {
   @Test
   fun conversionTest() {
     100 repeat { i ->
-      timeUnitToDuration(i.toLong(), MICROSECONDS) shouldBeEqualTo i.microseconds
-      timeUnitToDuration(i.toLong(), NANOSECONDS) shouldBeEqualTo i.nanoseconds
-      timeUnitToDuration(i.toLong(), MILLISECONDS) shouldBeEqualTo i.milliseconds
-      timeUnitToDuration(i.toLong(), SECONDS) shouldBeEqualTo i.seconds
-      timeUnitToDuration(i.toLong(), MINUTES) shouldBeEqualTo i.minutes
-      timeUnitToDuration(i.toLong(), HOURS) shouldBeEqualTo i.hours
-      timeUnitToDuration(i.toLong(), DAYS) shouldBeEqualTo i.days
+      timeUnitToDuration(i.toLong(), MICROSECONDS) shouldBe i.microseconds
+      timeUnitToDuration(i.toLong(), NANOSECONDS) shouldBe i.nanoseconds
+      timeUnitToDuration(i.toLong(), MILLISECONDS) shouldBe i.milliseconds
+      timeUnitToDuration(i.toLong(), SECONDS) shouldBe i.seconds
+      timeUnitToDuration(i.toLong(), MINUTES) shouldBe i.minutes
+      timeUnitToDuration(i.toLong(), HOURS) shouldBe i.hours
+      timeUnitToDuration(i.toLong(), DAYS) shouldBe i.days
     }
   }
 }

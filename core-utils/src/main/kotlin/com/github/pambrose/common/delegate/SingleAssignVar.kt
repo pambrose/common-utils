@@ -19,32 +19,46 @@
 
 package com.github.pambrose.common.delegate
 
-import com.github.pambrose.common.util.isNull
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 object SingleAssignVar {
   /**
-   * Returns a property delegate for a read/write property that can be assigned only once. Trying to assign the property
-   * a second time results in an exception.
+   * Returns a property delegate for a read/write property that can be assigned only once.
+   * This implementation is thread-safe and prevents race conditions.
+   *
+   * @throws IllegalStateException if the property is assigned more than once
    */
-  fun <T : Any?> singleAssign(): ReadWriteProperty<Any?, T?> = SingleAssignVar()
+  fun <T : Any?> singleAssign(): ReadWriteProperty<Any?, T?> = ThreadSafeSingleAssignVar()
 
-  private class SingleAssignVar<T : Any?> : ReadWriteProperty<Any?, T?> {
-    private var value: T? = null
+  private class ThreadSafeSingleAssignVar<T : Any?> : ReadWriteProperty<Any?, T?> {
+    private val atomicValue = AtomicReference<ValueHolder<T>?>()
+
+    // Wrapper to distinguish between null value and unset value
+    private data class ValueHolder<T>(
+      val value: T?,
+    )
 
     override fun getValue(
       thisRef: Any?,
       property: KProperty<*>,
-    ) = value
+    ): T? = atomicValue.get()?.value
 
     override fun setValue(
       thisRef: Any?,
       property: KProperty<*>,
       value: T?,
     ) {
-      check(this.value.isNull()) { "Property ${property.name} cannot be assigned more than once." }
-      this.value = value
+      val holder = ValueHolder(value)
+      if (!atomicValue.compareAndSet(null, holder)) {
+        throw IllegalStateException("Property ${property.name} cannot be assigned more than once.")
+      }
     }
+
+    /**
+     * Returns true if the property has been assigned a value (including null).
+     */
+    fun isAssigned(): Boolean = atomicValue.get() != null
   }
 }

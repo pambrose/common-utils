@@ -20,7 +20,7 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.times
-import org.amshove.kluent.shouldBeEqualTo
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 class NumberExtensionTests {
@@ -30,11 +30,11 @@ class NumberExtensionTests {
     var runs: Short = 0
     var index: Short = 0
     cnt times {
-      index shouldBeEqualTo it
+      index shouldBe it
       index++
       runs++
     }
-    cnt shouldBeEqualTo runs
+    cnt shouldBe runs
   }
 
   @Test
@@ -43,11 +43,11 @@ class NumberExtensionTests {
     var runs = 0
     var index = 0
     cnt times {
-      index shouldBeEqualTo it
+      index shouldBe it
       index++
       runs++
     }
-    cnt shouldBeEqualTo runs
+    cnt shouldBe runs
   }
 
   @Test
@@ -56,10 +56,10 @@ class NumberExtensionTests {
     var runs = 0L
     var index = 0L
     cnt times {
-      index shouldBeEqualTo it
+      index shouldBe it
       index++
       runs++
     }
-    cnt shouldBeEqualTo runs
+    cnt shouldBe runs
   }
 }
