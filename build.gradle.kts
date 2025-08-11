@@ -44,7 +44,7 @@ fun Project.configureKotlin() {
     }
 
     kotlin {
-        jvmToolchain(11)
+        jvmToolchain(17)
 
         sourceSets.all {
             listOf(
@@ -61,7 +61,7 @@ fun Project.configureKotlin() {
 
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 }
