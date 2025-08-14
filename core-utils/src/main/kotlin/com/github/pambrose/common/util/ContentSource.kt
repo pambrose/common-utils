@@ -17,6 +17,7 @@
 
 package com.github.pambrose.common.util
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
 import java.net.URL
 
@@ -72,11 +73,19 @@ class GitHubRepo(
   scheme: String = "https://",
   domainName: String = GITHUB,
 ) : AbstractRepo(scheme, domainName, ownerType, ownerName, repoName) {
+
+  init {
+    logger.info { "In GitHubRepo values: $ownerName $repoName $scheme $domainName" }
+  }
   override val rawSourcePrefix = sourcePrefix.replace(GITHUB, GITHUB_USER_CONTENT)
 
   override fun toString() =
     "GitHubRepo(scheme='$scheme', domainName='$domainName', ownerName='$ownerName', repoName='$repoName', " +
       "rawSourcePrefix='$rawSourcePrefix')"
+
+  companion object {
+    private val logger = KotlinLogging.logger {}
+  }
 }
 
 class GitLabRepo(
