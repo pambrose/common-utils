@@ -32,7 +32,6 @@ zipkinSender = "3.5.1"
 [libraries]
 # Kotlin
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
-kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
@@ -66,6 +65,7 @@ exposed-jodatime = { module = "org.jetbrains.exposed:exposed-jodatime", version.
 # Scripting
 java-scripting = { module = "ch.obermuhlner:java-scriptengine", version.ref = "java" }
 python-scripting = { module = "org.python:jython-standalone", version.ref = "python" }
+kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", version.ref = "kotlin" }
 
 # Jetty
 jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "jetty" }
