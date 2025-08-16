@@ -72,6 +72,7 @@ class GitHubRepo(
   scheme: String = "https://",
   domainName: String = GITHUB,
 ) : AbstractRepo(scheme, domainName, ownerType, ownerName, repoName) {
+
   override val rawSourcePrefix = sourcePrefix.replace(GITHUB, GITHUB_USER_CONTENT)
 
   override fun toString() =
