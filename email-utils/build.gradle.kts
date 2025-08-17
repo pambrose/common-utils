@@ -1,3 +1,5 @@
+description = "email-utils"
+
 dependencies {
     implementation(project(":core-utils"))
 

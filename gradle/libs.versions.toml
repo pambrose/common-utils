@@ -77,8 +77,11 @@ jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "jet
 
 # Ktor
 ktor-client-core = { module = "io.ktor:ktor-client", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server", version.ref = "ktor" }
 ktor-server-html-builder = { group = "io.ktor", name = "ktor-server-html-builder-jvm", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 # Prometheus
 prometheus-core = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
