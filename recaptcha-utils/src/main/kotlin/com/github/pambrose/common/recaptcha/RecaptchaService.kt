@@ -88,7 +88,7 @@ object RecaptchaService {
           }
         }
 
-      logger.info { "Verifying reCAPTCHA with Google API" }
+      logger.info { "Verifying reCAPTCHA" }
       val response: RecaptchaResponse =
         httpClient.submitForm(
           url = RECAPTCHA_VERIFY_URL,
