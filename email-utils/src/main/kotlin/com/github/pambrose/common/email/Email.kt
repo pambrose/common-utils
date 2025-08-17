@@ -26,7 +26,7 @@ value class Email(
     val EMPTY_EMAIL = Email("")
     val UNKNOWN_EMAIL = Email("Unknown")
 
-    fun String.toEmail() = Email(this.lowercase().trim())
+    fun String.toResendEmail() = Email(this.lowercase().trim())
 
     fun Parameters.getEmail(name: String) = this[name]?.let { Email(it) } ?: EMPTY_EMAIL
   }
