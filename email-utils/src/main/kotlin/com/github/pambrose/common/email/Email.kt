@@ -6,11 +6,15 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 @JvmInline
-value class Email(val value: String) {
+value class Email(
+  val value: String,
+) {
   fun isBlank() = value.isBlank()
+
   fun isBlankOrEmpty() = value.isBlank() || value.isEmpty()
 
   fun isNotBlank() = value.isNotBlank()
+
   fun isNotBlankOrEmpty() = value.isNotBlank() && value.isNotEmpty()
 
   fun isNotValidEmail() = value.isNotValidEmail()

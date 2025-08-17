@@ -14,7 +14,6 @@ import kotlinx.html.unsafe
 import java.util.regex.Pattern
 
 object EmailUtils {
-
   private val emailPattern by lazy {
     Pattern.compile(
       "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@" +
@@ -33,7 +32,7 @@ object EmailUtils {
   fun email(
     cssFilename: String = "css/email.css",
     block: BODY.() -> Unit,
-  ) =
+  ): String =
     createHTML()
       .html {
         emailHead(cssFilename)

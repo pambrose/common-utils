@@ -5,7 +5,9 @@ import com.resend.services.emails.model.CreateEmailOptions
 import com.resend.services.emails.model.CreateEmailResponse
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 
-class ResendService(envResendApiKey: String) {
+class ResendService(
+  envResendApiKey: String,
+) {
   private val resend = Resend(envResendApiKey)
 
   fun sendEmail(
