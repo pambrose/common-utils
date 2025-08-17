@@ -101,3 +101,12 @@ fun Int.rpad(
 fun LocalDateTime.abbrevDayOfWeek(): String = dayOfWeek.name.lowercase().capitalizeFirstChar().substring(0, 3)
 
 fun String.capitalizeFirstChar(): String = replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+object ReadResources {
+  fun readResourceFile(filename: String): String {
+    val classLoader = this::class.java.classLoader
+    return classLoader.getResource(filename)?.readText()
+      ?: throw IllegalArgumentException("Invalid file name: $filename")
+  }
+}
+

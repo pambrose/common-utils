@@ -15,7 +15,7 @@ grpc = "1.74.0"
 guava = "32.1.3-android"
 java = "2.0.0"
 jetty = "10.0.25"
-kotest = "6.0.0.M14"
+kotest = "6.0.0.M17"
 kotlin = "2.2.0"
 ktor = "3.2.3"
 logback = "1.5.18"
@@ -24,6 +24,7 @@ nettyTcNative = "2.0.72.Final"
 prometheus = "0.16.0"
 python = "2.7.4"
 redis = "6.1.0"
+resend = "4.5.0"
 serialization = "1.9.0"
 zipkin = "3.5.1"
 zipkinReporter = "3.5.1"
@@ -39,6 +40,9 @@ kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-
 # Logging
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# Resend
+resend = { group = "com.resend", name = "resend-java", version.ref = "resend" }
 
 # Guava
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -74,6 +78,7 @@ jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "jet
 # Ktor
 ktor-client-core = { module = "io.ktor:ktor-client", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server", version.ref = "ktor" }
+ktor-server-html-builder = { group = "io.ktor", name = "ktor-server-html-builder-jvm", version.ref = "ktor" }
 
 # Prometheus
 prometheus-core = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }

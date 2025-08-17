@@ -4,6 +4,7 @@ plugins {
 
 include("core-utils")
 include("dropwizard-utils")
+include("email-utils")
 include("exposed-utils")
 include("grpc-utils")
 include("guava-utils")
@@ -19,3 +20,5 @@ include("script-utils-java")
 include("script-utils-kotlin")
 include("service-utils")
 include("zipkin-utils")
+
+include("resend-utils")
