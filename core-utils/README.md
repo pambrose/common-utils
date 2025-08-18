@@ -132,7 +132,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:core-utils:2.4.2")
+  implementation("com.github.pambrose.common-utils:core-utils:2.4.3")
 }
 ```
 
@@ -143,7 +143,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pambrose.common-utils</groupId>
   <artifactId>core-utils</artifactId>
-  <version>2.4.2</version>
+  <version>2.4.3</version>
 </dependency>
 ```
 

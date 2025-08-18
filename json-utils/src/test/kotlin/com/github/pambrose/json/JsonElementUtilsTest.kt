@@ -230,12 +230,12 @@ class JsonElementUtilsTest {
     val complexJson = complexJsonString.toJsonElement()
 
     val userObject = complexJson.jsonObjectValue("user")
-    userObject.containsKey("id") shouldBe true
-    userObject.containsKey("profile") shouldBe true
+    userObject.containsKeys("id") shouldBe true
+    userObject.containsKeys("profile") shouldBe true
 
     val profileObject = complexJson.jsonObjectValue("user.profile")
-    profileObject.containsKey("name") shouldBe true
-    profileObject.containsKey("contact") shouldBe true
+    profileObject.containsKeys("name") shouldBe true
+    profileObject.containsKeys("contact") shouldBe true
 
     // Test null safety
     complexJson.jsonObjectValueOrNull("missing") shouldBe null
@@ -338,7 +338,7 @@ class JsonElementUtilsTest {
 
     userJson.forEachJsonObject { obj ->
       callCount++
-      obj.containsKey("id") shouldBe true
+      obj.containsKeys("id") shouldBe true
     }
 
     callCount shouldBe 1
@@ -355,7 +355,7 @@ class JsonElementUtilsTest {
 
     jsonArray.forEachJsonObject { obj ->
       callCount++
-      obj.containsKey("id") shouldBe true
+      obj.containsKeys("id") shouldBe true
     }
 
     callCount shouldBe 1 // One user object
