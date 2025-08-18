@@ -24,7 +24,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.util.regex.Pattern
 import kotlin.math.log10
 
 fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
@@ -184,21 +183,6 @@ fun String.asRegex(ignoreCase: Boolean = false) =
     Regex(this.toPattern, RegexOption.IGNORE_CASE)
   else
     Regex(this.toPattern)
-
-private val emailPattern by lazy {
-  Pattern.compile(
-    "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@" +
-      "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
-      "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\." +
-      "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
-      "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|" +
-      "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$",
-  )
-}
-
-fun String.isValidEmail() = emailPattern.matcher(this).matches()
-
-fun String.isNotValidEmail() = !isValidEmail()
 
 fun String.md5(salt: String = ""): String = encodedByteArray(this, { salt }, "MD5").asText
 
