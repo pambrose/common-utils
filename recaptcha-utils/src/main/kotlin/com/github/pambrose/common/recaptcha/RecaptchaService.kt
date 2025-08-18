@@ -138,8 +138,8 @@ object RecaptchaService {
     return true
   }
 
+  // Load reCAPTCHA script if enabled
   fun HEAD.loadRecaptchaScript(config: RecaptchaConfig) {
-    // Load reCAPTCHA script if enabled
     if (config.isRecaptchaEnabled) {
       if (!config.recaptchaSiteKey.isNullOrBlank()) {
         script {
