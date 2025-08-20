@@ -98,13 +98,13 @@ fun JsonElement.isEmpty() = if (this is JsonPrimitive) true else jsonObject.isEm
 
 fun JsonElement.isNotEmpty() = !isEmpty()
 
-private fun prettyPrinted(indent: String) =
+private fun prettyPrint(indent: String) =
   Json {
     prettyPrint = true
     prettyPrintIndent = indent
   }
 
-fun JsonElement.toFormattedString(indent: String = "  "): String = prettyPrinted(indent).encodeToString(this)
+fun JsonElement.toFormattedString(indent: String = "  "): String = prettyPrint(indent).encodeToString(this)
 
 fun String.toJsonString() = toJsonElement().toJsonString(true)
 
