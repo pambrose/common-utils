@@ -74,20 +74,32 @@ fun Project.configurePublishing() {
         plugin("maven-publish")
     }
 
+    java {
+        withSourcesJar()
+    }
+
     publishing {
         val versionStr: String by extra
         publications {
             create<MavenPublication>("maven") {
+                from(components["java"])
                 groupId = group.toString()
                 artifactId = project.name
                 version = versionStr
+            }
+            create<MavenPublication>("mavenJava") {
                 from(components["java"])
+                artifact(tasks["sourcesJar"])
+                groupId = group.toString()
+                artifactId = project.name
+                version = versionStr
             }
         }
-    }
-
-    java {
-        withSourcesJar()
+        repositories {
+            maven {
+                url = uri("https://jitpack.io")
+            }
+        }
     }
 }
 
