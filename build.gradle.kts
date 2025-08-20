@@ -32,10 +32,12 @@ allprojects {
 }
 
 subprojects {
-    configureKotlin()
-    configurePublishing()
-    configureTesting()
-    configureKotlinter()
+    if (name != "common-utils-bom") {
+        configureKotlin()
+        configurePublishing()
+        configureTesting()
+        configureKotlinter()
+    }
 }
 
 fun Project.configureKotlin() {
