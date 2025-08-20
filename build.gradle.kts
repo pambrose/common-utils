@@ -87,13 +87,13 @@ fun Project.configurePublishing() {
                 artifactId = project.name
                 version = versionStr
             }
-            create<MavenPublication>("mavenJava") {
-                from(components["java"])
-                artifact(tasks["sourcesJar"])
-                groupId = group.toString()
-                artifactId = project.name
-                version = versionStr
-            }
+//            create<MavenPublication>("mavenJava") {
+//                from(components["java"])
+//                artifact(tasks["sourcesJar"])
+//                groupId = group.toString()
+//                artifactId = project.name
+//                version = versionStr
+//            }
         }
         repositories {
             maven {
