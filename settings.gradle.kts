@@ -2,6 +2,7 @@ plugins {
   id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
 }
 
+include("common-utils-bom")
 include("core-utils")
 include("dropwizard-utils")
 include("email-utils")

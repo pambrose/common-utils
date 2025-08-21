@@ -19,7 +19,7 @@ val serializationLib = libs.plugins.kotlin.serialization.get().toString().split(
 val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = "2.4.2"
+    extra["versionStr"] = "2.4.3"
     group = "com.github.pambrose.common-utils"
     version = versionStr
 
@@ -32,10 +32,12 @@ allprojects {
 }
 
 subprojects {
-    configureKotlin()
-    configurePublishing()
-    configureTesting()
-    configureKotlinter()
+    if (name != "common-utils-bom") {
+        configureKotlin()
+        configurePublishing()
+        configureTesting()
+        configureKotlinter()
+    }
 }
 
 fun Project.configureKotlin() {
@@ -72,20 +74,32 @@ fun Project.configurePublishing() {
         plugin("maven-publish")
     }
 
+    java {
+        withSourcesJar()
+    }
+
     publishing {
         val versionStr: String by extra
         publications {
             create<MavenPublication>("maven") {
+                from(components["java"])
                 groupId = group.toString()
                 artifactId = project.name
                 version = versionStr
-                from(components["java"])
+            }
+//            create<MavenPublication>("mavenJava") {
+//                from(components["java"])
+//                artifact(tasks["sourcesJar"])
+//                groupId = group.toString()
+//                artifactId = project.name
+//                version = versionStr
+//            }
+        }
+        repositories {
+            maven {
+                url = uri("https://jitpack.io")
             }
         }
-    }
-
-    java {
-        withSourcesJar()
     }
 }
 
