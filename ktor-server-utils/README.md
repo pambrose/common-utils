@@ -247,7 +247,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:ktor-server-utils:2.4.3")
+  implementation("com.github.pambrose.common-utils:ktor-server-utils:2.4.4")
 }
 ```
 
@@ -258,7 +258,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pambrose.common-utils</groupId>
   <artifactId>ktor-server-utils</artifactId>
-  <version>2.4.3</version>
+  <version>2.4.4</version>
 </dependency>
 ```
 
