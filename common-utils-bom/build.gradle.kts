@@ -1,7 +1,7 @@
-//plugins {
-//    `java-platform`
-//    `maven-publish`
-//}
+plugins {
+    `java-platform`
+    `maven-publish`
+}
 
 val versionStr: String by extra
 
@@ -29,13 +29,19 @@ dependencies {
     }
 }
 
-//publishing {
-//    publications {
-//        create<MavenPublication>("maven") {
-//            from(components["javaPlatform"])
-//            groupId = project.group.toString()
-//            artifactId = "common-utils-bom"
-//            version = versionStr
-//        }
-//    }
-//}
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["javaPlatform"])
+            groupId = project.group.toString()
+            artifactId = "common-utils-bom"
+            version = versionStr
+        }
+    }
+    repositories {
+        maven {
+            url = uri("https://jitpack.io")
+        }
+    }
+
+}
