@@ -9,7 +9,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply true
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlinter) apply true
-    alias(libs.plugins.versions) apply true
+    alias(libs.plugins.versions) apply false
     // id("org.jetbrains.kotlinx.kover") version "0.5.0"
 }
 
@@ -17,9 +17,10 @@ val versionStr: String by extra
 val kotlinLib = libs.plugins.kotlin.jvm.get().toString().split(":").first()
 val serializationLib = libs.plugins.kotlin.serialization.get().toString().split(":").first()
 val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
+val versionsLib = libs.plugins.versions.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = "2.4.3"
+    extra["versionStr"] = "2.4.4"
     group = "com.github.pambrose.common-utils"
     version = versionStr
 
@@ -34,6 +35,7 @@ allprojects {
 subprojects {
     if (name != "common-utils-bom") {
         configureKotlin()
+        configureVersions()
         configurePublishing()
         configureTesting()
         configureKotlinter()
@@ -65,6 +67,12 @@ fun Project.configureKotlin() {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
+    }
+}
+
+fun Project.configureVersions() {
+    apply {
+        plugin(versionsLib)
     }
 }
 
