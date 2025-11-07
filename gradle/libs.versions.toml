@@ -16,14 +16,14 @@ java = "2.0.0"
 jetty = "10.0.26"
 kotest = "6.0.4"
 kotlin = "2.2.21"
-ktor = "3.3.1"
-logback = "1.5.18"
+ktor = "3.3.2"
+logback = "1.5.20"
 logging = "7.0.13"
 nettyTcNative = "2.0.73.Final"
 prometheus = "0.16.0"
 python = "2.7.4"
 redis = "7.0.0"
-resend = "4.7.0"
+resend = "4.11.0"
 serialization = "1.9.0"
 zipkin = "3.5.1"
 zipkinReporter = "3.5.1"
@@ -32,7 +32,7 @@ zipkinSender = "3.5.1"
 [libraries]
 # Kotlin
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
-kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
