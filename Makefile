@@ -40,4 +40,4 @@ versioncheck:
 	./gradlew dependencyUpdates
 
 upgrade-wrapper:
-	./gradlew wrapper --gradle-version=9.1.0 --distribution-type=bin
+	./gradlew wrapper --gradle-version=9.2.0 --distribution-type=bin
