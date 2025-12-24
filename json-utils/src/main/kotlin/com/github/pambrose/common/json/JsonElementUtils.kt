@@ -126,16 +126,26 @@ fun JsonElement.toMap(): Map<String, Any?> {
 
   return entries.associate { (key, value) ->
     key to when (value) {
-      is JsonPrimitive -> value.content
-      is JsonArray -> value.map {
-        when (it) {
-          is JsonPrimitive -> it.content
-          else -> it.toMap()
+      is JsonPrimitive -> {
+        value.content
+      }
+
+      is JsonArray -> {
+        value.map {
+          when (it) {
+            is JsonPrimitive -> it.content
+            else -> it.toMap()
+          }
         }
       }
 
-      is JsonObject -> value.toMap()
-      JsonNull -> null
+      is JsonObject -> {
+        value.toMap()
+      }
+
+      JsonNull -> {
+        null
+      }
     }
   }
 }

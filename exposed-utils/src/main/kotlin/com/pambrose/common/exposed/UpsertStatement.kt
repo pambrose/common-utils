@@ -56,7 +56,9 @@ class UpsertStatement<Key : Any>(
         indexColumns = listOf(conflictColumn)
       }
 
-      else -> throw IllegalArgumentException()
+      else -> {
+        throw IllegalArgumentException()
+      }
     }
   }
 

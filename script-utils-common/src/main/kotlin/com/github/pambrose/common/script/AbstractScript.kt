@@ -67,8 +67,9 @@ abstract class AbstractScript(
     val qname = name.toDoubleQuoted()
 
     return when {
-      value.javaClass.kotlin.qualifiedName.isNull() ->
+      value.javaClass.kotlin.qualifiedName.isNull() -> {
         throw ScriptException("Variable $qname is a local or an anonymous class")
+      }
 
       paramCnt > 0 && types.isEmpty() -> {
         val plural = "parameter".pluralize(paramCnt)

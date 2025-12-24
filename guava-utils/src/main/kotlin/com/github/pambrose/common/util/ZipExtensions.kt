@@ -43,12 +43,19 @@ fun ByteArray.isZipped() = this[0] == GZIP_MAGIC.toByte() && this[1] == (GZIP_MA
 
 fun ByteArray.unzip(): String =
   when {
-    isEmpty() -> ""
-    !isZipped() -> String(this)
-    else ->
+    isEmpty() -> {
+      ""
+    }
+
+    !isZipped() -> {
+      String(this)
+    }
+
+    else -> {
       ByteArrayInputStream(this).use { bais ->
         GZIPInputStream(bais).use { gzis ->
           InputStreamReader(gzis, StandardCharsets.UTF_8).use { CharStreams.toString(it) }
         }
       }
+    }
   }

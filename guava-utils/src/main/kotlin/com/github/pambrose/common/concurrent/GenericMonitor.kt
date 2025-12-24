@@ -122,14 +122,21 @@ abstract class GenericMonitor {
     val start = Monotonic.markNow()
     while (true) {
       when {
-        waitUntilTrue(timeout) -> return true
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
-        else ->
+        waitUntilTrue(timeout) -> {
+          return true
+        }
+
+        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> {
+          return false
+        }
+
+        else -> {
           block?.also { monitorAction ->
             val continueToWait = monitorAction()
             if (!continueToWait)
               return false
           }
+        }
       }
     }
   }
@@ -149,14 +156,21 @@ abstract class GenericMonitor {
     val start = Monotonic.markNow()
     while (true) {
       when {
-        waitUntilTrueWithInterruption(timeout) -> return true
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
-        else ->
+        waitUntilTrueWithInterruption(timeout) -> {
+          return true
+        }
+
+        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> {
+          return false
+        }
+
+        else -> {
           block?.also { monitorAction ->
             val continueToWait = monitorAction()
             if (!continueToWait)
               return false
           }
+        }
       }
     }
   }
@@ -174,14 +188,21 @@ abstract class GenericMonitor {
     val start = Monotonic.markNow()
     while (true) {
       when {
-        waitUntilFalse(timeout) -> return true
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> return false
-        else ->
+        waitUntilFalse(timeout) -> {
+          return true
+        }
+
+        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> {
+          return false
+        }
+
+        else -> {
           block?.also { monitorAction ->
             val continueToWait = monitorAction()
             if (!continueToWait)
               return false
           }
+        }
       }
     }
   }
