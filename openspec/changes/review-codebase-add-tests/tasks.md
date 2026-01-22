@@ -198,10 +198,36 @@ servers, which is out of scope for unit testing.
 
 ## 6. Observability Modules Review
 
-- [ ] 6.1 Review prometheus-utils for bugs
-- [ ] 6.2 Add/expand tests for prometheus-utils
-- [ ] 6.3 Review zipkin-utils for bugs
-- [ ] 6.4 Add/expand tests for zipkin-utils
+- [x] 6.1 Review prometheus-utils for bugs - **4 files reviewed**
+- [x] 6.2 Add/expand tests for prometheus-utils - **8 tests added**
+- [x] 6.3 Review zipkin-utils for bugs - **1 file reviewed**
+- [x] 6.4 Add/expand tests for zipkin-utils - **5 tests added**
+
+### 6.x Code Review Findings
+
+**Modules Reviewed (5 files total):**
+
+| Module           | Files | Description                                    |
+|------------------|-------|------------------------------------------------|
+| prometheus-utils | 4     | Prometheus DSL, SamplerGaugeCollector, metrics |
+| zipkin-utils     | 1     | Zipkin Tracing DSL                             |
+
+**Observations:**
+
+- prometheus-utils: Provides DSL for Prometheus metrics (counter, gauge, summary, histogram) plus custom collectors
+- zipkin-utils: Thin DSL wrapper around Brave/Zipkin Tracing builder
+
+**No bugs found** - Code is well-structured with clean DSL patterns.
+
+### 6.x New Tests Added
+
+| Module           | Test File                     | Tests |
+|------------------|-------------------------------|-------|
+| prometheus-utils | PrometheusDslTests.kt         | 5     |
+| prometheus-utils | SamplerGaugeCollectorTests.kt | 3     |
+| zipkin-utils     | ZipkinDslTests.kt             | 5     |
+
+**Total new tests in Section 6: 13**
 
 ## 7. Service Modules Review
 
