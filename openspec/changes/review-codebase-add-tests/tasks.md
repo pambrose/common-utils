@@ -122,12 +122,40 @@ servers, which is out of scope for unit testing.
 
 ## 4. Data Module Review
 
-- [ ] 4.1 Review exposed-utils for bugs
-- [ ] 4.2 Add/expand tests for exposed-utils
-- [ ] 4.3 Review json-utils for bugs
-- [ ] 4.4 Add/expand tests for json-utils
-- [ ] 4.5 Review redis-utils for bugs
-- [ ] 4.6 Add/expand tests for redis-utils
+- [x] 4.1 Review exposed-utils for bugs - **3 files reviewed**
+- [x] 4.2 Add/expand tests for exposed-utils - **5 tests added**
+- [x] 4.3 Review json-utils for bugs - **2 files reviewed**
+- [x] 4.4 Add/expand tests for json-utils - **Already has 35+ comprehensive tests**
+- [x] 4.5 Review redis-utils for bugs - **1 file reviewed**
+- [x] 4.6 Add/expand tests for redis-utils - **9 tests added**
+
+### 4.x Code Review Findings
+
+**Modules Reviewed (6 files total):**
+
+| Module        | Files | Description                               |
+|---------------|-------|-------------------------------------------|
+| exposed-utils | 3     | CustomExpr, ExposedUtils, UpsertStatement |
+| json-utils    | 2     | JsonContentUtils, JsonElementUtils        |
+| redis-utils   | 1     | RedisUtils with pool management           |
+
+**Observations:**
+
+- exposed-utils: Provides Exposed ORM extensions for custom expressions and upsert operations
+- json-utils: Comprehensive JSON utilities with good existing test coverage (35+ tests)
+- redis-utils: Redis connection pool management with proper validation
+
+**No bugs found** - Code is well-structured with proper resource management.
+
+### 4.x New Tests Added
+
+| Module        | Test File               | Tests |
+|---------------|-------------------------|-------|
+| exposed-utils | CustomExprTests.kt      | 3     |
+| exposed-utils | KotlinSqlLoggerTests.kt | 2     |
+| redis-utils   | RedisUtilsTests.kt      | 9     |
+
+**Total new tests in Section 4: 14** (plus existing 35+ json-utils tests)
 
 ## 5. Scripting Modules Review
 
