@@ -159,14 +159,42 @@ servers, which is out of scope for unit testing.
 
 ## 5. Scripting Modules Review
 
-- [ ] 5.1 Review script-utils-common for bugs
-- [ ] 5.2 Add/expand tests for script-utils-common
-- [ ] 5.3 Review script-utils-java for bugs
-- [ ] 5.4 Add/expand tests for script-utils-java
-- [ ] 5.5 Review script-utils-kotlin for bugs
-- [ ] 5.6 Add/expand tests for script-utils-kotlin
-- [ ] 5.7 Review script-utils-python for bugs
-- [ ] 5.8 Add/expand tests for script-utils-python
+- [x] 5.1 Review script-utils-common for bugs - **6 files reviewed**
+- [x] 5.2 Add/expand tests for script-utils-common - **3 tests added**
+- [x] 5.3 Review script-utils-java for bugs - **2 files reviewed**
+- [x] 5.4 Add/expand tests for script-utils-java - **Already has 11 comprehensive tests**
+- [x] 5.5 Review script-utils-kotlin for bugs - **6 files reviewed**
+- [x] 5.6 Add/expand tests for script-utils-kotlin - **Already has 17 comprehensive tests**
+- [x] 5.7 Review script-utils-python for bugs - **4 files reviewed**
+- [x] 5.8 Add/expand tests for script-utils-python - **Already has 12 comprehensive tests**
+
+### 5.x Code Review Findings
+
+**Modules Reviewed (18 files total):**
+
+| Module              | Files | Description                                                 |
+|---------------------|-------|-------------------------------------------------------------|
+| script-utils-common | 6     | Abstract base classes for script engines, pools, evaluators |
+| script-utils-java   | 2     | JavaScript (GraalJS) engine implementation                  |
+| script-utils-kotlin | 6     | Kotlin script engine implementation                         |
+| script-utils-python | 4     | Python (Jython) script engine implementation                |
+
+**Observations:**
+
+- script-utils-common: Provides abstract base classes (AbstractEngine, AbstractScript, AbstractScriptPool, etc.)
+- script-utils-java: Already has 11 comprehensive tests covering evaluation, bindings, and type handling
+- script-utils-kotlin: Already has 17 comprehensive tests covering evaluation, bindings, and type handling
+- script-utils-python: Already has 12 comprehensive tests covering evaluation, bindings, and type handling
+
+**No bugs found** - Code is well-structured with proper use of JSR223 scripting API and coroutine channels for pooling.
+
+### 5.x New Tests Added
+
+| Module              | Test File              | Tests |
+|---------------------|------------------------|-------|
+| script-utils-common | AbstractEngineTests.kt | 3     |
+
+**Total new tests in Section 5: 3** (plus existing 40 tests across java/kotlin/python)
 
 ## 6. Observability Modules Review
 
