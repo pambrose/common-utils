@@ -231,10 +231,40 @@ servers, which is out of scope for unit testing.
 
 ## 7. Service Modules Review
 
-- [ ] 7.1 Review service-utils for bugs
-- [ ] 7.2 Add/expand tests for service-utils
-- [ ] 7.3 Review guava-utils for bugs
-- [ ] 7.4 Add/expand tests for guava-utils
+- [x] 7.1 Review service-utils for bugs - **8 files reviewed**
+- [x] 7.2 Add/expand tests for service-utils - **9 tests added**
+- [x] 7.3 Review guava-utils for bugs - **13 files reviewed**
+- [x] 7.4 Add/expand tests for guava-utils - **22 tests added (6 existing + 22 new)**
+
+### 7.x Code Review Findings
+
+**Modules Reviewed (21 files total):**
+
+| Module        | Files | Description                                           |
+|---------------|-------|-------------------------------------------------------|
+| service-utils | 8     | Generic service framework with admin, metrics, Zipkin |
+| guava-utils   | 13    | Guava-based concurrency utilities, monitors, DSL      |
+
+**Observations:**
+
+- service-utils: Provides a comprehensive service framework integrating admin endpoints, metrics, and tracing
+- guava-utils: Rich set of concurrency utilities (monitors, waiters, latches) with good existing tests for
+  ConditionalValue
+
+**No bugs found** - Code is well-structured with proper resource management and Guava service patterns.
+
+### 7.x New Tests Added
+
+| Module        | Test File                    | Tests |
+|---------------|------------------------------|-------|
+| service-utils | ConfigTests.kt               | 4     |
+| service-utils | ServletGroupTests.kt         | 5     |
+| guava-utils   | GuavaDslTests.kt             | 5     |
+| guava-utils   | ConcurrentExtensionsTests.kt | 6     |
+| guava-utils   | BooleanMonitorTests.kt       | 8     |
+| guava-utils   | GuavaFuncsTests.kt           | 3     |
+
+**Total new tests in Section 7: 31** (plus existing 6 guava-utils tests)
 
 ## 8. Other Modules Review
 

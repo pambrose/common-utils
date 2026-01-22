@@ -26,4 +26,7 @@ dependencies {
     implementation(libs.zipkin.core)
     implementation(libs.zipkin.reporter)
     implementation(libs.zipkin.sender.okhttp)
+
+    testImplementation(libs.kotest)
+    testImplementation(kotlin("test"))
 }
