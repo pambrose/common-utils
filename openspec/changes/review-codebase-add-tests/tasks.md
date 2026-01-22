@@ -268,10 +268,36 @@ servers, which is out of scope for unit testing.
 
 ## 8. Other Modules Review
 
-- [ ] 8.1 Review email-utils for bugs
-- [ ] 8.2 Add/expand tests for email-utils
-- [ ] 8.3 Review recaptcha-utils for bugs
-- [ ] 8.4 Add/expand tests for recaptcha-utils
+- [x] 8.1 Review email-utils for bugs - **8 files reviewed**
+- [x] 8.2 Add/expand tests for email-utils - **12 tests added**
+- [x] 8.3 Review recaptcha-utils for bugs - **2 files reviewed**
+- [x] 8.4 Add/expand tests for recaptcha-utils - **6 tests added**
+
+### 8.x Code Review Findings
+
+**Modules Reviewed (10 files total):**
+
+| Module          | Files | Description                                             |
+|-----------------|-------|---------------------------------------------------------|
+| email-utils     | 8     | Email value class, validation, Resend service, webhooks |
+| recaptcha-utils | 2     | reCAPTCHA config interface and verification service     |
+
+**Observations:**
+
+- email-utils: Provides Email value class with validation, Resend email service, and webhook message parsing
+- recaptcha-utils: Google reCAPTCHA integration with Ktor client for verification
+
+**No bugs found** - Code is well-structured with proper validation and serialization.
+
+### 8.x New Tests Added
+
+| Module          | Test File          | Tests |
+|-----------------|--------------------|-------|
+| email-utils     | EmailTests.kt      | 6     |
+| email-utils     | EmailUtilsTests.kt | 6     |
+| recaptcha-utils | RecaptchaTests.kt  | 6     |
+
+**Total new tests in Section 8: 18**
 
 ## 9. Final Validation
 
