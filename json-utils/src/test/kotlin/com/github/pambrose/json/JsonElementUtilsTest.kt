@@ -498,4 +498,34 @@ class JsonElementUtilsTest {
     json.jsonElementList("section5.items").size shouldBe 5
     json.stringValue("section3.name") shouldBe "Section 3"
   }
+
+  @Test
+  fun `test toJsonElement with valid JSON`() {
+    val validJson = """{"name": "test", "value": 42}"""
+
+    // Should work with verbose = false (default)
+    val result1 = validJson.toJsonElement()
+    result1.stringValue("name") shouldBe "test"
+    result1.intValue("value") shouldBe 42
+
+    // Should work with verbose = true
+    val result2 = validJson.toJsonElement(verbose = true)
+    result2.stringValue("name") shouldBe "test"
+    result2.intValue("value") shouldBe 42
+  }
+
+  @Test
+  fun `test toJsonElement with invalid JSON throws exception`() {
+    val invalidJson = "not valid json {"
+
+    // Should throw with verbose = false (default)
+    assertThrows<kotlinx.serialization.SerializationException> {
+      invalidJson.toJsonElement()
+    }
+
+    // Should throw with verbose = true (logs warning before throwing)
+    assertThrows<kotlinx.serialization.SerializationException> {
+      invalidJson.toJsonElement(verbose = true)
+    }
+  }
 }

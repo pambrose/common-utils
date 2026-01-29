@@ -11,4 +11,7 @@ dependencies {
     implementation(libs.grpc.services)
 
     runtimeOnly(libs.netty.ssl)
+
+    testImplementation(libs.kotest)
+    testImplementation(kotlin("test"))
 }

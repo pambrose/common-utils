@@ -5,4 +5,7 @@ dependencies {
 
     implementation(libs.jetty.server)
     implementation(libs.jetty.servlet)
+
+    testImplementation(libs.kotest)
+    testImplementation(kotlin("test"))
 }

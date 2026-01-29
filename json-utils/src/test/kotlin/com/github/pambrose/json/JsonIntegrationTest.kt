@@ -335,8 +335,14 @@ class JsonIntegrationTest {
       user.stringValue("email") shouldBe "john.doe@example.com"
 
       when (expectedId) {
-        1 -> user.stringValue("settings.theme") shouldBe "dark"
-        2 -> user.stringValue("settings.theme") shouldBe "light"
+        1 -> {
+          user.stringValue("settings.theme") shouldBe "dark"
+        }
+
+        2 -> {
+          user.stringValue("settings.theme") shouldBe "light"
+        }
+
         3 -> {
           user.stringValue("settings.theme") shouldBe "dark"
           val permissions = user.jsonElementList("permissions")

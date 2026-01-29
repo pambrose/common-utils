@@ -9,4 +9,7 @@ dependencies {
 
     implementation(libs.resend)
     implementation(libs.ktor.server.html.builder)
+
+    testImplementation(libs.kotest)
+    testImplementation(kotlin("test"))
 }

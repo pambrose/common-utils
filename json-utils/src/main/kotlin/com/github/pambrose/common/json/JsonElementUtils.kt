@@ -1,6 +1,8 @@
 package com.github.pambrose.common.json
 
 import com.github.pambrose.common.json.JsonDefaults.json
+import com.github.pambrose.common.json.JsonElementUtils.logger
+import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -112,12 +114,22 @@ inline fun <reified T> T.toJsonString(prettyPrint: Boolean = true) =
   (if (prettyPrint) JsonContentUtils.prettyFormat else JsonContentUtils.rawFormat).encodeToString(this)
 
 object JsonDefaults {
-  val json = Json { encodeDefaults = true }
+  val json = Json {
+    encodeDefaults = true
+    prettyPrint = true
+    prettyPrintIndent = "  "
+  }
 }
 
 inline fun <reified T> T.toJsonElement() = json.encodeToJsonElement(this)
 
-fun String.toJsonElement() = json.parseToJsonElement(this)
+fun String.toJsonElement(verbose: Boolean = false) =
+  runCatching { json.parseToJsonElement(this) }
+    .onFailure {
+      if (verbose)
+        logger.warn { "Error parsing JSON: <<\n$this\n>>" }
+    }
+    .getOrThrow()
 
 fun JsonElement.toJsonElementList() = jsonArray.toList()
 
@@ -126,16 +138,26 @@ fun JsonElement.toMap(): Map<String, Any?> {
 
   return entries.associate { (key, value) ->
     key to when (value) {
-      is JsonPrimitive -> value.content
-      is JsonArray -> value.map {
-        when (it) {
-          is JsonPrimitive -> it.content
-          else -> it.toMap()
+      is JsonPrimitive -> {
+        value.content
+      }
+
+      is JsonArray -> {
+        value.map {
+          when (it) {
+            is JsonPrimitive -> it.content
+            else -> it.toMap()
+          }
         }
       }
 
-      is JsonObject -> value.toMap()
-      JsonNull -> null
+      is JsonObject -> {
+        value.toMap()
+      }
+
+      JsonNull -> {
+        null
+      }
     }
   }
 }
@@ -146,3 +168,7 @@ internal fun JsonElement.element(key: String) =
   )
 
 private fun JsonElement.elementOrNull(key: String) = jsonObject[key]
+
+object JsonElementUtils {
+  val logger = logger {}
+}

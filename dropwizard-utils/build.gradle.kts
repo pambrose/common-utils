@@ -6,4 +6,7 @@ dependencies {
     implementation(platform(libs.dropwizard.bom))
     implementation(libs.dropwizard.core)
     implementation(libs.dropwizard.healthcheck)
+
+    testImplementation(libs.kotest)
+    testImplementation(kotlin("test"))
 }

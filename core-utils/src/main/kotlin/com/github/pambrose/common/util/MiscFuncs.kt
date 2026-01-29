@@ -21,6 +21,8 @@ package com.github.pambrose.common.util
 
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.number
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.security.SecureRandom
@@ -101,6 +103,18 @@ fun Int.rpad(
 fun LocalDateTime.abbrevDayOfWeek(): String = dayOfWeek.name.lowercase().capitalizeFirstChar().substring(0, 3)
 
 fun String.capitalizeFirstChar(): String = replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+fun captureStdout(block: () -> Unit): String {
+  val originalOut = System.out
+  val baos = ByteArrayOutputStream()
+  System.setOut(PrintStream(baos))
+  try {
+    block()
+  } finally {
+    System.setOut(originalOut)
+  }
+  return baos.toString()
+}
 
 object ReadResources {
   fun readResourceFile(filename: String): String {
