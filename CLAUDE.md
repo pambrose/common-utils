@@ -100,6 +100,6 @@ All modules use: `com.github.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.4.10" (set in `allprojects` block of root build.gradle.kts)
+- Project version: "2.4.11" (set in `allprojects` block of root build.gradle.kts)
 - Group: "com.github.pambrose.common-utils"
 - All library versions in `gradle/libs.versions.toml`
