@@ -3,6 +3,13 @@ plugins {
     `maven-publish`
 }
 
+// Suppress Gradle Module Metadata — BOMs are a Maven concept and the .module file
+// causes JitPack to misidentify this as the root project (com.github.pambrose:common-utils)
+// instead of the submodule (com.github.pambrose.common-utils:common-utils-bom)
+tasks.withType<GenerateModuleMetadata> {
+    enabled = false
+}
+
 val versionStr: String by extra
 
 dependencies {
