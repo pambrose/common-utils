@@ -11,6 +11,9 @@ compile:
 
 build: compile
 
+refresh:
+	./gradlew --refresh-dependencies dependencyUpdates
+
 publish:
 	./gradlew publish
 
@@ -28,9 +31,6 @@ tree:
 
 depends:
 	./gradlew dependencies
-
-refresh:
-	./gradlew --refresh-dependencies dependencyUpdates
 
 lint:
 	./gradlew lintKotlinMain
