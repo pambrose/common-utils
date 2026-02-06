@@ -11,10 +11,10 @@ import com.github.pambrose.common.util.md5
 import com.github.pambrose.common.util.sha256
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import kotlin.concurrent.atomics.AtomicBoolean
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import kotlin.concurrent.atomics.AtomicBoolean
 
 class BugFixVerificationTests {
   // Bug #1: MD5/SHA-256 should produce standard hash values
