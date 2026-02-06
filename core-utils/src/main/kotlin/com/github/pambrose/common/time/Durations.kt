@@ -46,7 +46,8 @@ fun timeUnitToDuration(
   }
 
 fun Duration.format(includeMillis: Boolean = false): String {
-  val diff = inWholeMilliseconds
+  val negative = isNegative()
+  val diff = kotlin.math.abs(inWholeMilliseconds)
   val day = MILLISECONDS.toDays(diff)
   val dayMillis = DAYS.toMillis(day)
   val hr = MILLISECONDS.toHours(diff - dayMillis)
@@ -56,9 +57,10 @@ fun Duration.format(includeMillis: Boolean = false): String {
   val sec = MILLISECONDS.toSeconds(diff - dayMillis - hrMillis - minMillis)
   val secMillis = SECONDS.toMillis(sec)
   val ms = MILLISECONDS.toMillis(diff - dayMillis - hrMillis - minMillis - secMillis)
+  val prefix = if (negative) "-" else ""
 
   return if (includeMillis)
-    String.format("%d:%02d:%02d:%02d.%03d", day, hr, min, sec, ms)
+    String.format("$prefix%d:%02d:%02d:%02d.%03d", day, hr, min, sec, ms)
   else
-    String.format("%d:%02d:%02d:%02d", day, hr, min, sec)
+    String.format("$prefix%d:%02d:%02d:%02d", day, hr, min, sec)
 }
