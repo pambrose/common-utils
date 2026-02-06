@@ -231,6 +231,7 @@ abstract class GenericService<T> protected constructor(
       Thread {
         System.err.println("*** ${service.simpleClassName} shutting down ***")
         service.stopAsync()
+        service.awaitTerminated()
         System.err.println("*** ${service.simpleClassName} shut down complete ***")
       }
   }
