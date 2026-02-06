@@ -104,7 +104,12 @@ fun String.linesBetween(
 fun List<String>.linesBetween(
   start: Regex,
   end: Regex,
-) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
+): List<String> {
+  val startIdx = firstLineNumberOf(start)
+  val endIdx = lastLineNumberOf(end)
+  if (startIdx == -1 || endIdx == -1 || startIdx + 1 > endIdx) return emptyList()
+  return subList(startIdx + 1, endIdx)
+}
 
 fun String.isBracketed(
   startChar: Char = '[',
@@ -225,9 +230,9 @@ fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.fil
 
 fun String.maskUrlCredentials() =
   if ("://" in this && "@" in this) {
-    val scheme = split("://")
-    val uri = split("@")
-    "${scheme[0]}://*****:*****@${uri[1]}"
+    val scheme = substringBefore("://")
+    val host = substringAfterLast("@")
+    "$scheme://*****:*****@$host"
   } else {
     this
   }
