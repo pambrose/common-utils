@@ -23,15 +23,20 @@ import kotlinx.coroutines.sync.withLock
 // See: https://medium.com/swlh/kotlin-for-lunch-atomic-t-261351048fad
 
 class Atomic<T>(
-  var value: T,
+  initValue: T,
 ) : Mutex by Mutex() {
+  @PublishedApi
+  internal var _value: T = initValue
+
+  val value: T get() = _value
+
   suspend inline fun setWithLock(
     owner: Any? = null,
     action: (T) -> T,
-  ): T = (this as Mutex).withLock(owner) { action(value).also { value = it } }
+  ): T = (this as Mutex).withLock(owner) { action(_value).also { _value = it } }
 
   suspend inline fun <V> withLock(
     owner: Any? = null,
     action: T.() -> V,
-  ): V = (this as Mutex).withLock(owner) { value.action() }
+  ): V = (this as Mutex).withLock(owner) { _value.action() }
 }
