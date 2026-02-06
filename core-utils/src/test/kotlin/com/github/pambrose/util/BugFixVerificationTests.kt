@@ -3,9 +3,15 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.concurrent.Atomic
+import com.github.pambrose.common.delegate.AtomicDelegates
+import com.github.pambrose.common.util.AtomicUtils.criticalSection
+import com.github.pambrose.common.util.linesBetween
+import com.github.pambrose.common.util.maskUrlCredentials
 import com.github.pambrose.common.util.md5
 import com.github.pambrose.common.util.sha256
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlin.concurrent.atomics.AtomicBoolean
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -70,5 +76,97 @@ class BugFixVerificationTests {
       jobs.forEach { it.join() }
       atomic.value shouldBe 500
     }
+  }
+
+  // Bug #8: SingleSetAtomicReferenceDelegate should throw on second write
+  // Before fix: compareAndSet return value was silently ignored
+  // After fix: throws IllegalStateException when value has already been set
+
+  @Test
+  fun singleSetDelegateThrowsOnSecondWrite() {
+    var value: String? by AtomicDelegates.singleSetReference<String>()
+    value shouldBe null
+
+    value = "first"
+    value shouldBe "first"
+
+    shouldThrow<IllegalStateException> {
+      value = "second"
+    }
+    value shouldBe "first"
+  }
+
+  // Bug #9: criticalSection should return the block's result
+  // Before fix: block's return value was discarded, function returned Unit
+  // After fix: function returns T (the block's result)
+
+  @Test
+  fun criticalSectionReturnsBlockResult() {
+    val flag = AtomicBoolean(false)
+
+    val result = flag.criticalSection { 42 }
+    result shouldBe 42
+
+    val strResult = flag.criticalSection { "hello" }
+    strResult shouldBe "hello"
+  }
+
+  @Test
+  fun criticalSectionResetsFlag() {
+    val flag = AtomicBoolean(false)
+    flag.load() shouldBe false
+
+    flag.criticalSection { "work" }
+    flag.load() shouldBe false
+  }
+
+  // Bug #10: maskUrlCredentials should handle URLs with multiple @ signs
+  // Before fix: split("@")[1] dropped everything after the second @
+  // After fix: uses substringAfterLast("@") to correctly find the host
+
+  @Test
+  fun maskUrlCredentialsHandlesMultipleAtSigns() {
+    val url = "https://user@email.com:pass@host.com/path"
+    url.maskUrlCredentials() shouldBe "https://*****:*****@host.com/path"
+  }
+
+  @Test
+  fun maskUrlCredentialsHandlesSimpleUrl() {
+    val url = "https://user:pass@host.com/path"
+    url.maskUrlCredentials() shouldBe "https://*****:*****@host.com/path"
+  }
+
+  @Test
+  fun maskUrlCredentialsHandlesNoCredentials() {
+    val url = "https://host.com/path"
+    url.maskUrlCredentials() shouldBe "https://host.com/path"
+  }
+
+  // Bug #11: linesBetween should return empty list when patterns are not found
+  // Before fix: subList(0, -1) threw IllegalArgumentException
+  // After fix: returns emptyList() when start or end pattern is missing
+
+  @Test
+  fun linesBetweenReturnsEmptyWhenStartNotFound() {
+    val text = "aaa\nbbb\nccc"
+    text.linesBetween(Regex("zzz"), Regex("ccc")) shouldBe emptyList()
+  }
+
+  @Test
+  fun linesBetweenReturnsEmptyWhenEndNotFound() {
+    val text = "aaa\nbbb\nccc"
+    text.linesBetween(Regex("aaa"), Regex("zzz")) shouldBe emptyList()
+  }
+
+  @Test
+  fun linesBetweenReturnsEmptyWhenBothNotFound() {
+    val text = "aaa\nbbb\nccc"
+    text.linesBetween(Regex("xxx"), Regex("zzz")) shouldBe emptyList()
+  }
+
+  @Test
+  fun linesBetweenWorksWhenPatternsExist() {
+    val text = "aaa\nbbb\nccc\nddd"
+    text.linesBetween(Regex("aaa"), Regex("ddd")) shouldBe listOf("bbb", "ccc")
   }
 }

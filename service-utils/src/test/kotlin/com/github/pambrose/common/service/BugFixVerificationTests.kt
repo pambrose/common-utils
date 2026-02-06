@@ -16,8 +16,10 @@ class BugFixVerificationTests {
   fun shutDownHookActionWaitsForServiceToStop() {
     val shutdownCompleted = AtomicBoolean(false)
 
-    val service = object : AbstractIdleService() {
+    val service =
+      object : AbstractIdleService() {
       override fun startUp() {}
+
       override fun shutDown() {
         // Simulate some cleanup work
         Thread.sleep(100)
