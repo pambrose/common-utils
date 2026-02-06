@@ -96,7 +96,12 @@ fun JsonElement.deepCopy(): JsonElement = Json.decodeFromString(Json.encodeToStr
 
 val JsonElement.size get() = jsonObject.size
 
-fun JsonElement.isEmpty() = if (this is JsonPrimitive) true else jsonObject.isEmpty()
+fun JsonElement.isEmpty() =
+  when (this) {
+    is JsonObject -> jsonObject.isEmpty()
+    is JsonArray -> jsonArray.isEmpty()
+    is JsonPrimitive -> content.isEmpty()
+  }
 
 fun JsonElement.isNotEmpty() = !isEmpty()
 

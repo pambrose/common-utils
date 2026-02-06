@@ -290,9 +290,14 @@ class JsonElementUtilsTest {
     nonEmptyObject.isEmpty() shouldBe false
     nonEmptyObject.isNotEmpty() shouldBe true
 
-    // Primitive elements are considered empty
-    primitiveElement.isEmpty() shouldBe true
-    primitiveElement.isNotEmpty() shouldBe false
+    // Non-empty primitive strings are not empty
+    primitiveElement.isEmpty() shouldBe false
+    primitiveElement.isNotEmpty() shouldBe true
+
+    // Empty primitive strings are empty
+    val emptyPrimitive = JsonPrimitive("")
+    emptyPrimitive.isEmpty() shouldBe true
+    emptyPrimitive.isNotEmpty() shouldBe false
   }
 
   @Test
