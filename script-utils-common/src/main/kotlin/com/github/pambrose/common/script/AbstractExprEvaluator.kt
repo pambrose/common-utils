@@ -22,7 +22,13 @@ import com.github.pambrose.common.script.ScriptUtils.resetContext
 abstract class AbstractExprEvaluator(
   extension: String,
 ) : AbstractEngine(extension) {
-  fun eval(expr: String) = engine.eval(expr) as Boolean
+  fun eval(expr: String): Boolean {
+    val result = engine.eval(expr)
+    return result as? Boolean
+      ?: throw IllegalArgumentException(
+        "Expression did not evaluate to Boolean, got ${result?.javaClass?.simpleName ?: "null"}",
+      )
+  }
 
   fun compute(expr: String) = engine.eval(expr) as Any
 
