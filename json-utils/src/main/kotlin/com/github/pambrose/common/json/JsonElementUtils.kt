@@ -142,30 +142,17 @@ fun JsonElement.toMap(): Map<String, Any?> {
   require(this is JsonObject) { "Can only convert JsonObject to Map, not a ${this.javaClass.simpleName}" }
 
   return entries.associate { (key, value) ->
-    key to when (value) {
-      is JsonPrimitive -> {
-        value.content
-      }
-
-      is JsonArray -> {
-        value.map {
-          when (it) {
-            is JsonPrimitive -> it.content
-            else -> it.toMap()
-          }
-        }
-      }
-
-      is JsonObject -> {
-        value.toMap()
-      }
-
-      JsonNull -> {
-        null
-      }
-    }
+    key to value.toAny()
   }
 }
+
+private fun JsonElement.toAny(): Any? =
+  when (this) {
+    JsonNull -> null
+    is JsonPrimitive -> content
+    is JsonObject -> toMap()
+    is JsonArray -> map { it.toAny() }
+  }
 
 internal fun JsonElement.element(key: String) =
   elementOrNull(key) ?: throw IllegalArgumentException(
