@@ -53,8 +53,8 @@ object RedisUtils {
     URI(redisUrl).let {
       RedisInfo(
         it,
-        (it.userInfo?.split(colon, 2)?.get(0).orEmpty()),
-        (it.userInfo?.split(colon, 2)?.get(1).orEmpty()),
+        (it.userInfo?.split(colon, 2)?.getOrElse(0) { "" }.orEmpty()),
+        (it.userInfo?.split(colon, 2)?.getOrElse(1) { "" }.orEmpty()),
       )
     }
 
