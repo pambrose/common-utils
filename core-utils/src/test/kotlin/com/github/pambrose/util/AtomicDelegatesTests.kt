@@ -95,8 +95,10 @@ class AtomicDelegatesTests {
     value = "first"
     value shouldBe "first"
 
-    // Second set should be ignored (compareAndSet fails silently)
-    value = "second"
+    // Second set should throw since the value has already been set
+    shouldThrow<IllegalStateException> {
+      value = "second"
+    }
     value shouldBe "first"
   }
 
@@ -109,8 +111,10 @@ class AtomicDelegatesTests {
     value = "updated"
     value shouldBe "updated"
 
-    // Should not update again since current value no longer matches compareValue
-    value = "third"
+    // Should throw since current value no longer matches compareValue
+    shouldThrow<IllegalStateException> {
+      value = "third"
+    }
     value shouldBe "updated"
   }
 }
