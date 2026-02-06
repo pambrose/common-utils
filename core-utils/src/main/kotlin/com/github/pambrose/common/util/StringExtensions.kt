@@ -200,7 +200,7 @@ private fun encodedByteArray(
   algorithm: String,
 ) = with(MessageDigest.getInstance(algorithm)) {
   update(salt)
-  digest(input.toByteArraySecure())
+  digest(input.toByteArray(Charsets.UTF_8))
 }
 
 private fun encodedByteArray(
@@ -208,8 +208,8 @@ private fun encodedByteArray(
   salt: (String) -> String,
   algorithm: String,
 ) = with(MessageDigest.getInstance(algorithm)) {
-  update(salt(input).toByteArraySecure())
-  digest(input.toByteArraySecure())
+  update(salt(input).toByteArray(Charsets.UTF_8))
+  digest(input.toByteArray(Charsets.UTF_8))
 }
 
 fun newByteArraySalt(len: Int = 16): ByteArray = ByteArray(len).apply { SecureRandom().nextBytes(this) }
