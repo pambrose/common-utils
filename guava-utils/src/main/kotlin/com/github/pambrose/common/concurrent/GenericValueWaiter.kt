@@ -22,7 +22,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 class BooleanWaiter(
@@ -37,12 +36,12 @@ class BooleanWaiter(
     checkCondition(value)
   }
 
-  suspend fun waitUntilTrue(timeoutDuration: Duration = Long.MAX_VALUE.days): Boolean {
+  suspend fun waitUntilTrue(timeoutDuration: Duration = Duration.INFINITE): Boolean {
     predicate = { currValue }
     return waitForCondition(timeoutDuration)
   }
 
-  suspend fun waitUntilFalse(timeoutDuration: Duration = Long.MAX_VALUE.days): Boolean {
+  suspend fun waitUntilFalse(timeoutDuration: Duration = Duration.INFINITE): Boolean {
     predicate = { !currValue }
     return waitForCondition(timeoutDuration)
   }

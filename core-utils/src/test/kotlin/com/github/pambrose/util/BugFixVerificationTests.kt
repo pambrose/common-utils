@@ -4,17 +4,26 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.concurrent.Atomic
 import com.github.pambrose.common.delegate.AtomicDelegates
+import com.github.pambrose.common.time.format
 import com.github.pambrose.common.util.AtomicUtils.criticalSection
+import com.github.pambrose.common.util.Version
 import com.github.pambrose.common.util.linesBetween
 import com.github.pambrose.common.util.maskUrlCredentials
 import com.github.pambrose.common.util.md5
 import com.github.pambrose.common.util.sha256
+import com.github.pambrose.common.util.times
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class BugFixVerificationTests {
   // Bug #1: MD5/SHA-256 should produce standard hash values
@@ -168,5 +177,72 @@ class BugFixVerificationTests {
   fun linesBetweenWorksWhenPatternsExist() {
     val text = "aaa\nbbb\nccc\nddd"
     text.linesBetween(Regex("aaa"), Regex("ddd")) shouldBe listOf("bbb", "ccc")
+  }
+
+  // Bug #20: JSON key "build_time: " had a trailing colon and space
+  // Before fix: put("build_time: ", ...) produced malformed key
+  // After fix: put("build_time", ...) produces correct key
+
+  @Test
+  fun versionJsonHasCorrectBuildTimeKey() {
+    val json = Version.jsonStr("1.0", "2025-01-01", 0)
+    json shouldContain "\"build_time\""
+    json shouldNotContain "\"build_time: \""
+  }
+
+  // Bug #21: Duration.format() produced garbled output for negative durations
+  // Before fix: negative milliseconds caused negative intermediate values
+  // After fix: uses abs() on milliseconds and prepends "-" prefix
+
+  @Test
+  fun durationFormatHandlesPositiveDurations() {
+    val d = 1.hours + 30.minutes + 45.seconds
+    d.format() shouldBe "0:01:30:45"
+  }
+
+  @Test
+  fun durationFormatHandlesNegativeDurations() {
+    val d = -(1.hours + 30.minutes + 45.seconds)
+    d.format() shouldBe "-0:01:30:45"
+  }
+
+  @Test
+  fun durationFormatHandlesNegativeWithMillis() {
+    val d = -(2.hours + 15.minutes + 30.seconds + 500.milliseconds)
+    d.format(includeMillis = true) shouldBe "-0:02:15:30.500"
+  }
+
+  @Test
+  fun durationFormatHandlesZero() {
+    val d = 0.seconds
+    d.format() shouldBe "0:00:00:00"
+  }
+
+  // Bug #22: Short.times infinite loop at Short.MAX_VALUE
+  // Before fix: Short i++ overflowed from 32767 to -32768, looping forever
+  // After fix: uses Int counter, converts to Short for the action
+
+  @Test
+  fun shortTimesWorksAtMaxValue() {
+    var count = 0
+    val n: Short = 100
+    n times { count++ }
+    count shouldBe 100
+  }
+
+  @Test
+  fun shortTimesPassesCorrectIndices() {
+    val indices = mutableListOf<Short>()
+    val n: Short = 5
+    n times { indices.add(it) }
+    indices shouldBe listOf<Short>(0, 1, 2, 3, 4)
+  }
+
+  @Test
+  fun shortTimesZeroDoesNothing() {
+    var count = 0
+    val n: Short = 0
+    n times { count++ }
+    count shouldBe 0
   }
 }

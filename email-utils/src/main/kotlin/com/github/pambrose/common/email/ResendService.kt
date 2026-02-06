@@ -18,7 +18,7 @@ class ResendService(
     subject: String,
     html: String,
   ) {
-    runCatching {
+    try {
       val request =
         CreateEmailOptions.builder().run {
           from(from.value)
@@ -35,8 +35,9 @@ class ResendService(
       val ccStr = cc.joinToString(", ").let { it.ifBlank { "None" } }
       val bccStr = bcc.joinToString(", ").let { it.ifBlank { "None" } }
       logger.info { "Sent email to: $toStr cc: $ccStr bcc: $bccStr [${response.id}]" }
-    }.onFailure { e ->
+    } catch (e: Exception) {
       logger.error(e) { "sendEmail() error: ${e.message}" }
+      throw e
     }
   }
 

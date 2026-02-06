@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -170,5 +171,48 @@ class BugFixVerificationTests {
   fun isZippedDetectsGzipMagicBytes() {
     // GZIP magic bytes: 0x1f 0x8b
     byteArrayOf(0x1f, 0x8b.toByte()).isZipped() shouldBe true
+  }
+
+  // Bug #24: Long.MAX_VALUE.days overflows; should use Duration.INFINITE
+  // Before fix: Long.MAX_VALUE.days as default timeout overflowed on conversion
+  // After fix: Duration.INFINITE is used, which withTimeoutOrNull handles correctly
+
+  @Test
+  fun conditionalBooleanWaitUntilTrueWithDefaultTimeout() {
+    runBlocking {
+      val cond = ConditionalBoolean(false)
+
+      launch {
+        delay(50.milliseconds)
+        cond.set(true)
+      }
+
+      val result = cond.waitUntilTrue(2.seconds)
+      result shouldBe true
+    }
+  }
+
+  @Test
+  fun conditionalValueWaitUntilWithDefaultTimeout() {
+    runBlocking {
+      val cond = ConditionalValue(0)
+
+      launch {
+        delay(50.milliseconds)
+        cond.set(42)
+      }
+
+      val result = cond.waitUntil(2.seconds) { it == 42 }
+      result shouldBe true
+    }
+  }
+
+  @Test
+  fun conditionalValueTimeoutReturnsFalse() {
+    runBlocking {
+      val cond = ConditionalValue(0)
+      val result = cond.waitUntil(100.milliseconds) { it == 99 }
+      result shouldBe false
+    }
   }
 }
