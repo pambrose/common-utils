@@ -42,8 +42,8 @@ val Long.length
     }
 
 inline infix operator fun Short.times(action: (Short) -> Unit) {
-  var i: Short = 0
-  while (i < this) action(i++)
+  var i = 0
+  while (i < this) action((i++).toShort())
 }
 
 inline infix operator fun Int.times(action: (Int) -> Unit) {
