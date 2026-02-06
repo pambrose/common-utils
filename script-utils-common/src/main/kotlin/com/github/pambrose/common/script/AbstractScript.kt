@@ -47,6 +47,8 @@ abstract class AbstractScript(
 
   fun resetContext(nullGlobalContext: Boolean) {
     initialized = false
+    valueMap.clear()
+    typeMap.clear()
     engine.resetContext(nullGlobalContext)
   }
 
