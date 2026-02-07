@@ -52,6 +52,7 @@ class JavaScript :
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it;" }
 
+  @Synchronized
   fun <T> import(clazz: Class<T>) {
     imports += clazz.name
   }
