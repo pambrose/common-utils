@@ -20,7 +20,7 @@ val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 val versionsLib = libs.plugins.versions.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = "2.4.14"
+    extra["versionStr"] = "2.4.15"
     group = "com.github.pambrose.common-utils"
     version = versionStr
 
@@ -39,6 +39,19 @@ subprojects {
         configurePublishing()
         configureTesting()
         configureKotlinter()
+    }
+
+    fun isNonStable(version: String): Boolean {
+        val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
+        val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+        val isStable = stableKeyword || regex.matches(version)
+        return !isStable
+    }
+
+    tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
+        rejectVersionIf {
+            isNonStable(candidate.version)
+        }
     }
 }
 
