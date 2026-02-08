@@ -173,7 +173,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:jetty-utils:2.4.15")
+  implementation("com.github.pambrose.common-utils:jetty-utils:2.5.0")
 }
 ```
 
@@ -184,7 +184,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pambrose.common-utils</groupId>
   <artifactId>jetty-utils</artifactId>
-  <version>2.4.15</version>
+  <version>2.5.0</version>
 </dependency>
 ```
 
