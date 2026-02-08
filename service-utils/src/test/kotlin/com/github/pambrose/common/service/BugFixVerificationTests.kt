@@ -4,8 +4,8 @@ package com.github.pambrose.common.service
 
 import com.google.common.util.concurrent.AbstractIdleService
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicBoolean
+import org.junit.jupiter.api.Test
 
 class BugFixVerificationTests {
   // Bug #7: Shutdown hook called stopAsync() without waiting for completion
@@ -18,7 +18,9 @@ class BugFixVerificationTests {
 
     val service =
       object : AbstractIdleService() {
-      override fun startUp() {}
+        override fun startUp() {
+          // Empty
+        }
 
       override fun shutDown() {
         // Simulate some cleanup work
