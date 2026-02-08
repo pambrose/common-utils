@@ -12,39 +12,39 @@ class BugFixVerificationTests {
   // After fix: getOrElse(1) { "" } returns empty string when index is missing
 
   @Test
-  fun jedisPoolCreationWithUserInfoWithoutColonDoesNotCrash() {
+  fun redisClientCreationWithUserInfoWithoutColonDoesNotCrash() {
     // URL with username only (no colon/password in userInfo)
     shouldNotThrow<IndexOutOfBoundsException> {
-      val pool = RedisUtils.newJedisPool(
+      val client = RedisUtils.newRedisClient(
         redisUrl = "redis://username@localhost:6379",
         maxPoolSize = 1,
       )
-      pool shouldNotBe null
-      pool.close()
+      client shouldNotBe null
+      client.close()
     }
   }
 
   @Test
-  fun jedisPoolCreationWithNoUserInfoDoesNotCrash() {
+  fun redisClientCreationWithNoUserInfoDoesNotCrash() {
     shouldNotThrow<Exception> {
-      val pool = RedisUtils.newJedisPool(
+      val client = RedisUtils.newRedisClient(
         redisUrl = "redis://localhost:6379",
         maxPoolSize = 1,
       )
-      pool shouldNotBe null
-      pool.close()
+      client shouldNotBe null
+      client.close()
     }
   }
 
   @Test
-  fun jedisPoolCreationWithStandardUserInfoWorks() {
+  fun redisClientCreationWithStandardUserInfoWorks() {
     shouldNotThrow<Exception> {
-      val pool = RedisUtils.newJedisPool(
+      val client = RedisUtils.newRedisClient(
         redisUrl = "redis://user:password@localhost:6379",
         maxPoolSize = 1,
       )
-      pool shouldNotBe null
-      pool.close()
+      client shouldNotBe null
+      client.close()
     }
   }
 }
