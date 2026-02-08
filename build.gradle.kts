@@ -20,7 +20,7 @@ val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 val versionsLib = libs.plugins.versions.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = "2.5.0"
+    extra["versionStr"] = "2.5.1"
     group = "com.github.pambrose.common-utils"
     version = versionStr
 
