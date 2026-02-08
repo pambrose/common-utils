@@ -61,11 +61,11 @@ class JavaScript :
     (engine as JavaScriptEngine).setIsolation(isolation)
   }
 
+  // typeOf<Int>() -> Integer::class.java.simpleName
+  // typeOf<Int?>() -> Integer::class.java.simpleName
   private val KType.javaEquiv: String
     get() =
       when (this) {
-//        typeOf<Int>() -> Integer::class.java.simpleName
-//        typeOf<Int?>() -> Integer::class.java.simpleName
         typeOf<Int>() -> Int::class.javaObjectType.simpleName
         typeOf<Int?>() -> Int::class.javaObjectType.simpleName
         else -> this.toString().removePrefix("kotlin.").replace("?", "")
