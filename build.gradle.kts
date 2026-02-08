@@ -20,7 +20,7 @@ val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 val versionsLib = libs.plugins.versions.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = "2.5.1"
+    extra["versionStr"] = "2.5.2"
     group = "com.github.pambrose.common-utils"
     version = versionStr
 
@@ -33,6 +33,13 @@ allprojects {
 }
 
 subprojects {
+    // Suppress Gradle Module Metadata — BOMs are a Maven concept and the .module file
+    // causes JitPack to misidentify this as the root project (com.github.pambrose:common-utils)
+    // instead of the submodule (com.github.pambrose.common-utils:common-utils-bom)
+    tasks.withType<GenerateModuleMetadata> {
+        enabled = false
+    }
+
     if (name != "common-utils-bom") {
         configureKotlin()
         configureVersions()
