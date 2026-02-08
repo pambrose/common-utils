@@ -20,10 +20,10 @@ package com.github.pambrose.common.util
 import kotlin.concurrent.atomics.AtomicBoolean
 
 object AtomicUtils {
-  inline fun <T> AtomicBoolean.criticalSection(block: () -> T) {
+  inline fun <T> AtomicBoolean.criticalSection(block: () -> T): T {
     store(true)
     try {
-      block()
+      return block()
     } finally {
       store(false)
     }

@@ -18,14 +18,16 @@
 package com.github.pambrose.common.redis
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
-import redis.clients.jedis.JedisPoolConfig
-import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
-import redis.clients.jedis.exceptions.JedisConnectionException
-import redis.clients.jedis.params.ScanParams
 import java.net.URI
 import java.util.*
+import redis.clients.jedis.ConnectionPoolConfig
+import redis.clients.jedis.DefaultJedisClientConfig
+import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
+import redis.clients.jedis.RedisClient
+import redis.clients.jedis.UnifiedJedis
+import redis.clients.jedis.exceptions.JedisConnectionException
+import redis.clients.jedis.params.ScanParams
 
 object RedisUtils {
   private val logger = KotlinLogging.logger {}
@@ -53,20 +55,48 @@ object RedisUtils {
     URI(redisUrl).let {
       RedisInfo(
         it,
-        (it.userInfo?.split(colon, 2)?.get(0).orEmpty()),
-        (it.userInfo?.split(colon, 2)?.get(1).orEmpty()),
+        (it.userInfo?.split(colon, 2)?.getOrElse(0) { "" }.orEmpty()),
+        (it.userInfo?.split(colon, 2)?.getOrElse(1) { "" }.orEmpty()),
       )
     }
 
   private val String.isSsl: Boolean get() = lowercase(Locale.getDefault()).startsWith("rediss://")
 
-  fun newJedisPool(
+  private fun buildClientConfig(
+    info: RedisInfo,
+    isSsl: Boolean,
+  ): DefaultJedisClientConfig {
+    val builder =
+      DefaultJedisClientConfig.builder()
+        .connectionTimeoutMillis(DEFAULT_TIMEOUT)
+        .socketTimeoutMillis(DEFAULT_TIMEOUT)
+        .ssl(isSsl)
+
+    if (info.password.isNotBlank()) {
+      if (info.includeUserInAuth)
+        builder.user(info.user)
+      builder.password(info.password)
+    }
+
+    return builder.build()
+  }
+
+  private fun createRedisClient(redisUrl: String): RedisClient {
+    val info = urlDetails(redisUrl)
+    val clientConfig = buildClientConfig(info, redisUrl.isSsl)
+    return RedisClient.builder()
+      .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
+      .clientConfig(clientConfig)
+      .build()
+  }
+
+  fun newRedisClient(
     redisUrl: String = defaultRedisUrl,
     maxPoolSize: Int = System.getProperty(REDIS_MAX_POOL_SIZE)?.toInt() ?: 10,
     maxIdleSize: Int = System.getProperty(REDIS_MAX_IDLE_SIZE)?.toInt() ?: 5,
     minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1,
     maxWaitSecs: Long = System.getProperty(REDIS_MAX_WAIT_SECS)?.toLong() ?: 1L,
-  ): JedisPool {
+  ): RedisClient {
     require(maxPoolSize >= 0) { "Max pool size cannot be a negative number" }
     require(maxIdleSize >= 0) { "Max idle size cannot be a negative number" }
     require(minIdleSize >= 0) { "Min idle size cannot be a negative number" }
@@ -78,7 +108,7 @@ object RedisUtils {
     logger.info { "Redis max wait secs: $maxWaitSecs" }
 
     val poolConfig =
-      JedisPoolConfig()
+      ConnectionPoolConfig()
         .apply {
           maxTotal = maxPoolSize
           maxIdle = maxIdleSize
@@ -88,33 +118,27 @@ object RedisUtils {
           testOnReturn = true
           testWhileIdle = true
 
-          timeBetweenEvictionRuns = java.time.Duration.ofMinutes(1) // Run the eviction thread every minute
-          minEvictableIdleDuration = java.time.Duration.ofMinutes(1) // Evict connections idle for 5 minutes
+          timeBetweenEvictionRuns = java.time.Duration.ofMinutes(1)
+          minEvictableIdleDuration = java.time.Duration.ofMinutes(1)
         }
 
     val info = urlDetails(redisUrl)
-    val host = info.uri.host
-    val port = info.uri.port
+    val clientConfig = buildClientConfig(info, redisUrl.isSsl)
 
-    return if (info.password.isNotBlank()) {
-      if (info.includeUserInAuth)
-        JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.user, info.password, redisUrl.isSsl)
-      else
-        JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, info.password, redisUrl.isSsl)
-    } else {
-      JedisPool(poolConfig, host, port, DEFAULT_TIMEOUT, redisUrl.isSsl)
-    }
+    return RedisClient.builder()
+      .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
+      .clientConfig(clientConfig)
+      .poolConfig(poolConfig)
+      .build()
   }
 
-  fun <T> JedisPool.withRedisPool(
+  fun <T> RedisClient.withRedisPool(
     printStackTrace: Boolean = false,
-    block: (Jedis?) -> T,
+    block: (RedisClient?) -> T,
   ): T =
     try {
-      resource.use { redis ->
-        redis.ping("")
-        block.invoke(redis)
-      }
+      ping()
+      block.invoke(this)
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
@@ -123,15 +147,13 @@ object RedisUtils {
       block.invoke(null)
     }
 
-  fun <T> JedisPool.withNonNullRedisPool(
+  fun <T> RedisClient.withNonNullRedisPool(
     printStackTrace: Boolean = false,
-    block: (Jedis) -> T,
+    block: (RedisClient) -> T,
   ): T? =
     try {
-      resource.use { redis ->
-        redis.ping("")
-        block.invoke(redis)
-      }
+      ping()
+      block.invoke(this)
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
@@ -140,15 +162,13 @@ object RedisUtils {
       null
     }
 
-  suspend fun <T> JedisPool.withSuspendingRedisPool(
+  suspend fun <T> RedisClient.withSuspendingRedisPool(
     printStackTrace: Boolean = false,
-    block: suspend (Jedis?) -> T,
+    block: suspend (RedisClient?) -> T,
   ): T =
     try {
-      resource.use { redis ->
-        redis.ping("")
-        block.invoke(redis)
-      }
+      ping()
+      block.invoke(this)
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
@@ -157,15 +177,13 @@ object RedisUtils {
       block.invoke(null)
     }
 
-  suspend fun <T> JedisPool.withSuspendingNonNullRedisPool(
+  suspend fun <T> RedisClient.withSuspendingNonNullRedisPool(
     printStackTrace: Boolean = false,
-    block: suspend (Jedis) -> T,
+    block: suspend (RedisClient) -> T,
   ): T? =
     try {
-      resource.use { redis ->
-        redis.ping("")
-        block.invoke(redis)
-      }
+      ping()
+      block.invoke(this)
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
         logger.error(e) { FAILED_TO_CONNECT_MSG }
@@ -177,19 +195,12 @@ object RedisUtils {
   fun <T> withRedis(
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
-    block: (Jedis?) -> T,
+    block: (RedisClient?) -> T,
   ): T =
     try {
-      val info = urlDetails(redisUrl)
-      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
-        .use { redis ->
-          if (info.password.isNotBlank()) {
-            if (info.includeUserInAuth)
-              redis.auth(info.user, info.password)
-            else
-              redis.auth(info.password)
-          }
-          block.invoke(redis)
+      createRedisClient(redisUrl)
+        .use { client ->
+          block.invoke(client)
         }
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
@@ -202,19 +213,12 @@ object RedisUtils {
   fun <T> withNonNullRedis(
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
-    block: (Jedis) -> T,
+    block: (RedisClient) -> T,
   ): T? =
     try {
-      val info = urlDetails(redisUrl)
-      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
-        .use { redis ->
-          if (info.password.isNotBlank()) {
-            if (info.includeUserInAuth)
-              redis.auth(info.user, info.password)
-            else
-              redis.auth(info.password)
-          }
-          block.invoke(redis)
+      createRedisClient(redisUrl)
+        .use { client ->
+          block.invoke(client)
         }
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
@@ -227,19 +231,12 @@ object RedisUtils {
   suspend fun <T> withSuspendingRedis(
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
-    block: suspend (Jedis?) -> T,
+    block: suspend (RedisClient?) -> T,
   ): T =
     try {
-      val info = urlDetails(redisUrl)
-      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
-        .use { redis ->
-          if (info.password.isNotBlank()) {
-            if (info.includeUserInAuth)
-              redis.auth(info.user, info.password)
-            else
-              redis.auth(info.password)
-          }
-          block.invoke(redis)
+      createRedisClient(redisUrl)
+        .use { client ->
+          block.invoke(client)
         }
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
@@ -252,19 +249,12 @@ object RedisUtils {
   suspend fun <T> withSuspendingNonNullRedis(
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
-    block: suspend (Jedis) -> T,
+    block: suspend (RedisClient) -> T,
   ): T? =
     try {
-      val info = urlDetails(redisUrl)
-      Jedis(info.uri.host, info.uri.port, DEFAULT_TIMEOUT, redisUrl.isSsl)
-        .use { redis ->
-          if (info.password.isNotBlank()) {
-            if (info.includeUserInAuth)
-              redis.auth(info.user, info.password)
-            else
-              redis.auth(info.password)
-          }
-          block.invoke(redis)
+      createRedisClient(redisUrl)
+        .use { client ->
+          block.invoke(client)
         }
     } catch (e: JedisConnectionException) {
       if (printStackTrace)
@@ -274,7 +264,7 @@ object RedisUtils {
       null
     }
 
-  fun Jedis.scanKeys(
+  fun UnifiedJedis.scanKeys(
     pattern: String,
     count: Int = 100,
   ): Sequence<String> =

@@ -159,14 +159,14 @@ abstract class GenericService<T> protected constructor(
       jmxReporter.start()
     }
 
-    if (isAdminEnabled)
+    if (::servletService.isInitialized)
       servletService.startSync()
 
     Runtime.getRuntime().addShutdownHook(shutDownHookAction(this))
   }
 
   override fun shutDown() {
-    if (isAdminEnabled)
+    if (::servletService.isInitialized)
       servletService.stopSync()
 
     if (isMetricsEnabled) {
@@ -231,6 +231,7 @@ abstract class GenericService<T> protected constructor(
       Thread {
         System.err.println("*** ${service.simpleClassName} shutting down ***")
         service.stopAsync()
+        service.awaitTerminated()
         System.err.println("*** ${service.simpleClassName} shut down complete ***")
       }
   }

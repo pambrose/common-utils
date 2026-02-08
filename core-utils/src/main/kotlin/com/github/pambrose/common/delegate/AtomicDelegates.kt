@@ -95,7 +95,9 @@ private class SingleSetAtomicReferenceDelegate<T : Any?>(
     property: KProperty<*>,
     value: T?,
   ) {
-    atomicVal.compareAndSet(compareValue, value)
+    if (!atomicVal.compareAndSet(compareValue, value)) {
+      throw IllegalStateException("Property ${property.name} has already been set")
+    }
   }
 }
 

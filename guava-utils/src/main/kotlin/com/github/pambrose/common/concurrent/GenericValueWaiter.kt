@@ -22,12 +22,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 class BooleanWaiter(
   initValue: Boolean,
 ) : GenericValueWaiter<Boolean>(initValue) {
+  @Volatile
   private var predicate: () -> Boolean = { currValue != initValue }
 
   override fun monitorSatisfied() = predicate()
@@ -36,12 +36,12 @@ class BooleanWaiter(
     checkCondition(value)
   }
 
-  suspend fun waitUntilTrue(timeoutDuration: Duration = Long.MAX_VALUE.days): Boolean {
+  suspend fun waitUntilTrue(timeoutDuration: Duration = Duration.INFINITE): Boolean {
     predicate = { currValue }
     return waitForCondition(timeoutDuration)
   }
 
-  suspend fun waitUntilFalse(timeoutDuration: Duration = Long.MAX_VALUE.days): Boolean {
+  suspend fun waitUntilFalse(timeoutDuration: Duration = Duration.INFINITE): Boolean {
     predicate = { !currValue }
     return waitForCondition(timeoutDuration)
   }
@@ -60,47 +60,37 @@ abstract class GenericValueWaiter<T>(
   /**
    * Suspends until the condition becomes true.
    */
-  protected suspend fun waitForCondition(timeoutDuration: Duration): Boolean {
-    return coroutineScope {
-      mutex.withLock {
-        if (monitorSatisfied()) return@coroutineScope true // If already true, return immediately
-      }
-
-      return@coroutineScope suspendCancellableCoroutine { continuation ->
-        val timoutJob = launch {
+  protected suspend fun waitForCondition(timeoutDuration: Duration): Boolean =
+    coroutineScope {
+      suspendCancellableCoroutine { continuation ->
+        val timeoutJob = launch {
           delay(timeoutDuration)
           mutex.withLock {
-            continuation.resume(false)
             onConditionChanged = null
+            continuation.resume(false)
           }
         }
 
-        val execJob = launch {
+        launch {
           mutex.withLock {
-            onConditionChanged = {
-              continuation.resume(true) // Resume the coroutine when the condition changes
-              timoutJob.cancel() // Cancel the timoutJob if it's still running
-              println("TimeOut Job status: ${timoutJob.isActive}")
+            if (monitorSatisfied()) {
+              timeoutJob.cancel()
+              continuation.resume(true)
+            } else {
+              onConditionChanged = {
+                continuation.resume(true)
+                timeoutJob.cancel()
+              }
             }
           }
         }
 
-        // Clean up if the continuation is cancelled
         continuation.invokeOnCancellation {
-          println("Cancelling invokeOnCancellation() action")
-          timoutJob.cancel() // Cancel the timoutJob if it's still running
-          execJob.cancel() // Cancel the execJob if it's still running
-
-          // Clean up the callback
-          CoroutineScope(Dispatchers.Default).launch {
-            mutex.withLock {
-              onConditionChanged = null
-            }
-          }
+          timeoutJob.cancel()
+          onConditionChanged = null
         }
       }
     }
-  }
 
   /**
    * Updates the value and then checks the condition to see if it's satisfied.

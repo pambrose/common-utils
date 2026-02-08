@@ -25,8 +25,8 @@ import com.github.pambrose.common.util.verifyChecksum
 import com.github.pambrose.common.util.withChecksum
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 import java.io.Serializable
+import org.junit.jupiter.api.Test
 
 class IOExtensionsTests {
   @Test
@@ -42,7 +42,7 @@ class IOExtensionsTests {
     val original: Serializable = 42
     val bytes = original.toByteArraySecure()
     // Integer deserialization requires Number in the whitelist due to Java serialization hierarchy
-    val restored = bytes.toObjectSecure(Integer::class.java, setOf(Integer::class.java, Number::class.java))
+    val restored = bytes.toObjectSecure(Int::class.javaObjectType, setOf(Int::class.javaObjectType, Number::class.java))
     restored shouldBe original
   }
 
@@ -85,7 +85,10 @@ class IOExtensionsTests {
     val bytes = original.toByteArraySecure()
 
     shouldThrow<ClassCastException> {
-      bytes.toObjectSecure(Integer::class.java, setOf(Integer::class.java, Number::class.java, String::class.java))
+      bytes.toObjectSecure(
+        expectedClass = Int::class.javaObjectType,
+        allowedClasses = setOf(Int::class.javaObjectType, Number::class.java, String::class.java),
+      )
     }
   }
 }

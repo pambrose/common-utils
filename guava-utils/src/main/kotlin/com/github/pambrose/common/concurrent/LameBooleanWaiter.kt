@@ -38,43 +38,33 @@ class LameBooleanWaiter(
     // First, acquire the mutex to check the current value
     mutex.withLock {
       initialValue = value
-      targetValue = !initialValue // We're waiting for the value to change to this
+      targetValue = !initialValue
 
       // If the value is already the opposite of what it was when this method was called, return immediately
       if (value == targetValue) return
     }
 
-    // Release the mutex before suspending
-    suspendCancellableCoroutine { continuation ->
-      // Launch a coroutine to set up the callback
-      // This avoids calling suspending functions directly inside suspendCancellableCoroutine
-      val job = CoroutineScope(Dispatchers.Default).launch {
-        mutex.withLock {
-          // Check again if the value has changed while we were setting up
-          if (value == targetValue) {
-            continuation.resume(Unit)
-          } else {
-            onValueChanged = {
-              // Check if the value has changed to the opposite of the initial value
-              if (value == targetValue) {
-                continuation.resume(Unit)
+    // Use coroutineScope for structured concurrency
+    coroutineScope {
+      suspendCancellableCoroutine { continuation ->
+        val job = launch {
+          mutex.withLock {
+            // Check again if the value has changed while we were setting up
+            if (value == targetValue) {
+              continuation.resume(Unit)
+            } else {
+              onValueChanged = {
+                if (value == targetValue) {
+                  continuation.resume(Unit)
+                }
               }
             }
           }
         }
-      }
 
-      // Make sure to clean up if the continuation is cancelled
-      continuation.invokeOnCancellation {
-        println("Cancelling invokeOnCancellation() action")
-        System.out.flush()
-        job.cancel() // Cancel the job if it's still running
-
-        // Clean up the callback
-        CoroutineScope(Dispatchers.Default).launch {
-          mutex.withLock {
-            onValueChanged = null
-          }
+        continuation.invokeOnCancellation {
+          job.cancel()
+          onValueChanged = null
         }
       }
     }

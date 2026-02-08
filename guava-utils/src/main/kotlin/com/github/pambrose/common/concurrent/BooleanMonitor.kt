@@ -57,7 +57,7 @@ class BooleanMonitor(
     @JvmStatic
     fun debug(msg: () -> Any?): MonitorAction =
       {
-        logger.debug { msg }
+        logger.debug { msg() }
         true
       }
 
@@ -71,7 +71,7 @@ class BooleanMonitor(
     @JvmStatic
     fun info(msg: () -> Any?): MonitorAction =
       {
-        logger.info { msg }
+        logger.info { msg() }
         true
       }
 
@@ -85,7 +85,7 @@ class BooleanMonitor(
     @JvmStatic
     fun warn(msg: () -> Any?): MonitorAction =
       {
-        logger.warn { msg }
+        logger.warn { msg() }
         true
       }
 
@@ -99,7 +99,7 @@ class BooleanMonitor(
     @JvmStatic
     fun error(msg: () -> Any?): MonitorAction =
       {
-        logger.error { msg }
+        logger.error { msg() }
         true
       }
 

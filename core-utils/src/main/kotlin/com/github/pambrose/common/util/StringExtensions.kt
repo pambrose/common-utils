@@ -104,7 +104,12 @@ fun String.linesBetween(
 fun List<String>.linesBetween(
   start: Regex,
   end: Regex,
-) = subList(firstLineNumberOf(start) + 1, lastLineNumberOf(end))
+): List<String> {
+  val startIdx = firstLineNumberOf(start)
+  val endIdx = lastLineNumberOf(end)
+  if (startIdx == -1 || endIdx == -1 || startIdx + 1 > endIdx) return emptyList()
+  return subList(startIdx + 1, endIdx)
+}
 
 fun String.isBracketed(
   startChar: Char = '[',
@@ -200,7 +205,7 @@ private fun encodedByteArray(
   algorithm: String,
 ) = with(MessageDigest.getInstance(algorithm)) {
   update(salt)
-  digest(input.toByteArraySecure())
+  digest(input.toByteArray(Charsets.UTF_8))
 }
 
 private fun encodedByteArray(
@@ -208,8 +213,8 @@ private fun encodedByteArray(
   salt: (String) -> String,
   algorithm: String,
 ) = with(MessageDigest.getInstance(algorithm)) {
-  update(salt(input).toByteArraySecure())
-  digest(input.toByteArraySecure())
+  update(salt(input).toByteArray(Charsets.UTF_8))
+  digest(input.toByteArray(Charsets.UTF_8))
 }
 
 fun newByteArraySalt(len: Int = 16): ByteArray = ByteArray(len).apply { SecureRandom().nextBytes(this) }
@@ -225,9 +230,9 @@ fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.fil
 
 fun String.maskUrlCredentials() =
   if ("://" in this && "@" in this) {
-    val scheme = split("://")
-    val uri = split("@")
-    "${scheme[0]}://*****:*****@${uri[1]}"
+    val scheme = substringBefore("://")
+    val host = substringAfterLast("@")
+    "$scheme://*****:*****@$host"
   } else {
     this
   }

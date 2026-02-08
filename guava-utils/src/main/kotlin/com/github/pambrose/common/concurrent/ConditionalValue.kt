@@ -21,17 +21,17 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 class ConditionalBoolean(
   initValue: Boolean,
 ) : ConditionalValue<Boolean>(initValue) {
-  suspend fun waitUntilTrue(timeoutDuration: Duration = Long.MAX_VALUE.days): Boolean =
-    waitUntil(timeoutDuration) { it }
+  suspend fun waitUntilTrue(timeoutDuration: Duration = Duration.INFINITE): Boolean = waitUntil(timeoutDuration) { it }
 
-  suspend fun waitUntilFalse(timeoutDuration: Duration = Long.MAX_VALUE.days): Boolean =
-    waitUntil(timeoutDuration) { !it }
+  suspend fun waitUntilFalse(timeoutDuration: Duration = Duration.INFINITE): Boolean =
+    waitUntil(timeoutDuration) {
+    !it
+  }
 }
 
 open class ConditionalValue<T>(
@@ -45,7 +45,7 @@ open class ConditionalValue<T>(
    * Suspends until the predicate becomes true or timeout occurs.
    */
   suspend fun waitUntil(
-    timeoutDuration: Duration = Long.MAX_VALUE.days,
+    timeoutDuration: Duration = Duration.INFINITE,
     predicate: (T) -> Boolean,
   ): Boolean =
     withTimeoutOrNull(timeoutDuration.inWholeMilliseconds) {

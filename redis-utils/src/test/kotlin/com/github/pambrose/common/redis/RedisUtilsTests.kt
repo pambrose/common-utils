@@ -26,30 +26,30 @@ import org.junit.jupiter.api.Test
 
 class RedisUtilsTests {
   @Test
-  fun newJedisPoolValidationNegativePoolSizeTest() {
+  fun newRedisClientValidationNegativePoolSizeTest() {
     shouldThrow<IllegalArgumentException> {
-      RedisUtils.newJedisPool(maxPoolSize = -1)
+      RedisUtils.newRedisClient(maxPoolSize = -1)
     }
   }
 
   @Test
-  fun newJedisPoolValidationNegativeIdleSizeTest() {
+  fun newRedisClientValidationNegativeIdleSizeTest() {
     shouldThrow<IllegalArgumentException> {
-      RedisUtils.newJedisPool(maxIdleSize = -1)
+      RedisUtils.newRedisClient(maxIdleSize = -1)
     }
   }
 
   @Test
-  fun newJedisPoolValidationNegativeMinIdleSizeTest() {
+  fun newRedisClientValidationNegativeMinIdleSizeTest() {
     shouldThrow<IllegalArgumentException> {
-      RedisUtils.newJedisPool(minIdleSize = -1)
+      RedisUtils.newRedisClient(minIdleSize = -1)
     }
   }
 
   @Test
-  fun newJedisPoolValidationNegativeMaxWaitSecsTest() {
+  fun newRedisClientValidationNegativeMaxWaitSecsTest() {
     shouldThrow<IllegalArgumentException> {
-      RedisUtils.newJedisPool(maxWaitSecs = -1)
+      RedisUtils.newRedisClient(maxWaitSecs = -1)
     }
   }
 
@@ -62,37 +62,37 @@ class RedisUtilsTests {
   }
 
   @Test
-  fun jedisPoolCreationWithValidParamsTest() {
-    // This will fail to connect but should create the pool object
-    val pool = RedisUtils.newJedisPool(
+  fun redisClientCreationWithValidParamsTest() {
+    // This will fail to connect but should create the client object
+    val client = RedisUtils.newRedisClient(
       redisUrl = "redis://user:pass@localhost:6379",
       maxPoolSize = 5,
       maxIdleSize = 3,
       minIdleSize = 1,
       maxWaitSecs = 2,
     )
-    pool shouldNotBe null
-    pool.close()
+    client shouldNotBe null
+    client.close()
   }
 
   @Test
-  fun jedisPoolCreationWithSslUrlTest() {
+  fun redisClientCreationWithSslUrlTest() {
     // Test that SSL URLs are handled (rediss:// prefix)
-    val pool = RedisUtils.newJedisPool(
+    val client = RedisUtils.newRedisClient(
       redisUrl = "rediss://user:pass@localhost:6379",
       maxPoolSize = 1,
     )
-    pool shouldNotBe null
-    pool.close()
+    client shouldNotBe null
+    client.close()
   }
 
   @Test
-  fun jedisPoolCreationWithNoPasswordTest() {
-    val pool = RedisUtils.newJedisPool(
+  fun redisClientCreationWithNoPasswordTest() {
+    val client = RedisUtils.newRedisClient(
       redisUrl = "redis://localhost:6379",
       maxPoolSize = 1,
     )
-    pool shouldNotBe null
-    pool.close()
+    client shouldNotBe null
+    client.close()
   }
 }

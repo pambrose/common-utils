@@ -37,7 +37,7 @@ class ResendService(
       logger.info { "Sent email to: $toStr cc: $ccStr bcc: $bccStr [${response.id}]" }
     }.onFailure { e ->
       logger.error(e) { "sendEmail() error: ${e.message}" }
-    }
+    }.getOrThrow()
   }
 
   companion object {

@@ -39,7 +39,7 @@ fun String.zip(): ByteArray =
       baos.toByteArray()
     }
 
-fun ByteArray.isZipped() = this[0] == GZIP_MAGIC.toByte() && this[1] == (GZIP_MAGIC shr 8).toByte()
+fun ByteArray.isZipped() = size >= 2 && this[0] == GZIP_MAGIC.toByte() && this[1] == (GZIP_MAGIC shr 8).toByte()
 
 fun ByteArray.unzip(): String =
   when {

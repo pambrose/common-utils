@@ -19,16 +19,18 @@
 
 package com.github.pambrose.common.util
 
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.number
+import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.net.InetAddress
+import java.net.ServerSocket
 import java.net.UnknownHostException
 import java.security.SecureRandom
 import kotlin.contracts.contract
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.number
 
 data class HostInfo(
   val hostName: String,
@@ -114,6 +116,25 @@ fun captureStdout(block: () -> Unit): String {
     System.setOut(originalOut)
   }
   return baos.toString()
+}
+
+object MiscFuncs {
+  private val logger = logger {}
+
+  fun waitForPortAvailable(
+    port: Int,
+    maxAttempts: Int = 50,
+    delayMs: Long = 200,
+  ) {
+    repeat(maxAttempts) {
+      try {
+        ServerSocket(port).use { return }
+      } catch (_: Exception) {
+        Thread.sleep(delayMs)
+      }
+    }
+    logger.warn { "Port $port may not be available after ${maxAttempts * delayMs}ms" }
+  }
 }
 
 object ReadResources {

@@ -45,7 +45,7 @@ annotation class Version(
       buildJsonObject {
         put("version", version)
         put("release_date", buildDate)
-        put("build_time: ", buildDateTimeStr(buildTime))
+        put("build_time", buildDateTimeStr(buildTime))
       }.toString()
     }
     val plainStr = { version: String, buildDate: String, buildTime: Long ->

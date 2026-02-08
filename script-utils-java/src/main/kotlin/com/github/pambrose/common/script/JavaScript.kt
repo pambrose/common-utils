@@ -52,6 +52,7 @@ class JavaScript :
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it;" }
 
+  @Synchronized
   fun <T> import(clazz: Class<T>) {
     imports += clazz.name
   }
@@ -60,11 +61,13 @@ class JavaScript :
     (engine as JavaScriptEngine).setIsolation(isolation)
   }
 
+  // typeOf<Int>() -> Integer::class.java.simpleName
+  // typeOf<Int?>() -> Integer::class.java.simpleName
   private val KType.javaEquiv: String
     get() =
       when (this) {
-        typeOf<Int>() -> Integer::class.java.simpleName
-        typeOf<Int?>() -> Integer::class.java.simpleName
+        typeOf<Int>() -> Int::class.javaObjectType.simpleName
+        typeOf<Int?>() -> Int::class.javaObjectType.simpleName
         else -> this.toString().removePrefix("kotlin.").replace("?", "")
       }
 

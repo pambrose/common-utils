@@ -1,3 +1,5 @@
+package com.github.pambrose.common.script
+
 /*
  * Copyright © 2025 Paul Ambrose (pambrose@mac.com)
  *
@@ -15,19 +17,21 @@
  *
  */
 
-package com.github.pambrose.common.script
-
 import javax.script.ScriptException
 
-fun main() {
-  repeat(100) { i ->
-    println("Invocation: $i")
-    try {
-      val c = 1 * 4
-      KotlinExprEvaluator().eval("1 == wrong")
-    } catch (e: ScriptException) {
-      println("Caught it")
+// Just for hacking
+private object ScriptExample {
+  @JvmStatic
+  fun main2(args: Array<String>) {
+    repeat(100) { i ->
+      println("Invocation: $i")
+      try {
+        val c = 1 * 4
+        KotlinExprEvaluator().eval("1 == wrong")
+      } catch (e: ScriptException) {
+        println("Caught it")
+      }
+      println(KotlinExprEvaluator().eval("1 == 1"))
     }
-    println(KotlinExprEvaluator().eval("1 == 1"))
   }
 }

@@ -30,7 +30,10 @@ class AtomicTests {
   fun basicAtomicValueTest() {
     val atomic = Atomic(0)
     atomic.value shouldBe 0
-    atomic.value = 42
+
+    runBlocking {
+      atomic.setWithLock { 42 }
+    }
     atomic.value shouldBe 42
   }
 
