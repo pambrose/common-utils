@@ -73,7 +73,7 @@ These opt-ins are enabled globally:
 
 - Main branch: `master`
 - Version managed in root `build.gradle.kts` (`allprojects` block)
-- Current version: 2.5.2
+- Current version: 2.5.3
 - Group ID: `com.github.pambrose.common-utils`
 
 ## Domain Context

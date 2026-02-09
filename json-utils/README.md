@@ -120,7 +120,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:json-utils:2.5.2")
+  implementation("com.github.pambrose.common-utils:json-utils:2.5.3")
 }
 ```
 
@@ -130,7 +130,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pambrose.common-utils</groupId>
     <artifactId>json-utils</artifactId>
-    <version>2.5.2</version>
+    <version>2.5.3</version>
 </dependency>
 ```
 
