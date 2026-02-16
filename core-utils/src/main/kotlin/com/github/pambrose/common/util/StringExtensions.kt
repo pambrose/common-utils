@@ -55,6 +55,8 @@ fun String.singleToDoubleQuoted() =
 
 fun String.nullIfBlank() = ifBlank { null }
 
+fun String.ensurePrefix(prefix: CharSequence) = if (startsWith(prefix)) this else "$prefix$this"
+
 fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else this + suffix
 
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this

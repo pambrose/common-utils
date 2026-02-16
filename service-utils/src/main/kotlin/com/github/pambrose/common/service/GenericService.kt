@@ -31,6 +31,7 @@ import com.github.pambrose.common.dsl.GuavaDsl.serviceManagerListener
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.github.pambrose.common.metrics.SystemMetrics
 import com.github.pambrose.common.servlet.VersionServlet
+import com.github.pambrose.common.util.ensurePrefix
 import com.github.pambrose.common.util.simpleClassName
 import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors.directExecutor
@@ -81,10 +82,10 @@ abstract class GenericService<T> protected constructor(
             .apply {
               if (isAdminEnabled) {
                 addServlets(
-                  pingPath to PingServlet(),
-                  versionPath to VersionServlet(versionBlock()),
-                  healthCheckPath to HealthCheckServlet(healthCheckRegistry),
-                  threadDumpPath to ThreadDumpServlet(),
+                  pingPath.ensurePrefix("/") to PingServlet(),
+                  versionPath.ensurePrefix("/") to VersionServlet(versionBlock()),
+                  healthCheckPath.ensurePrefix("/") to HealthCheckServlet(healthCheckRegistry),
+                  threadDumpPath.ensurePrefix("/") to ThreadDumpServlet(),
                 )
               } else {
                 logger.info { "Admin service disabled" }
