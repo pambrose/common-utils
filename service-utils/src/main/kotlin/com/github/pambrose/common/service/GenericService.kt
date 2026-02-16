@@ -41,6 +41,7 @@ import io.dropwizard.metrics.servlets.HealthCheckServlet
 import io.dropwizard.metrics.servlets.PingServlet
 import io.dropwizard.metrics.servlets.ThreadDumpServlet
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.Application
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import java.io.Closeable
@@ -74,28 +75,30 @@ abstract class GenericService<T> protected constructor(
 
   val upTime get() = startTime.elapsedNow()
 
-  fun initKtorServletService(servletInit: HttpServletGroup.() -> Unit = {}) {
+  fun initKtorServletService(
+    initKtor: Application.() -> Unit = {},
+    servletInit: HttpServletGroup.() -> Unit = {},
+  ) {
     if (isAdminEnabled) {
       servletGroup =
         adminConfig.run {
-          HttpServletGroup(port)
-            .apply {
-              if (isAdminEnabled) {
-                addServlets(
-                  pingPath.ensurePrefix("/") to PingServlet(),
-                  versionPath.ensurePrefix("/") to VersionServlet(versionBlock()),
-                  healthCheckPath.ensurePrefix("/") to HealthCheckServlet(healthCheckRegistry),
-                  threadDumpPath.ensurePrefix("/") to ThreadDumpServlet(),
-                )
-              } else {
-                logger.info { "Admin service disabled" }
-              }
-
-              servletInit(this)
+          HttpServletGroup().apply {
+            if (isAdminEnabled) {
+              addServlets(
+                pingPath.ensurePrefix("/") to PingServlet(),
+                versionPath.ensurePrefix("/") to VersionServlet(versionBlock()),
+                healthCheckPath.ensurePrefix("/") to HealthCheckServlet(healthCheckRegistry),
+                threadDumpPath.ensurePrefix("/") to ThreadDumpServlet(),
+              )
+            } else {
+              logger.info { "Admin service disabled" }
             }
+
+            servletInit(this)
+          }
         }
 
-      servletService = KtorServletService(servletGroup = servletGroup) { addService(this) }
+      servletService = KtorServletService(adminConfig.port, servletGroup, initKtor) { addService(this) }
     }
 
     if (isMetricsEnabled) {

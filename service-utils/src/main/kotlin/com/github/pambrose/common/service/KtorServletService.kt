@@ -32,12 +32,13 @@ import io.ktor.server.routing.routing
 import kotlinx.coroutines.runBlocking
 
 class KtorServletService(
+  private val port: Int,
   private val servletGroup: HttpServletGroup,
   initKtor: Application.() -> Unit = {},
   initBlock: KtorServletService.() -> Unit = {},
 ) : GenericIdleService() {
   private val ktorServer =
-    embeddedServer(CIO, port = servletGroup.port) {
+    embeddedServer(CIO, port = port) {
       initKtor()
       routing {
         servletGroup.servletMap.forEach { (path, servlet) ->
@@ -61,7 +62,7 @@ class KtorServletService(
 
   override fun toString() =
     toStringElements {
-      add("port", servletGroup.port)
+      add("port", port)
       add("paths", servletGroup.servletMap.keys)
     }
 
