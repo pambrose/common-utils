@@ -29,11 +29,12 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 
 class ServletService(
+  private val port: Int,
   private val servletGroup: ServletGroup,
   initBlock: ServletService.() -> Unit = {},
 ) : GenericIdleService() {
   private val server =
-    Server(servletGroup.port)
+    Server(port)
       .apply {
         handler =
           servletContextHandler {
@@ -55,7 +56,7 @@ class ServletService(
 
   override fun toString() =
     toStringElements {
-      add("port", servletGroup.port)
+      add("port", port)
       add("paths", servletGroup.servletMap.keys.map { "/$it" })
     }
 

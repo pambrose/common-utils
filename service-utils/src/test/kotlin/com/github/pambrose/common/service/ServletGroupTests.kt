@@ -46,14 +46,13 @@ class ServletGroupTests {
 
   @Test
   fun servletGroupCreationTest() {
-    val group = ServletGroup(8080)
-    group.port shouldBe 8080
+    val group = ServletGroup()
     group.servletMap.size shouldBe 0
   }
 
   @Test
   fun servletGroupAddServletTest() {
-    val group = ServletGroup(8080)
+    val group = ServletGroup()
     val servlet = TestServlet()
 
     group.addServlet("test", servlet)
@@ -64,7 +63,7 @@ class ServletGroupTests {
 
   @Test
   fun servletGroupAddMultipleServletsTest() {
-    val group = ServletGroup(9090)
+    val group = ServletGroup()
     val servlet1 = TestServlet()
     val servlet2 = TestServlet()
     val servlet3 = TestServlet()
@@ -79,7 +78,7 @@ class ServletGroupTests {
 
   @Test
   fun servletGroupEmptyPathIgnoredTest() {
-    val group = ServletGroup(8080)
+    val group = ServletGroup()
     val servlet = TestServlet()
 
     group.addServlet("", servlet)
@@ -91,7 +90,7 @@ class ServletGroupTests {
 
   @Test
   fun servletGroupOverwritePathTest() {
-    val group = ServletGroup(8080)
+    val group = ServletGroup()
     val servlet1 = TestServlet()
     val servlet2 = TestServlet()
 

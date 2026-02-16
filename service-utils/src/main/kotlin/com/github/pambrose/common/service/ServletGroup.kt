@@ -21,9 +21,7 @@ package com.github.pambrose.common.service
 
 import jakarta.servlet.Servlet
 
-class ServletGroup(
-  val port: Int,
-) {
+class ServletGroup {
   internal val servletMap: MutableMap<String, Servlet> = mutableMapOf()
 
   fun addServlet(
