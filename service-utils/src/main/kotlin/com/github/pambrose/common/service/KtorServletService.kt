@@ -62,7 +62,7 @@ class KtorServletService(
   override fun toString() =
     toStringElements {
       add("port", servletGroup.port)
-      add("paths", servletGroup.servletMap.keys.map { "/$it" })
+      add("paths", servletGroup.servletMap.keys)
     }
 
   companion object {
