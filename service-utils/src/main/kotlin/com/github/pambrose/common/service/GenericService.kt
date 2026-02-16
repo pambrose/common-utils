@@ -24,9 +24,6 @@ import com.codahale.metrics.health.HealthCheck.Result
 import com.codahale.metrics.health.HealthCheckRegistry
 import com.codahale.metrics.health.jvm.ThreadDeadlockHealthCheck
 import com.codahale.metrics.jmx.JmxReporter
-import com.codahale.metrics.servlets.HealthCheckServlet
-import com.codahale.metrics.servlets.PingServlet
-import com.codahale.metrics.servlets.ThreadDumpServlet
 import com.github.pambrose.common.concurrent.GenericExecutionThreadService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.serviceManager
@@ -39,6 +36,9 @@ import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors.directExecutor
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
+import io.dropwizard.metrics.servlets.HealthCheckServlet
+import io.dropwizard.metrics.servlets.PingServlet
+import io.dropwizard.metrics.servlets.ThreadDumpServlet
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports

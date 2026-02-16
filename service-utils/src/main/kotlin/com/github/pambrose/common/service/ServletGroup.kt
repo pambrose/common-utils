@@ -19,7 +19,7 @@
 
 package com.github.pambrose.common.service
 
-import javax.servlet.Servlet
+import jakarta.servlet.Servlet
 
 class ServletGroup(
   val port: Int,

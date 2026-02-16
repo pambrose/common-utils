@@ -21,11 +21,11 @@ package com.github.pambrose.common.service
 
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import jakarta.servlet.Servlet
+import jakarta.servlet.ServletConfig
+import jakarta.servlet.ServletRequest
+import jakarta.servlet.ServletResponse
 import org.junit.jupiter.api.Test
-import javax.servlet.Servlet
-import javax.servlet.ServletConfig
-import javax.servlet.ServletRequest
-import javax.servlet.ServletResponse
 
 class ServletGroupTests {
   private class TestServlet : Servlet {

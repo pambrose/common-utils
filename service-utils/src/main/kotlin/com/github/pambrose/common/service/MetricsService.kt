@@ -28,7 +28,7 @@ import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.prometheus.client.exporter.MetricsServlet
+import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
 import org.eclipse.jetty.servlet.ServletHolder
 
 class MetricsService(
