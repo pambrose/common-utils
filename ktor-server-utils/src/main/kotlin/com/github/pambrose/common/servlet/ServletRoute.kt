@@ -32,6 +32,7 @@ fun Route.servlet(
   path: String,
   servlet: HttpServlet,
 ) {
+  servlet.init()
   route(path) {
     handle {
       val request = KtorServletRequest(call.request)
