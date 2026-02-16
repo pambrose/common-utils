@@ -53,7 +53,7 @@ abstract class GenericService<T> protected constructor(
   private val versionBlock: () -> String = { "No version" },
   val isTestMode: Boolean = false,
 ) : GenericExecutionThreadService(),
-    Closeable {
+  Closeable {
   protected val startTime = Monotonic.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
@@ -64,42 +64,37 @@ abstract class GenericService<T> protected constructor(
   val isZipkinEnabled = zipkinConfig.enabled
 
   private lateinit var serviceManager: ServiceManager
-  private lateinit var servletGroup: ServletGroup
+  private lateinit var servletGroup: HttpServletGroup
 
   lateinit var jmxReporter: JmxReporter
-  lateinit var servletService: ServletService
+  lateinit var servletService: KtorServletService
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
 
   val upTime get() = startTime.elapsedNow()
 
-  fun initServletService(
-    initServletGroup: Boolean = false,
-    servletInit: ServletGroup.() -> Unit = {},
-  ) {
-    // See if admin servlets are enabled or something within the passed in lambda is enabled
-    if (initServletGroup || isAdminEnabled) {
-      adminConfig.apply {
-        servletGroup =
-          ServletGroup(port)
+  fun initKtorServletService(servletInit: HttpServletGroup.() -> Unit = {}) {
+    if (isAdminEnabled) {
+      servletGroup =
+        adminConfig.run {
+          HttpServletGroup(port)
             .apply {
               if (isAdminEnabled) {
-                addServlet(pingPath, PingServlet())
-                addServlet(versionPath, VersionServlet(versionBlock()))
-                addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
-                addServlet(threadDumpPath, ThreadDumpServlet())
+                addServlets(
+                  pingPath to PingServlet(),
+                  versionPath to VersionServlet(versionBlock()),
+                  healthCheckPath to HealthCheckServlet(healthCheckRegistry),
+                  threadDumpPath to ThreadDumpServlet(),
+                )
               } else {
                 logger.info { "Admin service disabled" }
               }
 
               servletInit(this)
             }
-      }
-
-      servletService =
-        ServletService(servletGroup = servletGroup) {
-          addService(this)
         }
+
+      servletService = KtorServletService(servletGroup = servletGroup) { addService(this) }
     }
 
     if (isMetricsEnabled) {
