@@ -31,7 +31,7 @@ import com.github.pambrose.common.dsl.GuavaDsl.serviceManagerListener
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.github.pambrose.common.metrics.SystemMetrics
 import com.github.pambrose.common.servlet.VersionServlet
-import com.github.pambrose.common.util.ensurePrefix
+import com.github.pambrose.common.util.ensureLeadingSlash
 import com.github.pambrose.common.util.simpleClassName
 import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors.directExecutor
@@ -85,10 +85,10 @@ abstract class GenericKtorService<T> protected constructor(
           HttpServletGroup().apply {
             if (isAdminEnabled) {
               addServlets(
-                pingPath.ensurePrefix("/") to PingServlet(),
-                versionPath.ensurePrefix("/") to VersionServlet(versionBlock()),
-                healthCheckPath.ensurePrefix("/") to HealthCheckServlet(healthCheckRegistry),
-                threadDumpPath.ensurePrefix("/") to ThreadDumpServlet(),
+                pingPath.ensureLeadingSlash() to PingServlet(),
+                versionPath.ensureLeadingSlash() to VersionServlet(versionBlock()),
+                healthCheckPath.ensureLeadingSlash() to HealthCheckServlet(healthCheckRegistry),
+                threadDumpPath.ensureLeadingSlash() to ThreadDumpServlet(),
               )
             } else {
               logger.info { "Admin service disabled" }

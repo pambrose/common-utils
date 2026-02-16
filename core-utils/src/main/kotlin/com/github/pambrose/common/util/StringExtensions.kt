@@ -59,6 +59,8 @@ fun String.ensurePrefix(prefix: CharSequence) = if (startsWith(prefix)) this els
 
 fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else this + suffix
 
+fun String.ensureLeadingSlash() = ensurePrefix("/")
+
 fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
 
 fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
