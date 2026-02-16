@@ -28,6 +28,7 @@ import io.ktor.server.request.queryString
 import jakarta.servlet.AsyncContext
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.RequestDispatcher
+import jakarta.servlet.ServletConnection
 import jakarta.servlet.ServletContext
 import jakarta.servlet.ServletInputStream
 import jakarta.servlet.ServletRequest
@@ -125,9 +126,6 @@ class KtorServletRequest(
 
   override fun isRequestedSessionIdFromURL(): Boolean = throw UnsupportedOperationException()
 
-  @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-  override fun isRequestedSessionIdFromUrl(): Boolean = throw UnsupportedOperationException()
-
   override fun authenticate(response: HttpServletResponse): Boolean = throw UnsupportedOperationException()
 
   override fun login(
@@ -201,8 +199,11 @@ class KtorServletRequest(
 
   override fun getRequestDispatcher(path: String): RequestDispatcher = throw UnsupportedOperationException()
 
-  @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-  override fun getRealPath(path: String): String = throw UnsupportedOperationException()
-
   override fun getReader(): BufferedReader = throw UnsupportedOperationException()
+
+  override fun getRequestId(): String = throw UnsupportedOperationException()
+
+  override fun getProtocolRequestId(): String = throw UnsupportedOperationException()
+
+  override fun getServletConnection(): ServletConnection = throw UnsupportedOperationException()
 }

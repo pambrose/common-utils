@@ -126,20 +126,6 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun encodeRedirectURL(url: String): String = throw UnsupportedOperationException()
 
-  @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-  override fun encodeUrl(url: String): String = throw UnsupportedOperationException()
-
-  @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-  override fun encodeRedirectUrl(url: String): String = throw UnsupportedOperationException()
-
-  @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-  override fun setStatus(
-    sc: Int,
-    sm: String,
-  ) {
-    statusCode = sc
-  }
-
   override fun sendError(
     sc: Int,
     msg: String,
@@ -148,6 +134,12 @@ class KtorServletResponse : HttpServletResponse {
   override fun sendError(sc: Int) = throw UnsupportedOperationException()
 
   override fun sendRedirect(location: String) = throw UnsupportedOperationException()
+
+  override fun sendRedirect(
+    location: String,
+    sc: Int,
+    clearBuffer: Boolean,
+  ) = throw UnsupportedOperationException()
 
   override fun setDateHeader(
     name: String,
