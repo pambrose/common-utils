@@ -36,6 +36,12 @@ lint:
 	./gradlew lintKotlinMain
 	./gradlew lintKotlinTest
 
+trigger-build:
+	curl -s "https://jitpack.io/com/github/common-utils/common-utils/2.5.4/build.log"
+
+view-build:
+	curl -s "https://jitpack.io/api/builds/com.github.common-utils/common-utils/2.5.4" | python3 -m json.tool
+
 versioncheck:
 	./gradlew dependencyUpdates
 
