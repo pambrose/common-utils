@@ -1,8 +1,6 @@
 # Common Utils - Kotlin & Java Utility Library Collection
 
 [![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-[![Build Status](https://app.travis-ci.com/pambrose/common-utils.svg?branch=master)](https://app.travis-ci.com/pambrose/common-utils)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/5bb4750894844031a55375227acfff6f)](https://www.codacy.com/manual/pambrose/common-utils?utm_source=github.com&amp&amp;utm_content=pambrose/common-utils&amp;utm_campaign=Badge_Grade)
 [![Java](https://img.shields.io/badge/%20language-Java-red.svg)](https://kotlinlang.org/)
 [![Kotlin](https://img.shields.io/badge/%20language-Kotlin-red.svg)](https://kotlinlang.org/)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
@@ -158,6 +156,23 @@ Python (Jython) script engine integration.
 - Python script execution via Jython
 - Expression evaluation capabilities
 
+### Communication & Security
+
+#### **email-utils**
+
+Email sending utilities using Resend.
+
+- Email composition and sending via Resend API
+- Resend webhook message handling
+- HTML email support via Ktor HTML builder
+
+#### **recaptcha-utils**
+
+Google reCAPTCHA verification utilities.
+
+- reCAPTCHA configuration and service
+- Server-side verification via Ktor HTTP client
+
 ### Service Infrastructure
 
 #### **service-utils**
@@ -169,6 +184,12 @@ Service lifecycle and configuration management.
 - Metrics service integration
 - Servlet service management
 - Zipkin reporting service
+
+### BOM
+
+#### **common-utils-bom**
+
+Bill of Materials for version-aligned dependency management across all modules.
 
 ## Installation
 
@@ -212,7 +233,7 @@ dependencies {
 
 ## Technology Stack
 
-- **Languages**: Kotlin 2.2.0, Java
+- **Languages**: Kotlin 2.3.10, Java
 - **Build System**: Gradle with Kotlin DSL
 - **Testing**: JUnit 5, Kotest
 - **Serialization**: Kotlinx.serialization
@@ -231,11 +252,17 @@ dependencies {
 # Build all modules
 ./gradlew build
 
+# Build without tests
+make build
+
 # Run tests
 ./gradlew test
 
-# Generate documentation
-./gradlew dokkaHtml
+# Run tests for a specific module
+./gradlew :core-utils:test
+
+# Lint check
+make lint
 ```
 
 ### Code Quality
