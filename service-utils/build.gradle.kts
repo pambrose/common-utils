@@ -2,6 +2,7 @@ description = "service-utils"
 
 dependencies {
     implementation(project(":core-utils"))
+    implementation(project(":ktor-server-utils"))
     implementation(project(":guava-utils"))
     implementation(project(":jetty-utils"))
     implementation(project(":prometheus-utils"))
@@ -20,7 +21,12 @@ dependencies {
     implementation(libs.dropwizard.servlets)
     implementation(libs.dropwizard.jmx)
 
-    implementation(libs.jetty.server)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.compression)
+
+    // implementation(libs.jetty.server)
     implementation(libs.jetty.servlet)
     implementation(libs.brave)
     implementation(libs.zipkin.core)

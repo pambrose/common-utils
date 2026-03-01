@@ -19,14 +19,18 @@
 
 package com.github.pambrose.common.service
 
-import jakarta.servlet.Servlet
+import jakarta.servlet.http.HttpServlet
 
-class ServletGroup {
-  internal val servletMap: MutableMap<String, Servlet> = mutableMapOf()
+class HttpServletGroup {
+  internal val servletMap: MutableMap<String, HttpServlet> = mutableMapOf()
+
+  fun addServlets(vararg servlets: Pair<String, HttpServlet>) {
+    servlets.forEach { (path, servlet) -> addServlet(path, servlet) }
+  }
 
   fun addServlet(
     path: String,
-    servlet: Servlet,
+    servlet: HttpServlet,
   ) {
     if (path.isNotEmpty() && path.isNotBlank())
       servletMap[path] = servlet

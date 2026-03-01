@@ -1,0 +1,46 @@
+# Common Utils
+
+> Modular Kotlin/Java utility libraries providing extension functions, DSLs, and helpers for common frameworks. Each module is independently consumable via JitPack.
+
+- Version: 2.6.0
+- Group: com.github.pambrose.common-utils
+- Repository: https://github.com/pambrose/common-utils
+- JitPack: https://jitpack.io/#pambrose/common-utils
+- License: Apache 2.0
+- Kotlin: 2.3.0, JVM 17
+- Base package: com.github.pambrose.common.*
+- Install: add JitPack repo, then `implementation("com.github.pambrose.common-utils:<module>:2.6.0")`
+- BOM: `com.github.pambrose.common-utils:common-utils-bom:2.6.0`
+
+## Modules
+
+Use core-utils for general Kotlin/Java utility needs. Other modules target specific frameworks — pick only what you need.
+
+- [core-utils](core-utils/README.md): General-purpose Kotlin extensions and helpers. Use for string/number/collection operations, I/O, atomic delegates, time/duration helpers, reflection, version management. No framework dependencies. Foundation for most other modules.
+- [json-utils](json-utils/README.md): Kotlinx.serialization helpers. Use for JsonElement navigation (dot-notation paths), type-safe extraction, format configs (pretty/raw/lenient/strict). Depends on: core-utils.
+- [exposed-utils](exposed-utils/README.md): JetBrains Exposed SQL extensions. Use for custom SQL expressions, UPSERT, timed transactions, ResultRow helpers. Standalone.
+- [redis-utils](redis-utils/README.md): Jedis client extensions. Use for Redis connection management and common operation patterns. Depends on: core-utils.
+- [ktor-server-utils](ktor-server-utils/README.md): Ktor server extensions. Use for Heroku HTTPS redirect, response utilities, servlet integration. Depends on: core-utils.
+- [ktor-client-utils](ktor-client-utils/README.md): Ktor HTTP client DSL. Use for client configuration and request/response utilities. Depends on: core-utils.
+- [jetty-utils](jetty-utils/README.md): Jetty server DSL. Use for server config, lambda-based servlets, version endpoints. Depends on: core-utils.
+- [grpc-utils](grpc-utils/README.md): gRPC channel/server DSL. Use for TLS/SSL setup, server lifecycle, StreamObserver helpers. Standalone.
+- [dropwizard-utils](dropwizard-utils/README.md): Dropwizard Metrics DSL. Use for metric definitions, health checks, JMX integration. Standalone.
+- [prometheus-utils](prometheus-utils/README.md): Prometheus metrics DSL. Use for counters/gauges/histograms, system metrics, instrumented thread factories. Standalone.
+- [zipkin-utils](zipkin-utils/README.md): Zipkin tracing DSL. Use for distributed tracing configuration and span management. Standalone.
+- [script-utils-kotlin](script-utils-kotlin/README.md): Kotlin scripting engine. Use for Kotlin script execution, expression evaluation, compilation caching. Depends on: script-utils-common.
+- script-utils-java: JavaScript engine. Use for JS execution and script pooling. Depends on: script-utils-common.
+- script-utils-python: Jython engine. Use for Python script execution. Depends on: script-utils-common.
+- script-utils-common: Base scripting interfaces. Abstract engines, script pools, evaluator frameworks. Foundation for script-utils-* modules.
+- service-utils: Service lifecycle. Use for service base classes, admin interfaces, metrics/servlet/Zipkin service integration. Depends on: core-utils.
+- email-utils: Email sending utilities. Standalone.
+- recaptcha-utils: Google reCAPTCHA helpers. Standalone.
+
+## Optional
+
+- [README](README.md): Full project documentation with detailed installation instructions for Gradle and Maven
+- [core-utils API details](core-utils/README.md): String extensions, atomic operations, content sources, collection utilities, numeric helpers
+- [json-utils API details](json-utils/README.md): JsonElement extensions, path navigation, format configurations, deep copy utilities
+- [grpc-utils API details](grpc-utils/README.md): Channel/server DSL, TLS configuration, certificate management
+- [prometheus-utils API details](prometheus-utils/README.md): Metric DSL patterns, system collectors, thread instrumentation
+- [exposed-utils API details](exposed-utils/README.md): SQL expressions, upsert, transaction timing
+- [guava-utils API details](guava-utils/README.md): Concurrent utilities, service lifecycle, archive processing

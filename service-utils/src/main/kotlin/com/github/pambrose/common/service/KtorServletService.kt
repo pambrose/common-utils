@@ -19,38 +19,32 @@
 
 package com.github.pambrose.common.service
 
-import com.codahale.metrics.health.HealthCheck
 import com.github.pambrose.common.concurrent.GenericIdleService
 import com.github.pambrose.common.concurrent.genericServiceListener
 import com.github.pambrose.common.dsl.GuavaDsl.toStringElements
-import com.github.pambrose.common.dsl.JettyDsl.server
-import com.github.pambrose.common.dsl.JettyDsl.servletContextHandler
-import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
+import com.github.pambrose.common.servlet.servlet
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
-import org.eclipse.jetty.servlet.ServletHolder
+import io.ktor.server.application.Application
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.routing
+import kotlinx.coroutines.runBlocking
 
-class MetricsService(
+class KtorServletService(
   private val port: Int,
-  private val path: String,
-  initBlock: (MetricsService.() -> Unit) = {},
+  private val servletGroup: HttpServletGroup,
+  initKtor: Application.() -> Unit = {},
+  initBlock: KtorServletService.() -> Unit = {},
 ) : GenericIdleService() {
-  private val server =
-    server(port) {
-      handler =
-        servletContextHandler {
-          contextPath = "/"
-          addServlet(ServletHolder(MetricsServlet()), "/$path")
+  private val ktorServer =
+    embeddedServer(CIO, port = port) {
+      initKtor()
+      routing {
+        servletGroup.servletMap.forEach { (path, servlet) ->
+          servlet(path, servlet)
         }
-    }
-
-  val healthCheck =
-    healthCheck {
-      if (server.isRunning)
-        HealthCheck.Result.healthy()
-      else
-        HealthCheck.Result.unhealthy("Jetty server not running")
+      }
     }
 
   init {
@@ -58,14 +52,18 @@ class MetricsService(
     initBlock(this)
   }
 
-  override fun startUp() = server.start()
+  override fun startUp() =
+    runBlocking {
+      ktorServer.start(false)
+      Unit
+    }
 
-  override fun shutDown() = server.stop()
+  override fun shutDown() = ktorServer.stop()
 
   override fun toString() =
     toStringElements {
       add("port", port)
-      add("path", "/$path")
+      add("paths", servletGroup.servletMap.keys)
     }
 
   companion object {

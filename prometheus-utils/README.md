@@ -209,7 +209,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:prometheus-utils:2.5.3")
+  implementation("com.github.pambrose.common-utils:prometheus-utils:2.6.0")
 }
 ```
 
@@ -219,7 +219,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pambrose.common-utils</groupId>
     <artifactId>prometheus-utils</artifactId>
-  <version>2.5.3</version>
+  <version>2.6.0</version>
 </dependency>
 ```
 

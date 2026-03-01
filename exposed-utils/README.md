@@ -40,7 +40,7 @@ val query = MyTable.select { MyTable.createdAt.greater(nowExpr) }
 ```kotlin
 import com.pambrose.common.exposed.readOnlyTransaction
 import com.pambrose.common.exposed.transactionWithTimer
-import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.v1.jdbc.Database
 
 val database = Database.connect("jdbc:postgresql://localhost/mydb")
 
@@ -78,7 +78,7 @@ println("Row data: ${row.toRowString()}")
 
 ```kotlin
 import com.pambrose.common.exposed.upsert
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.v1.jdbc.insert
 
 // Upsert with conflict on constraint
 MyTable.upsert(conflictIndex = "unique_email_idx") {
@@ -110,7 +110,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:exposed-utils:2.5.3")
+  implementation("com.github.pambrose.common-utils:exposed-utils:2.6.0")
 }
 ```
 
@@ -121,7 +121,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pambrose.common-utils</groupId>
   <artifactId>exposed-utils</artifactId>
-  <version>2.5.3</version>
+  <version>2.6.0</version>
 </dependency>
 ```
 

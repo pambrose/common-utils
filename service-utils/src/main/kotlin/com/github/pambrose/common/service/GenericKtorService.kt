@@ -31,6 +31,7 @@ import com.github.pambrose.common.dsl.GuavaDsl.serviceManagerListener
 import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.github.pambrose.common.metrics.SystemMetrics
 import com.github.pambrose.common.servlet.VersionServlet
+import com.github.pambrose.common.util.ensureLeadingSlash
 import com.github.pambrose.common.util.simpleClassName
 import com.google.common.base.Joiner
 import com.google.common.util.concurrent.MoreExecutors.directExecutor
@@ -40,12 +41,13 @@ import io.dropwizard.metrics.servlets.HealthCheckServlet
 import io.dropwizard.metrics.servlets.PingServlet
 import io.dropwizard.metrics.servlets.ThreadDumpServlet
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.Application
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import java.io.Closeable
 import kotlin.time.TimeSource.Monotonic
 
-abstract class GenericService<T> protected constructor(
+abstract class GenericKtorService<T> protected constructor(
   val configVals: T,
   private val adminConfig: AdminConfig,
   private val metricsConfig: MetricsConfig,
@@ -64,39 +66,39 @@ abstract class GenericService<T> protected constructor(
   val isZipkinEnabled = zipkinConfig.enabled
 
   private lateinit var serviceManager: ServiceManager
-  private lateinit var servletGroup: ServletGroup
+  private lateinit var servletGroup: HttpServletGroup
 
   lateinit var jmxReporter: JmxReporter
-  lateinit var servletService: ServletService
+  lateinit var servletService: KtorServletService
   lateinit var metricsService: MetricsService
   lateinit var zipkinReporterService: ZipkinReporterService
 
   val upTime get() = startTime.elapsedNow()
 
-  fun initServletService(servletInit: ServletGroup.() -> Unit = {}) {
-    // See if admin servlets are enabled or something within the passed in lambda is enabled
+  fun initKtorServletService(
+    initKtor: Application.() -> Unit = {},
+    servletInit: HttpServletGroup.() -> Unit = {},
+  ) {
     if (isAdminEnabled) {
       servletGroup =
         adminConfig.run {
-          ServletGroup()
-            .apply {
-              if (isAdminEnabled) {
-                addServlet(pingPath, PingServlet())
-                addServlet(versionPath, VersionServlet(versionBlock()))
-                addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
-                addServlet(threadDumpPath, ThreadDumpServlet())
-              } else {
-                logger.info { "Admin service disabled" }
-              }
-
-              servletInit(this)
+          HttpServletGroup().apply {
+            if (isAdminEnabled) {
+              addServlets(
+                pingPath.ensureLeadingSlash() to PingServlet(),
+                versionPath.ensureLeadingSlash() to VersionServlet(versionBlock()),
+                healthCheckPath.ensureLeadingSlash() to HealthCheckServlet(healthCheckRegistry),
+                threadDumpPath.ensureLeadingSlash() to ThreadDumpServlet(),
+              )
+            } else {
+              logger.info { "Admin service disabled" }
             }
+
+            servletInit(this)
+          }
         }
 
-      servletService =
-        ServletService(port = adminConfig.port, servletGroup) {
-          addService(this)
-        }
+      servletService = KtorServletService(adminConfig.port, servletGroup, initKtor) { addService(this) }
     }
 
     if (isMetricsEnabled) {
@@ -132,7 +134,7 @@ abstract class GenericService<T> protected constructor(
 
     serviceManager =
       serviceManager(services) {
-        val clazzname = this@GenericService.simpleClassName
+        val clazzname = this@GenericKtorService.simpleClassName
         addListener(
           serviceManagerListener {
             healthy { logger.info { "All $clazzname services healthy" } }

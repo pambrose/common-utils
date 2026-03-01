@@ -1,3 +1,5 @@
+VERSION := $(shell grep 'extra\["versionStr"\]' build.gradle.kts | sed 's/.*"\(.*\)"/\1/')
+
 default: versioncheck
 
 clean:
@@ -35,6 +37,12 @@ depends:
 lint:
 	./gradlew lintKotlinMain
 	./gradlew lintKotlinTest
+
+trigger-build:
+	curl -s "https://jitpack.io/com/github/common-utils/common-utils/${VERSION}/build.log"
+
+view-build:
+	curl -s "https://jitpack.io/api/builds/com.github.common-utils/common-utils/${VERSION}" | python3 -m json.tool
 
 versioncheck:
 	./gradlew dependencyUpdates
