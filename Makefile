@@ -39,10 +39,10 @@ lint:
 	./gradlew lintKotlinTest
 
 trigger-build:
-	curl -s "https://jitpack.io/com/github/common-utils/common-utils/$(VERSION)/build.log"
+	curl -s "https://jitpack.io/com/github/common-utils/common-utils/${VERSION}/build.log"
 
 view-build:
-	curl -s "https://jitpack.io/api/builds/com.github.common-utils/common-utils/$(VERSION)" | python3 -m json.tool
+	curl -s "https://jitpack.io/api/builds/com.github.common-utils/common-utils/${VERSION}" | python3 -m json.tool
 
 versioncheck:
 	./gradlew dependencyUpdates
