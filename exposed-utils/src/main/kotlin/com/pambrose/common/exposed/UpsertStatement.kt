@@ -37,6 +37,14 @@ inline fun <T : Table> T.upsert(
       body(this)
       toExecutable().execute(TransactionManager.current())
     }
+// ** DO NOT DELETE **
+//{
+//  val stmt =
+//    UpsertStatement<Number>(this, conflictColumn, conflictIndex)
+//      .apply { body(this) }
+//  InsertBlockingExecutable(stmt).execute(TransactionManager.current())
+//  return stmt
+//}
 
 class UpsertStatement<Key : Any>(
   table: Table,
