@@ -19,14 +19,15 @@ package com.pambrose.common.exposed
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlLogger
-import org.jetbrains.exposed.sql.Transaction
-import org.jetbrains.exposed.sql.statements.StatementContext
-import org.jetbrains.exposed.sql.statements.expandArgs
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.transactions.transactionManager
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SqlLogger
+import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.statements.StatementContext
+import org.jetbrains.exposed.v1.core.statements.expandArgs
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transactionManager
 import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
@@ -54,8 +55,8 @@ fun ResultRow.toRowString() =
 
 fun <T> readonlyTx(
   db: Database? = null,
-  transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
-  statement: Transaction.() -> T,
+  transactionIsolation: Int? = db?.transactionManager?.defaultIsolationLevel,
+  statement: JdbcTransaction.() -> T,
 ): T =
   transaction(
     transactionIsolation = transactionIsolation,
@@ -66,8 +67,8 @@ fun <T> readonlyTx(
 
 fun <T> timedTransaction(
   db: Database? = null,
-  transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
-  statement: Transaction.() -> T,
+  transactionIsolation: Int? = db?.transactionManager?.defaultIsolationLevel,
+  statement: JdbcTransaction.() -> T,
 ): TimedValue<T> =
   measureTimedValue {
     transaction(
@@ -80,8 +81,8 @@ fun <T> timedTransaction(
 
 fun <T> timedReadOnlyTx(
   db: Database? = null,
-  transactionIsolation: Int = db.transactionManager.defaultIsolationLevel,
-  statement: Transaction.() -> T,
+  transactionIsolation: Int? = db?.transactionManager?.defaultIsolationLevel,
+  statement: JdbcTransaction.() -> T,
 ): TimedValue<T> =
   measureTimedValue {
     readonlyTx(db, transactionIsolation) {

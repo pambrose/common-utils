@@ -18,12 +18,14 @@
 package com.pambrose.common.exposed
 
 import com.github.pambrose.common.util.isNotNull
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.Index
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.Transaction
-import org.jetbrains.exposed.sql.statements.InsertStatement
-import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.Index
+import org.jetbrains.exposed.v1.core.InternalApi
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.statements.InsertStatement
+import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 
 inline fun <T : Table> T.upsert(
   conflictColumn: Column<*>? = null,
@@ -33,8 +35,16 @@ inline fun <T : Table> T.upsert(
   UpsertStatement<Number>(this, conflictColumn, conflictIndex)
     .apply {
       body(this)
-      execute(TransactionManager.current())
+      toExecutable().execute(TransactionManager.current())
     }
+// ** DO NOT DELETE **
+//{
+//  val stmt =
+//    UpsertStatement<Number>(this, conflictColumn, conflictIndex)
+//      .apply { body(this) }
+//  InsertBlockingExecutable(stmt).execute(TransactionManager.current())
+//  return stmt
+//}
 
 class UpsertStatement<Key : Any>(
   table: Table,
@@ -62,6 +72,7 @@ class UpsertStatement<Key : Any>(
     }
   }
 
+  @OptIn(InternalApi::class)
   override fun prepareSQL(
     transaction: Transaction,
     prepared: Boolean,

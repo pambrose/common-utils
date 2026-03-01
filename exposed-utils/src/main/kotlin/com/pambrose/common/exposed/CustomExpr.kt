@@ -17,15 +17,15 @@
 
 package com.pambrose.common.exposed
 
-import org.jetbrains.exposed.sql.Function
-import org.jetbrains.exposed.sql.IColumnType
-import org.jetbrains.exposed.sql.QueryBuilder
-import org.jetbrains.exposed.sql.jodatime.DateColumnType
+import org.jetbrains.exposed.v1.core.Function
+import org.jetbrains.exposed.v1.core.IColumnType
+import org.jetbrains.exposed.v1.core.QueryBuilder
+import org.jetbrains.exposed.v1.jodatime.JodaLocalDateTimeColumnType
 import org.joda.time.DateTime
 
-fun customDateTimeConstant(text: String) = CustomExpr<DateTime?>(text, DateColumnType(true))
+fun customDateTimeConstant(text: String) = CustomExpr<DateTime?>(text, JodaLocalDateTimeColumnType())
 
-fun dateTimeExpr(str: String): CustomExpr<DateTime> = CustomExpr(str, DateColumnType(true))
+fun dateTimeExpr(str: String): CustomExpr<DateTime> = CustomExpr(str, JodaLocalDateTimeColumnType())
 
 open class CustomExpr<T>(
   val text: String,
