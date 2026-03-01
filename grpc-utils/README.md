@@ -154,7 +154,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:grpc-utils:2.5.4-SNAPSHOT")
+  implementation("com.github.pambrose.common-utils:grpc-utils:2.5.4")
 }
 ```
 
@@ -165,7 +165,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pambrose.common-utils</groupId>
   <artifactId>grpc-utils</artifactId>
-  <version>2.5.4-SNAPSHOT</version>
+  <version>2.5.4</version>
 </dependency>
 ```
 

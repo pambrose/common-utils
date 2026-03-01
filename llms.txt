@@ -2,15 +2,15 @@
 
 > Modular Kotlin/Java utility libraries providing extension functions, DSLs, and helpers for common frameworks. Each module is independently consumable via JitPack.
 
-- Version: 2.5.4-SNAPSHOT
+- Version: 2.5.4
 - Group: com.github.pambrose.common-utils
 - Repository: https://github.com/pambrose/common-utils
 - JitPack: https://jitpack.io/#pambrose/common-utils
 - License: Apache 2.0
 - Kotlin: 2.3.0, JVM 17
 - Base package: com.github.pambrose.common.*
-- Install: add JitPack repo, then `implementation("com.github.pambrose.common-utils:<module>:2.5.4-SNAPSHOT")`
-- BOM: `com.github.pambrose.common-utils:common-utils-bom:2.5.4-SNAPSHOT`
+- Install: add JitPack repo, then `implementation("com.github.pambrose.common-utils:<module>:2.5.4")`
+- BOM: `com.github.pambrose.common-utils:common-utils-bom:2.5.4`
 
 ## Modules
 
