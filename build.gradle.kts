@@ -148,9 +148,9 @@ fun Project.configureTesting() {
         useJUnitPlatform()
 
         testLogging {
-            events("passed", "skipped", "failed", "standardOut", "standardError")
+            events("passed", "skipped", "failed")
             exceptionFormat = TestExceptionFormat.FULL
-            showStandardStreams = true
+            showStandardStreams = false
         }
     }
 }
