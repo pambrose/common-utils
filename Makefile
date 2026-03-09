@@ -38,14 +38,14 @@ lint:
 	./gradlew lintKotlinMain
 	./gradlew lintKotlinTest
 
-trigger-build:
+trigger-jitpack:
 	curl -s "https://jitpack.io/com/github/pambrose/common-utils/${VERSION}/build.log"
 
-view-build:
+view-jitpack:
 	curl -s "https://jitpack.io/api/builds/com.github.pambrose/common-utils/${VERSION}" | python3 -m json.tool
 
 versioncheck:
-	./gradlew dependencyUpdates
+	./gradlew dependencyUpdates --no-configuration-cache
 
 upgrade-wrapper:
 	./gradlew wrapper --gradle-version=9.2.0 --distribution-type=bin

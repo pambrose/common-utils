@@ -19,6 +19,8 @@ package com.pambrose.common.exposed
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.time.TimedValue
+import kotlin.time.measureTimedValue
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SqlLogger
 import org.jetbrains.exposed.v1.core.Transaction
@@ -28,8 +30,6 @@ import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transactionManager
-import kotlin.time.TimedValue
-import kotlin.time.measureTimedValue
 
 object ExposedUtils {
   internal val logger = KotlinLogging.logger {}

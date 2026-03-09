@@ -20,11 +20,12 @@
 package com.github.pambrose.common.dsl
 
 import com.github.pambrose.common.util.isNull
-import io.ktor.client.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.request
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpMethod
 import kotlinx.coroutines.runBlocking
 
 object KtorDsl {

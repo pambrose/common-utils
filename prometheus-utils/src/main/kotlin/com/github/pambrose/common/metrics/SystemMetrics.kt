@@ -21,7 +21,12 @@ package com.github.pambrose.common.metrics
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.Collector
-import io.prometheus.client.hotspot.*
+import io.prometheus.client.hotspot.ClassLoadingExports
+import io.prometheus.client.hotspot.GarbageCollectorExports
+import io.prometheus.client.hotspot.MemoryPoolsExports
+import io.prometheus.client.hotspot.StandardExports
+import io.prometheus.client.hotspot.ThreadExports
+import io.prometheus.client.hotspot.VersionInfoExports
 
 object SystemMetrics {
   private val logger = KotlinLogging.logger {}

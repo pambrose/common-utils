@@ -17,10 +17,14 @@
 
 package com.github.pambrose.common.concurrent
 
-import kotlinx.coroutines.*
+import kotlin.coroutines.resume
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.coroutines.resume
 
 class LameBooleanWaiter(
   private var value: Boolean,

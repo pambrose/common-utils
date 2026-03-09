@@ -17,15 +17,15 @@
 
 package com.github.pambrose.common.script
 
-import org.python.jsr223.PyScriptEngine
 import java.io.Closeable
 import javax.script.ScriptException
 import kotlin.reflect.KType
+import org.python.jsr223.PyScriptEngine
 
 class PythonScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("py", nullGlobalContext),
-    Closeable {
+  Closeable {
   override fun add(
     name: String,
     value: Any,

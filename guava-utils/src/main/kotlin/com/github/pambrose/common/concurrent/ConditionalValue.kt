@@ -17,11 +17,15 @@
 
 package com.github.pambrose.common.concurrent
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.yield
 
 class ConditionalBoolean(
   initValue: Boolean,
@@ -30,8 +34,8 @@ class ConditionalBoolean(
 
   suspend fun waitUntilFalse(timeoutDuration: Duration = Duration.INFINITE): Boolean =
     waitUntil(timeoutDuration) {
-    !it
-  }
+      !it
+    }
 }
 
 open class ConditionalValue<T>(

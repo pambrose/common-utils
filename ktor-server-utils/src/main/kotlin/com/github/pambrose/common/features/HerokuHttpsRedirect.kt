@@ -18,14 +18,17 @@
 package com.github.pambrose.common.features
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.http.*
-import io.ktor.server.application.*
+import io.ktor.http.URLProtocol
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.ApplicationCallPipeline.ApplicationPhase.Plugins
-import io.ktor.server.plugins.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.util.*
-import io.ktor.util.*
+import io.ktor.server.application.Plugin
+import io.ktor.server.application.call
+import io.ktor.server.plugins.origin
+import io.ktor.server.request.header
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.util.url
+import io.ktor.util.AttributeKey
 
 typealias CallPredicate = (ApplicationCall) -> Boolean
 
