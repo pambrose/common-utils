@@ -23,10 +23,10 @@ import com.github.pambrose.json.BasicObject2.Companion.DEFAULT_INT
 import com.github.pambrose.json.BasicObject2.Companion.DEFAULT_INT_LIST
 import com.github.pambrose.json.BasicObject2.Companion.DEFAULT_STRING
 import com.github.pambrose.json.BasicObject2.Companion.DEFAULT_STRING_LIST
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import org.junit.jupiter.api.Test
 
 @Serializable
 class BasicObject1(
@@ -63,101 +63,96 @@ class BasicObject2(
 
 val l = List(5) { it -> it }
 
-class JsonTests {
-  val obj = BasicObject2(
-    DEFAULT_BOOLEAN,
-    DEFAULT_STRING,
-    DEFAULT_INT,
-    DEFAULT_DOUBLE,
-    BasicObject1(DEFAULT_BOOLEAN, DEFAULT_STRING, DEFAULT_INT, DEFAULT_DOUBLE),
-    DEFAULT_BOOLEAN_LIST,
-    DEFAULT_STRING_LIST,
-    DEFAULT_INT_LIST,
-    DEFAULT_DOUBLE_LIST,
-  )
-  val json1: JsonElement = obj.toJsonString(true).toJsonElement()
-  val json2: JsonElement = obj.toJsonElement()
+class JsonTests : StringSpec() {
+  init {
+    val obj = BasicObject2(
+      DEFAULT_BOOLEAN,
+      DEFAULT_STRING,
+      DEFAULT_INT,
+      DEFAULT_DOUBLE,
+      BasicObject1(DEFAULT_BOOLEAN, DEFAULT_STRING, DEFAULT_INT, DEFAULT_DOUBLE),
+      DEFAULT_BOOLEAN_LIST,
+      DEFAULT_STRING_LIST,
+      DEFAULT_INT_LIST,
+      DEFAULT_DOUBLE_LIST,
+    )
+    val json1: JsonElement = obj.toJsonString(true).toJsonElement()
+    val json2: JsonElement = obj.toJsonElement()
 
-  @Test
-  fun `Check for keys`() {
-    json1.containsKeys("boolVal") shouldBe true
-    json1.containsKeys("missing") shouldBe false
+    "Check for keys" {
+      json1.containsKeys("boolVal") shouldBe true
+      json1.containsKeys("missing") shouldBe false
 
-    json2.containsKeys("boolVal") shouldBe true
-    json2.containsKeys("missing") shouldBe false
-  }
-
-  @Test
-  fun `Primitive types`() {
-    json1.booleanValue("boolVal") shouldBe DEFAULT_BOOLEAN
-    json1.stringValue("strVal") shouldBe DEFAULT_STRING
-    json1.intValue("intVal") shouldBe DEFAULT_INT
-    json1.doubleValue("doubleVal") shouldBe DEFAULT_DOUBLE
-
-    json2.booleanValue("boolVal") shouldBe DEFAULT_BOOLEAN
-    json2.stringValue("strVal") shouldBe DEFAULT_STRING
-    json2.intValue("intVal") shouldBe DEFAULT_INT
-    json2.doubleValue("doubleVal") shouldBe DEFAULT_DOUBLE
-  }
-
-  @Test
-  fun `Invalid primitive types`() {
-    json1.jsonObjectValueOrNull("missing") shouldBe null
-    json1.booleanValueOrNull("missing") shouldBe null
-    json1.stringValueOrNull("missing") shouldBe null
-    json1.intValueOrNull("missing") shouldBe null
-    json1.doubleValueOrNull("missing") shouldBe null
-
-    json2.jsonObjectValueOrNull("missing") shouldBe null
-    json2.booleanValueOrNull("missing") shouldBe null
-    json2.stringValueOrNull("missing") shouldBe null
-    json2.intValueOrNull("missing") shouldBe null
-    json2.doubleValueOrNull("missing") shouldBe null
-  }
-
-  @Test
-  fun `Primitive types via maps`() {
-    val map1 = json1.toMap()
-    map1["boolVal"].toString().toBoolean() shouldBe DEFAULT_BOOLEAN
-    map1["strVal"] shouldBe DEFAULT_STRING
-    map1["intVal"].toString().toInt() shouldBe DEFAULT_INT
-    map1["doubleVal"].toString().toDouble() shouldBe DEFAULT_DOUBLE
-
-    val map2 = json2.toMap()
-    map2["boolVal"].toString().toBoolean() shouldBe DEFAULT_BOOLEAN
-    map2["strVal"] shouldBe DEFAULT_STRING
-    map2["intVal"].toString().toInt() shouldBe DEFAULT_INT
-    map2["doubleVal"].toString().toDouble() shouldBe DEFAULT_DOUBLE
-  }
-
-  @Test
-  fun `Object types`() {
-    listOf(json1, json2).forEach { json ->
-      val objVal = json.jsonObjectValue("objectVal")
-      objVal.booleanValue("boolVal") shouldBe DEFAULT_BOOLEAN
-      objVal.stringValue("strVal") shouldBe DEFAULT_STRING
-      objVal.intValue("intVal") shouldBe DEFAULT_INT
-      objVal.doubleValue("doubleVal") shouldBe DEFAULT_DOUBLE
+      json2.containsKeys("boolVal") shouldBe true
+      json2.containsKeys("missing") shouldBe false
     }
-  }
 
-  @Test
-  fun `List types`() {
-    listOf(json1, json2).forEach { json ->
-      json.jsonElementList("boolList").map { it.booleanValue } shouldBe DEFAULT_BOOLEAN_LIST
-      json.jsonElementList("strList").map { it.stringValue } shouldBe DEFAULT_STRING_LIST
-      json.jsonElementList("intList").map { it.intValue } shouldBe DEFAULT_INT_LIST
-      json.jsonElementList("doubleList").map { it.doubleValue } shouldBe DEFAULT_DOUBLE_LIST
+    "Primitive types" {
+      json1.booleanValue("boolVal") shouldBe DEFAULT_BOOLEAN
+      json1.stringValue("strVal") shouldBe DEFAULT_STRING
+      json1.intValue("intVal") shouldBe DEFAULT_INT
+      json1.doubleValue("doubleVal") shouldBe DEFAULT_DOUBLE
+
+      json2.booleanValue("boolVal") shouldBe DEFAULT_BOOLEAN
+      json2.stringValue("strVal") shouldBe DEFAULT_STRING
+      json2.intValue("intVal") shouldBe DEFAULT_INT
+      json2.doubleValue("doubleVal") shouldBe DEFAULT_DOUBLE
     }
-  }
 
-  @Test
-  fun `Embedded object types`() {
-    listOf(json1, json2).forEach { json ->
-      json.booleanValue("objectVal.boolVal") shouldBe DEFAULT_BOOLEAN
-      json.stringValue("objectVal.strVal") shouldBe DEFAULT_STRING
-      json.intValue("objectVal.intVal") shouldBe DEFAULT_INT
-      json.doubleValue("objectVal.doubleVal") shouldBe DEFAULT_DOUBLE
+    "Invalid primitive types" {
+      json1.jsonObjectValueOrNull("missing") shouldBe null
+      json1.booleanValueOrNull("missing") shouldBe null
+      json1.stringValueOrNull("missing") shouldBe null
+      json1.intValueOrNull("missing") shouldBe null
+      json1.doubleValueOrNull("missing") shouldBe null
+
+      json2.jsonObjectValueOrNull("missing") shouldBe null
+      json2.booleanValueOrNull("missing") shouldBe null
+      json2.stringValueOrNull("missing") shouldBe null
+      json2.intValueOrNull("missing") shouldBe null
+      json2.doubleValueOrNull("missing") shouldBe null
+    }
+
+    "Primitive types via maps" {
+      val map1 = json1.toMap()
+      map1["boolVal"].toString().toBoolean() shouldBe DEFAULT_BOOLEAN
+      map1["strVal"] shouldBe DEFAULT_STRING
+      map1["intVal"].toString().toInt() shouldBe DEFAULT_INT
+      map1["doubleVal"].toString().toDouble() shouldBe DEFAULT_DOUBLE
+
+      val map2 = json2.toMap()
+      map2["boolVal"].toString().toBoolean() shouldBe DEFAULT_BOOLEAN
+      map2["strVal"] shouldBe DEFAULT_STRING
+      map2["intVal"].toString().toInt() shouldBe DEFAULT_INT
+      map2["doubleVal"].toString().toDouble() shouldBe DEFAULT_DOUBLE
+    }
+
+    "Object types" {
+      listOf(json1, json2).forEach { json ->
+        val objVal = json.jsonObjectValue("objectVal")
+        objVal.booleanValue("boolVal") shouldBe DEFAULT_BOOLEAN
+        objVal.stringValue("strVal") shouldBe DEFAULT_STRING
+        objVal.intValue("intVal") shouldBe DEFAULT_INT
+        objVal.doubleValue("doubleVal") shouldBe DEFAULT_DOUBLE
+      }
+    }
+
+    "List types" {
+      listOf(json1, json2).forEach { json ->
+        json.jsonElementList("boolList").map { it.booleanValue } shouldBe DEFAULT_BOOLEAN_LIST
+        json.jsonElementList("strList").map { it.stringValue } shouldBe DEFAULT_STRING_LIST
+        json.jsonElementList("intList").map { it.intValue } shouldBe DEFAULT_INT_LIST
+        json.jsonElementList("doubleList").map { it.doubleValue } shouldBe DEFAULT_DOUBLE_LIST
+      }
+    }
+
+    "Embedded object types" {
+      listOf(json1, json2).forEach { json ->
+        json.booleanValue("objectVal.boolVal") shouldBe DEFAULT_BOOLEAN
+        json.stringValue("objectVal.strVal") shouldBe DEFAULT_STRING
+        json.intValue("objectVal.intVal") shouldBe DEFAULT_INT
+        json.doubleValue("objectVal.doubleVal") shouldBe DEFAULT_DOUBLE
+      }
     }
   }
 }

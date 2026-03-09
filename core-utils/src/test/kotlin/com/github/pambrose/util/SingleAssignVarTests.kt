@@ -21,50 +21,49 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.delegate.SingleAssignVar
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class SingleAssignVarTests {
-  @Test
-  fun singleAssignBasicTest() {
-    var value: String? by SingleAssignVar.singleAssign()
-    value shouldBe null
+class SingleAssignVarTests : StringSpec() {
+  init {
+    "single assign basic test" {
+      var value: String? by SingleAssignVar.singleAssign()
+      value shouldBe null
 
-    value = "assigned"
-    value shouldBe "assigned"
+      value = "assigned"
+      value shouldBe "assigned"
 
-    // Second assignment should throw
-    shouldThrow<IllegalStateException> {
-      value = "second"
+      // Second assignment should throw
+      shouldThrow<IllegalStateException> {
+        value = "second"
+      }
+      value shouldBe "assigned"
     }
-    value shouldBe "assigned"
-  }
 
-  @Test
-  fun singleAssignNullValueTest() {
-    var value: String? by SingleAssignVar.singleAssign()
-    value shouldBe null
+    "single assign null value test" {
+      var value: String? by SingleAssignVar.singleAssign()
+      value shouldBe null
 
-    // Assigning null should work and count as assignment
-    value = null
-    value shouldBe null
+      // Assigning null should work and count as assignment
+      value = null
+      value shouldBe null
 
-    // Second assignment (even null) should throw
-    shouldThrow<IllegalStateException> {
-      value = "something"
+      // Second assignment (even null) should throw
+      shouldThrow<IllegalStateException> {
+        value = "something"
+      }
     }
-  }
 
-  @Test
-  fun singleAssignWithDifferentTypesTest() {
-    var intValue: Int? by SingleAssignVar.singleAssign()
-    intValue shouldBe null
-    intValue = 42
-    intValue shouldBe 42
+    "single assign with different types test" {
+      var intValue: Int? by SingleAssignVar.singleAssign()
+      intValue shouldBe null
+      intValue = 42
+      intValue shouldBe 42
 
-    var listValue: List<String>? by SingleAssignVar.singleAssign()
-    listValue shouldBe null
-    listValue = listOf("a", "b", "c")
-    listValue shouldBe listOf("a", "b", "c")
+      var listValue: List<String>? by SingleAssignVar.singleAssign()
+      listValue shouldBe null
+      listValue = listOf("a", "b", "c")
+      listValue shouldBe listOf("a", "b", "c")
+    }
   }
 }

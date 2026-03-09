@@ -20,41 +20,40 @@
 package com.github.pambrose.common.dsl
 
 import com.codahale.metrics.health.HealthCheck
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class MetricsDslTests {
-  @Test
-  fun healthCheckHealthyTest() {
-    val healthCheck =
-      MetricsDsl.healthCheck {
-        HealthCheck.Result.healthy()
-      }
+class MetricsDslTests : StringSpec() {
+  init {
+    "health check healthy" {
+      val healthCheck =
+        MetricsDsl.healthCheck {
+          HealthCheck.Result.healthy()
+        }
 
-    val result = healthCheck.execute()
-    result.isHealthy shouldBe true
-  }
+      val result = healthCheck.execute()
+      result.isHealthy shouldBe true
+    }
 
-  @Test
-  fun healthCheckUnhealthyTest() {
-    val healthCheck =
-      MetricsDsl.healthCheck {
-        HealthCheck.Result.unhealthy("Test error")
-      }
+    "health check unhealthy" {
+      val healthCheck =
+        MetricsDsl.healthCheck {
+          HealthCheck.Result.unhealthy("Test error")
+        }
 
-    val result = healthCheck.execute()
-    result.isHealthy shouldBe false
-    result.message shouldBe "Test error"
-  }
+      val result = healthCheck.execute()
+      result.isHealthy shouldBe false
+      result.message shouldBe "Test error"
+    }
 
-  @Test
-  fun healthCheckWithExceptionTest() {
-    val healthCheck =
-      MetricsDsl.healthCheck {
-        HealthCheck.Result.unhealthy(RuntimeException("Test exception"))
-      }
+    "health check with exception" {
+      val healthCheck =
+        MetricsDsl.healthCheck {
+          HealthCheck.Result.unhealthy(RuntimeException("Test exception"))
+        }
 
-    val result = healthCheck.execute()
-    result.isHealthy shouldBe false
+      val result = healthCheck.execute()
+      result.isHealthy shouldBe false
+    }
   }
 }

@@ -19,99 +19,88 @@
 
 package com.github.pambrose.common.concurrent
 
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
 
-class ConcurrentExtensionsTests {
-  @Test
-  fun countDownLatchIsFinishedTest() {
-    val latch = CountDownLatch(2)
-    latch.isFinished shouldBe false
+class ConcurrentExtensionsTests : StringSpec() {
+  init {
+    "count down latch is finished" {
+      val latch = CountDownLatch(2)
+      latch.isFinished shouldBe false
 
-    latch.countDown()
-    latch.isFinished shouldBe false
+      latch.countDown()
+      latch.isFinished shouldBe false
 
-    latch.countDown()
-    latch.isFinished shouldBe true
-  }
-
-  @Test
-  fun countDownLatchCountDownWithBlockTest() {
-    val latch = CountDownLatch(1)
-    var blockExecuted = false
-
-    latch.countDown {
-      blockExecuted = true
+      latch.countDown()
+      latch.isFinished shouldBe true
     }
 
-    blockExecuted shouldBe true
-    latch.isFinished shouldBe true
-  }
+    "count down latch count down with block" {
+      val latch = CountDownLatch(1)
+      var blockExecuted = false
 
-  @Test
-  fun countDownLatchCountDownWithExceptionTest() {
-    val latch = CountDownLatch(1)
-    var exceptionThrown = false
-
-    try {
       latch.countDown {
-        throw RuntimeException("Test exception")
+        blockExecuted = true
       }
-    } catch (e: RuntimeException) {
-      exceptionThrown = true
+
+      blockExecuted shouldBe true
+      latch.isFinished shouldBe true
     }
 
-    exceptionThrown shouldBe true
-    latch.isFinished shouldBe true
-  }
+    "count down latch count down with exception" {
+      val latch = CountDownLatch(1)
 
-  @Test
-  fun semaphoreWithLockTest() {
-    val semaphore = Semaphore(1)
-    var blockExecuted = false
-
-    val result = semaphore.withLock {
-      blockExecuted = true
-      42
-    }
-
-    blockExecuted shouldBe true
-    result shouldBe 42
-    semaphore.availablePermits() shouldBe 1
-  }
-
-  @Test
-  fun semaphoreWithLockExceptionTest() {
-    val semaphore = Semaphore(1)
-    var exceptionThrown = false
-
-    try {
-      semaphore.withLock {
-        throw RuntimeException("Test exception")
+      shouldThrow<RuntimeException> {
+        latch.countDown {
+          throw RuntimeException("Test exception")
+        }
       }
-    } catch (e: RuntimeException) {
-      exceptionThrown = true
+
+      latch.isFinished shouldBe true
     }
 
-    exceptionThrown shouldBe true
-    semaphore.availablePermits() shouldBe 1
-  }
+    "semaphore with lock" {
+      val semaphore = Semaphore(1)
+      var blockExecuted = false
 
-  @Test
-  fun threadWithLatchTest() {
-    val latch = CountDownLatch(1)
-    var threadExecuted = false
+      val result = semaphore.withLock {
+        blockExecuted = true
+        42
+      }
 
-    val t = thread(latch, start = true) {
-      threadExecuted = true
+      blockExecuted shouldBe true
+      result shouldBe 42
+      semaphore.availablePermits() shouldBe 1
     }
 
-    t.join()
-    latch.await()
+    "semaphore with lock exception" {
+      val semaphore = Semaphore(1)
 
-    threadExecuted shouldBe true
-    latch.isFinished shouldBe true
+      shouldThrow<RuntimeException> {
+        semaphore.withLock {
+          throw RuntimeException("Test exception")
+        }
+      }
+
+      semaphore.availablePermits() shouldBe 1
+    }
+
+    "thread with latch" {
+      val latch = CountDownLatch(1)
+      var threadExecuted = false
+
+      val t = thread(latch, start = true) {
+        threadExecuted = true
+      }
+
+      t.join()
+      latch.await()
+
+      threadExecuted shouldBe true
+      latch.isFinished shouldBe true
+    }
   }
 }

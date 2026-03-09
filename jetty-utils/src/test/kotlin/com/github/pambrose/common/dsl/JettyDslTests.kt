@@ -19,47 +19,46 @@
 
 package com.github.pambrose.common.dsl
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.junit.jupiter.api.Test
 
-class JettyDslTests {
-  @Test
-  fun serverCreationTest() {
-    val server =
-      JettyDsl.server(8080) {
-        // Configuration block
-      }
+class JettyDslTests : StringSpec() {
+  init {
+    "server creation" {
+      val server =
+        JettyDsl.server(8080) {
+          // Configuration block
+        }
 
-    server shouldNotBe null
-    // Server is created but not started
-    server.isStarted shouldBe false
-  }
+      server shouldNotBe null
+      // Server is created but not started
+      server.isStarted shouldBe false
+    }
 
-  @Test
-  fun servletContextHandlerCreationTest() {
-    val handler =
-      JettyDsl.servletContextHandler {
-        contextPath = "/api"
-      }
+    "servlet context handler creation" {
+      val handler =
+        JettyDsl.servletContextHandler {
+          contextPath = "/api"
+        }
 
-    handler shouldNotBe null
-    handler.contextPath shouldBe "/api"
-  }
+      handler shouldNotBe null
+      handler.contextPath shouldBe "/api"
+    }
 
-  @Test
-  fun serverWithHandlerTest() {
-    val handler =
-      JettyDsl.servletContextHandler {
-        contextPath = "/test"
-      }
+    "server with handler" {
+      val handler =
+        JettyDsl.servletContextHandler {
+          contextPath = "/test"
+        }
 
-    // Port 0 for ephemeral port
-    val server =
-      JettyDsl.server(0) {
-        this.handler = handler
-      }
+      // Port 0 for ephemeral port
+      val server =
+        JettyDsl.server(0) {
+          this.handler = handler
+        }
 
-    server.handler shouldBe handler
+      server.handler shouldBe handler
+    }
   }
 }

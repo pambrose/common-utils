@@ -19,22 +19,22 @@
 
 package com.pambrose.common.exposed
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.junit.jupiter.api.Test
 
-class KotlinSqlLoggerTests {
-  @Test
-  fun kotlinSqlLoggerCreationTest() {
-    val sqlLogger = KotlinSqlLogger()
-    sqlLogger shouldNotBe null
-    sqlLogger.logger shouldBe ExposedUtils.logger
-  }
+class KotlinSqlLoggerTests : StringSpec() {
+  init {
+    "kotlin sql logger creation" {
+      val sqlLogger = KotlinSqlLogger()
+      sqlLogger shouldNotBe null
+      sqlLogger.logger shouldBe ExposedUtils.logger
+    }
 
-  @Test
-  fun kotlinSqlLoggerWithCustomLoggerTest() {
-    val customLogger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
-    val sqlLogger = KotlinSqlLogger(customLogger)
-    sqlLogger.logger shouldBe customLogger
+    "kotlin sql logger with custom logger" {
+      val customLogger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+      val sqlLogger = KotlinSqlLogger(customLogger)
+      sqlLogger.logger shouldBe customLogger
+    }
   }
 }

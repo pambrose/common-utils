@@ -19,70 +19,64 @@
 
 package com.github.pambrose.common.concurrent
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
 
-class BooleanMonitorTests {
-  @Test
-  fun booleanMonitorInitialValueTrueTest() {
-    val monitor = BooleanMonitor(true)
-    monitor.get() shouldBe true
-  }
+class BooleanMonitorTests : StringSpec() {
+  init {
+    "boolean monitor initial value true" {
+      val monitor = BooleanMonitor(true)
+      monitor.get() shouldBe true
+    }
 
-  @Test
-  fun booleanMonitorInitialValueFalseTest() {
-    val monitor = BooleanMonitor(false)
-    monitor.get() shouldBe false
-  }
+    "boolean monitor initial value false" {
+      val monitor = BooleanMonitor(false)
+      monitor.get() shouldBe false
+    }
 
-  @Test
-  fun booleanMonitorSetValueTest() {
-    val monitor = BooleanMonitor(false)
-    monitor.get() shouldBe false
+    "boolean monitor set value" {
+      val monitor = BooleanMonitor(false)
+      monitor.get() shouldBe false
 
-    monitor.set(true)
-    monitor.get() shouldBe true
+      monitor.set(true)
+      monitor.get() shouldBe true
 
-    monitor.set(false)
-    monitor.get() shouldBe false
-  }
+      monitor.set(false)
+      monitor.get() shouldBe false
+    }
 
-  @Test
-  fun booleanMonitorToStringTest() {
-    val monitor = BooleanMonitor(true)
-    monitor.toString() shouldContain "value=true"
+    "boolean monitor to string" {
+      val monitor = BooleanMonitor(true)
+      monitor.toString() shouldContain "value=true"
 
-    monitor.set(false)
-    monitor.toString() shouldContain "value=false"
-  }
+      monitor.set(false)
+      monitor.toString() shouldContain "value=false"
+    }
 
-  @Test
-  fun booleanMonitorWaitUntilTrueTimeoutTest() {
-    val monitor = BooleanMonitor(false)
-    val result = monitor.waitUntilTrue(50.milliseconds)
-    result shouldBe false
-  }
+    "boolean monitor wait until true timeout" {
+      val monitor = BooleanMonitor(false)
+      val result = monitor.waitUntilTrue(50.milliseconds)
+      result shouldBe false
+    }
 
-  @Test
-  fun booleanMonitorWaitUntilFalseTimeoutTest() {
-    val monitor = BooleanMonitor(true)
-    val result = monitor.waitUntilFalse(50.milliseconds)
-    result shouldBe false
-  }
+    "boolean monitor wait until false timeout" {
+      val monitor = BooleanMonitor(true)
+      val result = monitor.waitUntilFalse(50.milliseconds)
+      result shouldBe false
+    }
 
-  @Test
-  fun booleanMonitorWaitUntilTrueAlreadyTrueTest() {
-    val monitor = BooleanMonitor(true)
-    val result = monitor.waitUntilTrue(50.milliseconds)
-    result shouldBe true
-  }
+    "boolean monitor wait until true already true" {
+      val monitor = BooleanMonitor(true)
+      val result = monitor.waitUntilTrue(50.milliseconds)
+      result shouldBe true
+    }
 
-  @Test
-  fun booleanMonitorWaitUntilFalseAlreadyFalseTest() {
-    val monitor = BooleanMonitor(false)
-    val result = monitor.waitUntilFalse(50.milliseconds)
-    result shouldBe true
+    "boolean monitor wait until false already false" {
+      val monitor = BooleanMonitor(false)
+      val result = monitor.waitUntilFalse(50.milliseconds)
+      result shouldBe true
+    }
   }
 }

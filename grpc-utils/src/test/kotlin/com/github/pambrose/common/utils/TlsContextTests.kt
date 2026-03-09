@@ -19,38 +19,36 @@
 
 package com.github.pambrose.common.utils
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class TlsContextTests {
-  @Test
-  fun plaintextContextTest() {
-    val context = TlsContext.PLAINTEXT_CONTEXT
-    context.sslContext shouldBe null
-    context.mutualAuth shouldBe false
-  }
+class TlsContextTests : StringSpec() {
+  init {
+    "plaintext context" {
+      val context = TlsContext.PLAINTEXT_CONTEXT
+      context.sslContext shouldBe null
+      context.mutualAuth shouldBe false
+    }
 
-  @Test
-  fun plaintextDescTest() {
-    val context = TlsContext.PLAINTEXT_CONTEXT
-    context.desc() shouldBe "plaintext"
-  }
+    "plaintext desc" {
+      val context = TlsContext.PLAINTEXT_CONTEXT
+      context.desc() shouldBe "plaintext"
+    }
 
-  @Test
-  fun tlsContextWithMutualAuthDescTest() {
-    // We can't easily create a real SslContext without files, but we can test the desc logic
-    val context = TlsContext(null, true)
-    // With null sslContext, it should show plaintext regardless of mutualAuth
-    context.desc() shouldBe "plaintext"
-  }
+    "tls context with mutual auth desc" {
+      // We can't easily create a real SslContext without files, but we can test the desc logic
+      val context = TlsContext(null, true)
+      // With null sslContext, it should show plaintext regardless of mutualAuth
+      context.desc() shouldBe "plaintext"
+    }
 
-  @Test
-  fun tlsContextBuilderDataClassTest() {
-    // Test the TlsContextBuilder data class
-    val builder = TlsContextBuilder(
-      builder = io.netty.handler.ssl.SslContextBuilder.forClient(),
-      mutualAuth = true,
-    )
-    builder.mutualAuth shouldBe true
+    "tls context builder data class" {
+      // Test the TlsContextBuilder data class
+      val builder = TlsContextBuilder(
+        builder = io.netty.handler.ssl.SslContextBuilder.forClient(),
+        mutualAuth = true,
+      )
+      builder.mutualAuth shouldBe true
+    }
   }
 }

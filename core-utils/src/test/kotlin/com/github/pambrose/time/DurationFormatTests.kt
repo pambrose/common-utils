@@ -20,57 +20,52 @@
 package com.github.pambrose.time
 
 import com.github.pambrose.common.time.format
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class DurationFormatTests {
-  @Test
-  fun formatZeroDurationTest() {
-    val duration = 0.seconds
-    duration.format() shouldBe "0:00:00:00"
-    duration.format(includeMillis = true) shouldBe "0:00:00:00.000"
-  }
+class DurationFormatTests : StringSpec() {
+  init {
+    "format zero duration" {
+      val duration = 0.seconds
+      duration.format() shouldBe "0:00:00:00"
+      duration.format(includeMillis = true) shouldBe "0:00:00:00.000"
+    }
 
-  @Test
-  fun formatSecondsTest() {
-    30.seconds.format() shouldBe "0:00:00:30"
-    59.seconds.format() shouldBe "0:00:00:59"
-  }
+    "format seconds" {
+      30.seconds.format() shouldBe "0:00:00:30"
+      59.seconds.format() shouldBe "0:00:00:59"
+    }
 
-  @Test
-  fun formatMinutesTest() {
-    1.minutes.format() shouldBe "0:00:01:00"
-    (1.minutes + 30.seconds).format() shouldBe "0:00:01:30"
-  }
+    "format minutes" {
+      1.minutes.format() shouldBe "0:00:01:00"
+      (1.minutes + 30.seconds).format() shouldBe "0:00:01:30"
+    }
 
-  @Test
-  fun formatHoursTest() {
-    1.hours.format() shouldBe "0:01:00:00"
-    (2.hours + 30.minutes + 45.seconds).format() shouldBe "0:02:30:45"
-  }
+    "format hours" {
+      1.hours.format() shouldBe "0:01:00:00"
+      (2.hours + 30.minutes + 45.seconds).format() shouldBe "0:02:30:45"
+    }
 
-  @Test
-  fun formatDaysTest() {
-    1.days.format() shouldBe "1:00:00:00"
-    (2.days + 12.hours + 30.minutes + 15.seconds).format() shouldBe "2:12:30:15"
-  }
+    "format days" {
+      1.days.format() shouldBe "1:00:00:00"
+      (2.days + 12.hours + 30.minutes + 15.seconds).format() shouldBe "2:12:30:15"
+    }
 
-  @Test
-  fun formatWithMillisTest() {
-    500.milliseconds.format(includeMillis = true) shouldBe "0:00:00:00.500"
-    (1.seconds + 250.milliseconds).format(includeMillis = true) shouldBe "0:00:00:01.250"
-    (1.hours + 2.minutes + 3.seconds + 456.milliseconds).format(includeMillis = true) shouldBe "0:01:02:03.456"
-  }
+    "format with millis" {
+      500.milliseconds.format(includeMillis = true) shouldBe "0:00:00:00.500"
+      (1.seconds + 250.milliseconds).format(includeMillis = true) shouldBe "0:00:00:01.250"
+      (1.hours + 2.minutes + 3.seconds + 456.milliseconds).format(includeMillis = true) shouldBe "0:01:02:03.456"
+    }
 
-  @Test
-  fun formatComplexDurationTest() {
-    val duration = 3.days + 14.hours + 25.minutes + 36.seconds + 789.milliseconds
-    duration.format() shouldBe "3:14:25:36"
-    duration.format(includeMillis = true) shouldBe "3:14:25:36.789"
+    "format complex duration" {
+      val duration = 3.days + 14.hours + 25.minutes + 36.seconds + 789.milliseconds
+      duration.format() shouldBe "3:14:25:36"
+      duration.format(includeMillis = true) shouldBe "3:14:25:36.789"
+    }
   }
 }

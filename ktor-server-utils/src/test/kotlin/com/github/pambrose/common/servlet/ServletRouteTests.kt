@@ -17,6 +17,7 @@
 
 package com.github.pambrose.common.servlet
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -29,109 +30,110 @@ import io.ktor.server.testing.testApplication
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import kotlin.test.Test
 
-class ServletRouteTests {
-  @Test
-  fun `basic GET returning text`() =
-    testApplication {
-      routing {
-        servlet("/hello", HelloServlet())
-      }
-      client.get("/hello").apply {
-        status shouldBe HttpStatusCode.OK
-        bodyAsText() shouldBe "Hello, World!"
+class ServletRouteTests : StringSpec() {
+  init {
+    "basic GET returning text" {
+      testApplication {
+        routing {
+          servlet("/hello", HelloServlet())
+        }
+        client.get("/hello").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "Hello, World!"
+        }
       }
     }
 
-  @Test
-  fun `custom content type`() =
-    testApplication {
-      routing {
-        servlet("/json", JsonServlet())
-      }
-      client.get("/json").apply {
-        status shouldBe HttpStatusCode.OK
-        contentType()?.withoutParameters() shouldBe ContentType.Application.Json
-        bodyAsText() shouldBe """{"status":"ok"}"""
-      }
-    }
-
-  @Test
-  fun `query parameter passthrough`() =
-    testApplication {
-      routing {
-        servlet("/greet", GreetServlet())
-      }
-      client.get("/greet?name=Ktor").apply {
-        status shouldBe HttpStatusCode.OK
-        bodyAsText() shouldBe "Hello, Ktor!"
+    "custom content type" {
+      testApplication {
+        routing {
+          servlet("/json", JsonServlet())
+        }
+        client.get("/json").apply {
+          status shouldBe HttpStatusCode.OK
+          contentType()?.withoutParameters() shouldBe ContentType.Application.Json
+          bodyAsText() shouldBe """{"status":"ok"}"""
+        }
       }
     }
 
-  @Test
-  fun `request header passthrough`() =
-    testApplication {
-      routing {
-        servlet("/echo-header", EchoHeaderServlet())
-      }
-      client.get("/echo-header") {
-        header("X-Custom", "test-value")
-      }.apply {
-        status shouldBe HttpStatusCode.OK
-        bodyAsText() shouldBe "test-value"
+    "query parameter passthrough" {
+      testApplication {
+        routing {
+          servlet("/greet", GreetServlet())
+        }
+        client.get("/greet?name=Ktor").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "Hello, Ktor!"
+        }
       }
     }
 
-  @Test
-  fun `custom status codes`() =
-    testApplication {
-      routing {
-        servlet("/not-found", NotFoundServlet())
-      }
-      client.get("/not-found").apply {
-        status shouldBe HttpStatusCode.NotFound
-        bodyAsText() shouldBe "Not Found"
-      }
-    }
-
-  @Test
-  fun `response headers`() =
-    testApplication {
-      routing {
-        servlet("/with-headers", ResponseHeaderServlet())
-      }
-      client.get("/with-headers").apply {
-        status shouldBe HttpStatusCode.OK
-        headers["X-Custom-Response"] shouldBe "header-value"
-        bodyAsText() shouldBe "ok"
+    "request header passthrough" {
+      testApplication {
+        routing {
+          servlet("/echo-header", EchoHeaderServlet())
+        }
+        client.get("/echo-header") {
+          header("X-Custom", "test-value")
+        }.apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "test-value"
+        }
       }
     }
 
-  @Test
-  fun `outputStream-based servlet`() =
-    testApplication {
-      routing {
-        servlet("/binary", OutputStreamServlet())
-      }
-      client.get("/binary").apply {
-        status shouldBe HttpStatusCode.OK
-        contentType()?.withoutParameters() shouldBe ContentType.Text.Plain
-        bodyAsText() shouldBe "binary-output"
+    "custom status codes" {
+      testApplication {
+        routing {
+          servlet("/not-found", NotFoundServlet())
+        }
+        client.get("/not-found").apply {
+          status shouldBe HttpStatusCode.NotFound
+          bodyAsText() shouldBe "Not Found"
+        }
       }
     }
 
-  @Test
-  fun `POST method dispatch`() =
-    testApplication {
-      routing {
-        servlet("/post", PostServlet())
-      }
-      client.post("/post").apply {
-        status shouldBe HttpStatusCode.OK
-        bodyAsText() shouldBe "posted"
+    "response headers" {
+      testApplication {
+        routing {
+          servlet("/with-headers", ResponseHeaderServlet())
+        }
+        client.get("/with-headers").apply {
+          status shouldBe HttpStatusCode.OK
+          headers["X-Custom-Response"] shouldBe "header-value"
+          bodyAsText() shouldBe "ok"
+        }
       }
     }
+
+    "outputStream-based servlet" {
+      testApplication {
+        routing {
+          servlet("/binary", OutputStreamServlet())
+        }
+        client.get("/binary").apply {
+          status shouldBe HttpStatusCode.OK
+          contentType()?.withoutParameters() shouldBe ContentType.Text.Plain
+          bodyAsText() shouldBe "binary-output"
+        }
+      }
+    }
+
+    "POST method dispatch" {
+      testApplication {
+        routing {
+          servlet("/post", PostServlet())
+        }
+        client.post("/post").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "posted"
+        }
+      }
+    }
+  }
 
   // Test servlets
 

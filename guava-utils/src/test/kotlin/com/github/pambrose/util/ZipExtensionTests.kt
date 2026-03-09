@@ -19,31 +19,30 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.util.unzip
 import com.github.pambrose.common.util.zip
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class ZipExtensionTests {
-  @Test
-  fun shortStringZipTest() {
-    val s = "kjwkjfhwekfjhwwewewerrr\nwdfwefwefwef\n"
-    s.zip().unzip() shouldBe s
+class ZipExtensionTests : StringSpec() {
+  init {
+    "short string zip test" {
+      val s = "kjwkjfhwekfjhwwewewerrr\nwdfwefwefwef\n"
+      s.zip().unzip() shouldBe s
 
-    val t = "kjwkjfhwekfjhwwewewerrr\nwdfwefwefwef\n"
-    t.zip().unzip() shouldBe t
-  }
+      val t = "kjwkjfhwekfjhwwewewerrr\nwdfwefwefwef\n"
+      t.zip().unzip() shouldBe t
+    }
 
-  @Test
-  fun longStringZipTest() {
-    val s =
-      "kjwkjfhwekf cdsc  ##444445 wekfnkfn ew fwefwejfewkjfwef  qweqweqweqwe wef w ef wefwef ezzzzxdweere\n"
-    val g = buildString { repeat(100_000) { append(s) } }
-    g.zip().unzip() shouldBe g
-  }
+    "long string zip test" {
+      val s =
+        "kjwkjfhwekf cdsc  ##444445 wekfnkfn ew fwefwejfewkjfwef  qweqweqweqwe wef w ef wefwef ezzzzxdweere\n"
+      val g = buildString { repeat(100_000) { append(s) } }
+      g.zip().unzip() shouldBe g
+    }
 
-  @Test
-  fun empyStringZipTest() {
-    "".zip() shouldBe ByteArray(0)
-    "".zip().unzip() shouldBe ""
-    ByteArray(0).unzip() shouldBe ""
+    "empty string zip test" {
+      "".zip() shouldBe ByteArray(0)
+      "".zip().unzip() shouldBe ""
+      ByteArray(0).unzip() shouldBe ""
+    }
   }
 }

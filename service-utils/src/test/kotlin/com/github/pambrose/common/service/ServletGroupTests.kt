@@ -19,16 +19,16 @@
 
 package com.github.pambrose.common.service
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import jakarta.servlet.Servlet
 import jakarta.servlet.ServletConfig
 import jakarta.servlet.ServletRequest
 import jakarta.servlet.ServletResponse
-import org.junit.jupiter.api.Test
 
-class ServletGroupTests {
-  private class TestServlet : Servlet {
+private fun testServlet() =
+  object : Servlet {
     override fun init(config: ServletConfig?) {}
 
     override fun getServletConfig(): ServletConfig? = null
@@ -44,60 +44,59 @@ class ServletGroupTests {
     override fun destroy() {}
   }
 
-  @Test
-  fun servletGroupCreationTest() {
-    val group = ServletGroup()
-    group.servletMap.size shouldBe 0
-  }
+class ServletGroupTests : StringSpec() {
+  init {
+    "servlet group creation" {
+      val group = ServletGroup()
+      group.servletMap.size shouldBe 0
+    }
 
-  @Test
-  fun servletGroupAddServletTest() {
-    val group = ServletGroup()
-    val servlet = TestServlet()
+    "servlet group add servlet" {
+      val group = ServletGroup()
+      val servlet = testServlet()
 
-    group.addServlet("test", servlet)
+      group.addServlet("test", servlet)
 
-    group.servletMap.size shouldBe 1
-    group.servletMap["test"] shouldBe servlet
-  }
+      group.servletMap.size shouldBe 1
+      group.servletMap["test"] shouldBe servlet
+    }
 
-  @Test
-  fun servletGroupAddMultipleServletsTest() {
-    val group = ServletGroup()
-    val servlet1 = TestServlet()
-    val servlet2 = TestServlet()
-    val servlet3 = TestServlet()
+    "servlet group add multiple servlets" {
+      val group = ServletGroup()
 
-    group.addServlet("ping", servlet1)
-    group.addServlet("health", servlet2)
-    group.addServlet("version", servlet3)
+      val servlet1 = testServlet()
+      val servlet2 = testServlet()
+      val servlet3 = testServlet()
 
-    group.servletMap.size shouldBe 3
-    group.servletMap.keys shouldContainExactly setOf("ping", "health", "version")
-  }
+      group.addServlet("ping", servlet1)
+      group.addServlet("health", servlet2)
+      group.addServlet("version", servlet3)
 
-  @Test
-  fun servletGroupEmptyPathIgnoredTest() {
-    val group = ServletGroup()
-    val servlet = TestServlet()
+      group.servletMap.size shouldBe 3
+      group.servletMap.keys shouldContainExactly setOf("ping", "health", "version")
+    }
 
-    group.addServlet("", servlet)
-    group.servletMap.size shouldBe 0
+    "servlet group empty path ignored" {
+      val group = ServletGroup()
+      val servlet = testServlet()
 
-    group.addServlet("   ", servlet)
-    group.servletMap.size shouldBe 0
-  }
+      group.addServlet("", servlet)
+      group.servletMap.size shouldBe 0
 
-  @Test
-  fun servletGroupOverwritePathTest() {
-    val group = ServletGroup()
-    val servlet1 = TestServlet()
-    val servlet2 = TestServlet()
+      group.addServlet("   ", servlet)
+      group.servletMap.size shouldBe 0
+    }
 
-    group.addServlet("test", servlet1)
-    group.addServlet("test", servlet2)
+    "servlet group overwrite path" {
+      val group = ServletGroup()
+      val servlet1 = testServlet()
+      val servlet2 = testServlet()
 
-    group.servletMap.size shouldBe 1
-    group.servletMap["test"] shouldBe servlet2
+      group.addServlet("test", servlet1)
+      group.addServlet("test", servlet2)
+
+      group.servletMap.size shouldBe 1
+      group.servletMap["test"] shouldBe servlet2
+    }
   }
 }

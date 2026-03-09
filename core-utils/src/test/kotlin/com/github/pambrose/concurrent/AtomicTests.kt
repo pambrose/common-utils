@@ -20,48 +20,37 @@
 package com.github.pambrose.concurrent
 
 import com.github.pambrose.common.concurrent.Atomic
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Test
 
-class AtomicTests {
-  @Test
-  fun basicAtomicValueTest() {
-    val atomic = Atomic(0)
-    atomic.value shouldBe 0
+class AtomicTests : StringSpec() {
+  init {
+    "basic atomic value test" {
+      val atomic = Atomic(0)
+      atomic.value shouldBe 0
 
-    runBlocking {
       atomic.setWithLock { 42 }
+      atomic.value shouldBe 42
     }
-    atomic.value shouldBe 42
-  }
 
-  @Test
-  fun setWithLockTest() {
-    runBlocking {
+    "set with lock test" {
       val atomic = Atomic(0)
 
       val result = atomic.setWithLock { it + 10 }
       result shouldBe 10
       atomic.value shouldBe 10
     }
-  }
 
-  @Test
-  fun withLockTest() {
-    runBlocking {
+    "with lock test" {
       val atomic = Atomic("hello")
 
       val length = atomic.withLock { length }
       length shouldBe 5
       atomic.value shouldBe "hello"
     }
-  }
 
-  @Test
-  fun concurrentAccessTest() {
-    runBlocking {
+    "concurrent access test" {
       val atomic = Atomic(0)
       val iterations = 1000
 
@@ -77,11 +66,8 @@ class AtomicTests {
 
       atomic.value shouldBe iterations
     }
-  }
 
-  @Test
-  fun atomicWithComplexTypeTest() {
-    runBlocking {
+    "atomic with complex type test" {
       data class Counter(
         val count: Int,
         val name: String,

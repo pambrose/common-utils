@@ -19,92 +19,89 @@
 
 package com.github.pambrose.common.dsl
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class StreamObserverHelperTests {
-  @Test
-  fun onNextCallbackTest() {
-    var receivedValue: String? = null
+class StreamObserverHelperTests : StringSpec() {
+  init {
+    "on next callback" {
+      var receivedValue: String? = null
 
-    val observer =
-      GrpcDsl.streamObserver<String> {
-        onNext { value ->
-          receivedValue = value
+      val observer =
+        GrpcDsl.streamObserver<String> {
+          onNext { value ->
+            receivedValue = value
+          }
         }
-      }
 
-    observer.onNext("test value")
-    receivedValue shouldBe "test value"
-  }
+      observer.onNext("test value")
+      receivedValue shouldBe "test value"
+    }
 
-  @Test
-  fun onErrorCallbackTest() {
-    var receivedError: Throwable? = null
+    "on error callback" {
+      var receivedError: Throwable? = null
 
-    val observer =
-      GrpcDsl.streamObserver<String> {
-        onError { error ->
-          receivedError = error
+      val observer =
+        GrpcDsl.streamObserver<String> {
+          onError { error ->
+            receivedError = error
+          }
         }
-      }
 
-    val testException = RuntimeException("test error")
-    observer.onError(testException)
-    receivedError shouldBe testException
-  }
+      val testException = RuntimeException("test error")
+      observer.onError(testException)
+      receivedError shouldBe testException
+    }
 
-  @Test
-  fun onCompletedCallbackTest() {
-    var completedCalled = false
+    "on completed callback" {
+      var completedCalled = false
 
-    val observer =
-      GrpcDsl.streamObserver<String> {
-        onCompleted {
-          completedCalled = true
+      val observer =
+        GrpcDsl.streamObserver<String> {
+          onCompleted {
+            completedCalled = true
+          }
         }
-      }
 
-    observer.onCompleted()
-    completedCalled shouldBe true
-  }
+      observer.onCompleted()
+      completedCalled shouldBe true
+    }
 
-  @Test
-  fun allCallbacksTest() {
-    val receivedValues = mutableListOf<String>()
-    var errorReceived: Throwable? = null
-    var completedCalled = false
+    "all callbacks" {
+      val receivedValues = mutableListOf<String>()
+      var errorReceived: Throwable? = null
+      var completedCalled = false
 
-    val observer =
-      GrpcDsl.streamObserver<String> {
-        onNext { value ->
-          receivedValues.add(value)
+      val observer =
+        GrpcDsl.streamObserver<String> {
+          onNext { value ->
+            receivedValues.add(value)
+          }
+          onError { error ->
+            errorReceived = error
+          }
+          onCompleted {
+            completedCalled = true
+          }
         }
-        onError { error ->
-          errorReceived = error
-        }
-        onCompleted {
-          completedCalled = true
-        }
-      }
 
-    observer.onNext("first")
-    observer.onNext("second")
-    observer.onCompleted()
+      observer.onNext("first")
+      observer.onNext("second")
+      observer.onCompleted()
 
-    receivedValues shouldBe listOf("first", "second")
-    errorReceived shouldBe null
-    completedCalled shouldBe true
-  }
+      receivedValues shouldBe listOf("first", "second")
+      errorReceived shouldBe null
+      completedCalled shouldBe true
+    }
 
-  @Test
-  fun noCallbacksSetTest() {
-    // Should not throw when callbacks are not set
-    val observer = GrpcDsl.streamObserver<String> {}
+    "no callbacks set" {
+      // Should not throw when callbacks are not set
+      val observer = GrpcDsl.streamObserver<String> {}
 
-    observer.onNext("value")
-    observer.onError(RuntimeException("error"))
-    observer.onCompleted()
-    // No exception means test passes
+      observer.onNext("value")
+      observer.onError(RuntimeException("error"))
+      observer.onCompleted()
+      // No exception means test passes
+    }
   }
 }

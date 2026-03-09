@@ -21,47 +21,43 @@ package com.github.pambrose.common.email
 
 import com.github.pambrose.common.email.EmailUtils.isNotValidEmail
 import com.github.pambrose.common.email.EmailUtils.isValidEmail
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class EmailUtilsTests {
-  @Test
-  fun isValidEmailSimpleTest() {
-    "test@example.com".isValidEmail() shouldBe true
-    "user.name@domain.org".isValidEmail() shouldBe true
-    // Note: The email pattern doesn't support + character in local part
-    "user@example.co.uk".isValidEmail() shouldBe true
-  }
+class EmailUtilsTests : StringSpec() {
+  init {
+    "is valid email simple" {
+      "test@example.com".isValidEmail() shouldBe true
+      "user.name@domain.org".isValidEmail() shouldBe true
+      // Note: The email pattern doesn't support + character in local part
+      "user@example.co.uk".isValidEmail() shouldBe true
+    }
 
-  @Test
-  fun isValidEmailWithSubdomainTest() {
-    "user@subdomain.example.com".isValidEmail() shouldBe true
-    "admin@mail.company.org".isValidEmail() shouldBe true
-  }
+    "is valid email with subdomain" {
+      "user@subdomain.example.com".isValidEmail() shouldBe true
+      "admin@mail.company.org".isValidEmail() shouldBe true
+    }
 
-  @Test
-  fun isNotValidEmailInvalidFormatTest() {
-    "not-an-email".isNotValidEmail() shouldBe true
-    "missing@".isNotValidEmail() shouldBe true
-    "@nodomain.com".isNotValidEmail() shouldBe true
-    "spaces in@email.com".isNotValidEmail() shouldBe true
-  }
+    "is not valid email invalid format" {
+      "not-an-email".isNotValidEmail() shouldBe true
+      "missing@".isNotValidEmail() shouldBe true
+      "@nodomain.com".isNotValidEmail() shouldBe true
+      "spaces in@email.com".isNotValidEmail() shouldBe true
+    }
 
-  @Test
-  fun isNotValidEmailEmptyTest() {
-    "".isNotValidEmail() shouldBe true
-    "   ".isNotValidEmail() shouldBe true
-  }
+    "is not valid email empty" {
+      "".isNotValidEmail() shouldBe true
+      "   ".isNotValidEmail() shouldBe true
+    }
 
-  @Test
-  fun isValidEmailWithNumbersTest() {
-    "user123@example.com".isValidEmail() shouldBe true
-    "123user@test.org".isValidEmail() shouldBe true
-  }
+    "is valid email with numbers" {
+      "user123@example.com".isValidEmail() shouldBe true
+      "123user@test.org".isValidEmail() shouldBe true
+    }
 
-  @Test
-  fun isValidEmailWithHyphensTest() {
-    "user-name@example.com".isValidEmail() shouldBe true
-    "test@my-domain.com".isValidEmail() shouldBe true
+    "is valid email with hyphens" {
+      "user-name@example.com".isValidEmail() shouldBe true
+      "test@my-domain.com".isValidEmail() shouldBe true
+    }
   }
 }

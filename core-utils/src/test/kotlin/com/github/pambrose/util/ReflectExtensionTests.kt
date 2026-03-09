@@ -20,18 +20,19 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.typeParameterCount
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class ReflectExtensionTests {
-  @Test
-  fun tyeParamCountTest() {
-    4.typeParameterCount shouldBe 0
-    "dd".typeParameterCount shouldBe 0
-    listOf(3).typeParameterCount shouldBe 1
-    mapOf(3 to "d").typeParameterCount shouldBe 2
-    mutableMapOf("k1" to 1).typeParameterCount shouldBe 2
-    arrayOf(4).typeParameterCount shouldBe 1
-    (IntArray(1) { 2 }).typeParameterCount shouldBe 0
+class ReflectExtensionTests : StringSpec() {
+  init {
+    "type param count test" {
+      4.typeParameterCount shouldBe 0
+      "dd".typeParameterCount shouldBe 0
+      listOf(3).typeParameterCount shouldBe 1
+      mapOf(3 to "d").typeParameterCount shouldBe 2
+      mutableMapOf("k1" to 1).typeParameterCount shouldBe 2
+      arrayOf(4).typeParameterCount shouldBe 1
+      (IntArray(1) { 2 }).typeParameterCount shouldBe 0
+    }
   }
 }

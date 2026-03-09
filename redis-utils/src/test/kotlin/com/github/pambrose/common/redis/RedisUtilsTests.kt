@@ -20,79 +20,73 @@
 package com.github.pambrose.common.redis
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.junit.jupiter.api.Test
 
-class RedisUtilsTests {
-  @Test
-  fun newRedisClientValidationNegativePoolSizeTest() {
-    shouldThrow<IllegalArgumentException> {
-      RedisUtils.newRedisClient(maxPoolSize = -1)
+class RedisUtilsTests : StringSpec() {
+  init {
+    "new redis client validation negative pool size" {
+      shouldThrow<IllegalArgumentException> {
+        RedisUtils.newRedisClient(maxPoolSize = -1)
+      }
     }
-  }
 
-  @Test
-  fun newRedisClientValidationNegativeIdleSizeTest() {
-    shouldThrow<IllegalArgumentException> {
-      RedisUtils.newRedisClient(maxIdleSize = -1)
+    "new redis client validation negative idle size" {
+      shouldThrow<IllegalArgumentException> {
+        RedisUtils.newRedisClient(maxIdleSize = -1)
+      }
     }
-  }
 
-  @Test
-  fun newRedisClientValidationNegativeMinIdleSizeTest() {
-    shouldThrow<IllegalArgumentException> {
-      RedisUtils.newRedisClient(minIdleSize = -1)
+    "new redis client validation negative min idle size" {
+      shouldThrow<IllegalArgumentException> {
+        RedisUtils.newRedisClient(minIdleSize = -1)
+      }
     }
-  }
 
-  @Test
-  fun newRedisClientValidationNegativeMaxWaitSecsTest() {
-    shouldThrow<IllegalArgumentException> {
-      RedisUtils.newRedisClient(maxWaitSecs = -1)
+    "new redis client validation negative max wait secs" {
+      shouldThrow<IllegalArgumentException> {
+        RedisUtils.newRedisClient(maxWaitSecs = -1)
+      }
     }
-  }
 
-  @Test
-  fun redisConstantsTest() {
-    RedisUtils.REDIS_MAX_POOL_SIZE shouldBe "redis.maxPoolSize"
-    RedisUtils.REDIS_MAX_IDLE_SIZE shouldBe "redis.maxIdleSize"
-    RedisUtils.REDIS_MIN_IDLE_SIZE shouldBe "redis.minIdleSize"
-    RedisUtils.REDIS_MAX_WAIT_SECS shouldBe "redis.maxWaitSecs"
-  }
+    "redis constants" {
+      RedisUtils.REDIS_MAX_POOL_SIZE shouldBe "redis.maxPoolSize"
+      RedisUtils.REDIS_MAX_IDLE_SIZE shouldBe "redis.maxIdleSize"
+      RedisUtils.REDIS_MIN_IDLE_SIZE shouldBe "redis.minIdleSize"
+      RedisUtils.REDIS_MAX_WAIT_SECS shouldBe "redis.maxWaitSecs"
+    }
 
-  @Test
-  fun redisClientCreationWithValidParamsTest() {
-    // This will fail to connect but should create the client object
-    val client = RedisUtils.newRedisClient(
-      redisUrl = "redis://user:pass@localhost:6379",
-      maxPoolSize = 5,
-      maxIdleSize = 3,
-      minIdleSize = 1,
-      maxWaitSecs = 2,
-    )
-    client shouldNotBe null
-    client.close()
-  }
+    "redis client creation with valid params" {
+      // This will fail to connect but should create the client object
+      val client = RedisUtils.newRedisClient(
+        redisUrl = "redis://user:pass@localhost:6379",
+        maxPoolSize = 5,
+        maxIdleSize = 3,
+        minIdleSize = 1,
+        maxWaitSecs = 2,
+      )
+      client shouldNotBe null
+      client.close()
+    }
 
-  @Test
-  fun redisClientCreationWithSslUrlTest() {
-    // Test that SSL URLs are handled (rediss:// prefix)
-    val client = RedisUtils.newRedisClient(
-      redisUrl = "rediss://user:pass@localhost:6379",
-      maxPoolSize = 1,
-    )
-    client shouldNotBe null
-    client.close()
-  }
+    "redis client creation with ssl url" {
+      // Test that SSL URLs are handled (rediss:// prefix)
+      val client = RedisUtils.newRedisClient(
+        redisUrl = "rediss://user:pass@localhost:6379",
+        maxPoolSize = 1,
+      )
+      client shouldNotBe null
+      client.close()
+    }
 
-  @Test
-  fun redisClientCreationWithNoPasswordTest() {
-    val client = RedisUtils.newRedisClient(
-      redisUrl = "redis://localhost:6379",
-      maxPoolSize = 1,
-    )
-    client shouldNotBe null
-    client.close()
+    "redis client creation with no password" {
+      val client = RedisUtils.newRedisClient(
+        redisUrl = "redis://localhost:6379",
+        maxPoolSize = 1,
+      )
+      client shouldNotBe null
+      client.close()
+    }
   }
 }

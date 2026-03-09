@@ -19,31 +19,30 @@
 
 package com.pambrose.common.exposed
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.junit.jupiter.api.Test
 
-class CustomExprTests {
-  @Test
-  fun customExprCreationTest() {
-    val expr = customDateTimeConstant("NOW()")
-    expr shouldNotBe null
-    expr.text shouldBe "NOW()"
-  }
+class CustomExprTests : StringSpec() {
+  init {
+    "custom expr creation" {
+      val expr = customDateTimeConstant("NOW()")
+      expr shouldNotBe null
+      expr.text shouldBe "NOW()"
+    }
 
-  @Test
-  fun dateTimeExprCreationTest() {
-    val expr = dateTimeExpr("CURRENT_TIMESTAMP")
-    expr shouldNotBe null
-    expr.text shouldBe "CURRENT_TIMESTAMP"
-  }
+    "date time expr creation" {
+      val expr = dateTimeExpr("CURRENT_TIMESTAMP")
+      expr shouldNotBe null
+      expr.text shouldBe "CURRENT_TIMESTAMP"
+    }
 
-  @Test
-  fun customExprWithDifferentTextTest() {
-    val expr1 = customDateTimeConstant("NOW()")
-    val expr2 = customDateTimeConstant("CURRENT_DATE")
+    "custom expr with different text" {
+      val expr1 = customDateTimeConstant("NOW()")
+      val expr2 = customDateTimeConstant("CURRENT_DATE")
 
-    expr1.text shouldBe "NOW()"
-    expr2.text shouldBe "CURRENT_DATE"
+      expr1.text shouldBe "NOW()"
+      expr2.text shouldBe "CURRENT_DATE"
+    }
   }
 }

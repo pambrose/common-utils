@@ -19,26 +19,24 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.concurrent.ConditionalBoolean
 import com.github.pambrose.common.concurrent.ConditionalValue
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
-import org.junit.jupiter.api.Test
 
-class ConditionalTests {
-  @Test
-  fun simpleBools() {
-    val results = mutableListOf<Int>()
-    val mutex = Mutex()
-    val jobs = mutableListOf<Job>()
-    val bool1 = ConditionalBoolean(false)
-    val bool2 = ConditionalBoolean(false)
-    val bool3 = ConditionalBoolean(false)
+class ConditionalTests : StringSpec() {
+  init {
+    "simple bools" {
+      val results = mutableListOf<Int>()
+      val mutex = Mutex()
+      val jobs = mutableListOf<Job>()
+      val bool1 = ConditionalBoolean(false)
+      val bool2 = ConditionalBoolean(false)
+      val bool3 = ConditionalBoolean(false)
 
-    runBlocking {
       jobs += launch {
         bool1.waitUntilTrue()
         mutex.withLock { results.add(1) }
@@ -63,17 +61,14 @@ class ConditionalTests {
 
       results shouldBe listOf(3, 1, 2)
     }
-  }
 
-  @Test
-  fun listBools() {
-    val mutex = Mutex()
-    val jobs = mutableListOf<Job>()
-    val results = mutableListOf<Int>()
-    val expected = mutableListOf<Int>()
-    val bools = List(1000) { it to ConditionalBoolean(false) }
+    "list bools" {
+      val mutex = Mutex()
+      val jobs = mutableListOf<Job>()
+      val results = mutableListOf<Int>()
+      val expected = mutableListOf<Int>()
+      val bools = List(1000) { it to ConditionalBoolean(false) }
 
-    runBlocking {
       for ((id, bool) in bools) {
         jobs +=
           launch {
@@ -90,17 +85,14 @@ class ConditionalTests {
 
       results shouldBe expected
     }
-  }
 
-  @Test
-  fun multiIntListeners() {
-    val mutex = Mutex()
-    val jobs = mutableListOf<Job>()
-    val results = mutableListOf<Int>()
-    val expected = mutableListOf<Int>()
-    val vals = List(1000) { it to ConditionalValue(-1) }
+    "multi int listeners" {
+      val mutex = Mutex()
+      val jobs = mutableListOf<Job>()
+      val results = mutableListOf<Int>()
+      val expected = mutableListOf<Int>()
+      val vals = List(1000) { it to ConditionalValue(-1) }
 
-    runBlocking {
       for ((id, cv) in vals.shuffled()) {
         jobs +=
           launch {
@@ -117,18 +109,15 @@ class ConditionalTests {
 
       results shouldBe expected
     }
-  }
 
-  @Test
-  fun multiListListeners() {
-    val mutex = Mutex()
-    val jobs = mutableListOf<Job>()
-    val results = mutableListOf<Int>()
-    val expected = mutableListOf<Int>()
-    val listVals = mutableListOf<Int>()
-    val vals = List(1000) { it to ConditionalValue(emptyList<Int>()) }
+    "multi list listeners" {
+      val mutex = Mutex()
+      val jobs = mutableListOf<Job>()
+      val results = mutableListOf<Int>()
+      val expected = mutableListOf<Int>()
+      val listVals = mutableListOf<Int>()
+      val vals = List(1000) { it to ConditionalValue(emptyList<Int>()) }
 
-    runBlocking {
       for ((id, cv) in vals.shuffled()) {
         jobs +=
           launch {
