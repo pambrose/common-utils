@@ -1,6 +1,7 @@
 package com.github.pambrose.common.email
 
 import com.github.pambrose.common.util.ReadResources.readResourceFile
+import java.util.regex.Pattern
 import kotlinx.html.BODY
 import kotlinx.html.FlowOrMetaDataContent
 import kotlinx.html.HTML
@@ -11,7 +12,6 @@ import kotlinx.html.meta
 import kotlinx.html.stream.createHTML
 import kotlinx.html.style
 import kotlinx.html.unsafe
-import java.util.regex.Pattern
 
 object EmailUtils {
   private val emailPattern by lazy {

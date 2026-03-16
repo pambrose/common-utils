@@ -21,39 +21,38 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.util.ListUtils
 import com.github.pambrose.common.util.captureStdout
-import org.junit.jupiter.api.Test
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
 
-class ListUtilsTests {
-  @Test
-  fun listPrintStringTest() {
-    val output = captureStdout {
-      ListUtils.listPrint(listOf("a", "b", "c"))
+class ListUtilsTests : StringSpec() {
+  init {
+    "list print string test" {
+      val output = captureStdout {
+        ListUtils.listPrint(listOf("a", "b", "c"))
+      }
+      output.trim() shouldBe "[\"a\", \"b\", \"c\"]"
     }
-    assert(output.trim() == "[\"a\", \"b\", \"c\"]")
-  }
 
-  @Test
-  fun listPrintIntTest() {
-    val output = captureStdout {
-      ListUtils.listPrint(listOf(1, 2, 3))
+    "list print int test" {
+      val output = captureStdout {
+        ListUtils.listPrint(listOf(1, 2, 3))
+      }
+      output.trim() shouldBe "[1, 2, 3]"
     }
-    assert(output.trim() == "[1, 2, 3]")
-  }
 
-  @Test
-  fun listPrintEmptyTest() {
-    val output = captureStdout {
-      ListUtils.listPrint(emptyList<String>())
+    "list print empty test" {
+      val output = captureStdout {
+        ListUtils.listPrint(emptyList<String>())
+      }
+      output.trim() shouldBe "[]"
     }
-    assert(output.trim() == "[]")
-  }
 
-  @Test
-  fun listPrintMixedTypesTest() {
-    // When list contains non-String types, should use toString()
-    val output = captureStdout {
-      ListUtils.listPrint(listOf(1.5, 2.5, 3.5))
+    "list print mixed types test" {
+      // When list contains non-String types, should use toString()
+      val output = captureStdout {
+        ListUtils.listPrint(listOf(1.5, 2.5, 3.5))
+      }
+      output.trim() shouldBe "[1.5, 2.5, 3.5]"
     }
-    assert(output.trim() == "[1.5, 2.5, 3.5]")
   }
 }

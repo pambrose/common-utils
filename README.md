@@ -204,9 +204,9 @@ repositories {
 
 dependencies {
     // Include specific modules as needed
-  implementation("com.github.pambrose.common-utils:core-utils:2.6.1")
-  implementation("com.github.pambrose.common-utils:json-utils:2.6.1")
-  implementation("com.github.pambrose.common-utils:ktor-server-utils:2.6.1")
+  implementation("com.github.pambrose.common-utils:core-utils:2.6.2")
+  implementation("com.github.pambrose.common-utils:json-utils:2.6.2")
+  implementation("com.github.pambrose.common-utils:ktor-server-utils:2.6.2")
     // ... other modules
 }
 ```
@@ -225,7 +225,7 @@ dependencies {
     <dependency>
         <groupId>com.github.pambrose.common-utils</groupId>
         <artifactId>core-utils</artifactId>
-      <version>2.6.1</version>
+      <version>2.6.2</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>

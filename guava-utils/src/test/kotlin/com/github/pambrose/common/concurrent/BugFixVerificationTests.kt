@@ -3,71 +3,64 @@
 package com.github.pambrose.common.concurrent
 
 import com.github.pambrose.common.util.isZipped
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Test
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-class BugFixVerificationTests {
-  // Bug #5: Lambda-based logging methods logged the lambda object, not its result
-  // Before fix: logger.debug { msg } logged the lambda's toString()
-  // After fix: logger.debug { msg() } invokes the lambda to get the message
+class BugFixVerificationTests : StringSpec() {
+  init {
+    // Bug #5: Lambda-based logging methods logged the lambda object, not its result
+    // Before fix: logger.debug { msg } logged the lambda's toString()
+    // After fix: logger.debug { msg() } invokes the lambda to get the message
 
-  @Test
-  fun debugLambdaIsInvoked() {
-    var invoked = false
-    val action = BooleanMonitor.debug {
-      invoked = true
-      "debug message"
+    "debug lambda is invoked" {
+      var invoked = false
+      val action = BooleanMonitor.debug {
+        invoked = true
+        "debug message"
+      }
+      action()
+      invoked shouldBe true
     }
-    action()
-    invoked shouldBe true
-  }
 
-  @Test
-  fun infoLambdaIsInvoked() {
-    var invoked = false
-    val action = BooleanMonitor.info {
-      invoked = true
-      "info message"
+    "info lambda is invoked" {
+      var invoked = false
+      val action = BooleanMonitor.info {
+        invoked = true
+        "info message"
+      }
+      action()
+      invoked shouldBe true
     }
-    action()
-    invoked shouldBe true
-  }
 
-  @Test
-  fun warnLambdaIsInvoked() {
-    var invoked = false
-    val action = BooleanMonitor.warn {
-      invoked = true
-      "warn message"
+    "warn lambda is invoked" {
+      var invoked = false
+      val action = BooleanMonitor.warn {
+        invoked = true
+        "warn message"
+      }
+      action()
+      invoked shouldBe true
     }
-    action()
-    invoked shouldBe true
-  }
 
-  @Test
-  fun errorLambdaIsInvoked() {
-    var invoked = false
-    val action = BooleanMonitor.error {
-      invoked = true
-      "error message"
+    "error lambda is invoked" {
+      var invoked = false
+      val action = BooleanMonitor.error {
+        invoked = true
+        "error message"
+      }
+      action()
+      invoked shouldBe true
     }
-    action()
-    invoked shouldBe true
-  }
 
-  // Bug #16: Race condition in GenericValueWaiter/BooleanWaiter
-  // Before fix: check and callback setup were not atomic; predicate was not volatile
-  // After fix: check and callback are set atomically under mutex; predicate is @Volatile
+    // Bug #16: Race condition in GenericValueWaiter/BooleanWaiter
+    // Before fix: check and callback setup were not atomic; predicate was not volatile
+    // After fix: check and callback are set atomically under mutex; predicate is @Volatile
 
-  @Test
-  fun booleanWaiterWaitUntilTrueWorks() {
-    runBlocking {
+    "boolean waiter wait until true works" {
       val waiter = BooleanWaiter(false)
 
       launch {
@@ -78,11 +71,8 @@ class BugFixVerificationTests {
       val result = waiter.waitUntilTrue(2.seconds)
       result shouldBe true
     }
-  }
 
-  @Test
-  fun booleanWaiterWaitUntilFalseWorks() {
-    runBlocking {
+    "boolean waiter wait until false works" {
       val waiter = BooleanWaiter(true)
 
       launch {
@@ -93,34 +83,25 @@ class BugFixVerificationTests {
       val result = waiter.waitUntilFalse(2.seconds)
       result shouldBe true
     }
-  }
 
-  @Test
-  fun booleanWaiterTimeoutReturnsFalse() {
-    runBlocking {
+    "boolean waiter timeout returns false" {
       val waiter = BooleanWaiter(false)
       val result = waiter.waitUntilTrue(100.milliseconds)
       result shouldBe false
     }
-  }
 
-  @Test
-  fun booleanWaiterAlreadySatisfiedReturnsImmediately() {
-    runBlocking {
+    "boolean waiter already satisfied returns immediately" {
       val waiter = BooleanWaiter(false)
       waiter.setValue(true)
       val result = waiter.waitUntilTrue(1.seconds)
       result shouldBe true
     }
-  }
 
-  // Bug #17: LameBooleanWaiter used unstructured coroutine scopes
-  // Before fix: CoroutineScope(Dispatchers.Default).launch broke structured concurrency
-  // After fix: uses coroutineScope { launch { ... } } for structured concurrency
+    // Bug #17: LameBooleanWaiter used unstructured coroutine scopes
+    // Before fix: CoroutineScope(Dispatchers.Default).launch broke structured concurrency
+    // After fix: uses coroutineScope { launch { ... } } for structured concurrency
 
-  @Test
-  fun lameBooleanWaiterWaitForChangeWorks() {
-    runBlocking {
+    "lame boolean waiter wait for change works" {
       val waiter = LameBooleanWaiter(false)
 
       launch {
@@ -131,11 +112,8 @@ class BugFixVerificationTests {
       waiter.waitForChangeInValue()
       // If we reach here, the waiter correctly detected the change
     }
-  }
 
-  @Test
-  fun lameBooleanWaiterImmediateReturnWhenAlreadyChanged() {
-    runBlocking {
+    "lame boolean waiter immediate return when already changed" {
       val waiter = LameBooleanWaiter(false)
       waiter.changeValue(true)
 
@@ -146,40 +124,33 @@ class BugFixVerificationTests {
       waiter2.changeValue(false)
       // If we get here without hanging, the immediate-return logic works
     }
-  }
 
-  // Bug #18: isZipped() crashed on byte arrays with fewer than 2 elements
-  // Before fix: accessed this[0] and this[1] without size check
-  // After fix: checks size >= 2 before accessing elements
+    // Bug #18: isZipped() crashed on byte arrays with fewer than 2 elements
+    // Before fix: accessed this[0] and this[1] without size check
+    // After fix: checks size >= 2 before accessing elements
 
-  @Test
-  fun isZippedHandlesEmptyArray() {
-    ByteArray(0).isZipped() shouldBe false
-  }
+    "is zipped handles empty array" {
+      ByteArray(0).isZipped() shouldBe false
+    }
 
-  @Test
-  fun isZippedHandlesSingleByteArray() {
-    byteArrayOf(0x1f).isZipped() shouldBe false
-  }
+    "is zipped handles single byte array" {
+      byteArrayOf(0x1f).isZipped() shouldBe false
+    }
 
-  @Test
-  fun isZippedHandlesNonGzipData() {
-    byteArrayOf(0x00, 0x00).isZipped() shouldBe false
-  }
+    "is zipped handles non gzip data" {
+      byteArrayOf(0x00, 0x00).isZipped() shouldBe false
+    }
 
-  @Test
-  fun isZippedDetectsGzipMagicBytes() {
-    // GZIP magic bytes: 0x1f 0x8b
-    byteArrayOf(0x1f, 0x8b.toByte()).isZipped() shouldBe true
-  }
+    "is zipped detects gzip magic bytes" {
+      // GZIP magic bytes: 0x1f 0x8b
+      byteArrayOf(0x1f, 0x8b.toByte()).isZipped() shouldBe true
+    }
 
-  // Bug #24: Long.MAX_VALUE.days overflows; should use Duration.INFINITE
-  // Before fix: Long.MAX_VALUE.days as default timeout overflowed on conversion
-  // After fix: Duration.INFINITE is used, which withTimeoutOrNull handles correctly
+    // Bug #24: Long.MAX_VALUE.days overflows; should use Duration.INFINITE
+    // Before fix: Long.MAX_VALUE.days as default timeout overflowed on conversion
+    // After fix: Duration.INFINITE is used, which withTimeoutOrNull handles correctly
 
-  @Test
-  fun conditionalBooleanWaitUntilTrueWithDefaultTimeout() {
-    runBlocking {
+    "conditional boolean wait until true with default timeout" {
       val cond = ConditionalBoolean(false)
 
       launch {
@@ -190,11 +161,8 @@ class BugFixVerificationTests {
       val result = cond.waitUntilTrue(2.seconds)
       result shouldBe true
     }
-  }
 
-  @Test
-  fun conditionalValueWaitUntilWithDefaultTimeout() {
-    runBlocking {
+    "conditional value wait until with default timeout" {
       val cond = ConditionalValue(0)
 
       launch {
@@ -205,11 +173,8 @@ class BugFixVerificationTests {
       val result = cond.waitUntil(2.seconds) { it == 42 }
       result shouldBe true
     }
-  }
 
-  @Test
-  fun conditionalValueTimeoutReturnsFalse() {
-    runBlocking {
+    "conditional value timeout returns false" {
       val cond = ConditionalValue(0)
       val result = cond.waitUntil(100.milliseconds) { it == 99 }
       result shouldBe false

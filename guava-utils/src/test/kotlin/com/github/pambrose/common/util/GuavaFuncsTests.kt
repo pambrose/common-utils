@@ -19,25 +19,24 @@
 
 package com.github.pambrose.common.util
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.types.shouldBeTypeOf
-import org.junit.jupiter.api.Test
 
-class GuavaFuncsTests {
-  @Test
-  fun isWindowsTypeTest() {
-    isWindows.shouldBeTypeOf<Boolean>()
-  }
+class GuavaFuncsTests : StringSpec() {
+  init {
+    "is windows type" {
+      isWindows.shouldBeTypeOf<Boolean>()
+    }
 
-  @Test
-  fun isMacTypeTest() {
-    isMac.shouldBeTypeOf<Boolean>()
-  }
+    "is mac type" {
+      isMac.shouldBeTypeOf<Boolean>()
+    }
 
-  @Test
-  fun isJava6TypeTest() {
-    isJava6.shouldBeTypeOf<Boolean>()
-    // Modern JDKs should not be Java 6
-    isJava6.shouldBeFalse()
+    "is java6 type" {
+      isJava6.shouldBeTypeOf<Boolean>()
+      // Modern JDKs should not be Java 6
+      isJava6.shouldBeFalse()
+    }
   }
 }

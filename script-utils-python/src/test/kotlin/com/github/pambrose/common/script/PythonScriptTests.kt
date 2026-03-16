@@ -19,8 +19,8 @@ package com.github.pambrose.common.script
 
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 import javax.script.ScriptException
 
 class IncClass(
@@ -31,196 +31,188 @@ class IncClass(
   }
 }
 
-class PythonScriptTests {
-  @Test
-  fun builtInTypesTest() {
-    val boolVal = true
-    val intVal = 0
-    val longVal = 0L
-    val doubleVal = 0.0
-    val floatVal = 0.0F
-    val strVal = "A String"
+class PythonScriptTests : StringSpec() {
+  init {
+    "built in types" {
+      val boolVal = true
+      val intVal = 0
+      val longVal = 0L
+      val doubleVal = 0.0
+      val floatVal = 0.0F
+      val strVal = "A String"
 
-    PythonScript().use {
-      it.apply {
-        add("boolVal", boolVal)
-        add("intVal", intVal)
-        add("longVal", longVal)
-        add("doubleVal", doubleVal)
-        add("floatVal", floatVal)
-        add("strVal", strVal)
+      PythonScript().use {
+        it.apply {
+          add("boolVal", boolVal)
+          add("intVal", intVal)
+          add("longVal", longVal)
+          add("doubleVal", doubleVal)
+          add("floatVal", floatVal)
+          add("strVal", strVal)
 
-        boolVal shouldBe eval("boolVal")
-        !boolVal shouldBe eval("not boolVal")
+          boolVal shouldBe eval("boolVal")
+          !boolVal shouldBe eval("not boolVal")
 
-        intVal shouldBe eval("intVal")
-        intVal + 1 shouldBe eval("intVal + 1")
+          intVal shouldBe eval("intVal")
+          intVal + 1 shouldBe eval("intVal + 1")
 
-        longVal.toBigInteger() shouldBe eval("longVal")
-        (longVal + 1).toBigInteger() shouldBe eval("longVal + 1")
+          longVal.toBigInteger() shouldBe eval("longVal")
+          (longVal + 1).toBigInteger() shouldBe eval("longVal + 1")
 
-        doubleVal shouldBe eval("doubleVal")
-        doubleVal + 1 shouldBe eval("doubleVal + 1")
+          doubleVal shouldBe eval("doubleVal")
+          doubleVal + 1 shouldBe eval("doubleVal + 1")
 
-        floatVal.toDouble() shouldBe eval("floatVal")
-        floatVal.toDouble() + 1 shouldBe eval("floatVal + 1")
+          floatVal.toDouble() shouldBe eval("floatVal")
+          floatVal.toDouble() + 1 shouldBe eval("floatVal + 1")
 
-        strVal shouldBe eval("strVal")
-        strVal.length shouldBe eval("len(strVal)")
+          strVal shouldBe eval("strVal")
+          strVal.length shouldBe eval("len(strVal)")
+        }
       }
     }
-  }
 
-  @Test
-  fun userObjectTest() {
-    val aux = IncClass()
+    "user object" {
+      val aux = IncClass()
 
-    PythonScript().use {
-      it.apply {
-        add("aux", aux)
+      PythonScript().use {
+        it.apply {
+          add("aux", aux)
 
-        aux.i shouldBe eval("aux.i")
+          aux.i shouldBe eval("aux.i")
 
-        eval(
-          """
+          eval(
+            """
                 for i in range(100):
                   aux.inc()
           """.trimIndent(),
-        )
+          )
 
-        aux.i shouldBe 100
+          aux.i shouldBe 100
+        }
       }
     }
-  }
 
-  @Test
-  fun objectWithClassTest() {
-    val list = mutableListOf(1)
-    val map = mutableMapOf("k1" to 1)
+    "object with class" {
+      val list = mutableListOf(1)
+      val map = mutableMapOf("k1" to 1)
 
-    PythonScript().use {
-      it.apply {
-        add("list", list)
-        add("map", map)
+      PythonScript().use {
+        it.apply {
+          add("list", list)
+          add("map", map)
 
-        list.size shouldBe eval("len(list)")
-        map.size shouldBe eval("len(map)")
+          list.size shouldBe eval("len(list)")
+          map.size shouldBe eval("len(map)")
 
-        eval(
-          """
+          eval(
+            """
                 map["k2"] = 10
                 for i in range(100):
                   list.add(i)
           """.trimIndent(),
-        )
+          )
 
-        list.size shouldBe 101
-        list.size shouldBe eval("len(list)")
+          list.size shouldBe 101
+          list.size shouldBe eval("len(list)")
 
-        map.size shouldBe eval("len(map)")
-        map.size shouldBe 2
-        map["k2"] shouldBe 10
+          map.size shouldBe eval("len(map)")
+          map.size shouldBe 2
+          map["k2"] shouldBe 10
+        }
       }
     }
-  }
 
-  @Test
-  fun listCompareTest() {
-    PythonScript().use {
-      it.apply {
-        eval("[True] == [True]") shouldBe true
+    "list compare" {
+      PythonScript().use {
+        it.apply {
+          eval("[True] == [True]") shouldBe true
+        }
       }
     }
-  }
 
-  @Test
-  fun objectWithTypeTest() {
-    val list = mutableListOf(1)
+    "object with type" {
+      val list = mutableListOf(1)
 
-    PythonScript().use {
-      it.apply {
-        add("list", list)
+      PythonScript().use {
+        it.apply {
+          add("list", list)
 
-        list.size shouldBe eval("len(list)")
+          list.size shouldBe eval("len(list)")
 
-        eval(
-          """
+          eval(
+            """
                 for i in range(100):
                   list.add(i)
           """.trimIndent(),
-        )
+          )
 
-        list.size shouldBe 101
-        list.size shouldBe eval("len(list)")
+          list.size shouldBe 101
+          list.size shouldBe eval("len(list)")
+        }
       }
     }
-  }
 
-  @Test
-  fun nullObjectTest() {
-    val list = mutableListOf<Int?>()
+    "null object" {
+      val list = mutableListOf<Int?>()
 
-    PythonScript().use {
-      it.apply {
-        add("list", list)
+      PythonScript().use {
+        it.apply {
+          add("list", list)
 
-        list.size shouldBe eval("len(list)")
+          list.size shouldBe eval("len(list)")
 
-        eval(
-          """
+          eval(
+            """
                 for i in range(100):
                   list.add(None)
           """.trimIndent(),
-        )
+          )
 
-        list.size shouldBe 100
-        list.size shouldBe eval("len(list)")
-      }
-    }
-  }
-
-  @Test
-  fun invalidSyntaxTest() {
-    PythonScript().use {
-      it.apply {
-        shouldThrow<ScriptException> { eval("junk") }
-      }
-    }
-  }
-
-  @Test
-  fun illegalCallsTest() {
-    PythonScript().use {
-      it.apply {
-        shouldThrow<ScriptException> { eval("sys.exit(1)") }
-        shouldThrow<ScriptException> { eval("exit(1)") }
-        shouldThrow<ScriptException> { eval("quit(1)") }
-      }
-    }
-  }
-
-  @Test
-  fun exprEvaluator() {
-    PythonExprEvaluator()
-      .apply {
-        repeat(200) { i ->
-          // println("Invocation: $i")
-          shouldThrow<ScriptException> { eval("$i == [wrong]") }
-          shouldNotThrow<ScriptException> { eval("$i == $i") }
+          list.size shouldBe 100
+          list.size shouldBe eval("len(list)")
         }
       }
-  }
+    }
 
-  @Test
-  fun poolExprEvaluator() {
-    val pool = PythonExprEvaluatorPool(5)
-    repeat(200) { i ->
-      pool
+    "invalid syntax" {
+      PythonScript().use {
+        it.apply {
+          shouldThrow<ScriptException> { eval("junk") }
+        }
+      }
+    }
+
+    "illegal calls" {
+      PythonScript().use {
+        it.apply {
+          shouldThrow<ScriptException> { eval("sys.exit(1)") }
+          shouldThrow<ScriptException> { eval("exit(1)") }
+          shouldThrow<ScriptException> { eval("quit(1)") }
+        }
+      }
+    }
+
+    "expr evaluator" {
+      PythonExprEvaluator()
         .apply {
-          // println("Invocation: $i")
-          shouldThrow<ScriptException> { blockingEval("$i == [wrong]") }
-          shouldNotThrow<ScriptException> { blockingEval("$i == $i") }
+          repeat(200) { i ->
+            // println("Invocation: $i")
+            shouldThrow<ScriptException> { eval("$i == [wrong]") }
+            shouldNotThrow<ScriptException> { eval("$i == $i") }
+          }
         }
+    }
+
+    "pool expr evaluator" {
+      val pool = PythonExprEvaluatorPool(5)
+      repeat(200) { i ->
+        pool
+          .apply {
+            // println("Invocation: $i")
+            shouldThrow<ScriptException> { blockingEval("$i == [wrong]") }
+            shouldNotThrow<ScriptException> { blockingEval("$i == $i") }
+          }
+      }
     }
   }
 }

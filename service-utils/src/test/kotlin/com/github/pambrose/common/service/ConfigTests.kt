@@ -19,81 +19,79 @@
 
 package com.github.pambrose.common.service
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class ConfigTests {
-  @Test
-  fun adminConfigCreationTest() {
-    val config = AdminConfig(
-      enabled = true,
-      port = 8080,
-      pingPath = "/ping",
-      versionPath = "/version",
-      healthCheckPath = "/healthcheck",
-      threadDumpPath = "/threaddump",
-    )
-    config.enabled shouldBe true
-    config.port shouldBe 8080
-    config.pingPath shouldBe "/ping"
-    config.versionPath shouldBe "/version"
-    config.healthCheckPath shouldBe "/healthcheck"
-    config.threadDumpPath shouldBe "/threaddump"
-  }
+class ConfigTests : StringSpec() {
+  init {
+    "admin config creation" {
+      val config = AdminConfig(
+        enabled = true,
+        port = 8080,
+        pingPath = "/ping",
+        versionPath = "/version",
+        healthCheckPath = "/healthcheck",
+        threadDumpPath = "/threaddump",
+      )
+      config.enabled shouldBe true
+      config.port shouldBe 8080
+      config.pingPath shouldBe "/ping"
+      config.versionPath shouldBe "/version"
+      config.healthCheckPath shouldBe "/healthcheck"
+      config.threadDumpPath shouldBe "/threaddump"
+    }
 
-  @Test
-  fun adminConfigCopyTest() {
-    val config = AdminConfig(
-      enabled = true,
-      port = 8080,
-      pingPath = "/ping",
-      versionPath = "/version",
-      healthCheckPath = "/healthcheck",
-      threadDumpPath = "/threaddump",
-    )
-    val copied = config.copy(enabled = false, port = 9090)
-    copied.enabled shouldBe false
-    copied.port shouldBe 9090
-    copied.pingPath shouldBe "/ping"
-  }
+    "admin config copy" {
+      val config = AdminConfig(
+        enabled = true,
+        port = 8080,
+        pingPath = "/ping",
+        versionPath = "/version",
+        healthCheckPath = "/healthcheck",
+        threadDumpPath = "/threaddump",
+      )
+      val copied = config.copy(enabled = false, port = 9090)
+      copied.enabled shouldBe false
+      copied.port shouldBe 9090
+      copied.pingPath shouldBe "/ping"
+    }
 
-  @Test
-  fun metricsConfigCreationTest() {
-    val config = MetricsConfig(
-      enabled = true,
-      port = 9090,
-      path = "metrics",
-      standardExportsEnabled = true,
-      memoryPoolsExportsEnabled = false,
-      garbageCollectorExportsEnabled = true,
-      threadExportsEnabled = false,
-      classLoadingExportsEnabled = true,
-      versionInfoExportsEnabled = false,
-    )
-    config.enabled shouldBe true
-    config.port shouldBe 9090
-    config.path shouldBe "metrics"
-    config.standardExportsEnabled shouldBe true
-    config.memoryPoolsExportsEnabled shouldBe false
-    config.garbageCollectorExportsEnabled shouldBe true
-    config.threadExportsEnabled shouldBe false
-    config.classLoadingExportsEnabled shouldBe true
-    config.versionInfoExportsEnabled shouldBe false
-  }
+    "metrics config creation" {
+      val config = MetricsConfig(
+        enabled = true,
+        port = 9090,
+        path = "metrics",
+        standardExportsEnabled = true,
+        memoryPoolsExportsEnabled = false,
+        garbageCollectorExportsEnabled = true,
+        threadExportsEnabled = false,
+        classLoadingExportsEnabled = true,
+        versionInfoExportsEnabled = false,
+      )
+      config.enabled shouldBe true
+      config.port shouldBe 9090
+      config.path shouldBe "metrics"
+      config.standardExportsEnabled shouldBe true
+      config.memoryPoolsExportsEnabled shouldBe false
+      config.garbageCollectorExportsEnabled shouldBe true
+      config.threadExportsEnabled shouldBe false
+      config.classLoadingExportsEnabled shouldBe true
+      config.versionInfoExportsEnabled shouldBe false
+    }
 
-  @Test
-  fun zipkinConfigCreationTest() {
-    val config = ZipkinConfig(
-      enabled = true,
-      hostname = "localhost",
-      port = 9411,
-      path = "api/v2/spans",
-      serviceName = "test-service",
-    )
-    config.enabled shouldBe true
-    config.hostname shouldBe "localhost"
-    config.port shouldBe 9411
-    config.path shouldBe "api/v2/spans"
-    config.serviceName shouldBe "test-service"
+    "zipkin config creation" {
+      val config = ZipkinConfig(
+        enabled = true,
+        hostname = "localhost",
+        port = 9411,
+        path = "api/v2/spans",
+        serviceName = "test-service",
+      )
+      config.enabled shouldBe true
+      config.hostname shouldBe "localhost"
+      config.port shouldBe 9411
+      config.path shouldBe "api/v2/spans"
+      config.serviceName shouldBe "test-service"
+    }
   }
 }

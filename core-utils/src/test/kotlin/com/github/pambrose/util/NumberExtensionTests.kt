@@ -20,46 +20,45 @@
 package com.github.pambrose.util
 
 import com.github.pambrose.common.util.times
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class NumberExtensionTests {
-  @Test
-  fun shortTest() {
-    val cnt: Short = 1000.toShort()
-    var runs: Short = 0
-    var index: Short = 0
-    cnt times {
-      index shouldBe it
-      index++
-      runs++
+class NumberExtensionTests : StringSpec() {
+  init {
+    "short test" {
+      val cnt: Short = 1000.toShort()
+      var runs: Short = 0
+      var index: Short = 0
+      cnt times {
+        index shouldBe it
+        index++
+        runs++
+      }
+      cnt shouldBe runs
     }
-    cnt shouldBe runs
-  }
 
-  @Test
-  fun intTest() {
-    val cnt = 100000
-    var runs = 0
-    var index = 0
-    cnt times {
-      index shouldBe it
-      index++
-      runs++
+    "int test" {
+      val cnt = 100000
+      var runs = 0
+      var index = 0
+      cnt times {
+        index shouldBe it
+        index++
+        runs++
+      }
+      cnt shouldBe runs
     }
-    cnt shouldBe runs
-  }
 
-  @Test
-  fun longTest() {
-    val cnt = 100000L
-    var runs = 0L
-    var index = 0L
-    cnt times {
-      index shouldBe it
-      index++
-      runs++
+    "long test" {
+      val cnt = 100000L
+      var runs = 0L
+      var index = 0L
+      cnt times {
+        index shouldBe it
+        index++
+        runs++
+      }
+      cnt shouldBe runs
     }
-    cnt shouldBe runs
   }
 }

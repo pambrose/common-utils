@@ -21,100 +21,95 @@ package com.github.pambrose.util
 
 import com.github.pambrose.common.delegate.AtomicDelegates
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Test
 
-class AtomicDelegatesTests {
-  @Test
-  fun atomicBooleanTest() {
-    var flag by AtomicDelegates.atomicBoolean(false)
-    flag shouldBe false
-    flag = true
-    flag shouldBe true
-    flag = false
-    flag shouldBe false
-  }
-
-  @Test
-  fun atomicIntegerTest() {
-    var count by AtomicDelegates.atomicInteger(0)
-    count shouldBe 0
-    count = 42
-    count shouldBe 42
-    count = -1
-    count shouldBe -1
-    count = Int.MAX_VALUE
-    count shouldBe Int.MAX_VALUE
-  }
-
-  @Test
-  fun atomicLongTest() {
-    var count by AtomicDelegates.atomicLong(0L)
-    count shouldBe 0L
-    count = 42L
-    count shouldBe 42L
-    count = -1L
-    count shouldBe -1L
-    count = Long.MAX_VALUE
-    count shouldBe Long.MAX_VALUE
-  }
-
-  @Test
-  fun nonNullableReferenceTest() {
-    var value: String by AtomicDelegates.nonNullableReference()
-
-    // Should throw when accessed before initialization
-    shouldThrow<IllegalStateException> {
-      @Suppress("UNUSED_EXPRESSION")
-      value
+class AtomicDelegatesTests : StringSpec() {
+  init {
+    "atomic boolean test" {
+      var flag by AtomicDelegates.atomicBoolean(false)
+      flag shouldBe false
+      flag = true
+      flag shouldBe true
+      flag = false
+      flag shouldBe false
     }
 
-    // Should work after initialization
-    value = "test"
-    value shouldBe "test"
-
-    // Should allow reassignment
-    value = "updated"
-    value shouldBe "updated"
-  }
-
-  @Test
-  fun nonNullableReferenceWithInitialValueTest() {
-    var value: String by AtomicDelegates.nonNullableReference("initial")
-    value shouldBe "initial"
-    value = "updated"
-    value shouldBe "updated"
-  }
-
-  @Test
-  fun singleSetReferenceTest() {
-    var value: String? by AtomicDelegates.singleSetReference<String>()
-    value shouldBe null
-
-    // First set should work
-    value = "first"
-    value shouldBe "first"
-
-    // Second set should throw since the value has already been set
-    shouldThrow<IllegalStateException> {
-      value = "second"
+    "atomic integer test" {
+      var count by AtomicDelegates.atomicInteger(0)
+      count shouldBe 0
+      count = 42
+      count shouldBe 42
+      count = -1
+      count shouldBe -1
+      count = Int.MAX_VALUE
+      count shouldBe Int.MAX_VALUE
     }
-    value shouldBe "first"
-  }
 
-  @Test
-  fun singleSetReferenceWithCompareValueTest() {
-    var value: String? by AtomicDelegates.singleSetReference(initValue = "init", compareValue = "init")
-    value shouldBe "init"
-
-    // Should update when current value matches compareValue
-    value = "updated"
-    value shouldBe "updated"
-
-    // Should throw since current value no longer matches compareValue
-    shouldThrow<IllegalStateException> {
-      value = "third"
+    "atomic long test" {
+      var count by AtomicDelegates.atomicLong(0L)
+      count shouldBe 0L
+      count = 42L
+      count shouldBe 42L
+      count = -1L
+      count shouldBe -1L
+      count = Long.MAX_VALUE
+      count shouldBe Long.MAX_VALUE
     }
-    value shouldBe "updated"
+
+    "non nullable reference test" {
+      var value: String by AtomicDelegates.nonNullableReference()
+
+      // Should throw when accessed before initialization
+      shouldThrow<IllegalStateException> {
+        @Suppress("UNUSED_EXPRESSION")
+        value
+      }
+
+      // Should work after initialization
+      value = "test"
+      value shouldBe "test"
+
+      // Should allow reassignment
+      value = "updated"
+      value shouldBe "updated"
+    }
+
+    "non nullable reference with initial value test" {
+      var value: String by AtomicDelegates.nonNullableReference("initial")
+      value shouldBe "initial"
+      value = "updated"
+      value shouldBe "updated"
+    }
+
+    "single set reference test" {
+      var value: String? by AtomicDelegates.singleSetReference<String>()
+      value shouldBe null
+
+      // First set should work
+      value = "first"
+      value shouldBe "first"
+
+      // Second set should throw since the value has already been set
+      shouldThrow<IllegalStateException> {
+        value = "second"
+      }
+      value shouldBe "first"
+    }
+
+    "single set reference with compare value test" {
+      var value: String? by AtomicDelegates.singleSetReference(initValue = "init", compareValue = "init")
+      value shouldBe "init"
+
+      // Should update when current value matches compareValue
+      value = "updated"
+      value shouldBe "updated"
+
+      // Should throw since current value no longer matches compareValue
+      shouldThrow<IllegalStateException> {
+        value = "third"
+      }
+      value shouldBe "updated"
+    }
   }
 }

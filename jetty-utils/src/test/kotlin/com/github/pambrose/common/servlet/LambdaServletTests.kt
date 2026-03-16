@@ -19,25 +19,24 @@
 
 package com.github.pambrose.common.servlet
 
+import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldNotBe
-import org.junit.jupiter.api.Test
 
-class LambdaServletTests {
-  @Test
-  fun lambdaServletCreationTest() {
-    val servlet = LambdaServlet { "Hello, World!" }
-    servlet shouldNotBe null
-  }
+class LambdaServletTests : StringSpec() {
+  init {
+    "lambda servlet creation" {
+      val servlet = LambdaServlet { "Hello, World!" }
+      servlet shouldNotBe null
+    }
 
-  @Test
-  fun lambdaServletWithContentTypeTest() {
-    val servlet = LambdaServlet("application/json") { """{"status": "ok"}""" }
-    servlet shouldNotBe null
-  }
+    "lambda servlet with content type" {
+      val servlet = LambdaServlet("application/json") { """{"status": "ok"}""" }
+      servlet shouldNotBe null
+    }
 
-  @Test
-  fun versionServletCreationTest() {
-    val servlet = VersionServlet("1.0.0")
-    servlet shouldNotBe null
+    "version servlet creation" {
+      val servlet = VersionServlet("1.0.0")
+      servlet shouldNotBe null
+    }
   }
 }
