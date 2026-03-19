@@ -209,18 +209,18 @@ Modules without test files: `ktor-client-utils`, `common-utils-bom`
 
 | Dependency         | Version | Status    |
 |--------------------|---------|-----------|
-| Kotlin             | 2.3.10  | ✅ Current |
+| Kotlin             | 2.3.20  | ✅ Current |
 | Gradle             | 9.2.0   | ✅ Current |
-| Ktor               | 3.4.0   | ✅ Current |
+| Ktor               | 3.4.1   | ✅ Current |
 | Kotest             | 6.0.4   | ✅ Current |
 | Coroutines         | 1.10.2  | ✅ Current |
 | Exposed            | 1.1.1   | ✅ Current |
-| gRPC               | 1.79.0  | ✅ Current |
+| gRPC               | 1.80.0  | ✅ Current |
 | Dropwizard Metrics | 4.2.38  | ✅ Current |
 | Jetty              | 11.0.26 | ✅ Current |
 | Prometheus         | 0.16.0  | ✅ Current |
 | Brave/Zipkin       | 6.3.0   | ✅ Current |
-| Jedis (Redis)      | 7.3.0   | ✅ Current |
+| Jedis (Redis)      | 7.4.0   | ✅ Current |
 | Kotlinter          | 5.3.0   | ✅ Current |
 
 ---
@@ -279,7 +279,7 @@ All JVM target inconsistencies have been completely resolved across all build fi
 ### March 2026 Review
 
 - **Project Version**: 2.6.3
-- **Kotlin**: 2.3.10, **Gradle**: 9.2.0
+- **Kotlin**: 2.3.20, **Gradle**: 9.2.0
 - **Test Files**: 53 across 18 modules
 - **Bugs Found**: 0
 - **Security Issues**: 0
