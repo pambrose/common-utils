@@ -110,7 +110,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:exposed-utils:2.6.2")
+  implementation("com.github.pambrose.common-utils:exposed-utils:2.6.3")
 }
 ```
 
@@ -121,7 +121,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pambrose.common-utils</groupId>
   <artifactId>exposed-utils</artifactId>
-  <version>2.6.2</version>
+  <version>2.6.3</version>
 </dependency>
 ```
 

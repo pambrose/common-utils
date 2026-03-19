@@ -1,4 +1,6 @@
 VERSION := $(shell grep 'extra\["versionStr"\]' build.gradle.kts | sed 's/.*"\(.*\)"/\1/')
+JITPACK_BUILD_LOG := https://jitpack.io/com/github/pambrose/common-utils/$(VERSION)/build.log
+JITPACK_API_URL := https://jitpack.io/api/builds/com.github.pambrose/common-utils/$(VERSION)
 
 default: versioncheck
 
@@ -39,10 +41,15 @@ lint:
 	./gradlew lintKotlinTest
 
 trigger-jitpack:
-	curl -s "https://jitpack.io/com/github/pambrose/common-utils/${VERSION}/build.log"
+	until curl -s "${JITPACK_BUILD_LOG}" | grep -qv "not found"; do \
+		echo "Waiting for JitPack..."; \
+		sleep 10; \
+	done
+	echo "JitPack build complete for version ${VERSION}"
 
 view-jitpack:
-	curl -s "https://jitpack.io/api/builds/com.github.pambrose/common-utils/${VERSION}" | python3 -m json.tool
+	curl -s "${JITPACK_BUILD_LOG}"
+	curl -s "${JITPACK_API_URL}" | jq
 
 versioncheck:
 	./gradlew dependencyUpdates --no-configuration-cache
