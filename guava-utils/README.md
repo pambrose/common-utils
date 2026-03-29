@@ -151,11 +151,15 @@ This module depends on:
 
 ## Installation
 
+[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
+
+Replace `<latest-version>` below with the version shown in the JitPack badge above.
+
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:guava-utils:2.6.4")
+  implementation("com.github.pambrose.common-utils:guava-utils:<latest-version>")
 }
 ```
 
@@ -166,7 +170,7 @@ dependencies {
 <dependency>
   <groupId>com.github.pambrose.common-utils</groupId>
   <artifactId>guava-utils</artifactId>
-  <version>2.6.4</version>
+  <version><latest-version></version>
 </dependency>
 ```
 
