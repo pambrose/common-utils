@@ -205,11 +205,15 @@ This module depends on:
 
 ## Installation
 
+[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
+
+Replace `<latest-version>` below with the version shown in the JitPack badge above.
+
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:prometheus-utils:2.6.3")
+  implementation("com.github.pambrose.common-utils:prometheus-utils:<latest-version>")
 }
 ```
 
@@ -219,7 +223,7 @@ dependencies {
 <dependency>
     <groupId>com.github.pambrose.common-utils</groupId>
     <artifactId>prometheus-utils</artifactId>
-  <version>2.6.3</version>
+  <version><latest-version></version>
 </dependency>
 ```
 
