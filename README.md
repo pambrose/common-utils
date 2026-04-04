@@ -1,7 +1,7 @@
 # Common Utils - Kotlin & Java Utility Library Collection
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/pambrose/common-utils)
-[![Kotlin version](https://img.shields.io/badge/kotlin-2.2.20-red?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin version](https://img.shields.io/badge/kotlin-2.3.20-red?logo=kotlin)](http://kotlinlang.org)
 [![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/core-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/core-utils)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
@@ -217,9 +217,9 @@ dependencies {
 
 ## Technology Stack
 
-- **Languages**: Kotlin 2.3.10, Java
-- **Build System**: Gradle with Kotlin DSL
-- **Testing**: JUnit 5, Kotest
+- **Languages**: Kotlin 2.3.20, Java
+- **Build System**: Gradle 9.4.1 with Kotlin DSL
+- **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava
 - **Web Frameworks**: Ktor, Jetty
