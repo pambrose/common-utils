@@ -1,4 +1,4 @@
-description = "dropwizard-utils"
+description = "Dropwizard framework integration utilities"
 
 dependencies {
     implementation(project(":core-utils"))

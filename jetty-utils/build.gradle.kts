@@ -1,4 +1,4 @@
-description = "jetty-utils"
+description = "Embedded Jetty server configuration utilities"
 
 dependencies {
     implementation(project(":core-utils"))

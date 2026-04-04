@@ -1,4 +1,4 @@
-description = "service-utils"
+description = "Service lifecycle and management utilities"
 
 dependencies {
     implementation(project(":core-utils"))

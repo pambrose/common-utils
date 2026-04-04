@@ -1,4 +1,4 @@
-description = "recaptcha-utils"
+description = "Google reCAPTCHA verification utilities"
 
 plugins {
     alias(libs.plugins.kotlin.serialization)

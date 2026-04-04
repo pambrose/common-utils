@@ -1,4 +1,4 @@
-description = "script-utils-kotlin"
+description = "Kotlin scripting engine utilities"
 
 dependencies {
     implementation(project(":core-utils"))

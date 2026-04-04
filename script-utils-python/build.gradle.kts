@@ -1,4 +1,4 @@
-description = "script-utils-python"
+description = "Python scripting integration utilities"
 
 dependencies {
     implementation(project(":core-utils"))

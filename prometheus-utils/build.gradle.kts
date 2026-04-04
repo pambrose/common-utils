@@ -1,4 +1,4 @@
-description = "prometheus-utils"
+description = "Prometheus metrics and monitoring utilities"
 
 dependencies {
     implementation(project(":core-utils"))

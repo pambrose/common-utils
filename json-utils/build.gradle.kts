@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-description = "json-utils"
+description = "JSON serialization and deserialization utilities"
 
 dependencies {
     implementation(project(":core-utils"))

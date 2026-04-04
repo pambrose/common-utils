@@ -1,4 +1,4 @@
-description = "grpc-utils"
+description = "gRPC client and server utilities for Kotlin"
 
 dependencies {
     implementation(project(":core-utils"))

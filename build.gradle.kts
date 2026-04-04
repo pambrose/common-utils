@@ -23,7 +23,7 @@ val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 val versionsLib = libs.plugins.versions.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = findProperty("overrideVersion")?.toString() ?: "2.7.0"
+    extra["versionStr"] = findProperty("overrideVersion")?.toString() ?: "2.7.1"
     group = "com.pambrose.common-utils"
     version = versionStr
 
@@ -111,7 +111,7 @@ fun Project.configurePublishing() {
 
         pom {
             name.set(project.name)
-            description.set("Kotlin/Java utility library - ${project.name} module")
+            description.set(project.description)
             url.set("https://github.com/pambrose/common-utils")
             licenses {
                 license {
@@ -127,7 +127,7 @@ fun Project.configurePublishing() {
                 }
             }
             scm {
-                connection.set("scm:git:git://github.com/pambrose/common-utils.git")
+                connection.set("scm:git:https://github.com/pambrose/common-utils.git")
                 developerConnection.set("scm:git:ssh://github.com/pambrose/common-utils.git")
                 url.set("https://github.com/pambrose/common-utils")
             }
@@ -137,7 +137,7 @@ fun Project.configurePublishing() {
         signAllPublications()
     }
 
-// Skip signing when no GPG key is provided (e.g., local publishing)
+    // Skip signing when no GPG key is provided (e.g., local publishing)
     tasks.withType<Sign>().configureEach {
         isEnabled = project.findProperty("signingInMemoryKey") != null
     }

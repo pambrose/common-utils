@@ -1,4 +1,4 @@
-description = "email-utils"
+description = "Email sending utilities with template support"
 
 plugins {
     alias(libs.plugins.kotlin.serialization)
