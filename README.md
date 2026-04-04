@@ -186,12 +186,6 @@ Service lifecycle and configuration management.
 - Servlet service management
 - Zipkin reporting service
 
-### BOM
-
-#### **common-utils-bom**
-
-Bill of Materials for version-aligned dependency management across all modules.
-
 ## Installation
 
 This library is available on [Maven Central](https://central.sonatype.com/artifact/com.pambrose.common-utils/core-utils).

@@ -5,7 +5,6 @@ dependencies {
 
     implementation(libs.kotlin.reflect)
 
-    implementation(platform(libs.exposed.bom))
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.jodatime)
