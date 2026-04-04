@@ -73,7 +73,7 @@ class ArrayUtilsTests : StringSpec() {
     }
 
     "string array test" {
-      ArrayUtils.asString(arrayOf<String>()) shouldBe "[]"
+      ArrayUtils.asString(arrayOf()) shouldBe "[]"
       ArrayUtils.asString(arrayOf("hello")) shouldBe "[\"hello\"]"
       ArrayUtils.asString(arrayOf("a", "b", "c")) shouldBe "[\"a\", \"b\", \"c\"]"
     }

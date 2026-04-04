@@ -32,7 +32,7 @@ object AtomicDelegates {
 //  fun <T : Any?> nullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
 //    NullableAtomicReferenceDelegate(initValue)
 
-  fun <T : Any?> singleSetReference(
+  fun <T> singleSetReference(
     initValue: T? = null,
     compareValue: T? = null,
   ): ReadWriteProperty<Any?, T?> = SingleSetAtomicReferenceDelegate(initValue, compareValue)
@@ -78,7 +78,7 @@ private class NonNullableAtomicReferenceDelegate<T : Any>(
 //   ) = atomicVal.store(value)
 // }
 
-private class SingleSetAtomicReferenceDelegate<T : Any?>(
+private class SingleSetAtomicReferenceDelegate<T>(
   initValue: T?,
   private val compareValue: T?,
 ) : ReadWriteProperty<Any?, T?> {

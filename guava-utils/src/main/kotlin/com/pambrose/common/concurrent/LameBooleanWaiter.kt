@@ -17,6 +17,7 @@
 package com.pambrose.common.concurrent
 
 import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -107,7 +108,7 @@ fun main() =
       println("Coroutine 1: Value has changed to true!")
     }
 
-    delay(1000) // Simulate some delay before changing the value
+    delay(1000.milliseconds) // Simulate some delay before changing the value
     println("Main: Changing value to true.")
     waiter.changeValue(true)
 
@@ -120,7 +121,7 @@ fun main() =
       println("Coroutine 2: Value has changed to false!")
     }
 
-    delay(1000) // Simulate some delay before changing the value
+    delay(1000.milliseconds) // Simulate some delay before changing the value
     println("Main: Changing value to false.")
     waiter.changeValue(false)
 
@@ -135,11 +136,11 @@ fun main() =
       println("Coroutine 3: Value has changed to false!")
     }
 
-    delay(500)
+    delay(500.milliseconds)
     println("Main: Changing value to true (no change).")
     waiter2.changeValue(true) // This should not trigger the waiting coroutine
 
-    delay(500)
+    delay(500.milliseconds)
     println("Main: Changing value to false.")
     waiter2.changeValue(false) // This should trigger the waiting coroutine
 

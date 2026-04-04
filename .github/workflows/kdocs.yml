@@ -1,4 +1,4 @@
-name: Test
+name: KDocs
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  test:
+  kdocs:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,8 +23,5 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build and test
-        run: ./gradlew build
-
-      - name: Lint
-        run: ./gradlew lintKotlinMain lintKotlinTest
+      - name: Generate KDocs
+        run: ./gradlew :dokkaGenerate

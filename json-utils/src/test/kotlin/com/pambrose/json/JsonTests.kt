@@ -77,8 +77,6 @@ class BasicObject2(
   }
 }
 
-val l = List(5) { it -> it }
-
 class JsonTests : StringSpec() {
   init {
     val obj = BasicObject2(

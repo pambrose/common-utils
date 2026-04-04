@@ -29,9 +29,9 @@ object SingleAssignVar {
    *
    * @throws IllegalStateException if the property is assigned more than once
    */
-  fun <T : Any?> singleAssign(): ReadWriteProperty<Any?, T?> = ThreadSafeSingleAssignVar()
+  fun <T> singleAssign(): ReadWriteProperty<Any?, T?> = ThreadSafeSingleAssignVar()
 
-  private class ThreadSafeSingleAssignVar<T : Any?> : ReadWriteProperty<Any?, T?> {
+  private class ThreadSafeSingleAssignVar<T> : ReadWriteProperty<Any?, T?> {
     private val atomicValue = AtomicReference<ValueHolder<T>?>()
 
     // Wrapper to distinguish between null value and unset value

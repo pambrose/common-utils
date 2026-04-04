@@ -23,12 +23,12 @@ interface ContentRoot {
   val sourcePrefix: String
   val remote: Boolean
 
-  fun file(path: String): com.pambrose.common.util.ContentSource
+  fun file(path: String): ContentSource
 }
 
 class FileSystemSource(
   val pathPrefix: String,
-) : com.pambrose.common.util.ContentRoot {
+) : ContentRoot {
   override val sourcePrefix = pathPrefix
   override val remote = false
 
@@ -50,10 +50,10 @@ enum class OwnerType {
 abstract class AbstractRepo(
   val scheme: String,
   val domainName: String,
-  val ownerType: com.pambrose.common.util.OwnerType,
+  val ownerType: OwnerType,
   val ownerName: String,
   val repoName: String,
-) : com.pambrose.common.util.ContentRoot {
+) : ContentRoot {
   override val sourcePrefix: String get() = scheme + listOf(domainName, ownerName, repoName).join()
   override val remote = true
   abstract val rawSourcePrefix: String

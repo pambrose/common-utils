@@ -21,6 +21,7 @@ import com.pambrose.common.concurrent.ConditionalValue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -56,7 +57,7 @@ class ConditionalTests : StringSpec() {
       bool1.set(true)
       bool2.set(true)
 
-      jobs.forEach { it.join() }
+      jobs.joinAll()
 
       results shouldBe listOf(3, 1, 2)
     }
@@ -80,7 +81,7 @@ class ConditionalTests : StringSpec() {
         expected += id
       }
 
-      jobs.forEach { it.join() }
+      jobs.joinAll()
 
       results shouldBe expected
     }
@@ -104,7 +105,7 @@ class ConditionalTests : StringSpec() {
         expected += id
       }
 
-      jobs.forEach { it.join() }
+      jobs.joinAll()
 
       results shouldBe expected
     }
@@ -130,7 +131,7 @@ class ConditionalTests : StringSpec() {
         expected += id
       }
 
-      jobs.forEach { it.join() }
+      jobs.joinAll()
 
       results shouldBe expected
     }

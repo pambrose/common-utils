@@ -35,6 +35,9 @@ lint:
 versioncheck:
 	./gradlew dependencyUpdates --no-configuration-cache
 
+kdocs:
+	./gradlew :dokkaGenerate
+
 publish-local:
 	./gradlew publishToMavenLocal
 
