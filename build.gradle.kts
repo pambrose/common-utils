@@ -123,7 +123,7 @@ fun Project.configurePublishing() {
 
         pom {
             name.set(project.name)
-            description.set(project.description)
+            description.set(provider { project.description })
             url.set("https://github.com/pambrose/common-utils")
             licenses {
                 license {
