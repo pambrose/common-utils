@@ -82,7 +82,7 @@ class AtomicDelegatesTests : StringSpec() {
     }
 
     "single set reference test" {
-      var value: String? by AtomicDelegates.singleSetReference<String>()
+      var value: String? by AtomicDelegates.singleSetReference()
       value shouldBe null
 
       // First set should work

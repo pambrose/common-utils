@@ -16,6 +16,4 @@
 
 package com.pambrose.common.script
 
-import com.pambrose.common.script.AbstractExprEvaluator
-
 class PythonExprEvaluator : AbstractExprEvaluator("py")

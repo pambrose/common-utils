@@ -2,7 +2,6 @@
 
 package com.pambrose.common.dsl
 
-import com.pambrose.common.dsl.KtorDsl.blockingGet
 import com.pambrose.common.dsl.KtorDsl.httpClient
 import com.pambrose.common.dsl.KtorDsl.newHttpClient
 import com.pambrose.common.dsl.KtorDsl.withHttpClient

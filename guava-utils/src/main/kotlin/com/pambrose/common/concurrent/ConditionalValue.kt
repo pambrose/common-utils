@@ -17,6 +17,7 @@
 package com.pambrose.common.concurrent
 
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +52,7 @@ open class ConditionalValue<T>(
     timeoutDuration: Duration = Duration.INFINITE,
     predicate: (T) -> Boolean,
   ): Boolean =
-    withTimeoutOrNull(timeoutDuration.inWholeMilliseconds) {
+    withTimeoutOrNull(timeoutDuration.inWholeMilliseconds.milliseconds) {
       flowValue.first { predicate(it) }
       true
     } ?: false

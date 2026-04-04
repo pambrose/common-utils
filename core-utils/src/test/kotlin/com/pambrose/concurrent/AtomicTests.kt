@@ -21,6 +21,7 @@ package com.pambrose.concurrent
 import com.pambrose.common.concurrent.Atomic
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
 class AtomicTests : StringSpec() {
@@ -61,7 +62,7 @@ class AtomicTests : StringSpec() {
           }
         }
 
-      jobs.forEach { it.join() }
+      jobs.joinAll()
 
       atomic.value shouldBe iterations
     }

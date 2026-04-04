@@ -14,7 +14,7 @@
  *   limitations under the License.
  */
 
-package com.canvascache.email.msgs
+package com.pambrose.common.webhook
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

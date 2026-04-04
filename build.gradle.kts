@@ -11,9 +11,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlinter) apply true
     alias(libs.plugins.versions) apply false
-    alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.dokka)
     alias(libs.plugins.maven.publish) apply false
     // id("org.jetbrains.kotlinx.kover") version "0.5.0"
+}
+
+dependencies {
+    subprojects.forEach { dokka(project(it.path)) }
 }
 
 val versionStr: String by extra
@@ -38,6 +42,14 @@ allprojects {
 // Disable publishing for the root project — only subprojects should be published
 tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
 tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
+
+dokka {
+    moduleName.set("common-utils")
+    pluginsConfiguration.html {
+        homepageLink.set("https://github.com/pambrose/common-utils")
+        footerMessage.set("common-utils")
+    }
+}
 
 subprojects {
     configureKotlin()

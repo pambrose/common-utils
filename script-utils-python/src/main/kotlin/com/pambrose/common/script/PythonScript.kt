@@ -16,7 +16,6 @@
 
 package com.pambrose.common.script
 
-import com.pambrose.common.script.AbstractScript
 import java.io.Closeable
 import javax.script.ScriptException
 import kotlin.reflect.KType

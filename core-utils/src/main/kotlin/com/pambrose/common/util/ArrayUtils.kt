@@ -16,9 +16,6 @@
 
 package com.pambrose.common.util
 
-import com.pambrose.common.util.asBracketed
-import com.pambrose.common.util.toDoubleQuoted
-
 object ArrayUtils {
   @JvmStatic
   fun arrayPrint(vals: BooleanArray) = println(asString(vals))

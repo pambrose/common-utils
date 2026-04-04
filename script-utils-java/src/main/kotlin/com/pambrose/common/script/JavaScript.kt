@@ -18,7 +18,6 @@ package com.pambrose.common.script
 
 import ch.obermuhlner.scriptengine.java.Isolation
 import ch.obermuhlner.scriptengine.java.JavaScriptEngine
-import com.pambrose.common.script.AbstractScript
 import com.pambrose.common.script.ScriptUtils.engineBindings
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.Closeable

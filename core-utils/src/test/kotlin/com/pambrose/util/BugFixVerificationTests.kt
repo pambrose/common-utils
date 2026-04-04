@@ -38,6 +38,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
 class BugFixVerificationTests : StringSpec() {
@@ -90,7 +91,7 @@ class BugFixVerificationTests : StringSpec() {
           atomic.setWithLock { it + 1 }
         }
       }
-      jobs.forEach { it.join() }
+      jobs.joinAll()
       atomic.value shouldBe 500
     }
 
@@ -99,7 +100,7 @@ class BugFixVerificationTests : StringSpec() {
     // After fix: throws IllegalStateException when value has already been set
 
     "single set delegate throws on second write" {
-      var value: String? by AtomicDelegates.singleSetReference<String>()
+      var value: String? by AtomicDelegates.singleSetReference()
       value shouldBe null
 
       value = "first"

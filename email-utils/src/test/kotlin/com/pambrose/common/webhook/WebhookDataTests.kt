@@ -2,11 +2,6 @@
 
 package com.pambrose.common.webhook
 
-import com.canvascache.email.msgs.Bounce
-import com.canvascache.email.msgs.Click
-import com.canvascache.email.msgs.Data
-import com.canvascache.email.msgs.Header
-import com.canvascache.email.msgs.ResendWebhookMsg
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json

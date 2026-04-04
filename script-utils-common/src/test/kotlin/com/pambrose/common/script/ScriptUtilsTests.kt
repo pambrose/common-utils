@@ -12,7 +12,6 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import javax.script.Bindings
 import javax.script.ScriptContext
 import javax.script.ScriptEngine
 import javax.script.SimpleBindings

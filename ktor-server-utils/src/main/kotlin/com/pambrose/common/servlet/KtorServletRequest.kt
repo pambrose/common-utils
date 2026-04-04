@@ -81,7 +81,7 @@ class KtorServletRequest(
 
   override fun getProtocol(): String = request.httpVersion
 
-  override fun getContentType(): String? = request.contentType().toString()
+  override fun getContentType(): String = request.contentType().toString()
 
   override fun getRemoteAddr(): String = request.local.remoteAddress
 
@@ -99,17 +99,17 @@ class KtorServletRequest(
 
   override fun getIntHeader(name: String): Int = throw UnsupportedOperationException()
 
-  override fun getPathInfo(): String? = throw UnsupportedOperationException()
+  override fun getPathInfo(): String = throw UnsupportedOperationException()
 
-  override fun getPathTranslated(): String? = throw UnsupportedOperationException()
+  override fun getPathTranslated(): String = throw UnsupportedOperationException()
 
-  override fun getRemoteUser(): String? = throw UnsupportedOperationException()
+  override fun getRemoteUser(): String = throw UnsupportedOperationException()
 
   override fun isUserInRole(role: String): Boolean = throw UnsupportedOperationException()
 
-  override fun getUserPrincipal(): Principal? = throw UnsupportedOperationException()
+  override fun getUserPrincipal(): Principal = throw UnsupportedOperationException()
 
-  override fun getRequestedSessionId(): String? = throw UnsupportedOperationException()
+  override fun getRequestedSessionId(): String = throw UnsupportedOperationException()
 
   override fun getRequestURL(): StringBuffer = throw UnsupportedOperationException()
 
@@ -142,11 +142,11 @@ class KtorServletRequest(
 
   override fun getHttpServletMapping(): HttpServletMapping = throw UnsupportedOperationException()
 
-  override fun getAttribute(name: String): Any? = throw UnsupportedOperationException()
+  override fun getAttribute(name: String): Any = throw UnsupportedOperationException()
 
   override fun getAttributeNames(): Enumeration<String> = throw UnsupportedOperationException()
 
-  override fun getCharacterEncoding(): String? = throw UnsupportedOperationException()
+  override fun getCharacterEncoding(): String = throw UnsupportedOperationException()
 
   override fun setCharacterEncoding(env: String) = throw UnsupportedOperationException()
 
