@@ -26,7 +26,7 @@ web application patterns.
 ### Basic Server Setup
 
 ```kotlin
-import com.github.pambrose.common.dsl.JettyDsl.jettyServer
+import com.pambrose.common.dsl.JettyDsl.jettyServer
 
 val server = jettyServer {
   port = 8080
@@ -47,7 +47,7 @@ server.join()
 ### Lambda Servlet
 
 ```kotlin
-import com.github.pambrose.common.servlet.LambdaServlet
+import com.pambrose.common.servlet.LambdaServlet
 
 val echoServlet = LambdaServlet { request, response ->
   response.contentType = "text/plain"
@@ -63,7 +63,7 @@ server.addServlet(echoServlet, "/echo")
 ### Version Servlet
 
 ```kotlin
-import com.github.pambrose.common.servlet.VersionServlet
+import com.pambrose.common.servlet.VersionServlet
 
 @VersionAnnotation("1.0.0")
 class MyApp
@@ -96,7 +96,7 @@ val httpsServer = jettyServer {
 ### REST API Example
 
 ```kotlin
-import com.github.pambrose.common.servlet.LambdaServlet
+import com.pambrose.common.servlet.LambdaServlet
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
@@ -169,15 +169,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/jetty-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/jetty-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:jetty-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:jetty-utils:<latest-version>")
 }
 ```
 
@@ -186,7 +184,7 @@ dependencies {
 ```xml
 
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>jetty-utils</artifactId>
   <version><latest-version></version>
 </dependency>

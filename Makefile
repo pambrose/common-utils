@@ -1,6 +1,4 @@
 VERSION := $(shell grep 'extra\["versionStr"\]' build.gradle.kts | sed 's/.*"\(.*\)"/\1/')
-JITPACK_BUILD_LOG := https://jitpack.io/com/github/pambrose/common-utils/$(VERSION)/build.log
-JITPACK_API_URL := https://jitpack.io/api/builds/com.github.pambrose/common-utils/$(VERSION)
 
 default: versioncheck
 
@@ -18,12 +16,6 @@ build: compile
 refresh:
 	./gradlew --refresh-dependencies dependencyUpdates
 
-publish:
-	./gradlew publish
-
-publishLocal:
-	./gradlew publishToMavenLocal
-
 tests:
 	./gradlew --rerun-tasks check
 
@@ -40,19 +32,24 @@ lint:
 	./gradlew lintKotlinMain
 	./gradlew lintKotlinTest
 
-trigger-jitpack:
-	until curl -s "${JITPACK_BUILD_LOG}" | grep -qv "not found"; do \
-		echo "Waiting for JitPack..."; \
-		sleep 10; \
-	done
-	echo "JitPack build complete for version ${VERSION}"
-
-view-jitpack:
-	curl -s "${JITPACK_BUILD_LOG}"
-	curl -s "${JITPACK_API_URL}" | jq
-
 versioncheck:
 	./gradlew dependencyUpdates --no-configuration-cache
+
+publish-local:
+	./gradlew publishToMavenLocal
+
+publish-local-snapshot:
+	./gradlew -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenLocal
+
+GPG_ENV = \
+	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys $$GPG_SIGNING_KEY_ID)" \
+	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)
+
+publish-snapshot:
+	$(GPG_ENV) ./gradlew -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenCentral
+
+publish-maven-central:
+	$(GPG_ENV) ./gradlew publishAndReleaseToMavenCentral
 
 upgrade-wrapper:
 	./gradlew wrapper --gradle-version=9.4.1 --distribution-type=bin

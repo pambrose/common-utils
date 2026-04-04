@@ -1,9 +1,10 @@
 # Common Utils - Kotlin & Java Utility Library Collection
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-[![Java](https://img.shields.io/badge/%20language-Java-red.svg)](https://kotlinlang.org/)
-[![Kotlin](https://img.shields.io/badge/%20language-Kotlin-red.svg)](https://kotlinlang.org/)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/pambrose/common-utils)
+[![Kotlin version](https://img.shields.io/badge/kotlin-2.2.20-red?logo=kotlin)](http://kotlinlang.org)
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/core-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/core-utils)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 A collection of utility libraries for Kotlin and Java development.
 
@@ -193,20 +194,16 @@ Bill of Materials for version-aligned dependency management across all modules.
 
 ## Installation
 
-This library is available through JitPack. Add the JitPack repository to your build configuration:
+This library is available on [Maven Central](https://central.sonatype.com/artifact/com.pambrose.common-utils/core-utils).
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
-repositories {
-    maven("https://jitpack.io")
-}
-
 dependencies {
     // Include specific modules as needed
-  implementation("com.github.pambrose.common-utils:core-utils:2.6.4")
-  implementation("com.github.pambrose.common-utils:json-utils:2.6.4")
-  implementation("com.github.pambrose.common-utils:ktor-server-utils:2.6.4")
+  implementation("com.pambrose.common-utils:core-utils:2.7.0")
+  implementation("com.pambrose.common-utils:json-utils:2.7.0")
+  implementation("com.pambrose.common-utils:ktor-server-utils:2.7.0")
     // ... other modules
 }
 ```
@@ -214,18 +211,11 @@ dependencies {
 ### Maven
 
 ```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
 <dependencies>
     <dependency>
-        <groupId>com.github.pambrose.common-utils</groupId>
+        <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils</artifactId>
-      <version>2.6.4</version>
+      <version>2.7.0</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
@@ -279,7 +269,7 @@ This project maintains high code quality standards:
 1. Create module directory with `build.gradle.kts`
 2. Add module to `settings.gradle.kts`
 3. Create module-specific `README.md`
-4. Follow existing package structure: `com.github.pambrose.common.*`
+4. Follow existing package structure: `com.pambrose.common.*`
 5. Add comprehensive tests using Kotest
 
 ## Contributing

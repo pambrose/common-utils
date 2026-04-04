@@ -106,15 +106,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/exposed-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/exposed-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:exposed-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:exposed-utils:<latest-version>")
 }
 ```
 
@@ -123,7 +121,7 @@ dependencies {
 ```xml
 
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>exposed-utils</artifactId>
   <version><latest-version></version>
 </dependency>

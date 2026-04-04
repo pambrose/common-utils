@@ -27,7 +27,7 @@ server lifecycle management.
 ### Creating gRPC Channels
 
 ```kotlin
-import com.github.pambrose.common.dsl.GrpcDsl.grpcChannel
+import com.pambrose.common.dsl.GrpcDsl.grpcChannel
 
 // Create a plaintext channel
 val plaintextChannel = grpcChannel {
@@ -55,7 +55,7 @@ val inProcessChannel = grpcChannel {
 ### Creating gRPC Servers
 
 ```kotlin
-import com.github.pambrose.common.dsl.GrpcDsl.grpcServer
+import com.pambrose.common.dsl.GrpcDsl.grpcServer
 
 // Create a plaintext server
 val plaintextServer = grpcServer {
@@ -79,7 +79,7 @@ val tlsServer = grpcServer {
 ### TLS Configuration
 
 ```kotlin
-import com.github.pambrose.common.utils.TlsUtils.tlsContext
+import com.pambrose.common.utils.TlsUtils.tlsContext
 
 // Client TLS context
 val clientTlsContext = tlsContext {
@@ -100,7 +100,7 @@ val serverTlsContext = tlsContext {
 ### Server Lifecycle Management
 
 ```kotlin
-import com.github.pambrose.common.utils.shutdownGracefully
+import com.pambrose.common.utils.shutdownGracefully
 import kotlin.time.Duration.Companion.seconds
 
 // Start server
@@ -116,7 +116,7 @@ server.shutdownGracefully(30.seconds)
 ### StreamObserver Helper
 
 ```kotlin
-import com.github.pambrose.common.dsl.GrpcDsl.StreamObserverHelper
+import com.pambrose.common.dsl.GrpcDsl.StreamObserverHelper
 
 val helper = StreamObserverHelper<MyResponse>()
 
@@ -150,15 +150,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/grpc-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/grpc-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:grpc-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:grpc-utils:<latest-version>")
 }
 ```
 
@@ -167,7 +165,7 @@ dependencies {
 ```xml
 
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>grpc-utils</artifactId>
   <version><latest-version></version>
 </dependency>

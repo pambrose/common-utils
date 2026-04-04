@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Multi-module Kotlin/Java utility library (20+ modules) providing common functionality for various frameworks and use
-cases. Published via JitPack.
+cases. Published on Maven Central.
 
 ## Common Development Commands
 
@@ -74,10 +74,10 @@ These opt-ins are enabled globally:
 
 ### Package Structure
 
-All modules use: `com.github.pambrose.common.*`
+All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.6.4" (set in `allprojects` block of root build.gradle.kts)
-- Group: "com.github.pambrose.common-utils"
+- Project version: "2.7.0" (set in `allprojects` block of root build.gradle.kts)
+- Group: "com.pambrose.common-utils"
 - All library versions in `gradle/libs.versions.toml`

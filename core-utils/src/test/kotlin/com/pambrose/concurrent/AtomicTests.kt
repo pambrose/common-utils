@@ -1,0 +1,85 @@
+/*
+ *   Copyright © 2026 Paul Ambrose (pambrose@mac.com)
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
+
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
+package com.pambrose.concurrent
+
+import com.pambrose.common.concurrent.Atomic
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.launch
+
+class AtomicTests : StringSpec() {
+  init {
+    "basic atomic value test" {
+      val atomic = Atomic(0)
+      atomic.value shouldBe 0
+
+      atomic.setWithLock { 42 }
+      atomic.value shouldBe 42
+    }
+
+    "set with lock test" {
+      val atomic = Atomic(0)
+
+      val result = atomic.setWithLock { it + 10 }
+      result shouldBe 10
+      atomic.value shouldBe 10
+    }
+
+    "with lock test" {
+      val atomic = Atomic("hello")
+
+      val length = atomic.withLock { length }
+      length shouldBe 5
+      atomic.value shouldBe "hello"
+    }
+
+    "concurrent access test" {
+      val atomic = Atomic(0)
+      val iterations = 1000
+
+      // Launch multiple coroutines that increment the value
+      val jobs =
+        (1..iterations).map {
+          launch {
+            atomic.setWithLock { it + 1 }
+          }
+        }
+
+      jobs.forEach { it.join() }
+
+      atomic.value shouldBe iterations
+    }
+
+    "atomic with complex type test" {
+      data class Counter(
+        val count: Int,
+        val name: String,
+      )
+
+      val atomic = Atomic(Counter(0, "test"))
+
+      atomic.setWithLock { Counter(it.count + 1, it.name) }
+      atomic.value.count shouldBe 1
+      atomic.value.name shouldBe "test"
+
+      val name = atomic.withLock { name.uppercase() }
+      name shouldBe "TEST"
+    }
+  }
+}

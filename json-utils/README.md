@@ -21,8 +21,8 @@ and element utilities.
 ### Loading JSON Content
 
 ```kotlin
-import com.github.pambrose.common.json.toJsonElement
-import com.github.pambrose.common.json.toJsonObject
+import com.pambrose.common.json.toJsonElement
+import com.pambrose.common.json.toJsonObject
 
 // Load from file
 val jsonFromFile = FileContentSource("config.json").toJsonElement()
@@ -37,7 +37,7 @@ val jsonFromResource = ClasspathContentSource("default-config.json").toJsonEleme
 ### JSON Element Utilities
 
 ```kotlin
-import com.github.pambrose.common.json.*
+import com.pambrose.common.json.*
 
 val jsonString = """
 {
@@ -76,7 +76,7 @@ val firstHobby = jsonElement.getByPath("hobbies.0")?.contentOrNull() // "reading
 ### JSON Manipulation
 
 ```kotlin
-import com.github.pambrose.common.json.*
+import com.pambrose.common.json.*
 
 // Convert to Map
 val jsonMap = jsonElement.toMap()
@@ -116,15 +116,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/json-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/json-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:json-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:json-utils:<latest-version>")
 }
 ```
 
@@ -132,7 +130,7 @@ dependencies {
 
 ```xml
 <dependency>
-    <groupId>com.github.pambrose.common-utils</groupId>
+    <groupId>com.pambrose.common-utils</groupId>
     <artifactId>json-utils</artifactId>
     <version><latest-version></version>
 </dependency>
