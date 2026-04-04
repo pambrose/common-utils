@@ -2,14 +2,20 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased] (2.7.0-dev)
+## [2.7.0] - 2026-04-04
 
 - Migrate artifact publishing from JitPack to Maven Central (group: `com.pambrose.common-utils`)
+- Rename packages from `com.github.pambrose.common.*` to `com.pambrose.common.*`
 - Add Vanniktech Maven Publish plugin for Maven Central publishing with POM metadata and signing
-- Update BOM (`common-utils-bom`) to publish via Maven Central with full POM metadata
-- Disable root project publishing to prevent stale `common-utils:common-utils` artifact
+- Remove `common-utils-bom` module and all BOM dependencies in favor of explicit version refs
+- Disable root project publishing to prevent stale artifacts
 - Remove `jitpack.yml`
-- Update all documentation (README, module READMEs, llms.txt, CLAUDE.md) to reflect Maven Central coordinates
+- Add ~78 new tests across 9 modules (ktor-client-utils, ktor-server-utils, prometheus-utils, guava-utils, service-utils, email-utils, jetty-utils, recaptcha-utils, script-utils-common)
+- Add MockK and ktor-client-mock test dependencies
+- Add GitHub Actions CI workflow for build and lint
+- Update all documentation to reflect Maven Central coordinates
+- Update copyright headers to 2026
+- Upgrade Gradle wrapper to 9.4.1
 - Update dependencies
 
 ## [2.6.2] - 2026-03-16
