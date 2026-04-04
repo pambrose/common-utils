@@ -1,4 +1,4 @@
-description = "script-utils-java"
+description = "Java scripting engine utilities"
 
 dependencies {
     implementation(project(":core-utils"))

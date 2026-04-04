@@ -1,4 +1,4 @@
-description = "exposed-utils"
+description = "Jetbrains Exposed ORM extension utilities"
 
 dependencies {
     implementation(project(":core-utils"))

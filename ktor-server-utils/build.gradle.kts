@@ -1,4 +1,4 @@
-description = "ktor-server-utils"
+description = "Ktor server framework extension utilities"
 
 dependencies {
     implementation(project(":core-utils"))

@@ -1,4 +1,4 @@
-description = "core-utils"
+description = "Core Kotlin/Java utilities: string, file, collection, and reflection helpers"
 
 dependencies {
     api(libs.kotlinx.coroutines)

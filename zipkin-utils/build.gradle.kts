@@ -1,4 +1,4 @@
-description = "zipkin-utils"
+description = "Zipkin distributed tracing utilities"
 
 dependencies {
     implementation(project(":core-utils"))

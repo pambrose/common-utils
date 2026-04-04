@@ -2,14 +2,14 @@
 
 > Modular Kotlin/Java utility libraries providing extension functions, DSLs, and helpers for common frameworks. Each module is independently consumable via Maven Central.
 
-- Version: 2.7.0
+- Version: 2.7.1
 - Group: com.pambrose.common-utils
 - Repository: https://github.com/pambrose/common-utils
 - Maven Central: https://central.sonatype.com/namespace/com.pambrose.common-utils
 - License: Apache 2.0
 - Kotlin: 2.3.20, JVM 17
 - Base package: com.pambrose.common.*
-- Install: `implementation("com.pambrose.common-utils:<module>:2.7.0")`
+- Install: `implementation("com.pambrose.common-utils:<module>:2.7.1")`
 
 
 ## Modules

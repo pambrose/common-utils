@@ -1,4 +1,4 @@
-description = "guava-utils"
+description = "Google Guava extension utilities"
 
 dependencies {
     implementation(project(":core-utils"))
