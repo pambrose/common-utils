@@ -6,7 +6,6 @@ dependencies {
     api(libs.kotlin.logging)
     api(libs.logback.classic)
 
-    implementation(libs.kotlin.bom)
     implementation(libs.kotlin.reflect)
 
     implementation(libs.kotlinx.datetime)

@@ -42,7 +42,7 @@ cases. Published on Maven Central.
 - **Scripting**: script-utils-common, script-utils-java, script-utils-kotlin, script-utils-python
 - **Observability**: prometheus-utils, zipkin-utils
 - **Services**: service-utils, guava-utils
-- **Other**: email-utils, recaptcha-utils, common-utils-bom
+- **Other**: email-utils, recaptcha-utils
 
 ### Build Configuration
 

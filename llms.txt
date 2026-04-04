@@ -10,7 +10,7 @@
 - Kotlin: 2.3.10, JVM 17
 - Base package: com.pambrose.common.*
 - Install: `implementation("com.pambrose.common-utils:<module>:2.7.0")`
-- BOM: `com.pambrose.common-utils:common-utils-bom:2.7.0`
+
 
 ## Modules
 

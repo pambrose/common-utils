@@ -40,19 +40,11 @@ tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
 tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
 
 subprojects {
-    // Suppress Gradle Module Metadata — BOMs are a Maven concept and the .module file
-    // can cause issues with project identification
-    tasks.withType<GenerateModuleMetadata> {
-        enabled = false
-    }
-
-    if (name != "common-utils-bom") {
-        configureKotlin()
-        configureVersions()
-        configurePublishing()
-        configureTesting()
-        configureKotlinter()
-    }
+    configureKotlin()
+    configureVersions()
+    configurePublishing()
+    configureTesting()
+    configureKotlinter()
 
     fun isNonStable(version: String): Boolean {
         val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }

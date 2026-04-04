@@ -11,11 +11,9 @@ dependencies {
 
     implementation(libs.guava)
 
-    implementation(platform(libs.prometheus.bom))
     implementation(libs.prometheus.servlet)
     implementation(libs.prometheus.dropwizard)
 
-    implementation(platform(libs.dropwizard.bom))
     implementation(libs.dropwizard.core)
     implementation(libs.dropwizard.healthcheck)
     implementation(libs.dropwizard.servlets)
