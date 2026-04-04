@@ -31,7 +31,7 @@ instrumentation.
 ### Basic Metrics Creation
 
 ```kotlin
-import com.github.pambrose.common.dsl.PrometheusDsl.*
+import com.pambrose.common.dsl.PrometheusDsl.*
 import io.prometheus.client.CollectorRegistry
 
 // Create metrics using DSL
@@ -77,7 +77,7 @@ activeConnections.set(42.0)
 ### System Metrics Collection
 
 ```kotlin
-import com.github.pambrose.common.metrics.SystemMetrics
+import com.pambrose.common.metrics.SystemMetrics
 
 // Enable automatic system metrics collection
 SystemMetrics.enableJvmMetrics()
@@ -92,7 +92,7 @@ SystemMetrics.enableClassLoadingMetrics()
 ### Instrumented Thread Factory
 
 ```kotlin
-import com.github.pambrose.common.concurrent.InstrumentedThreadFactory
+import com.pambrose.common.concurrent.InstrumentedThreadFactory
 import java.util.concurrent.Executors
 
 // Create thread factory with metrics
@@ -111,7 +111,7 @@ executor.submit {
 ### Custom Sampler Gauge
 
 ```kotlin
-import com.github.pambrose.common.metrics.SamplerGaugeCollector
+import com.pambrose.common.metrics.SamplerGaugeCollector
 
 // Create a gauge that samples a value periodically
 val memoryUsageGauge = SamplerGaugeCollector.Builder()
@@ -205,15 +205,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/prometheus-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/prometheus-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:prometheus-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:prometheus-utils:<latest-version>")
 }
 ```
 
@@ -221,7 +219,7 @@ dependencies {
 
 ```xml
 <dependency>
-    <groupId>com.github.pambrose.common-utils</groupId>
+    <groupId>com.pambrose.common-utils</groupId>
     <artifactId>prometheus-utils</artifactId>
   <version><latest-version></version>
 </dependency>

@@ -57,7 +57,7 @@ programming tasks.
 ### Atomic Operations
 
 ```kotlin
-import com.github.pambrose.common.concurrent.Atomic
+import com.pambrose.common.concurrent.Atomic
 
 val atomicValue = Atomic(0)
 atomicValue.setWithLock { currentValue ->
@@ -68,7 +68,7 @@ atomicValue.setWithLock { currentValue ->
 ### String Extensions
 
 ```kotlin
-import com.github.pambrose.common.util.*
+import com.pambrose.common.util.*
 
 // Email validation
 val email = "user@example.com"
@@ -88,7 +88,7 @@ val masked = url.maskUrlCredentials() // "https://***:***@example.com/path"
 ### Duration Utilities
 
 ```kotlin
-import com.github.pambrose.common.time.*
+import com.pambrose.common.time.*
 import kotlin.time.Duration.Companion.seconds
 
 val duration = 90.seconds
@@ -98,7 +98,7 @@ println(duration.format()) // "1 min 30 secs"
 ### Content Sources
 
 ```kotlin
-import com.github.pambrose.common.util.*
+import com.pambrose.common.util.*
 
 // Load from various sources
 val fileContent = FileContentSource("config.txt").readContent()
@@ -109,7 +109,7 @@ val resourceContent = ClasspathContentSource("banner.txt").readContent()
 ### Version Management
 
 ```kotlin
-import com.github.pambrose.common.util.*
+import com.pambrose.common.util.*
 
 @VersionAnnotation("1.0.0")
 class MyApp
@@ -128,24 +128,21 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/core-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/core-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:core-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:core-utils:<latest-version>")
 }
 ```
 
 ### Maven
 
 ```xml
-
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>core-utils</artifactId>
   <version><latest-version></version>
 </dependency>

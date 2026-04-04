@@ -26,7 +26,7 @@ Heroku-specific features.
 ### Heroku HTTPS Redirect Plugin
 
 ```kotlin
-import com.github.pambrose.common.features.HerokuHttpsRedirect
+import com.pambrose.common.features.HerokuHttpsRedirect
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -59,7 +59,7 @@ fun main() {
 ### Response Utilities
 
 ```kotlin
-import com.github.pambrose.common.response.ResponseUtils
+import com.pambrose.common.response.ResponseUtils
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -243,15 +243,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/ktor-server-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/ktor-server-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:ktor-server-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:ktor-server-utils:<latest-version>")
 }
 ```
 
@@ -260,7 +258,7 @@ dependencies {
 ```xml
 
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>ktor-server-utils</artifactId>
   <version><latest-version></version>
 </dependency>

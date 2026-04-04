@@ -1,15 +1,18 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     `java-library`
-    `maven-publish`
 
     alias(libs.plugins.kotlin.jvm) apply true
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlinter) apply true
     alias(libs.plugins.versions) apply false
+    alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.maven.publish) apply false
     // id("org.jetbrains.kotlinx.kover") version "0.5.0"
 }
 
@@ -20,8 +23,8 @@ val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
 val versionsLib = libs.plugins.versions.get().toString().split(":").first()
 
 allprojects {
-    extra["versionStr"] = "2.6.4"
-    group = "com.github.pambrose.common-utils"
+    extra["versionStr"] = findProperty("overrideVersion")?.toString() ?: "2.7.0"
+    group = "com.pambrose.common-utils"
     version = versionStr
 
     repositories {
@@ -32,10 +35,13 @@ allprojects {
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
 }
 
+// Disable publishing for the root project — only subprojects should be published
+tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
+tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
+
 subprojects {
     // Suppress Gradle Module Metadata — BOMs are a Maven concept and the .module file
-    // causes JitPack to misidentify this as the root project (com.github.pambrose:common-utils)
-    // instead of the submodule (com.github.pambrose.common-utils:common-utils-bom)
+    // can cause issues with project identification
     tasks.withType<GenerateModuleMetadata> {
         enabled = false
     }
@@ -98,36 +104,50 @@ fun Project.configureVersions() {
 
 fun Project.configurePublishing() {
     apply {
-        plugin("java-library")
-        plugin("maven-publish")
+        plugin("org.jetbrains.dokka")
+        plugin("com.vanniktech.maven.publish")
     }
 
-    java {
-        withSourcesJar()
+    extensions.configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+        configure(
+            com.vanniktech.maven.publish.KotlinJvm(
+                javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
+                sourcesJar = SourcesJar.Sources(),
+            ),
+        )
+        coordinates("com.pambrose.common-utils", project.name, version.toString())
+
+        pom {
+            name.set(project.name)
+            description.set("Kotlin/Java utility library - ${project.name} module")
+            url.set("https://github.com/pambrose/common-utils")
+            licenses {
+                license {
+                    name.set("Apache License 2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                }
+            }
+            developers {
+                developer {
+                    id.set("pambrose")
+                    name.set("Paul Ambrose")
+                    email.set("paul@pambrose.com")
+                }
+            }
+            scm {
+                connection.set("scm:git:git://github.com/pambrose/common-utils.git")
+                developerConnection.set("scm:git:ssh://github.com/pambrose/common-utils.git")
+                url.set("https://github.com/pambrose/common-utils")
+            }
+        }
+
+        publishToMavenCentral(automaticRelease = true)
+        signAllPublications()
     }
 
-    publishing {
-        val versionStr: String by extra
-        publications {
-            create<MavenPublication>("maven") {
-                from(components["java"])
-                groupId = group.toString()
-                artifactId = project.name
-                version = versionStr
-            }
-//            create<MavenPublication>("mavenJava") {
-//                from(components["java"])
-//                artifact(tasks["sourcesJar"])
-//                groupId = group.toString()
-//                artifactId = project.name
-//                version = versionStr
-//            }
-        }
-        repositories {
-            maven {
-                url = uri("https://jitpack.io")
-            }
-        }
+// Skip signing when no GPG key is provided (e.g., local publishing)
+    tasks.withType<Sign>().configureEach {
+        isEnabled = project.findProperty("signingInMemoryKey") != null
     }
 }
 

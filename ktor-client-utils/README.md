@@ -22,7 +22,7 @@ and blocking variants.
 ### Basic HTTP Requests
 
 ```kotlin
-import com.github.pambrose.common.dsl.KtorDsl.httpClient
+import com.pambrose.common.dsl.KtorDsl.httpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 
@@ -50,7 +50,7 @@ client.close()
 ### Using with Resource Management
 
 ```kotlin
-import com.github.pambrose.common.dsl.KtorDsl.httpClient
+import com.pambrose.common.dsl.KtorDsl.httpClient
 
 // Automatically closes client
 httpClient().use { client ->
@@ -63,7 +63,7 @@ httpClient().use { client ->
 ### Blocking Operations
 
 ```kotlin
-import com.github.pambrose.common.dsl.KtorDsl.blockingGet
+import com.pambrose.common.dsl.KtorDsl.blockingGet
 
 // Blocking GET request (for non-coroutine contexts)
 val content = blockingGet("https://api.example.com/data")
@@ -189,15 +189,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/ktor-client-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/ktor-client-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:ktor-client-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:ktor-client-utils:<latest-version>")
 }
 ```
 
@@ -206,7 +204,7 @@ dependencies {
 ```xml
 
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>ktor-client-utils</artifactId>
   <version><latest-version></version>
 </dependency>

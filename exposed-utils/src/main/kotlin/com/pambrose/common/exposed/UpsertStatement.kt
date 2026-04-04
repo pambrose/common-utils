@@ -17,7 +17,7 @@
 
 package com.pambrose.common.exposed
 
-import com.github.pambrose.common.util.isNotNull
+import com.pambrose.common.util.isNotNull
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.Index
 import org.jetbrains.exposed.v1.core.InternalApi

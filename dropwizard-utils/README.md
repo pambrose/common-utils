@@ -14,9 +14,9 @@ Utilities for Dropwizard Metrics, providing DSL functions for creating health ch
 ### Health Check DSL
 
 ```kotlin
-import com.github.pambrose.common.dsl.MetricsDsl.healthCheck
-import com.github.pambrose.common.util.MetricsUtils.newBacklogHealthCheck
-import com.github.pambrose.common.util.MetricsUtils.newMapHealthCheck
+import com.pambrose.common.dsl.MetricsDsl.healthCheck
+import com.pambrose.common.util.MetricsUtils.newBacklogHealthCheck
+import com.pambrose.common.util.MetricsUtils.newMapHealthCheck
 
 // Create a custom health check
 val customHealthCheck = healthCheck("Database Connection") {
@@ -76,15 +76,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/dropwizard-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/dropwizard-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:dropwizard-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:dropwizard-utils:<latest-version>")
 }
 ```
 
@@ -93,7 +91,7 @@ dependencies {
 ```xml
 
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>dropwizard-utils</artifactId>
   <version><latest-version></version>
 </dependency>

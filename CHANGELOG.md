@@ -2,9 +2,14 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased] (2.6.4-dev)
+## [Unreleased] (2.7.0-dev)
 
-- Extract Makefile JitPack URLs into variables
+- Migrate artifact publishing from JitPack to Maven Central (group: `com.pambrose.common-utils`)
+- Add Vanniktech Maven Publish plugin for Maven Central publishing with POM metadata and signing
+- Update BOM (`common-utils-bom`) to publish via Maven Central with full POM metadata
+- Disable root project publishing to prevent stale `common-utils:common-utils` artifact
+- Remove `jitpack.yml`
+- Update all documentation (README, module READMEs, llms.txt, CLAUDE.md) to reflect Maven Central coordinates
 - Update dependencies
 
 ## [2.6.2] - 2026-03-16

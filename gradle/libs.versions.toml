@@ -3,6 +3,8 @@
 coverallsPlugin = "2.12.2"
 kotlinterPlugin = "5.3.0"
 versionsPlugin = "0.52.0"
+dokka = "2.2.0"
+maven-publish = "0.36.0"
 
 # Library versions
 brave = "6.3.1"
@@ -118,4 +120,6 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinterPlugin" }
 versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
 coveralls = { id = "com.github.kt3k.coveralls", version.ref = "coverallsPlugin" }

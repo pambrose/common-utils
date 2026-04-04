@@ -37,7 +37,7 @@ functions for common Guava patterns.
 ### BooleanMonitor
 
 ```kotlin
-import com.github.pambrose.common.concurrent.BooleanMonitor
+import com.pambrose.common.concurrent.BooleanMonitor
 
 val monitor = BooleanMonitor(initialValue = false)
 
@@ -56,7 +56,7 @@ if (monitor.waitForValue(true, 5.seconds)) {
 ### ConditionalValue
 
 ```kotlin
-import com.github.pambrose.common.concurrent.ConditionalValue
+import com.pambrose.common.concurrent.ConditionalValue
 
 val condition = ConditionalValue<String>()
 
@@ -77,7 +77,7 @@ condition.setValue("Hello, World!")
 ### Generic Service
 
 ```kotlin
-import com.github.pambrose.common.concurrent.GenericService
+import com.pambrose.common.concurrent.GenericService
 
 class MyService : GenericService() {
   override fun doStart() {
@@ -100,7 +100,7 @@ service.startAsync().awaitRunning()
 ### Service Listener
 
 ```kotlin
-import com.github.pambrose.common.concurrent.GenericServiceListener
+import com.pambrose.common.concurrent.GenericServiceListener
 
 val listener = GenericServiceListener(
   onStarting = { println("Service starting") },
@@ -118,7 +118,7 @@ service.addListener(listener, MoreExecutors.directExecutor())
 ### Zip Utilities
 
 ```kotlin
-import com.github.pambrose.common.util.isZipped
+import com.pambrose.common.util.isZipped
 
 val data = byteArrayOf(0x50, 0x4B, 0x03, 0x04) // ZIP magic bytes
 
@@ -130,7 +130,7 @@ if (data.isZipped()) {
 ### Guava DSL
 
 ```kotlin
-import com.github.pambrose.common.dsl.GuavaDsl.stopwatch
+import com.pambrose.common.dsl.GuavaDsl.stopwatch
 
 val elapsed = stopwatch {
   // Some operation to time
@@ -151,15 +151,13 @@ This module depends on:
 
 ## Installation
 
-[![](https://jitpack.io/v/pambrose/common-utils.svg)](https://jitpack.io/#pambrose/common-utils)
-
-Replace `<latest-version>` below with the version shown in the JitPack badge above.
+[![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/guava-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/guava-utils)
 
 ### Gradle
 
 ```kotlin
 dependencies {
-  implementation("com.github.pambrose.common-utils:guava-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:guava-utils:<latest-version>")
 }
 ```
 
@@ -168,7 +166,7 @@ dependencies {
 ```xml
 
 <dependency>
-  <groupId>com.github.pambrose.common-utils</groupId>
+  <groupId>com.pambrose.common-utils</groupId>
   <artifactId>guava-utils</artifactId>
   <version><latest-version></version>
 </dependency>
