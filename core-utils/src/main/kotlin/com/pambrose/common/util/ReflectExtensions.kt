@@ -19,6 +19,13 @@ package com.pambrose.common.util
 import java.lang.reflect.ParameterizedType
 import kotlin.reflect.full.isSubclassOf
 
+/**
+ * Returns the number of generic type parameters of this object's class.
+ *
+ * For arrays, always returns 1. For non-parameterized types, returns 0.
+ *
+ * Extension property on [Any].
+ */
 val Any.typeParameterCount: Int
   get() =
     when {

@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.concurrent
@@ -22,6 +21,13 @@ import com.pambrose.common.dsl.GuavaDsl.serviceListener
 import com.google.common.util.concurrent.Service
 import io.github.oshai.kotlinlogging.KLogger
 
+/**
+ * Creates a [Service.Listener] for this [Service] that logs all lifecycle transitions
+ * (starting, running, stopping, terminated, failed) using the provided [logger].
+ *
+ * @param logger the [KLogger] instance to use for logging lifecycle events.
+ * @return a configured [Service.Listener].
+ */
 fun Service.genericServiceListener(logger: KLogger) =
   serviceListener {
     val service = this@genericServiceListener

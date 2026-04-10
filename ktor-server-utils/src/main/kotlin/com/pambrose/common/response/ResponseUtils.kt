@@ -24,24 +24,63 @@ import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.RoutingContext
 
+/**
+ * Responds to the client with text content produced by [block].
+ *
+ * This is an extension function on [ApplicationCall].
+ *
+ * @param contentType the content type of the response; defaults to [ContentType.Text.Html]
+ * @param block a lambda that returns the response body as a [String]
+ */
 suspend inline fun ApplicationCall.respondWith(
   contentType: ContentType = Text.Html,
   block: () -> String,
 ) = respondText(block.invoke(), contentType)
 
+/**
+ * Redirects the client to the URL produced by [block].
+ *
+ * This is an extension function on [ApplicationCall].
+ *
+ * @param permanent whether to issue a 301 (permanent) redirect; defaults to `false` (302 temporary)
+ * @param block a lambda that returns the redirect target URL as a [String]
+ */
 suspend inline fun ApplicationCall.redirectTo(
   permanent: Boolean = false,
   block: () -> String,
 ) = respondRedirect(block.invoke(), permanent)
 
+/**
+ * Responds to the client with text content produced by [block].
+ *
+ * This is an extension function on [RoutingContext] that delegates to [ApplicationCall.respondWith].
+ *
+ * @param contentType the content type of the response; defaults to [ContentType.Text.Html]
+ * @param block a lambda that returns the response body as a [String]
+ */
 suspend inline fun RoutingContext.respondWith(
   contentType: ContentType = Text.Html,
   block: () -> String,
 ) = call.respondWith(contentType, block)
 
+/**
+ * Redirects the client to the URL produced by [block].
+ *
+ * This is an extension function on [RoutingContext] that delegates to [ApplicationCall.redirectTo].
+ *
+ * @param permanent whether to issue a 301 (permanent) redirect; defaults to `false` (302 temporary)
+ * @param block a lambda that returns the redirect target URL as a [String]
+ */
 suspend inline fun RoutingContext.redirectTo(
   permanent: Boolean = false,
   block: () -> String,
 ) = call.redirectTo(permanent, block)
 
+/**
+ * Builds the URI prefix (scheme, host, and port) for this [RequestConnectionPoint].
+ *
+ * For example, returns `"https://example.com:443"`.
+ *
+ * This is an extension property on [RequestConnectionPoint].
+ */
 val RequestConnectionPoint.uriPrefix get() = "$scheme://$serverHost:$serverPort"

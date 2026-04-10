@@ -19,6 +19,21 @@ package com.pambrose.common.webhook
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Represents the data payload within a [ResendWebhookMsg].
+ *
+ * Contains details about the email event such as sender, recipients, and optional
+ * bounce or click information.
+ *
+ * @property createdAt the ISO 8601 timestamp when the event was created.
+ * @property emailId the unique identifier of the email.
+ * @property from the sender email address.
+ * @property subject the email subject line, or null if not available.
+ * @property to the list of recipient email addresses, or null if not available.
+ * @property headers the list of email headers, or null if not included.
+ * @property bounce bounce details if this is a bounce event, or null otherwise.
+ * @property click click details if this is a click event, or null otherwise.
+ */
 @Serializable
 data class Data(
   @SerialName("created_at")

@@ -20,6 +20,13 @@ import io.grpc.Server
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 
+/**
+ * Registers a JVM shutdown hook that gracefully shuts down this gRPC [Server].
+ *
+ * Extension function on [Server].
+ *
+ * @param maxWaitTime the maximum duration to wait for in-flight RPCs to complete before forcing shutdown
+ */
 fun Server.shutdownWithJvm(maxWaitTime: Duration) {
   Runtime.getRuntime().addShutdownHook(
     Thread {
@@ -32,10 +39,28 @@ fun Server.shutdownWithJvm(maxWaitTime: Duration) {
   )
 }
 
+/**
+ * Gracefully shuts down this gRPC [Server], waiting up to [maxWaitTime] for in-flight RPCs to complete.
+ *
+ * Extension function on [Server]. Delegates to [shutdownGracefully] with millisecond conversion.
+ *
+ * @param maxWaitTime the maximum duration to wait before forcing shutdown
+ * @throws InterruptedException if the current thread is interrupted while waiting
+ */
 @Throws(InterruptedException::class)
 fun Server.shutdownGracefully(maxWaitTime: Duration) =
   shutdownGracefully(maxWaitTime.inWholeMilliseconds, TimeUnit.MILLISECONDS)
 
+/**
+ * Gracefully shuts down this gRPC [Server], waiting up to the specified [timeout] for termination.
+ *
+ * Extension function on [Server]. Calls [Server.shutdown], then [Server.awaitTermination], and
+ * finally [Server.shutdownNow] in a `finally` block to ensure the server is fully stopped.
+ *
+ * @param timeout the maximum time to wait for graceful termination
+ * @param unit the time unit of the [timeout] argument
+ * @throws InterruptedException if the current thread is interrupted while waiting
+ */
 @Throws(InterruptedException::class)
 fun Server.shutdownGracefully(
   timeout: Long,

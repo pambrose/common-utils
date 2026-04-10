@@ -18,6 +18,14 @@ package com.pambrose.common.script
 
 import kotlinx.coroutines.runBlocking
 
+/**
+ * A pre-populated pool of [PythonExprEvaluator] instances backed by a coroutine
+ * [Channel][kotlinx.coroutines.channels.Channel].
+ *
+ * Instances are created eagerly during initialization.
+ *
+ * @param size the number of [PythonExprEvaluator] instances to create in the pool
+ */
 class PythonExprEvaluatorPool(
   size: Int,
 ) : AbstractExprEvaluatorPool<PythonExprEvaluator>(size) {

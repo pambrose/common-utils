@@ -19,6 +19,15 @@ package com.pambrose.common.webhook
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Represents a webhook message received from the Resend email service.
+ *
+ * This is the top-level envelope containing the event type, timestamp, and event-specific [Data].
+ *
+ * @property createdAt the ISO 8601 timestamp when the webhook event was created.
+ * @property data the event-specific payload containing email and event details.
+ * @property type the event type (e.g., "email.sent", "email.bounced", "email.clicked").
+ */
 @Serializable
 data class ResendWebhookMsg(
   @SerialName("created_at")

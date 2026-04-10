@@ -19,18 +19,27 @@ package com.pambrose.common.json
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonBuilder
 
+/**
+ * Applies the default JSON configuration (pretty-print with two-space indent) to this [JsonBuilder].
+ *
+ * Extension function on [JsonBuilder].
+ */
 fun JsonBuilder.defaultJsonConfig() {
   prettyPrint = true
   prettyPrintIndent = "  "
 }
 
+/** Pre-configured [Json] instances for common serialization scenarios. */
 object JsonContentUtils {
+  /** Pretty-printed JSON with defaults encoded. */
   val prettyFormat by lazy {
     Json {
       defaultJsonConfig()
       encodeDefaults = true
     }
   }
+
+  /** Compact (non-pretty-printed) JSON with defaults encoded. */
   val rawFormat by lazy {
     Json {
       prettyPrint = false
@@ -38,6 +47,7 @@ object JsonContentUtils {
     }
   }
 
+  /** Lenient JSON that ignores unknown keys and relaxes parsing rules. */
   val lenientFormat by lazy {
     Json {
       defaultJsonConfig()
@@ -46,6 +56,7 @@ object JsonContentUtils {
     }
   }
 
+  /** Strict JSON that rejects unknown keys and non-lenient input, with defaults encoded. */
   val strictFormat by lazy {
     Json {
       defaultJsonConfig()

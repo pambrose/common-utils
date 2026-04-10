@@ -13,14 +13,22 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.dsl
 
 import com.codahale.metrics.health.HealthCheck
 
+/**
+ * Provides a Kotlin DSL for constructing Dropwizard [HealthCheck] instances.
+ */
 object MetricsDsl {
+  /**
+   * Creates a [HealthCheck] whose [HealthCheck.check] method is defined by the given lambda.
+   *
+   * @param block a lambda with [HealthCheck] as the receiver that returns a [HealthCheck.Result].
+   * @return a new [HealthCheck] instance.
+   */
   fun healthCheck(block: HealthCheck.() -> HealthCheck.Result) =
     object : HealthCheck() {
       @Throws(Exception::class)

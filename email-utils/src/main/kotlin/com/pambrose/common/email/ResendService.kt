@@ -21,11 +21,27 @@ import com.resend.services.emails.model.CreateEmailOptions
 import com.resend.services.emails.model.CreateEmailResponse
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 
+/**
+ * A service that sends emails through the [Resend](https://resend.com) email API.
+ *
+ * @param envResendApiKey the Resend API key used for authentication.
+ */
 class ResendService(
   envResendApiKey: String,
 ) {
   private val resend = Resend(envResendApiKey)
 
+  /**
+   * Sends an email via the Resend API.
+   *
+   * @param from the sender email address.
+   * @param to the list of recipient email addresses.
+   * @param cc the list of CC recipient email addresses. Defaults to empty.
+   * @param bcc the list of BCC recipient email addresses. Defaults to empty.
+   * @param subject the email subject line.
+   * @param html the HTML body content of the email.
+   * @throws Exception if the Resend API call fails.
+   */
   fun sendEmail(
     from: Email,
     to: List<Email>,

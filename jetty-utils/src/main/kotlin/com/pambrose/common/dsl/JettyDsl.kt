@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.dsl
@@ -21,11 +20,27 @@ package com.pambrose.common.dsl
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletContextHandler
 
+/**
+ * Provides a Kotlin DSL for constructing and configuring Jetty [Server] and [ServletContextHandler] instances.
+ */
 object JettyDsl {
+  /**
+   * Creates and configures a Jetty [Server] on the specified port.
+   *
+   * @param port the port number the server will listen on.
+   * @param block a lambda with [Server] as receiver for configuring the server.
+   * @return the configured [Server] instance.
+   */
   fun server(
     port: Int,
     block: Server.() -> Unit,
   ) = Server(port).apply { block(this) }
 
+  /**
+   * Creates and configures a [ServletContextHandler].
+   *
+   * @param block a lambda with [ServletContextHandler] as receiver for adding servlets and filters.
+   * @return the configured [ServletContextHandler] instance.
+   */
   fun servletContextHandler(block: ServletContextHandler.() -> Unit) = ServletContextHandler().apply { block(this) }
 }

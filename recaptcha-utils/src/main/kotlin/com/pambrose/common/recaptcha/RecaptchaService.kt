@@ -36,6 +36,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+/**
+ * Provides Google reCAPTCHA verification and HTML widget rendering for Ktor applications.
+ *
+ * Includes server-side token verification via the Google reCAPTCHA API, a Ktor route-level
+ * validation extension, and kotlinx.html helpers for embedding the reCAPTCHA script and widget.
+ */
 object RecaptchaService {
   private val logger = KotlinLogging.logger {}
   private const val RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
@@ -51,6 +57,14 @@ object RecaptchaService {
       }
     }
 
+  /**
+   * Represents the JSON response from Google's reCAPTCHA verification endpoint.
+   *
+   * @property success whether the reCAPTCHA token was valid.
+   * @property errorCodes error codes returned by the API, if any.
+   * @property hostname the hostname of the site where the reCAPTCHA was solved.
+   * @property challengeTs the timestamp of the challenge in ISO 8601 format.
+   */
   @Serializable
   data class RecaptchaResponse(
     val success: Boolean,
@@ -107,6 +121,17 @@ object RecaptchaService {
     }
   }
 
+  /**
+   * Validates the reCAPTCHA response token from form parameters within a Ktor [RoutingContext].
+   *
+   * If reCAPTCHA is configured and the token is missing or invalid, this function responds
+   * with an HTTP 400 Bad Request and returns `false`. Returns `true` when validation succeeds
+   * or reCAPTCHA is not configured.
+   *
+   * @param config the [RecaptchaConfig] providing keys and enabled status.
+   * @param params the form [Parameters] containing the `g-recaptcha-response` token.
+   * @return `true` if validation passed or reCAPTCHA is disabled, `false` otherwise.
+   */
   suspend fun RoutingContext.validateRecaptcha(
     config: RecaptchaConfig,
     params: Parameters,
@@ -137,7 +162,13 @@ object RecaptchaService {
     return true
   }
 
-  // Load reCAPTCHA script if enabled
+  /**
+   * Adds the Google reCAPTCHA JavaScript to the HTML [HEAD] if reCAPTCHA is enabled and a site key is configured.
+   *
+   * This is an extension function on kotlinx.html [HEAD].
+   *
+   * @param config the [RecaptchaConfig] providing the site key and enabled status.
+   */
   fun HEAD.loadRecaptchaScript(config: RecaptchaConfig) {
     if (config.isRecaptchaEnabled) {
       if (!config.recaptchaSiteKey.isNullOrBlank()) {
@@ -150,6 +181,13 @@ object RecaptchaService {
     }
   }
 
+  /**
+   * Renders the reCAPTCHA widget `<div>` in the HTML body if reCAPTCHA is enabled and a site key is configured.
+   *
+   * This is an extension function on kotlinx.html [FlowContent].
+   *
+   * @param config the [RecaptchaConfig] providing the site key and enabled status.
+   */
   fun FlowContent.recaptchaWidget(config: RecaptchaConfig) {
     if (config.isRecaptchaEnabled) {
       val siteKey = config.recaptchaSiteKey

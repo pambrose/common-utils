@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:JvmName("Durations")
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
@@ -36,6 +35,13 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * Converts a Java [TimeUnit] value to a Kotlin [Duration].
+ *
+ * @param value the numeric value
+ * @param timeUnit the time unit of [value]
+ * @return the equivalent [Duration]
+ */
 fun timeUnitToDuration(
   value: Long,
   timeUnit: TimeUnit,
@@ -50,6 +56,16 @@ fun timeUnitToDuration(
     DAYS -> value.days
   }
 
+/**
+ * Formats this [Duration] as `d:HH:MM:SS` (or `d:HH:MM:SS.mmm` when [includeMillis] is `true`).
+ *
+ * Negative durations are prefixed with `-`.
+ *
+ * Extension function on [Duration].
+ *
+ * @param includeMillis whether to include milliseconds in the output (default `false`)
+ * @return the formatted duration string
+ */
 fun Duration.format(includeMillis: Boolean = false): String {
   val negative = isNegative()
   val diff = kotlin.math.abs(inWholeMilliseconds)

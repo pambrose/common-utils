@@ -25,8 +25,14 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPInputStream.GZIP_MAGIC
 import java.util.zip.GZIPOutputStream
 
+/** An empty byte array constant, returned when compressing an empty string. */
 val EMPTY_BYTE_ARRAY = ByteArray(0)
 
+/**
+ * Compresses this [String] using GZIP encoding.
+ *
+ * @return a GZIP-compressed byte array, or [EMPTY_BYTE_ARRAY] if this string is empty.
+ */
 fun String.zip(): ByteArray =
   if (isEmpty())
     EMPTY_BYTE_ARRAY
@@ -38,8 +44,21 @@ fun String.zip(): ByteArray =
       baos.toByteArray()
     }
 
+/**
+ * Checks whether this [ByteArray] has a GZIP magic number header.
+ *
+ * @return `true` if the byte array starts with the GZIP magic bytes, `false` otherwise.
+ */
 fun ByteArray.isZipped() = size >= 2 && this[0] == GZIP_MAGIC.toByte() && this[1] == (GZIP_MAGIC shr 8).toByte()
 
+/**
+ * Decompresses this [ByteArray] from GZIP encoding back to a [String].
+ *
+ * If the byte array is empty, returns an empty string. If the byte array is not
+ * GZIP-compressed (no GZIP magic header), returns the raw bytes as a string.
+ *
+ * @return the decompressed string content.
+ */
 fun ByteArray.unzip(): String =
   when {
     isEmpty() -> {

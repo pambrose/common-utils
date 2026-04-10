@@ -14,8 +14,6 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
 import com.codahale.metrics.MetricRegistry
@@ -44,6 +42,27 @@ import io.prometheus.client.dropwizard.DropwizardExports
 import java.io.Closeable
 import kotlin.time.TimeSource.Monotonic
 
+/**
+ * Abstract base class for services that use an embedded Jetty server for admin servlet hosting.
+ *
+ * Provides integrated support for:
+ * - **Admin endpoints**: ping, version, health check, and thread dump servlets via [ServletService]
+ * - **Prometheus metrics**: JVM and application metrics exported via [MetricsService]
+ * - **Zipkin tracing**: distributed trace reporting via [ZipkinReporterService]
+ * - **Health checks**: Dropwizard health check registry with thread deadlock and service state monitoring
+ * - **Service lifecycle**: coordinated startup/shutdown of all sub-services via a Guava [ServiceManager]
+ *
+ * Subclasses should call [initServletService] during initialization to set up the service infrastructure.
+ *
+ * @param T The type of the configuration values object.
+ * @param configVals The application-specific configuration values.
+ * @param adminConfig Configuration for admin endpoints.
+ * @param metricsConfig Configuration for Prometheus metrics.
+ * @param zipkinConfig Configuration for Zipkin tracing.
+ * @param versionBlock A lambda returning the application version string for the version endpoint.
+ * @param isTestMode Whether the service is running in test mode.
+ * @see GenericKtorService For a Ktor-based variant of this service.
+ */
 abstract class GenericService<T> protected constructor(
   val configVals: T,
   private val adminConfig: AdminConfig,
@@ -58,20 +77,42 @@ abstract class GenericService<T> protected constructor(
   protected val metricRegistry = MetricRegistry()
   protected val services = mutableListOf<Service>()
 
+  /** Whether admin endpoints are enabled, based on [AdminConfig.enabled]. */
   val isAdminEnabled = adminConfig.enabled
+
+  /** Whether Prometheus metrics collection is enabled, based on [MetricsConfig.enabled]. */
   val isMetricsEnabled = metricsConfig.enabled
+
+  /** Whether Zipkin distributed tracing is enabled, based on [ZipkinConfig.enabled]. */
   val isZipkinEnabled = zipkinConfig.enabled
 
   private lateinit var serviceManager: ServiceManager
   private lateinit var servletGroup: ServletGroup
 
+  /** The JMX reporter for Dropwizard metrics. Initialized when metrics are enabled. */
   lateinit var jmxReporter: JmxReporter
+
+  /** The Jetty-based servlet service hosting admin endpoints. Initialized when admin is enabled. */
   lateinit var servletService: ServletService
+
+  /** The Prometheus metrics service. Initialized when metrics are enabled. */
   lateinit var metricsService: MetricsService
+
+  /** The Zipkin span reporter service. Initialized when Zipkin tracing is enabled. */
   lateinit var zipkinReporterService: ZipkinReporterService
 
+  /** The elapsed time since the service was created. */
   val upTime get() = startTime.elapsedNow()
 
+  /**
+   * Initializes the servlet service, metrics, Zipkin tracing, and health checks.
+   *
+   * This method should be called during subclass initialization. It conditionally sets up admin
+   * servlets, Prometheus metrics, JMX reporting, and Zipkin tracing based on their respective
+   * configuration flags, then registers health checks and wires up the Guava [ServiceManager].
+   *
+   * @param servletInit An optional block to register additional servlets in the [ServletGroup].
+   */
   fun initServletService(servletInit: ServletGroup.() -> Unit = {}) {
     // See if admin servlets are enabled or something within the passed in lambda is enabled
     if (isAdminEnabled) {
@@ -223,6 +264,12 @@ abstract class GenericService<T> protected constructor(
   companion object {
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * Creates a JVM shutdown hook [Thread] that gracefully stops the given [Service].
+     *
+     * @param service The Guava [Service] to stop when the JVM shuts down.
+     * @return A [Thread] suitable for use with [Runtime.addShutdownHook].
+     */
     fun shutDownHookAction(service: Service) =
       Thread {
         System.err.println("*** ${service.simpleClassName} shutting down ***")

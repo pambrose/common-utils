@@ -18,8 +18,20 @@ package com.pambrose.common.script
 
 import javax.script.ScriptException
 
+/**
+ * A replacement for [java.lang.System] that prevents scripts from terminating the JVM.
+ *
+ * When imported into a Kotlin script context, calls to `System.exit()` will throw a
+ * [ScriptException] instead of actually exiting.
+ */
 class System {
   companion object {
+    /**
+     * Throws a [ScriptException] to prevent scripts from calling `System.exit()`.
+     *
+     * @param status the exit status code that was attempted
+     * @throws ScriptException always thrown to block the exit call
+     */
     fun exit(status: Int): Unit = throw ScriptException("Illegal call to System.exit() - $status")
   }
 }

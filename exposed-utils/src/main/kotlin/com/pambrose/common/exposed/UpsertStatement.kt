@@ -26,6 +26,18 @@ import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 
+/**
+ * Performs an UPSERT (INSERT ... ON CONFLICT DO UPDATE) on this [Table].
+ *
+ * Extension function on [Table]. Exactly one of [conflictColumn] or [conflictIndex] must be provided
+ * to identify the unique constraint for conflict detection.
+ *
+ * @param T the table type
+ * @param conflictColumn the unique column to use for conflict detection
+ * @param conflictIndex the unique index to use for conflict detection
+ * @param body the insert body specifying column values
+ * @return the executed [UpsertStatement]
+ */
 inline fun <T : Table> T.upsert(
   conflictColumn: Column<*>? = null,
   conflictIndex: Index? = null,
@@ -45,6 +57,18 @@ inline fun <T : Table> T.upsert(
 //  return stmt
 // }
 
+/**
+ * An [InsertStatement] that appends a PostgreSQL `ON CONFLICT ... DO UPDATE SET` clause.
+ *
+ * Generates SQL that inserts a row, and on conflict with the specified column or index constraint,
+ * updates all non-conflict columns to the `EXCLUDED` values.
+ *
+ * @param Key the auto-generated key type
+ * @param table the target table
+ * @param conflictColumn the unique column for conflict detection (mutually exclusive with [conflictIndex])
+ * @param conflictIndex the unique index for conflict detection (mutually exclusive with [conflictColumn])
+ * @throws IllegalArgumentException if neither [conflictColumn] nor [conflictIndex] is provided
+ */
 class UpsertStatement<Key : Any>(
   table: Table,
   conflictColumn: Column<*>? = null,

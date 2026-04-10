@@ -13,14 +13,23 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.dsl
 
 import brave.Tracing
 
+/**
+ * Provides a Kotlin DSL for constructing Brave [Tracing] instances for Zipkin integration.
+ */
 object ZipkinDsl {
+  /**
+   * Creates and configures a Brave [Tracing] instance.
+   *
+   * @param block a lambda with [Tracing.Builder] as receiver for configuring the tracer
+   *   (e.g., local service name, span reporter, sampler).
+   * @return the configured [Tracing] instance.
+   */
   fun tracing(block: Tracing.Builder.() -> Unit): Tracing =
     Tracing.newBuilder()
       .run {

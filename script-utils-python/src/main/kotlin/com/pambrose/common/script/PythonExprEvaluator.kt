@@ -16,4 +16,11 @@
 
 package com.pambrose.common.script
 
+/**
+ * An expression evaluator backed by the Python (Jython) scripting engine (`py` extension).
+ *
+ * Evaluates Python expressions and returns boolean or arbitrary results.
+ *
+ * @see AbstractExprEvaluator
+ */
 class PythonExprEvaluator : AbstractExprEvaluator("py")

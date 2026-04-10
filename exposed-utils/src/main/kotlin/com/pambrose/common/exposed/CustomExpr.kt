@@ -22,10 +22,29 @@ import org.jetbrains.exposed.v1.core.QueryBuilder
 import org.jetbrains.exposed.v1.jodatime.JodaLocalDateTimeColumnType
 import org.joda.time.DateTime
 
+/**
+ * Creates a nullable [DateTime] [CustomExpr] from the given SQL [text].
+ *
+ * @param text the raw SQL expression text (e.g., `"NOW()"`)
+ * @return a [CustomExpr] typed as nullable [DateTime]
+ */
 fun customDateTimeConstant(text: String) = CustomExpr<DateTime?>(text, JodaLocalDateTimeColumnType())
 
+/**
+ * Creates a non-null [DateTime] [CustomExpr] from the given SQL [str].
+ *
+ * @param str the raw SQL expression text
+ * @return a [CustomExpr] typed as [DateTime]
+ */
 fun dateTimeExpr(str: String): CustomExpr<DateTime> = CustomExpr(str, JodaLocalDateTimeColumnType())
 
+/**
+ * An Exposed [Function] that embeds raw SQL text as a typed expression in queries.
+ *
+ * @param T the Kotlin type this expression evaluates to
+ * @property text the raw SQL expression text
+ * @param columnType the Exposed column type used for result mapping
+ */
 open class CustomExpr<T>(
   val text: String,
   columnType: IColumnType<T & Any>,

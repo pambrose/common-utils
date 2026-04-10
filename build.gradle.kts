@@ -112,6 +112,12 @@ fun Project.configurePublishing() {
         plugin("com.vanniktech.maven.publish")
     }
 
+    dokka {
+        pluginsConfiguration.html {
+            homepageLink.set("https://github.com/pambrose/common-utils")
+        }
+    }
+
     extensions.configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
         configure(
             com.vanniktech.maven.publish.KotlinJvm(

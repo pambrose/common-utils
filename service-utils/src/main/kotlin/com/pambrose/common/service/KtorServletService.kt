@@ -14,8 +14,6 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
 import com.pambrose.common.concurrent.GenericIdleService
@@ -30,6 +28,19 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.runBlocking
 
+/**
+ * A Guava [GenericIdleService] that runs an embedded Ktor CIO server to host servlets from an [HttpServletGroup].
+ *
+ * Each servlet in the group is registered as a Ktor route. The service manages the Ktor server
+ * lifecycle, starting it on [startUp] and stopping it on [shutDown].
+ *
+ * Used by [GenericKtorService] for serving administrative endpoints (ping, version, health check, thread dump).
+ *
+ * @param port The HTTP port for the Ktor server.
+ * @param servletGroup The [HttpServletGroup] containing servlets to register as routes.
+ * @param initKtor An optional Ktor [Application] configuration block applied before routing.
+ * @param initBlock An optional initialization block invoked after the service listener is registered.
+ */
 class KtorServletService(
   private val port: Int,
   private val servletGroup: HttpServletGroup,

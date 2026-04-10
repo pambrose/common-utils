@@ -19,9 +19,19 @@ package com.pambrose.common.script
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 
+/**
+ * Abstract base class that wraps a JSR 223 [javax.script.ScriptEngine] resolved by file extension.
+ *
+ * Subclasses specify the script language via the [extension] parameter (e.g., `"kts"` for Kotlin,
+ * `"py"` for Python, `"java"` for Java).
+ *
+ * @param extension the file extension used to look up the script engine (e.g., `"kts"`, `"py"`, `"java"`)
+ * @throws ScriptException if no engine is found for the given extension
+ */
 abstract class AbstractEngine(
   extension: String,
 ) {
+  /** The underlying JSR 223 script engine for this extension. */
   val engine =
     scriptManager.getEngineByExtension(extension)
       ?: throw ScriptException("Unrecognized script extension: $extension")

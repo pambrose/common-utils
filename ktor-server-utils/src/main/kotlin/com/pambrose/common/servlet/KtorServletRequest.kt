@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.servlet
@@ -43,6 +42,16 @@ import java.io.BufferedReader
 import java.security.Principal
 import java.util.*
 
+/**
+ * An [HttpServletRequest] adapter that wraps a Ktor [ApplicationRequest], exposing HTTP method,
+ * URI, query parameters, headers, and connection metadata through the standard servlet API.
+ *
+ * Only the subset of methods commonly needed by servlet-based libraries is implemented;
+ * all other methods throw [UnsupportedOperationException].
+ *
+ * @param request the Ktor [ApplicationRequest] to delegate to
+ * @see servlet
+ */
 class KtorServletRequest(
   private val request: ApplicationRequest,
 ) : HttpServletRequest {

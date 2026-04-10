@@ -14,10 +14,19 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
+/**
+ * Configuration data for connecting to a Zipkin distributed tracing server.
+ *
+ * Used by [ZipkinReporterService] to construct the reporter URL and identify the service in traces.
+ *
+ * @property enabled Whether Zipkin tracing is enabled.
+ * @property hostname The hostname of the Zipkin server.
+ * @property port The port of the Zipkin server.
+ * @property path The URL path for the Zipkin API endpoint.
+ * @property serviceName The name used to identify this service in Zipkin traces.
+ */
 data class ZipkinConfig(
   val enabled: Boolean,
   val hostname: String,

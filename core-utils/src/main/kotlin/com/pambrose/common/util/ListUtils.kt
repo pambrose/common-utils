@@ -16,7 +16,14 @@
 
 package com.pambrose.common.util
 
+/** Utility object for list printing operations. */
 object ListUtils {
+  /**
+   * Prints a list in bracketed format. String elements are double-quoted; other types use [toString].
+   *
+   * @param T the element type
+   * @param vals the list to print
+   */
   @JvmStatic
   fun <T> listPrint(vals: List<T>) {
     val hasString = vals.any { it is String }

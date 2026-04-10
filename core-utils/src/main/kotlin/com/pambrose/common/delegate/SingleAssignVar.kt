@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.delegate
@@ -22,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
+/** Factory for creating single-assignment property delegates. */
 object SingleAssignVar {
   /**
    * Returns a property delegate for a read/write property that can be assigned only once.

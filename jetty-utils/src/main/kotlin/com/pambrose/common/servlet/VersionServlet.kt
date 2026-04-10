@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.servlet
@@ -24,6 +23,13 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import java.io.IOException
 
+/**
+ * An [HttpServlet] that responds to HTTP GET requests with a plain-text version string.
+ *
+ * Responses include `Cache-Control: must-revalidate,no-cache,no-store` headers.
+ *
+ * @param version the version string to return in the response body.
+ */
 class VersionServlet(
   private val version: String,
 ) : HttpServlet() {

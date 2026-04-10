@@ -21,10 +21,28 @@ import javax.script.ScriptException
 import kotlin.reflect.KType
 import org.python.jsr223.PyScriptEngine
 
+/**
+ * A script engine wrapper for dynamically evaluating Python source code using the Jython engine.
+ *
+ * Variables are bound directly to the engine without type parameter support, since Python
+ * is dynamically typed. Calls to `sys.exit()`, `exit()`, and `quit()` are blocked.
+ *
+ * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
+ * @see AbstractScript
+ */
 class PythonScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("py", nullGlobalContext),
   Closeable {
+  /**
+   * Adds a named variable to the script context.
+   *
+   * Type parameters are ignored for Python since it is dynamically typed.
+   *
+   * @param name the variable name to bind in the script
+   * @param value the value to associate with the variable
+   * @param types ignored for Python scripts
+   */
   override fun add(
     name: String,
     value: Any,

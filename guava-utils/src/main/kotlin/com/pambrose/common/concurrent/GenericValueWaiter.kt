@@ -27,6 +27,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/**
+ * A coroutine-based waiter that suspends until a boolean value changes.
+ *
+ * Extends [GenericValueWaiter] to provide [waitUntilTrue] and [waitUntilFalse]
+ * convenience methods with optional timeout support.
+ *
+ * @param initValue the initial boolean value.
+ */
 class BooleanWaiter(
   initValue: Boolean,
 ) : GenericValueWaiter<Boolean>(initValue) {
@@ -35,21 +43,47 @@ class BooleanWaiter(
 
   override fun monitorSatisfied() = predicate()
 
+  /**
+   * Sets the boolean value and notifies any waiting coroutines if the condition is satisfied.
+   *
+   * @param value the new boolean value.
+   */
   suspend fun setValue(value: Boolean) {
     checkCondition(value)
   }
 
+  /**
+   * Suspends until the value becomes `true` or the timeout expires.
+   *
+   * @param timeoutDuration the maximum duration to wait. Defaults to [Duration.INFINITE].
+   * @return `true` if the value became `true` before the timeout, `false` if the timeout expired.
+   */
   suspend fun waitUntilTrue(timeoutDuration: Duration = Duration.INFINITE): Boolean {
     predicate = { currValue }
     return waitForCondition(timeoutDuration)
   }
 
+  /**
+   * Suspends until the value becomes `false` or the timeout expires.
+   *
+   * @param timeoutDuration the maximum duration to wait. Defaults to [Duration.INFINITE].
+   * @return `true` if the value became `false` before the timeout, `false` if the timeout expired.
+   */
   suspend fun waitUntilFalse(timeoutDuration: Duration = Duration.INFINITE): Boolean {
     predicate = { !currValue }
     return waitForCondition(timeoutDuration)
   }
 }
 
+/**
+ * Abstract coroutine-based waiter that suspends until a monitored value satisfies a condition.
+ *
+ * Subclasses define the satisfaction condition via [monitorSatisfied]. The value can be updated
+ * with [checkCondition], which notifies any waiting coroutine when the condition is met.
+ *
+ * @param T the type of the monitored value.
+ * @param initValue the initial value.
+ */
 abstract class GenericValueWaiter<T>(
   protected val initValue: T,
 ) {

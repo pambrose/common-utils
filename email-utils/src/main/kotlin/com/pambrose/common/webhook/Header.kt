@@ -19,6 +19,12 @@ package com.pambrose.common.webhook
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Represents a single email header as a name-value pair within a Resend webhook [Data] payload.
+ *
+ * @property name the header field name (e.g., "Message-ID", "X-Mailer").
+ * @property value the header field value.
+ */
 @Serializable
 data class Header(
   @SerialName("name")

@@ -29,6 +29,9 @@ import kotlinx.html.stream.createHTML
 import kotlinx.html.style
 import kotlinx.html.unsafe
 
+/**
+ * Utility object for email address validation and HTML email body generation.
+ */
 object EmailUtils {
   private val emailPattern by lazy {
     Pattern.compile(
@@ -41,10 +44,23 @@ object EmailUtils {
     )
   }
 
+  /**
+   * Returns `true` if this [String] matches a valid email address pattern.
+   */
   fun String.isValidEmail() = emailPattern.matcher(this).matches()
 
+  /**
+   * Returns `true` if this [String] does not match a valid email address pattern.
+   */
   fun String.isNotValidEmail() = !isValidEmail()
 
+  /**
+   * Builds an HTML email string with an embedded CSS stylesheet and the given body content.
+   *
+   * @param cssFilename the classpath resource path to the CSS file to embed. Defaults to `"css/email.css"`.
+   * @param block a lambda with [BODY] as receiver to define the email body content.
+   * @return the complete HTML string for the email.
+   */
   fun email(
     cssFilename: String = "css/email.css",
     block: BODY.() -> Unit,

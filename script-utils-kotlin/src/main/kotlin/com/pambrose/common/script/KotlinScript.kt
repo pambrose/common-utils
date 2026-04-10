@@ -25,12 +25,26 @@ import javax.script.ScriptException
 // Use of bindings explained here: https://discuss.kotlinlang.org/t/jsr223-bindings/9556
 // https://github.com/JetBrains/kotlin/tree/master/libraries/examples/scripting
 
+/**
+ * A script engine wrapper for dynamically evaluating Kotlin source code using the `kts` extension.
+ *
+ * Manages variable bindings via the JSR 223 `Bindings` mechanism, generates Kotlin `val`
+ * declarations that cast bound values to their appropriate types, and prepends import statements
+ * to evaluated code.
+ *
+ * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
+ * @see AbstractScript
+ */
 class KotlinScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("kts", nullGlobalContext),
   Closeable {
   private val imports = mutableListOf(System::class.qualifiedName)
 
+  /**
+   * Generates Kotlin `val` declarations that retrieve bound variables from the engine's bindings
+   * and cast them to their appropriate types with type parameters.
+   */
   val varDecls: String
     get() {
       val assigns = mutableListOf<String>()
@@ -49,6 +63,9 @@ class KotlinScript(
 
   internal fun String.toTempName() = "${this}_tmp"
 
+  /**
+   * Generates Kotlin import statements for all registered import classes.
+   */
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it" }
 

@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.concurrent
@@ -21,6 +20,15 @@ package com.pambrose.common.concurrent
 import com.pambrose.common.dsl.PrometheusDsl
 import java.util.concurrent.ThreadFactory
 
+/**
+ * A [ThreadFactory] decorator that instruments thread lifecycle with Prometheus metrics.
+ *
+ * Tracks the number of threads created (counter), currently running (gauge), and terminated (counter).
+ *
+ * @param delegate the underlying [ThreadFactory] to delegate thread creation to.
+ * @param name the base name for the Prometheus metrics (suffixed with `_threads_created`, `_threads_running`, `_threads_terminated`).
+ * @param help the base help text for the Prometheus metrics.
+ */
 class InstrumentedThreadFactory(
   private val delegate: ThreadFactory,
   name: String,

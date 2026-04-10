@@ -14,8 +14,6 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
 import brave.Tracing
@@ -30,6 +28,15 @@ import zipkin2.reporter.BytesMessageSender
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.okhttp3.OkHttpSender
 
+/**
+ * A Guava [GenericIdleService] that manages a Zipkin span reporter lifecycle.
+ *
+ * Creates an [OkHttpSender] and [AsyncReporter] for sending trace spans to a Zipkin server,
+ * and provides a factory method for creating [Tracing] instances bound to this reporter.
+ *
+ * @param url The full URL of the Zipkin collector endpoint.
+ * @param initBlock An optional initialization block invoked after the service listener is registered.
+ */
 class ZipkinReporterService(
   private val url: String,
   initBlock: (ZipkinReporterService.() -> Unit) = {},
@@ -43,6 +50,12 @@ class ZipkinReporterService(
     initBlock(this)
   }
 
+  /**
+   * Creates a new [Tracing] instance configured with the given service name and this reporter's span handler.
+   *
+   * @param serviceName The logical name of the service to associate with trace spans.
+   * @return A configured [Tracing] instance ready for instrumenting application code.
+   */
   fun newTracing(serviceName: String): Tracing =
     tracing {
       localServiceName(serviceName)
