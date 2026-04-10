@@ -2,6 +2,15 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.7.1] - 2026-04-04
+
+- Consolidate Dokka docs generation in root project with GitHub Actions workflow
+- Fix missing POM description by deferring evaluation with provider
+- Improve Maven publishing metadata with per-module POM descriptions
+- Add Codacy badge and reorder README badges
+- Reduce Gradle heap size
+- Clean up code across multiple modules (unused imports, redundant suppressions, formatting)
+
 ## [2.7.0] - 2026-04-04
 
 - Migrate artifact publishing from JitPack to Maven Central (group: `com.pambrose.common-utils`)
