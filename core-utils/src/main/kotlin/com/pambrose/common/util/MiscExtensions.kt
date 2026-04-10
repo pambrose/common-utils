@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:JvmName("MiscUtils")
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
@@ -22,6 +21,11 @@ package com.pambrose.common.util
 import java.io.PrintWriter
 import java.io.StringWriter
 
+/**
+ * Converts this [Throwable]'s stack trace to a [String].
+ *
+ * Extension property on [Throwable].
+ */
 val Throwable.stackTraceAsString: String
   get() {
     val sw = StringWriter()
@@ -30,7 +34,19 @@ val Throwable.stackTraceAsString: String
     return sw.toString()
   }
 
+/**
+ * Returns the simple class name of this object, or `"None"` if unavailable (e.g., anonymous classes).
+ *
+ * Extension property on any non-null type.
+ */
 val <T : Any> T.simpleClassName: String
   get() = this::class.simpleName ?: "None"
 
+/**
+ * Joins the elements of this [Iterable] into a comma-separated string.
+ *
+ * Extension function on [Iterable].
+ *
+ * @return a string with elements separated by `", "`
+ */
 fun <T> Iterable<T>.toCsv() = joinToString(", ")

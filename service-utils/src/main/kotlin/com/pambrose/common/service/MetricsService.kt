@@ -14,8 +14,6 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
 import com.codahale.metrics.health.HealthCheck
@@ -30,6 +28,17 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
 import org.eclipse.jetty.servlet.ServletHolder
 
+/**
+ * A Guava [GenericIdleService] that runs an embedded Jetty server to expose a Prometheus [MetricsServlet].
+ *
+ * The service starts a Jetty HTTP server on the specified port and serves the Prometheus metrics
+ * endpoint at the given path. It also exposes a [healthCheck] property for integration with
+ * Dropwizard health check registries.
+ *
+ * @param port The HTTP port for the metrics endpoint.
+ * @param path The URL path for the Prometheus metrics servlet (without a leading slash).
+ * @param initBlock An optional initialization block invoked after the service listener is registered.
+ */
 class MetricsService(
   private val port: Int,
   private val path: String,
@@ -44,6 +53,7 @@ class MetricsService(
         }
     }
 
+  /** A Dropwizard [HealthCheck] that reports healthy when the embedded Jetty server is running. */
   val healthCheck =
     healthCheck {
       if (server.isRunning)

@@ -26,6 +26,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/**
+ * A coroutine-based waiter that suspends until its boolean value toggles.
+ *
+ * Call [waitForChangeInValue] to suspend until the value flips from its current state,
+ * and [changeValue] to update the value and notify any waiting coroutine.
+ *
+ * @param value the initial boolean value.
+ */
 class LameBooleanWaiter(
   private var value: Boolean,
 ) {

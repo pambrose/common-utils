@@ -20,30 +20,55 @@ import com.pambrose.common.email.EmailUtils.isNotValidEmail
 import io.ktor.http.Parameters
 import kotlinx.serialization.Serializable
 
+/**
+ * A serializable inline value class wrapping an email address string.
+ *
+ * Provides convenience methods for checking blank/empty state and email validation.
+ *
+ * @property value the raw email address string.
+ */
 @Serializable
 @JvmInline
 value class Email(
   val value: String,
 ) {
+  /** Returns `true` if the email address string is blank. */
   fun isBlank() = value.isBlank()
 
+  /** Returns `true` if the email address string is blank or empty. */
   fun isBlankOrEmpty() = value.isBlank() || value.isEmpty()
 
+  /** Returns `true` if the email address string is not blank. */
   fun isNotBlank() = value.isNotBlank()
 
+  /** Returns `true` if the email address string is neither blank nor empty. */
   fun isNotBlankOrEmpty() = value.isNotBlank() && value.isNotEmpty()
 
+  /** Returns `true` if the email address is not a valid email format. */
   fun isNotValidEmail() = value.isNotValidEmail()
 
   override fun toString() = value
 
   companion object {
-    // This is used to represent ALL_USER_IDS
+    /** Sentinel representing an empty/unset email address. */
     val EMPTY_EMAIL = Email("")
+
+    /** Sentinel representing an unknown email address. */
     val UNKNOWN_EMAIL = Email("Unknown")
 
+    /**
+     * Converts this [String] to an [Email], applying lowercase and trimming whitespace.
+     *
+     * @return a normalized [Email] instance.
+     */
     fun String.toResendEmail() = Email(this.lowercase().trim())
 
+    /**
+     * Extracts an [Email] from Ktor [Parameters] by the given parameter [name].
+     *
+     * @param name the parameter key to look up.
+     * @return the [Email] value, or [EMPTY_EMAIL] if the parameter is absent.
+     */
     fun Parameters.getEmail(name: String) = this[name]?.let { Email(it) } ?: EMPTY_EMAIL
   }
 }

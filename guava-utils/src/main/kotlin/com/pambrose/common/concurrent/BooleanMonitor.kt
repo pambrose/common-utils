@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.concurrent
@@ -22,6 +21,14 @@ import com.google.common.base.MoreObjects
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.concurrent.atomics.AtomicBoolean
 
+/**
+ * A [GenericMonitor] implementation backed by an atomic boolean value.
+ *
+ * Threads can block until the value becomes `true` or `false` using the inherited
+ * `waitUntilTrue` and `waitUntilFalse` methods from [GenericMonitor].
+ *
+ * @param initValue the initial boolean value.
+ */
 class BooleanMonitor(
   initValue: Boolean,
 ) : GenericMonitor() {
@@ -33,8 +40,18 @@ class BooleanMonitor(
     set(initValue)
   }
 
+  /**
+   * Returns the current boolean value.
+   *
+   * @return the current value.
+   */
   fun get() = monVal.load()
 
+  /**
+   * Sets the boolean value in a thread-safe manner, entering and leaving the monitor.
+   *
+   * @param value the new boolean value.
+   */
   fun set(value: Boolean) {
     monitor.enter()
     try {
@@ -53,6 +70,12 @@ class BooleanMonitor(
   companion object {
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * Creates a [MonitorAction] that logs the message at DEBUG level and returns `true`.
+     *
+     * @param msg a lambda producing the log message.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun debug(msg: () -> Any?): MonitorAction =
       {
@@ -60,6 +83,12 @@ class BooleanMonitor(
         true
       }
 
+    /**
+     * Creates a [MonitorAction] that logs the message at DEBUG level and returns `true`.
+     *
+     * @param msg the log message string.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun debug(msg: String): MonitorAction =
       {
@@ -67,6 +96,12 @@ class BooleanMonitor(
         true
       }
 
+    /**
+     * Creates a [MonitorAction] that logs the message at INFO level and returns `true`.
+     *
+     * @param msg a lambda producing the log message.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun info(msg: () -> Any?): MonitorAction =
       {
@@ -74,6 +109,12 @@ class BooleanMonitor(
         true
       }
 
+    /**
+     * Creates a [MonitorAction] that logs the message at INFO level and returns `true`.
+     *
+     * @param msg the log message string.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun info(msg: String): MonitorAction =
       {
@@ -81,6 +122,12 @@ class BooleanMonitor(
         true
       }
 
+    /**
+     * Creates a [MonitorAction] that logs the message at WARN level and returns `true`.
+     *
+     * @param msg a lambda producing the log message.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun warn(msg: () -> Any?): MonitorAction =
       {
@@ -88,6 +135,12 @@ class BooleanMonitor(
         true
       }
 
+    /**
+     * Creates a [MonitorAction] that logs the message at WARN level and returns `true`.
+     *
+     * @param msg the log message string.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun warn(msg: String): MonitorAction =
       {
@@ -95,6 +148,12 @@ class BooleanMonitor(
         true
       }
 
+    /**
+     * Creates a [MonitorAction] that logs the message at ERROR level and returns `true`.
+     *
+     * @param msg a lambda producing the log message.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun error(msg: () -> Any?): MonitorAction =
       {
@@ -102,6 +161,12 @@ class BooleanMonitor(
         true
       }
 
+    /**
+     * Creates a [MonitorAction] that logs the message at ERROR level and returns `true`.
+     *
+     * @param msg the log message string.
+     * @return a [MonitorAction] that always returns `true`.
+     */
     @JvmStatic
     fun error(msg: String): MonitorAction =
       {

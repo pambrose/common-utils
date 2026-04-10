@@ -30,10 +30,16 @@ import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transactionManager
 
+/** Internal holder for the module-level logger. */
 object ExposedUtils {
   internal val logger = KotlinLogging.logger {}
 }
 
+/**
+ * An Exposed [SqlLogger] that logs SQL statements via a Kotlin [KLogger].
+ *
+ * @property logger the [KLogger] to use for logging; defaults to the module-level logger
+ */
 class KotlinSqlLogger(
   val logger: KLogger = ExposedUtils.logger,
 ) : SqlLogger {
@@ -45,13 +51,38 @@ class KotlinSqlLogger(
   }
 }
 
+/**
+ * Retrieves a column value from this [ResultRow] by its zero-based field [index].
+ *
+ * Extension operator on [ResultRow].
+ *
+ * @param index the zero-based column index
+ * @return the value at the given index
+ * @throws IllegalArgumentException if no field exists at the given index
+ */
 operator fun ResultRow.get(index: Int) =
   fieldIndex.filter { it.value == index }.map { this[it.key] }.firstOrNull()
     ?: throw IllegalArgumentException("No value at index $index")
 
+/**
+ * Converts this [ResultRow] to a human-readable string by joining all non-empty column values with " - ".
+ *
+ * Extension function on [ResultRow].
+ *
+ * @return a formatted string of the row's values
+ */
 fun ResultRow.toRowString() =
   fieldIndex.values.map { this[it].toString() }.filter { it.isNotEmpty() }.joinToString(" - ")
 
+/**
+ * Executes a read-only database transaction.
+ *
+ * @param T the return type of the transaction
+ * @param db the [Database] to use, or `null` for the default database
+ * @param transactionIsolation the JDBC transaction isolation level
+ * @param statement the transaction body to execute
+ * @return the result of [statement]
+ */
 fun <T> readonlyTx(
   db: Database? = null,
   transactionIsolation: Int? = db?.transactionManager?.defaultIsolationLevel,
@@ -64,6 +95,15 @@ fun <T> readonlyTx(
     statement = statement,
   )
 
+/**
+ * Executes a database transaction and measures its execution time.
+ *
+ * @param T the return type of the transaction
+ * @param db the [Database] to use, or `null` for the default database
+ * @param transactionIsolation the JDBC transaction isolation level
+ * @param statement the transaction body to execute
+ * @return a [TimedValue] containing the result and the elapsed duration
+ */
 fun <T> timedTransaction(
   db: Database? = null,
   transactionIsolation: Int? = db?.transactionManager?.defaultIsolationLevel,
@@ -78,6 +118,15 @@ fun <T> timedTransaction(
     }
   }
 
+/**
+ * Executes a read-only database transaction and measures its execution time.
+ *
+ * @param T the return type of the transaction
+ * @param db the [Database] to use, or `null` for the default database
+ * @param transactionIsolation the JDBC transaction isolation level
+ * @param statement the transaction body to execute
+ * @return a [TimedValue] containing the result and the elapsed duration
+ */
 fun <T> timedReadOnlyTx(
   db: Database? = null,
   transactionIsolation: Int? = db?.transactionManager?.defaultIsolationLevel,

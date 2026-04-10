@@ -18,7 +18,17 @@ package com.pambrose.common.util
 
 import kotlin.concurrent.atomics.AtomicBoolean
 
+/** Utility object providing extension functions for atomic types. */
 object AtomicUtils {
+  /**
+   * Executes [block] while this [AtomicBoolean] is set to `true`, resetting it to `false` when complete.
+   *
+   * This is useful for signaling that a critical section is in progress.
+   *
+   * @param T the return type of the block
+   * @param block the code to execute within the critical section
+   * @return the result of [block]
+   */
   inline fun <T> AtomicBoolean.criticalSection(block: () -> T): T {
     store(true)
     try {

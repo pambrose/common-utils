@@ -19,6 +19,15 @@ package com.pambrose.common.webhook
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Represents a link click event from a Resend webhook notification.
+ *
+ * @property ipAddress the IP address of the user who clicked the link.
+ * @property link the URL that was clicked.
+ * @property linkTags optional tags associated with the clicked link.
+ * @property timestamp the ISO 8601 timestamp of the click event.
+ * @property userAgent the user agent string of the browser that performed the click.
+ */
 @Serializable
 data class Click(
   @SerialName("ipAddress")

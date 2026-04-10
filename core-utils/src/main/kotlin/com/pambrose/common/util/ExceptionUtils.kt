@@ -18,7 +18,14 @@ package com.pambrose.common.util
 
 import kotlinx.coroutines.CancellationException
 
-// From https://proandroiddev.com/kotlin-tips-and-tricks-you-may-not-know-7-goodbye-try-catch-hello-trycatching-7135cb382609
+/**
+ * Like [runCatching], but rethrows [CancellationException] to preserve coroutine cancellation semantics.
+ *
+ * @param R the result type
+ * @param block the code to execute
+ * @return a [Result] wrapping the success value or the caught exception (excluding [CancellationException])
+ * @throws CancellationException if the block throws a cancellation exception
+ */
 inline fun <R> runCatchingCancellable(block: () -> R): Result<R> =
   runCatching(block)
     .onFailure {
@@ -26,10 +33,30 @@ inline fun <R> runCatchingCancellable(block: () -> R): Result<R> =
         throw it
     }
 
-// From https://dev.to/inoshishi/mastering-runcatching-in-kotlin-how-to-avoid-coroutine-cancellation-issues-5go2
+/**
+ * Like [Result.onFailure], but rethrows [CancellationException] to preserve coroutine cancellation.
+ *
+ * Extension function on [Result].
+ *
+ * @param T the result type
+ * @param action the action to invoke on non-cancellation failures
+ * @return this [Result]
+ * @throws CancellationException if the failure is a cancellation exception
+ */
 inline fun <T> Result<T>.onFailureRethrowCancellation(action: (Throwable) -> Unit): Result<T> =
   onFailureOrRethrow<CancellationException, T>(action)
 
+/**
+ * Like [Result.onFailure], but rethrows exceptions of type [E] and invokes [action] for all others.
+ *
+ * Extension function on [Result].
+ *
+ * @param E the exception type to rethrow
+ * @param T the result type
+ * @param action the action to invoke on non-[E] failures
+ * @return this [Result]
+ * @throws E if the failure is an instance of [E]
+ */
 inline fun <reified E : Throwable, T> Result<T>.onFailureOrRethrow(action: (Throwable) -> Unit): Result<T> =
   onFailure {
     if (it is E)

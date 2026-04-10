@@ -14,10 +14,21 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
+/**
+ * Configuration data for administrative HTTP endpoints exposed by [GenericService] and [GenericKtorService].
+ *
+ * Controls whether the admin servlet group is enabled and defines the port and URL paths
+ * for standard operational endpoints (ping, version, health check, thread dump).
+ *
+ * @property enabled Whether the admin endpoints are enabled.
+ * @property port The HTTP port on which admin servlets are served.
+ * @property pingPath The URL path for the ping (liveness) endpoint.
+ * @property versionPath The URL path for the version information endpoint.
+ * @property healthCheckPath The URL path for the health check endpoint.
+ * @property threadDumpPath The URL path for the thread dump endpoint.
+ */
 data class AdminConfig(
   val enabled: Boolean,
   val port: Int,

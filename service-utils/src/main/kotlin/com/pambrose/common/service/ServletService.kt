@@ -14,8 +14,6 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
 import com.pambrose.common.concurrent.GenericIdleService
@@ -27,6 +25,18 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 
+/**
+ * A Guava [GenericIdleService] that runs an embedded Jetty server to host servlets from a [ServletGroup].
+ *
+ * Each servlet in the group is registered under the root context path (`/`). The service
+ * manages the Jetty server lifecycle, starting it on [startUp] and stopping it on [shutDown].
+ *
+ * Used by [GenericService] for serving administrative endpoints (ping, version, health check, thread dump).
+ *
+ * @param port The HTTP port for the Jetty server.
+ * @param servletGroup The [ServletGroup] containing servlets to register.
+ * @param initBlock An optional initialization block invoked after the service listener is registered.
+ */
 class ServletService(
   private val port: Int,
   private val servletGroup: ServletGroup,

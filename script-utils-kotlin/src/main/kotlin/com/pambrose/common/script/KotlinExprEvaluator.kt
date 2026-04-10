@@ -16,4 +16,11 @@
 
 package com.pambrose.common.script
 
+/**
+ * An expression evaluator backed by the Kotlin scripting engine (`kts` extension).
+ *
+ * Evaluates Kotlin expressions and returns boolean or arbitrary results.
+ *
+ * @see AbstractExprEvaluator
+ */
 class KotlinExprEvaluator : AbstractExprEvaluator("kts")

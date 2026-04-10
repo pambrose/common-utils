@@ -29,6 +29,7 @@ import io.ktor.server.response.respondRedirect
 import io.ktor.server.util.url
 import io.ktor.util.AttributeKey
 
+/** A predicate applied to an [ApplicationCall] to determine whether HTTPS redirect should be skipped. */
 typealias CallPredicate = (ApplicationCall) -> Boolean
 
 private val logger = KotlinLogging.logger {}
@@ -117,6 +118,13 @@ class HerokuHttpsRedirect(
   companion object Feature : Plugin<ApplicationCallPipeline, Configuration, HerokuHttpsRedirect> {
     override val key = AttributeKey<HerokuHttpsRedirect>("HerokuHttpsRedirect")
 
+    /**
+     * Installs the [HerokuHttpsRedirect] plugin into the Ktor [pipeline].
+     *
+     * @param pipeline the application call pipeline to intercept
+     * @param configure a configuration block for [Configuration]
+     * @return the configured [HerokuHttpsRedirect] instance
+     */
     override fun install(
       pipeline: ApplicationCallPipeline,
       configure: Configuration.() -> Unit,

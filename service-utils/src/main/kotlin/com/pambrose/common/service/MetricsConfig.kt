@@ -14,10 +14,24 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
+/**
+ * Configuration data for the Prometheus metrics service.
+ *
+ * Controls whether metrics collection is enabled and defines the port and path for the
+ * Prometheus scrape endpoint, as well as which JVM system metric exporters are active.
+ *
+ * @property enabled Whether the metrics service is enabled.
+ * @property port The HTTP port on which the Prometheus metrics endpoint is served.
+ * @property path The URL path for the Prometheus metrics endpoint.
+ * @property standardExportsEnabled Whether standard JVM exports are enabled.
+ * @property memoryPoolsExportsEnabled Whether memory pool exports are enabled.
+ * @property garbageCollectorExportsEnabled Whether garbage collector exports are enabled.
+ * @property threadExportsEnabled Whether thread exports are enabled.
+ * @property classLoadingExportsEnabled Whether class loading exports are enabled.
+ * @property versionInfoExportsEnabled Whether version info exports are enabled.
+ */
 data class MetricsConfig(
   val enabled: Boolean,
   val port: Int,

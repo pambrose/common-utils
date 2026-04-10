@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.delegate
@@ -25,22 +24,60 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
+/** Factory object for creating thread-safe atomic property delegates. */
 object AtomicDelegates {
+  /**
+   * Creates a thread-safe delegate for a non-nullable property backed by an [AtomicReference].
+   *
+   * Reading the property before it has been set throws [IllegalStateException].
+   *
+   * @param T the property type
+   * @param initValue optional initial value (default `null`, meaning uninitialized)
+   * @return a [ReadWriteProperty] delegate
+   */
   fun <T : Any> nonNullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
     NonNullableAtomicReferenceDelegate(initValue)
 
 //  fun <T : Any?> nullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
 //    NullableAtomicReferenceDelegate(initValue)
 
+  /**
+   * Creates a thread-safe delegate that can only be set once via compare-and-set.
+   *
+   * Attempting to set the property a second time throws [IllegalStateException].
+   *
+   * @param T the property type
+   * @param initValue optional initial value (default `null`)
+   * @param compareValue the expected value for the compare-and-set operation (default `null`)
+   * @return a [ReadWriteProperty] delegate
+   */
   fun <T> singleSetReference(
     initValue: T? = null,
     compareValue: T? = null,
   ): ReadWriteProperty<Any?, T?> = SingleSetAtomicReferenceDelegate(initValue, compareValue)
 
+  /**
+   * Creates a thread-safe [Boolean] property delegate backed by [AtomicBoolean].
+   *
+   * @param initValue the initial value (default `false`)
+   * @return a [ReadWriteProperty] delegate
+   */
   fun atomicBoolean(initValue: Boolean = false): ReadWriteProperty<Any?, Boolean> = AtomicBooleanDelegate(initValue)
 
+  /**
+   * Creates a thread-safe [Int] property delegate backed by [AtomicInt].
+   *
+   * @param initValue the initial value (default `-1`)
+   * @return a [ReadWriteProperty] delegate
+   */
   fun atomicInteger(initValue: Int = -1): ReadWriteProperty<Any?, Int> = AtomicIntegerDelegate(initValue)
 
+  /**
+   * Creates a thread-safe [Long] property delegate backed by [AtomicLong].
+   *
+   * @param initValue the initial value (default `-1L`)
+   * @return a [ReadWriteProperty] delegate
+   */
   fun atomicLong(initValue: Long = -1L): ReadWriteProperty<Any?, Long> = AtomicLongDelegate(initValue)
 }
 

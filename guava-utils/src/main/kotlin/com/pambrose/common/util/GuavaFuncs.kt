@@ -13,15 +13,17 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.util
 
 import com.google.common.base.StandardSystemProperty
 
+/** Whether the current operating system is Windows. */
 val isWindows by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Windows") }
 
+/** Whether the current operating system is Mac OS X. */
 val isMac by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Mac OS X") }
 
+/** Whether the current JVM version is Java 6. */
 val isJava6 by lazy { StandardSystemProperty.JAVA_VERSION.value().orEmpty().startsWith("1.6") }

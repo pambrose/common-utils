@@ -18,6 +18,15 @@ package com.pambrose.common.script
 
 import kotlinx.coroutines.runBlocking
 
+/**
+ * A pre-populated pool of [JavaScript] instances backed by a coroutine [Channel][kotlinx.coroutines.channels.Channel].
+ *
+ * Instances are created eagerly during initialization and recycled with context resets
+ * after each use.
+ *
+ * @param size the number of [JavaScript] instances to create in the pool
+ * @param nullGlobalContext if `true`, resets the global scope bindings to `null` when recycling
+ */
 class JavaScriptPool(
   size: Int,
   nullGlobalContext: Boolean,

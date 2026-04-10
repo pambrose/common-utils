@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.util
@@ -21,7 +20,17 @@ package com.pambrose.common.util
 import com.codahale.metrics.health.HealthCheck
 import com.pambrose.common.dsl.MetricsDsl
 
+/**
+ * Utility object providing factory methods for common [HealthCheck] patterns.
+ */
 object MetricsUtils {
+  /**
+   * Creates a [HealthCheck] that reports unhealthy when the backlog size meets or exceeds the given threshold.
+   *
+   * @param backlogSize the current backlog size to evaluate.
+   * @param size the threshold above which the check is considered unhealthy.
+   * @return a [HealthCheck] that monitors backlog size.
+   */
   fun newBacklogHealthCheck(
     backlogSize: Int,
     size: Int,
@@ -32,6 +41,13 @@ object MetricsUtils {
       HealthCheck.Result.unhealthy("Large size: $backlogSize")
   }
 
+  /**
+   * Creates a [HealthCheck] that reports unhealthy when the map size meets or exceeds the given threshold.
+   *
+   * @param map the map whose size is evaluated.
+   * @param size the threshold above which the check is considered unhealthy.
+   * @return a [HealthCheck] that monitors map size.
+   */
   fun newMapHealthCheck(
     map: Map<*, *>,
     size: Int,

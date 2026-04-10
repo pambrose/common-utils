@@ -13,13 +13,24 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.metrics
 
 import io.prometheus.client.Collector
 
+/**
+ * A Prometheus [Collector] that exposes a gauge metric whose value is obtained by invoking
+ * a sampling function on each collection cycle.
+ *
+ * The collector automatically registers itself with the default collector registry upon construction.
+ *
+ * @param name the metric name.
+ * @param help the help/description text for the metric.
+ * @param labelNames the label names for the metric. Defaults to empty.
+ * @param labelValues the label values corresponding to [labelNames]. Defaults to empty.
+ * @param data a lambda that returns the current gauge value as a [Double].
+ */
 class SamplerGaugeCollector(
   private val name: String,
   private val help: String,

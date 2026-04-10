@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.servlet
@@ -24,11 +23,23 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import java.io.IOException
 
+/**
+ * An [HttpServlet] that serves the result of a lambda function as the HTTP GET response body.
+ *
+ * Responses include `Cache-Control: must-revalidate,no-cache,no-store` headers.
+ *
+ * @param contentType the MIME content type for the response. Defaults to `"text/plain"`.
+ * @param block a lambda that produces the response body string.
+ */
 class LambdaServlet(
   private val contentType: String,
   private val block: () -> String,
 ) : HttpServlet() {
-  // Use 2nd constructor instead of default args to allow lambda to come last
+  /**
+   * Constructs a [LambdaServlet] with a default content type of `"text/plain"`.
+   *
+   * @param block a lambda that produces the response body string.
+   */
   constructor(block: () -> String) : this("text/plain", block)
 
   @Throws(ServletException::class, IOException::class)

@@ -28,12 +28,27 @@ import kotlin.reflect.typeOf
 // https://github.com/eobermuhlner/java-scriptengine
 // https://gitter.im/java-scriptengine/community
 
-// Java cannot have a null global context
+/**
+ * A script engine wrapper for dynamically compiling and evaluating Java source code.
+ *
+ * Supports adding named variables with type parameters, import declarations, and
+ * configurable isolation levels. Note that Java cannot have a null global context.
+ *
+ * Note: Java cannot have a null global context.
+ *
+ * @see AbstractScript
+ * @see <a href="https://github.com/eobermuhlner/java-scriptengine">java-scriptengine</a>
+ */
 class JavaScript :
   AbstractScript("java", false),
   Closeable {
   private val imports = mutableListOf<String>()
 
+  /**
+   * Generates Java-style public field declarations for all registered variables.
+   *
+   * Each declaration includes the Java type name and any type parameters.
+   */
   val varDecls: String
     get() {
       val assigns = mutableListOf<String>()
@@ -48,14 +63,28 @@ class JavaScript :
       return assigns.joinToString("\n")
     }
 
+  /**
+   * Generates Java import statements for all registered import classes.
+   */
   val importDecls: String
     get() = imports.joinToString("\n") { "import $it;" }
 
+  /**
+   * Registers a Java class to be imported in generated scripts.
+   *
+   * @param T the type of the class to import
+   * @param clazz the class to add to the import list
+   */
   @Synchronized
   fun <T> import(clazz: Class<T>) {
     imports += clazz.name
   }
 
+  /**
+   * Sets the isolation level for the underlying [JavaScriptEngine].
+   *
+   * @param isolation the [Isolation] level to apply
+   */
   fun assignIsolation(isolation: Isolation) {
     (engine as JavaScriptEngine).setIsolation(isolation)
   }
@@ -78,6 +107,15 @@ class JavaScript :
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
+  /**
+   * Evaluates a raw Java script string, prepending any registered import declarations.
+   *
+   * On the first call, registered variable bindings are placed into the engine context.
+   *
+   * @param script the Java source code to evaluate
+   * @param verbose if `true`, logs the generated script before evaluation
+   * @return the result of the script evaluation
+   */
   @Synchronized
   fun evalScript(
     script: String,

@@ -19,6 +19,11 @@ package com.pambrose.common.webhook
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Represents a bounce notification from a Resend webhook event.
+ *
+ * @property message the bounce message describing the reason for the bounce.
+ */
 @Serializable
 data class Bounce(
   @SerialName("message")

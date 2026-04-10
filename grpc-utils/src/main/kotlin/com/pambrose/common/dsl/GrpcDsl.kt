@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.dsl
@@ -35,9 +34,30 @@ import io.grpc.netty.NettyChannelBuilder
 import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
 
+/**
+ * DSL entry point for building gRPC channels, servers, attributes, and stream observers.
+ *
+ * Supports both Netty-based (network) and in-process transports, with optional TLS and retry configuration.
+ */
 object GrpcDsl {
   private val logger = KotlinLogging.logger {}
 
+  /**
+   * Builds a [ManagedChannel] using either a Netty transport or an in-process transport.
+   *
+   * When [inProcessServerName] is non-empty, an in-process channel is created (ignoring host/port/TLS).
+   * Otherwise a Netty channel is created for the given [hostName] and [port].
+   *
+   * @param hostName the target server hostname (Netty transport only)
+   * @param port the target server port (Netty transport only)
+   * @param enableRetry whether to enable gRPC retry on the channel
+   * @param maxRetryAttempts the maximum number of retry attempts per RPC
+   * @param tlsContext the TLS configuration for the channel
+   * @param overrideAuthority overrides the authority used for TLS hostname verification
+   * @param inProcessServerName if non-empty, creates an in-process channel with this name
+   * @param block a configuration block applied to the channel builder before building
+   * @return the built [ManagedChannel]
+   */
   fun channel(
     hostName: String = "",
     port: Int = -1,
@@ -98,6 +118,18 @@ object GrpcDsl {
       }
   }
 
+  /**
+   * Builds a gRPC [Server] using either a Netty transport or an in-process transport.
+   *
+   * When [inProcessServerName] is non-empty, an in-process server is created (ignoring port/TLS).
+   * Otherwise a Netty server is created listening on the given [port].
+   *
+   * @param port the port to listen on (Netty transport only)
+   * @param tlsContext the TLS configuration for the server; defaults to [PLAINTEXT_CONTEXT]
+   * @param inProcessServerName if non-empty, creates an in-process server with this name
+   * @param block a configuration block applied to the server builder before building
+   * @return the built [Server]
+   */
   fun server(
     port: Int = -1,
     tlsContext: TlsContext = PLAINTEXT_CONTEXT,
@@ -132,6 +164,12 @@ object GrpcDsl {
     return InProcessServerBuilder.forName(inProcessServerName)
   }
 
+  /**
+   * Builds gRPC [Attributes] using a DSL-style configuration block.
+   *
+   * @param block a configuration block applied to [Attributes.Builder]
+   * @return the built [Attributes] instance
+   */
   fun attributes(block: Attributes.Builder.() -> Unit): Attributes =
     Attributes
       .newBuilder()
@@ -140,8 +178,21 @@ object GrpcDsl {
         build()
       }
 
+  /**
+   * Creates a [StreamObserver] using a DSL-style builder.
+   *
+   * @param T the response element type
+   * @param init a configuration block for registering [StreamObserverHelper.onNext], [StreamObserverHelper.onError],
+   *   and [StreamObserverHelper.onCompleted] callbacks
+   * @return a configured [StreamObserverHelper] implementing [StreamObserver]
+   */
   fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) = StreamObserverHelper<T>().apply { init() }
 
+  /**
+   * A DSL-friendly [StreamObserver] implementation that delegates to user-supplied lambda callbacks.
+   *
+   * @param T the response element type
+   */
   class StreamObserverHelper<T> : StreamObserver<T> {
     private var onNextBlock: ((T) -> Unit)? by singleAssign()
     private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
@@ -159,14 +210,17 @@ object GrpcDsl {
       completedBlock?.invoke()
     }
 
+    /** Registers a callback invoked for each response element. */
     fun onNext(block: (T) -> Unit) {
       onNextBlock = block
     }
 
+    /** Registers a callback invoked when the stream encounters an error. */
     fun onError(block: (Throwable) -> Unit) {
       onErrorBlock = block
     }
 
+    /** Registers a callback invoked when the stream completes successfully. */
     fun onCompleted(block: () -> Unit) {
       completedBlock = block
     }

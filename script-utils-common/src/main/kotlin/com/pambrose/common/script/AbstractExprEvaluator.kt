@@ -29,7 +29,18 @@ abstract class AbstractExprEvaluator(
       )
   }
 
+  /**
+   * Evaluates the given expression and returns the result as [Any].
+   *
+   * @param expr the expression to evaluate
+   * @return the result of evaluating the expression
+   */
   fun compute(expr: String) = engine.eval(expr) as Any
 
+  /**
+   * Resets the script engine context, clearing all bindings and state.
+   *
+   * @param nullGlobalContext if `true`, sets the global scope bindings to `null`
+   */
   fun resetContext(nullGlobalContext: Boolean = false) = engine.resetContext(nullGlobalContext)
 }

@@ -14,15 +14,25 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
-
 package com.pambrose.common.service
 
 import jakarta.servlet.Servlet
 
+/**
+ * A mutable collection of Jakarta [Servlet] instances mapped to URL paths.
+ *
+ * Used by [ServletService] to register servlets with an embedded Jetty server.
+ * Servlets are added via [addServlet] and blank/empty paths are silently ignored.
+ */
 class ServletGroup {
   internal val servletMap: MutableMap<String, Servlet> = mutableMapOf()
 
+  /**
+   * Registers a servlet at the given URL path. Paths that are empty or blank are silently ignored.
+   *
+   * @param path The URL path to map the servlet to.
+   * @param servlet The [Servlet] instance to register.
+   */
   fun addServlet(
     path: String,
     servlet: Servlet,

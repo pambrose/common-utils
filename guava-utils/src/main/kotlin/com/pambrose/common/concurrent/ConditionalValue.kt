@@ -27,22 +27,54 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 
+/**
+ * A [ConditionalValue] specialized for boolean values, providing [waitUntilTrue] and [waitUntilFalse]
+ * convenience methods.
+ *
+ * @param initValue the initial boolean value.
+ */
 class ConditionalBoolean(
   initValue: Boolean,
 ) : ConditionalValue<Boolean>(initValue) {
+  /**
+   * Suspends until the value becomes `true` or the timeout expires.
+   *
+   * @param timeoutDuration the maximum duration to wait. Defaults to [Duration.INFINITE].
+   * @return `true` if the value became `true` before the timeout, `false` if the timeout expired.
+   */
   suspend fun waitUntilTrue(timeoutDuration: Duration = Duration.INFINITE): Boolean = waitUntil(timeoutDuration) { it }
 
+  /**
+   * Suspends until the value becomes `false` or the timeout expires.
+   *
+   * @param timeoutDuration the maximum duration to wait. Defaults to [Duration.INFINITE].
+   * @return `true` if the value became `false` before the timeout, `false` if the timeout expired.
+   */
   suspend fun waitUntilFalse(timeoutDuration: Duration = Duration.INFINITE): Boolean =
     waitUntil(timeoutDuration) {
       !it
     }
 }
 
+/**
+ * A coroutine-based conditional waiter backed by [MutableStateFlow].
+ *
+ * Holds a value of type [T] and allows coroutines to suspend until the value satisfies
+ * an arbitrary predicate, with optional timeout support.
+ *
+ * @param T the type of the monitored value.
+ * @param initValue the initial value.
+ */
 open class ConditionalValue<T>(
   initValue: T,
 ) {
   private val flowValue = MutableStateFlow(initValue)
 
+  /**
+   * Returns the current value.
+   *
+   * @return the current value of type [T].
+   */
   fun get(): T = flowValue.value
 
   /**
@@ -57,6 +89,11 @@ open class ConditionalValue<T>(
       true
     } ?: false
 
+  /**
+   * Sets the value and yields to allow waiting coroutines to observe the change.
+   *
+   * @param value the new value.
+   */
   suspend fun set(value: T) {
     flowValue.value = value
     yield()

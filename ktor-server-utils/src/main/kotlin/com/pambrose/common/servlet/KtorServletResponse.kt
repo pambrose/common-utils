@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.servlet
@@ -26,6 +25,16 @@ import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.util.*
 
+/**
+ * A lightweight, in-memory [HttpServletResponse] implementation that captures response headers,
+ * status code, and body content written through either [getWriter] or [getOutputStream].
+ *
+ * This class is intended for use with [servlet] to execute a Jakarta [HttpServlet][jakarta.servlet.http.HttpServlet]
+ * within a Ktor route handler. Only the subset of methods needed for typical servlet output is
+ * implemented; all other methods throw [UnsupportedOperationException].
+ *
+ * @see servlet
+ */
 class KtorServletResponse : HttpServletResponse {
   private val headers = mutableMapOf<String, MutableList<String>>()
   private val buffer = ByteArrayOutputStream()

@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.metrics
@@ -27,10 +26,27 @@ import io.prometheus.client.hotspot.StandardExports
 import io.prometheus.client.hotspot.ThreadExports
 import io.prometheus.client.hotspot.VersionInfoExports
 
+/**
+ * Provides a one-time initialization method for registering Prometheus JVM hotspot metric exporters.
+ *
+ * Calling [initialize] multiple times is safe; subsequent calls are no-ops.
+ */
 object SystemMetrics {
   private val logger = KotlinLogging.logger {}
   private var initialized = false
 
+  /**
+   * Registers the selected Prometheus JVM hotspot metric exporters.
+   *
+   * This method is synchronized and idempotent -- only the first invocation registers collectors.
+   *
+   * @param enableStandardExports whether to register standard JMX metrics (process CPU, open file descriptors, etc.).
+   * @param enableMemoryPoolsExports whether to register memory pool JMX metrics.
+   * @param enableGarbageCollectorExports whether to register garbage collector JMX metrics.
+   * @param enableThreadExports whether to register thread JMX metrics.
+   * @param enableClassLoadingExports whether to register class loading JMX metrics.
+   * @param enableVersionInfoExports whether to register JVM version info metrics.
+   */
   @Synchronized
   fun initialize(
     enableStandardExports: Boolean = false,

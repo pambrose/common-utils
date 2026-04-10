@@ -13,14 +13,23 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
 @file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.util
 
 import io.github.oshai.kotlinlogging.KLogger
 
-// Banner is from: http://patorjk.com/software/taag/#p=display&f=Big%20Money-nw&t=My%0A%20%20%20Server
+/**
+ * Loads an ASCII art banner from a classpath resource file, trims leading/trailing blank lines,
+ * and indents each line for display.
+ *
+ * Banner text can be generated at: http://patorjk.com/software/taag/
+ *
+ * @param filename the classpath resource file containing the banner text
+ * @param logger a [KLogger] whose classloader is used to locate the resource
+ * @return the formatted banner string with surrounding newlines
+ * @throws IllegalArgumentException if the banner resource file is not found
+ */
 fun getBanner(
   filename: String,
   logger: KLogger,
