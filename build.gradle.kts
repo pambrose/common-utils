@@ -7,9 +7,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 plugins {
     `java-library`
 
-    alias(libs.plugins.kotlin.jvm) apply true
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.kotlinter) apply true
+    alias(libs.plugins.kotlinter)
     alias(libs.plugins.versions) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.maven.publish) apply false
@@ -21,10 +21,10 @@ dependencies {
 }
 
 val versionStr: String by extra
-val kotlinLib = libs.plugins.kotlin.jvm.get().toString().split(":").first()
-val serializationLib = libs.plugins.kotlin.serialization.get().toString().split(":").first()
-val ktlinterLib = libs.plugins.kotlinter.get().toString().split(":").first()
-val versionsLib = libs.plugins.versions.get().toString().split(":").first()
+val kotlinLib = libs.plugins.kotlin.jvm.get().pluginId
+val serializationLib = libs.plugins.kotlin.serialization.get().pluginId
+val ktlinterLib = libs.plugins.kotlinter.get().pluginId
+val versionsLib = libs.plugins.versions.get().pluginId
 
 allprojects {
     extra["versionStr"] = findProperty("overrideVersion")?.toString() ?: "2.7.1"
@@ -37,18 +37,6 @@ allprojects {
     }
 
     //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
-}
-
-// Disable publishing for the root project — only subprojects should be published
-tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
-tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
-
-dokka {
-    moduleName.set("common-utils")
-    pluginsConfiguration.html {
-        homepageLink.set("https://github.com/pambrose/common-utils")
-        footerMessage.set("common-utils")
-    }
 }
 
 subprojects {
@@ -69,6 +57,18 @@ subprojects {
         rejectVersionIf {
             isNonStable(candidate.version)
         }
+    }
+}
+
+// Disable publishing for the root project — only subprojects should be published
+tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
+tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
+
+dokka {
+    moduleName.set("common-utils")
+    pluginsConfiguration.html {
+        homepageLink.set("https://github.com/pambrose/common-utils")
+        footerMessage.set("common-utils")
     }
 }
 
