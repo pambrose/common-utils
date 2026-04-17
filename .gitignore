@@ -4,6 +4,7 @@
 target/
 build/
 .kotlin/
+.superset/
 .DS_Store
 
 *.iml
