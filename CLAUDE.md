@@ -78,6 +78,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.7.1" (set in `allprojects` block of root build.gradle.kts)
+- Project version: "2.8.0" (set in `allprojects` block of root build.gradle.kts)
 - Group: "com.pambrose.common-utils"
 - All library versions in `gradle/libs.versions.toml`

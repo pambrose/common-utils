@@ -13,6 +13,9 @@ compile:
 
 build: compile
 
+lint:
+	./gradlew lintKotlinMain lintKotlinTest
+
 refresh:
 	./gradlew --refresh-dependencies dependencyUpdates
 
@@ -27,10 +30,6 @@ tree:
 
 depends:
 	./gradlew dependencies
-
-lint:
-	./gradlew lintKotlinMain
-	./gradlew lintKotlinTest
 
 versioncheck:
 	./gradlew dependencyUpdates --no-configuration-cache
