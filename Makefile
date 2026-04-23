@@ -1,4 +1,4 @@
-VERSION := $(shell grep 'extra\["versionStr"\]' build.gradle.kts | sed 's/.*"\(.*\)"/\1/')
+VERSION := $(shell grep -E '^[[:space:]]*version[[:space:]]*=' build.gradle.kts | head -1 | sed 's/.*"\(.*\)"/\1/')
 
 default: versioncheck
 
@@ -12,6 +12,9 @@ compile:
 	./gradlew build -xtest
 
 build: compile
+
+lint:
+	./gradlew lintKotlinMain lintKotlinTest
 
 refresh:
 	./gradlew --refresh-dependencies dependencyUpdates
@@ -27,10 +30,6 @@ tree:
 
 depends:
 	./gradlew dependencies
-
-lint:
-	./gradlew lintKotlinMain
-	./gradlew lintKotlinTest
 
 versioncheck:
 	./gradlew dependencyUpdates --no-configuration-cache

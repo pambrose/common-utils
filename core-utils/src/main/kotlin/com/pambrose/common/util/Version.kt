@@ -30,7 +30,7 @@ import kotlinx.serialization.json.put
  * Apply this annotation to a class to store its version, release date, and build timestamp.
  * Use the companion extension functions on [KClass] to retrieve and format this information.
  *
- * @param version the semantic version string (e.g., `"2.7.1"`)
+ * @param version the semantic version string (e.g., `"2.8.0"`)
  * @param releaseDate the release date string (e.g., `"2026-04-10"`)
  * @param buildTime the build timestamp in epoch milliseconds
  */

@@ -23,7 +23,7 @@ import com.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.servlet.ServletHolder
+import org.eclipse.jetty.ee11.servlet.ServletHolder
 
 /**
  * A Guava [GenericIdleService] that runs an embedded Jetty server to host servlets from a [ServletGroup].

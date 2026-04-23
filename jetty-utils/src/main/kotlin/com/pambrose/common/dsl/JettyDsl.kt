@@ -18,7 +18,7 @@
 package com.pambrose.common.dsl
 
 import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.servlet.ServletContextHandler
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler
 
 /**
  * Provides a Kotlin DSL for constructing and configuring Jetty [Server] and [ServletContextHandler] instances.

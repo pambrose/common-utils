@@ -1,68 +1,25 @@
 import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
-    `java-library`
-
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.kotlinter)
-    alias(libs.plugins.versions) apply false
+    alias(libs.plugins.pambrose.stable.versions) apply false
+    alias(libs.plugins.pambrose.kotlinter) apply false
+    alias(libs.plugins.pambrose.testing) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.maven.publish) apply false
-    // id("org.jetbrains.kotlinx.kover") version "0.5.0"
 }
 
+// Consolidate dokka docs into the root build/
 dependencies {
     subprojects.forEach { dokka(project(it.path)) }
 }
-
-val versionStr: String by extra
-val kotlinLib = libs.plugins.kotlin.jvm.get().pluginId
-val serializationLib = libs.plugins.kotlin.serialization.get().pluginId
-val ktlinterLib = libs.plugins.kotlinter.get().pluginId
-val versionsLib = libs.plugins.versions.get().pluginId
-
-allprojects {
-    extra["versionStr"] = findProperty("overrideVersion")?.toString() ?: "2.7.1"
-    group = "com.pambrose.common-utils"
-    version = versionStr
-
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    //cobertura.coverageSourceDirs = sourceSets.main.groovy.srcDirs
-}
-
-subprojects {
-    configureKotlin()
-    configureVersions()
-    configurePublishing()
-    configureTesting()
-    configureKotlinter()
-
-    fun isNonStable(version: String): Boolean {
-        val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
-        val regex = "^[0-9,.v-]+(-r)?$".toRegex()
-        val isStable = stableKeyword || regex.matches(version)
-        return !isStable
-    }
-
-    tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
-        rejectVersionIf {
-            isNonStable(candidate.version)
-        }
-    }
-}
-
-// Disable publishing for the root project — only subprojects should be published
-tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
-tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
 
 dokka {
     moduleName.set("common-utils")
@@ -72,12 +29,29 @@ dokka {
     }
 }
 
-fun Project.configureKotlin() {
-    apply {
-        plugin(kotlinLib)
-    }
+allprojects {
+    version = findProperty("overrideVersion")?.toString() ?: "2.8.0"
+    group = "com.pambrose.common-utils"
+}
 
-    kotlin {
+val subprojectPluginIds = listOf(
+    libs.plugins.kotlin.jvm,
+    libs.plugins.pambrose.kotlinter,
+    libs.plugins.pambrose.testing,
+    libs.plugins.pambrose.stable.versions,
+    libs.plugins.dokka,
+    libs.plugins.maven.publish,
+).map { it.get().pluginId }
+
+subprojects {
+    subprojectPluginIds.forEach(pluginManager::apply)
+
+    configureKotlin()
+    configurePublishing()
+}
+
+fun Project.configureKotlin() {
+    extensions.configure<KotlinJvmProjectExtension> {
         jvmToolchain(17)
 
         sourceSets.all {
@@ -100,27 +74,17 @@ fun Project.configureKotlin() {
     }
 }
 
-fun Project.configureVersions() {
-    apply {
-        plugin(versionsLib)
-    }
-}
-
 fun Project.configurePublishing() {
-    apply {
-        plugin("org.jetbrains.dokka")
-        plugin("com.vanniktech.maven.publish")
-    }
-
     dokka {
         pluginsConfiguration.html {
             homepageLink.set("https://github.com/pambrose/common-utils")
+            footerMessage.set("common-utils")
         }
     }
 
-    extensions.configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+    extensions.configure<MavenPublishBaseExtension> {
         configure(
-            com.vanniktech.maven.publish.KotlinJvm(
+            KotlinJvm(
                 javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
                 sourcesJar = SourcesJar.Sources(),
             ),
@@ -158,29 +122,5 @@ fun Project.configurePublishing() {
     // Skip signing when no GPG key is provided (e.g., local publishing)
     tasks.withType<Sign>().configureEach {
         isEnabled = project.findProperty("signingInMemoryKey") != null
-    }
-}
-
-fun Project.configureKotlinter() {
-    apply {
-        plugin(ktlinterLib)
-    }
-
-    kotlinter {
-        ignoreFormatFailures = false
-        ignoreLintFailures = false
-        reporters = arrayOf("checkstyle", "plain")
-    }
-}
-
-fun Project.configureTesting() {
-    tasks.test {
-        useJUnitPlatform()
-
-        testLogging {
-            events("passed", "skipped", "failed")
-            exceptionFormat = TestExceptionFormat.FULL
-            showStandardStreams = false
-        }
     }
 }

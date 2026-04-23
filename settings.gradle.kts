@@ -1,5 +1,23 @@
+import org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_REPOS
+
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 plugins {
-  id("org.gradle.toolchains.foojay-resolver-convention").version("1.0.0")
+    id("org.gradle.toolchains.foojay-resolver-convention").version("1.0.0")
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(FAIL_ON_PROJECT_REPOS)
+    repositories {
+        // mavenLocal()
+        mavenCentral()
+    }
 }
 
 rootProject.name = "common-utils"

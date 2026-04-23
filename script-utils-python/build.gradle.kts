@@ -5,7 +5,4 @@ dependencies {
     implementation(project(":script-utils-common"))
 
     implementation(libs.python.scripting)
-
-    testImplementation(libs.kotest)
-    testImplementation(kotlin("test"))
 }

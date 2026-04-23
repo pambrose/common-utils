@@ -5,7 +5,4 @@ dependencies {
     implementation(project(":script-utils-common"))
 
     runtimeOnly(libs.kotlin.scripting)
-
-    testImplementation(libs.kotest)
-    testImplementation(kotlin("test"))
 }
