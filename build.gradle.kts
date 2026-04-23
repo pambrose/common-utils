@@ -16,10 +16,6 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
 }
 
-// Disable publishing for the root project — only subprojects should be published
-tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
-tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
-
 // Consolidate dokka docs into the root build/
 dependencies {
     subprojects.forEach { dokka(project(it.path)) }

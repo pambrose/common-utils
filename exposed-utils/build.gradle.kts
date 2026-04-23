@@ -3,9 +3,9 @@ description = "Jetbrains Exposed ORM extension utilities"
 dependencies {
     implementation(project(":core-utils"))
 
-    implementation(libs.exposed.core)
-    implementation(libs.exposed.jdbc)
-    implementation(libs.exposed.jodatime)
+    api(libs.exposed.core)
+    api(libs.exposed.jdbc)
+    api(libs.exposed.jodatime)
 
     testImplementation(libs.kotest)
     testImplementation(kotlin("test"))
