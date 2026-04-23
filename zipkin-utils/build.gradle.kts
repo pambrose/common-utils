@@ -3,9 +3,9 @@ description = "Zipkin distributed tracing utilities"
 dependencies {
     implementation(project(":core-utils"))
 
-    implementation(libs.brave)
-    implementation(libs.zipkin.core)
-    implementation(libs.zipkin.reporter)
+    api(libs.brave)
+    api(libs.zipkin.core)
+    api(libs.zipkin.reporter)
 
     testImplementation(libs.kotest)
     testImplementation(kotlin("test"))

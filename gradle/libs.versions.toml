@@ -1,8 +1,5 @@
 [versions]
 # Plugin versions
-coverallsPlugin = "2.12.2"
-kotlinterPlugin = "5.3.0"
-versionsPlugin = "0.52.0"
 dokka = "2.2.0"
 maven-publish = "0.36.0"
 
@@ -12,16 +9,16 @@ coroutines = "1.10.2"
 datetime = "0.7.1-0.6.x-compat"
 dropwizard = "4.2.38"
 exposed = "1.2.0"
-gradle-plugins = "1.0.12"
+gradle-plugins = "1.0.13"
 grpc = "1.80.0"
 guava = "33.0.0-jre"
 java = "2.0.0"
 jakartaServlet = "6.1.0"
-jetty = "11.0.26"
+jetty = "12.1.8"
 kotest = "6.0.4"
 kotlin = "2.3.20"
+kotlinxHtml = "0.12.0"
 ktor = "3.4.2"
-logback = "1.5.32"
 logging = "8.0.01"
 nettyTcNative = "2.0.75.Final"
 prometheus = "0.16.0"
@@ -38,11 +35,11 @@ zipkinSender = "3.5.3"
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+kotlinx-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version.ref = "kotlinxHtml" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 # Logging
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 # Resend
 resend = { group = "com.resend", name = "resend-java", version.ref = "resend" }
@@ -78,17 +75,17 @@ kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", ve
 jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakartaServlet" }
 
 # Jetty
-#jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "jetty" }
-jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "jetty" }
+jetty-servlet = { module = "org.eclipse.jetty.ee11:jetty-ee11-servlet", version.ref = "jetty" }
 
 # Ktor
-ktor-client-core = { module = "io.ktor:ktor-client", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
-ktor-server-core = { module = "io.ktor:ktor-server", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktor" }
 ktor-server-compression = { module = "io.ktor:ktor-server-compression", version.ref = "ktor" }
 ktor-server-html-builder = { group = "io.ktor", name = "ktor-server-html-builder-jvm", version.ref = "ktor" }
+ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
@@ -119,8 +116,5 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = "gradle-plugins" }
 pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradle-plugins" }
 pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradle-plugins" }
-#kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinterPlugin" }
-#versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
-coveralls = { id = "com.github.kt3k.coveralls", version.ref = "coverallsPlugin" }

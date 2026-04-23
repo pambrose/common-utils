@@ -1,14 +1,15 @@
-description = "Email sending utilities with template support"
-
 plugins {
     alias(libs.plugins.kotlin.serialization)
 }
+
+description = "Email sending utilities with template support"
 
 dependencies {
     implementation(project(":core-utils"))
 
     implementation(libs.resend)
-    implementation(libs.ktor.server.html.builder)
+    implementation(libs.kotlinx.html)
+    implementation(libs.ktor.http)
 
     testImplementation(libs.kotest)
     testImplementation(kotlin("test"))

@@ -3,15 +3,15 @@ import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
-    `java-library`
-
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.pambrose.stable.versions) apply false
     alias(libs.plugins.pambrose.kotlinter) apply false
+    alias(libs.plugins.pambrose.testing) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.maven.publish) apply false
 }
@@ -33,16 +33,12 @@ dokka {
     }
 }
 
-val versionStr: String by extra
-
 allprojects {
-    extra["versionStr"] = findProperty("overrideVersion")?.toString() ?: "2.8.0"
+    version = findProperty("overrideVersion")?.toString() ?: "2.8.0"
     group = "com.pambrose.common-utils"
-    version = versionStr
 }
 
 val kotlinLib = libs.plugins.kotlin.jvm.get().pluginId
-val serializationLib = libs.plugins.kotlin.serialization.get().pluginId
 val ktlinterLib = libs.plugins.pambrose.kotlinter.get().pluginId
 val testingLib = libs.plugins.pambrose.testing.get().pluginId
 val versionsLib = libs.plugins.pambrose.stable.versions.get().pluginId
@@ -51,7 +47,6 @@ val publishLib = libs.plugins.maven.publish.get().pluginId
 
 subprojects {
     apply {
-        plugin(serializationLib)
         plugin(ktlinterLib)
         plugin(testingLib)
         plugin(versionsLib)
@@ -66,7 +61,7 @@ fun Project.configureKotlin() {
         plugin(kotlinLib)
     }
 
-    kotlin {
+    extensions.configure<KotlinJvmProjectExtension> {
         jvmToolchain(17)
 
         sourceSets.all {

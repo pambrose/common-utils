@@ -26,7 +26,7 @@ import com.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
-import org.eclipse.jetty.servlet.ServletHolder
+import org.eclipse.jetty.ee11.servlet.ServletHolder
 
 /**
  * A Guava [GenericIdleService] that runs an embedded Jetty server to expose a Prometheus [MetricsServlet].

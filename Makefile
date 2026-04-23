@@ -1,4 +1,4 @@
-VERSION := $(shell grep 'extra\["versionStr"\]' build.gradle.kts | sed 's/.*"\(.*\)"/\1/')
+VERSION := $(shell grep -E '^[[:space:]]*version[[:space:]]*=' build.gradle.kts | head -1 | sed 's/.*"\(.*\)"/\1/')
 
 default: versioncheck
 
