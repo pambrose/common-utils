@@ -2,6 +2,19 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.8.0] - 2026-04-22
+
+- Upgrade Jetty to 12 (EE11); move servlet imports from `org.eclipse.jetty.servlet.*` to `org.eclipse.jetty.ee11.servlet.*` (breaking)
+- Migrate to `com.pambrose` Gradle convention plugins (`pambrose.kotlinter`, `pambrose.testing`, `pambrose.stable-versions`) at version 1.0.14
+- Rely on `pambrose.testing` defaults for `kotest-runner-junit5` and `kotlin-test`; remove per-module test dependency duplication across all 19 modules
+- Consolidate subproject plugin application in root `build.gradle.kts`
+- Consolidate Dokka aggregation at the root project
+- Promote several dependencies to the `api` configuration where their types leak into public signatures
+- Clean up per-module build scripts and remove unused version catalog entries
+- Add `RELEASE_NOTES.md` release history index
+- Add `.superset/` to `.gitignore`
+- Bump project version to 2.8.0
+
 ## [2.7.1] - 2026-04-04
 
 - Consolidate Dokka docs generation in root project with GitHub Actions workflow

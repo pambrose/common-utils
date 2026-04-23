@@ -46,12 +46,16 @@ cases. Published on Maven Central.
 
 ### Build Configuration
 
-The root `build.gradle.kts` defines configuration functions applied to all subprojects:
+The root `build.gradle.kts` applies a shared set of plugins to every subproject and defines two inline configuration functions:
 
 - `configureKotlin()` - JVM 17 target, experimental opt-ins
-- `configurePublishing()` - Maven publication setup
-- `configureTesting()` - JUnit Platform configuration
-- `configureKotlinter()` - Lint settings
+- `configurePublishing()` - Maven publication setup (vanniktech maven-publish) and per-module Dokka configuration
+
+Common behavior for testing, linting, and dependency-update reporting is provided by [`pambrose-gradle-plugins`](https://github.com/pambrose/pambrose-gradle-plugins) convention plugins applied to every subproject:
+
+- `com.pambrose.testing` - JUnit Platform, `kotest-runner-junit5` and `kotlin-test` as default `testImplementation`, logback-classic on test runtime
+- `com.pambrose.kotlinter` - Kotlinter lint/format tasks
+- `com.pambrose.stable-versions` - stable-only filtering for `dependencyUpdates`
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 

@@ -67,10 +67,10 @@ Google Guava integration and extensions.
 
 #### [**jetty-utils**](jetty-utils/README.md)
 
-Jetty web server integration utilities.
+Jetty 12 (EE11) web server integration utilities.
 
 - Server configuration DSL
-- Lambda-based servlet implementations
+- Lambda-based servlet implementations (Jakarta Servlet 6.1)
 - Version endpoint utilities
 
 #### [**ktor-client-utils**](ktor-client-utils/README.md)
@@ -224,7 +224,7 @@ dependencies {
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava
-- **Web Frameworks**: Ktor, Jetty
+- **Web Frameworks**: Ktor, Jetty 12 (EE11)
 - **Metrics**: Dropwizard Metrics, Prometheus
 - **Databases**: JetBrains Exposed
 - **Caching**: Redis (Jedis)

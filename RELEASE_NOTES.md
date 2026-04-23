@@ -5,6 +5,28 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v2.8.0 — 2026-04-22
+
+### Highlights
+
+- **Jetty 12 (EE11)**: Upgraded `jetty-utils` to Jetty 12 with the EE11 servlet API. Imports moved from `org.eclipse.jetty.servlet.*` to `org.eclipse.jetty.ee11.servlet.*`.
+- **Convention plugins**: Migrated to [`com.pambrose` Gradle convention plugins](https://github.com/pambrose/pambrose-gradle-plugins) (`pambrose.kotlinter`, `pambrose.testing`, `pambrose.stable-versions`). Bumped to `pambrose-gradle-plugins:1.0.14`, which provides `kotest-runner-junit5` and `kotlin-test` as default `testImplementation` dependencies, removing per-module duplication across all 19 modules.
+- **Consolidated build**: Subproject plugin application moved to the root `build.gradle.kts`. Dokka aggregation lives at the root, and `configureKotlin()` / `configurePublishing()` apply JVM 17 toolchain, experimental opt-ins, and Maven publication metadata uniformly.
+- **API vs implementation**: Promoted several dependencies to the `api` configuration where their types appear in public signatures, ensuring consumers get correct transitive resolution.
+
+### Breaking changes
+
+- `jetty-utils` consumers must update imports from `org.eclipse.jetty.servlet.*` to `org.eclipse.jetty.ee11.servlet.*` and align to Jetty 12 APIs.
+
+### Housekeeping
+
+- Added `RELEASE_NOTES.md` index and `.superset/` ignore.
+- Removed unused version catalog entries and cleaned up per-module build scripts.
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.7.1...2.8.0
+
+---
+
 ## v2.7.1 — 2026-04-17
 
 ### Changes

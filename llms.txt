@@ -22,7 +22,7 @@ Use core-utils for general Kotlin/Java utility needs. Other modules target speci
 - [redis-utils](redis-utils/README.md): Jedis client extensions. Use for Redis connection management and common operation patterns. Depends on: core-utils.
 - [ktor-server-utils](ktor-server-utils/README.md): Ktor server extensions. Use for Heroku HTTPS redirect, response utilities, servlet integration. Depends on: core-utils.
 - [ktor-client-utils](ktor-client-utils/README.md): Ktor HTTP client DSL. Use for client configuration and request/response utilities. Depends on: core-utils.
-- [jetty-utils](jetty-utils/README.md): Jetty server DSL. Use for server config, lambda-based servlets, version endpoints. Depends on: core-utils.
+- [jetty-utils](jetty-utils/README.md): Jetty 12 (EE11) server DSL. Use for server config, lambda-based servlets (Jakarta Servlet 6.1), version endpoints. Depends on: core-utils.
 - [grpc-utils](grpc-utils/README.md): gRPC channel/server DSL. Use for TLS/SSL setup, server lifecycle, StreamObserver helpers. Standalone.
 - [dropwizard-utils](dropwizard-utils/README.md): Dropwizard Metrics DSL. Use for metric definitions, health checks, JMX integration. Standalone.
 - [prometheus-utils](prometheus-utils/README.md): Prometheus metrics DSL. Use for counters/gauges/histograms, system metrics, instrumented thread factories. Standalone.
