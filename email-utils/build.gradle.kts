@@ -10,7 +10,4 @@ dependencies {
     implementation(libs.resend)
     implementation(libs.kotlinx.html)
     implementation(libs.ktor.http)
-
-    testImplementation(libs.kotest)
-    testImplementation(kotlin("test"))
 }

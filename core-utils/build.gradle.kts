@@ -11,7 +11,4 @@ dependencies {
     api(libs.kotlinx.datetime)
     api(libs.kotlinx.serialization.json)
     api(libs.kotlin.logging)
-
-    testImplementation(libs.kotest)
-    testImplementation(kotlin("test"))
 }

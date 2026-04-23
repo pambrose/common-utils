@@ -10,6 +10,4 @@ dependencies {
 
     testImplementation(libs.jakarta.servlet.api)
     testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.kotest)
-    testImplementation(kotlin("test"))
 }

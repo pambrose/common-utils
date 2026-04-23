@@ -5,7 +5,5 @@ dependencies {
 
     api(libs.jetty.servlet)
 
-    testImplementation(libs.kotest)
     testImplementation(libs.mockk)
-    testImplementation(kotlin("test"))
 }

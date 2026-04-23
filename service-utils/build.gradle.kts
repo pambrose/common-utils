@@ -20,7 +20,4 @@ dependencies {
     implementation(libs.ktor.server.compression)
 
     implementation(libs.zipkin.sender.okhttp)
-
-    testImplementation(libs.kotest)
-    testImplementation(kotlin("test"))
 }

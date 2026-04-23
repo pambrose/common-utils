@@ -5,7 +5,4 @@ dependencies {
 
     api(libs.dropwizard.core)
     api(libs.dropwizard.healthcheck)
-
-    testImplementation(libs.kotest)
-    testImplementation(kotlin("test"))
 }
