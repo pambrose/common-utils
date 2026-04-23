@@ -34,29 +34,23 @@ allprojects {
     group = "com.pambrose.common-utils"
 }
 
-val kotlinLib = libs.plugins.kotlin.jvm.get().pluginId
-val ktlinterLib = libs.plugins.pambrose.kotlinter.get().pluginId
-val testingLib = libs.plugins.pambrose.testing.get().pluginId
-val versionsLib = libs.plugins.pambrose.stable.versions.get().pluginId
-val dokkaLib = libs.plugins.dokka.get().pluginId
-val publishLib = libs.plugins.maven.publish.get().pluginId
+val subprojectPluginIds = listOf(
+    libs.plugins.kotlin.jvm,
+    libs.plugins.pambrose.kotlinter,
+    libs.plugins.pambrose.testing,
+    libs.plugins.pambrose.stable.versions,
+    libs.plugins.dokka,
+    libs.plugins.maven.publish,
+).map { it.get().pluginId }
 
 subprojects {
-    apply {
-        plugin(ktlinterLib)
-        plugin(testingLib)
-        plugin(versionsLib)
-    }
+    subprojectPluginIds.forEach(pluginManager::apply)
 
     configureKotlin()
     configurePublishing()
 }
 
 fun Project.configureKotlin() {
-    apply {
-        plugin(kotlinLib)
-    }
-
     extensions.configure<KotlinJvmProjectExtension> {
         jvmToolchain(17)
 
@@ -81,11 +75,6 @@ fun Project.configureKotlin() {
 }
 
 fun Project.configurePublishing() {
-    apply {
-        plugin(dokkaLib)
-        plugin(publishLib)
-    }
-
     dokka {
         pluginsConfiguration.html {
             homepageLink.set("https://github.com/pambrose/common-utils")
