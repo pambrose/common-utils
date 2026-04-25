@@ -16,9 +16,35 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
 }
 
-// Consolidate dokka docs into the root build/
+version = findProperty("overrideVersion")?.toString() ?: "2.8.0"
+group = "com.pambrose.common-utils"
+
+// Consolidate dokka docs into the root build/. Listed explicitly to avoid
+// reading `subprojects` at root configuration time.
+val publishedSubprojects = listOf(
+    "core-utils",
+    "dropwizard-utils",
+    "email-utils",
+    "exposed-utils",
+    "grpc-utils",
+    "guava-utils",
+    "json-utils",
+    "jetty-utils",
+    "ktor-client-utils",
+    "ktor-server-utils",
+    "prometheus-utils",
+    "recaptcha-utils",
+    "redis-utils",
+    "script-utils-common",
+    "script-utils-python",
+    "script-utils-java",
+    "script-utils-kotlin",
+    "service-utils",
+    "zipkin-utils",
+)
+
 dependencies {
-    subprojects.forEach { dokka(project(it.path)) }
+    publishedSubprojects.forEach { dokka(project(":$it")) }
 }
 
 dokka {
@@ -27,11 +53,6 @@ dokka {
         homepageLink.set("https://github.com/pambrose/common-utils")
         footerMessage.set("common-utils")
     }
-}
-
-allprojects {
-    version = findProperty("overrideVersion")?.toString() ?: "2.8.0"
-    group = "com.pambrose.common-utils"
 }
 
 val subprojectPluginIds = listOf(
@@ -44,6 +65,9 @@ val subprojectPluginIds = listOf(
 ).map { it.get().pluginId }
 
 subprojects {
+    version = rootProject.version
+    group = rootProject.group
+
     subprojectPluginIds.forEach(pluginManager::apply)
 
     configureKotlin()
@@ -75,13 +99,6 @@ fun Project.configureKotlin() {
 }
 
 fun Project.configurePublishing() {
-    dokka {
-        pluginsConfiguration.html {
-            homepageLink.set("https://github.com/pambrose/common-utils")
-            footerMessage.set("common-utils")
-        }
-    }
-
     extensions.configure<MavenPublishBaseExtension> {
         configure(
             KotlinJvm(

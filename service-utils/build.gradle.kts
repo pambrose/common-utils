@@ -9,15 +9,9 @@ dependencies {
     implementation(project(":dropwizard-utils"))
     implementation(project(":zipkin-utils"))
 
+    implementation(libs.bundles.dropwizard.service)
+    implementation(libs.bundles.ktor.server.service)
     implementation(libs.prometheus.servlet)
     implementation(libs.prometheus.dropwizard)
-
-    implementation(libs.dropwizard.servlets)
-    implementation(libs.dropwizard.jmx)
-
-    implementation(libs.ktor.server.cio)
-    implementation(libs.ktor.server.call.logging)
-    implementation(libs.ktor.server.compression)
-
     implementation(libs.zipkin.sender.okhttp)
 }

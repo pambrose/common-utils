@@ -108,6 +108,31 @@ zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", v
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
+[bundles]
+grpc = [
+  "grpc-netty",
+  "grpc-inprocess",
+  "grpc-protobuf",
+  "grpc-services",
+]
+
+dropwizard-service = [
+  "dropwizard-servlets",
+  "dropwizard-jmx",
+]
+
+ktor-server-service = [
+  "ktor-server-cio",
+  "ktor-server-call-logging",
+  "ktor-server-compression",
+]
+ktor-client-json = [
+  "ktor-client-core",
+  "ktor-client-cio",
+  "ktor-client-content-negotiation",
+  "ktor-serialization-kotlinx-json",
+]
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

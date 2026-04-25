@@ -5,10 +5,7 @@ dependencies {
 
     api(libs.grpc.stub)
 
-    implementation(libs.grpc.netty)
-    implementation(libs.grpc.inprocess)
-    implementation(libs.grpc.protobuf)
-    implementation(libs.grpc.services)
+    implementation(libs.bundles.grpc)
 
     runtimeOnly(libs.netty.ssl)
 }
