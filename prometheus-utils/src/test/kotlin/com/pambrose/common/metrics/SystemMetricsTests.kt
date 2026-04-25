@@ -8,9 +8,6 @@ import io.kotest.matchers.shouldNotBe
 
 class SystemMetricsTests : StringSpec() {
   init {
-    // Bug #3: `initialized` is set inside @Synchronized initialize() but was a plain `var`;
-    // visibility to other threads was not guaranteed. After fix: marked @Volatile, which on
-    // the JVM produces a `volatile` modifier on the underlying field.
     "initialized field is volatile" {
       val field = SystemMetrics::class.java.getDeclaredField("initialized")
       java.lang.reflect.Modifier.isVolatile(field.modifiers) shouldBe true

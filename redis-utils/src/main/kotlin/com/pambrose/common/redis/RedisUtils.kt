@@ -52,6 +52,16 @@ object RedisUtils {
 
   private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
 
+  private fun logConnectionFailure(
+    e: JedisConnectionException,
+    printStackTrace: Boolean,
+  ) {
+    if (printStackTrace)
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
+    else
+      logger.error { FAILED_TO_CONNECT_MSG }
+  }
+
   private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
 
@@ -180,18 +190,13 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: (RedisClient?) -> T,
   ): T {
-    val healthy =
-      try {
-        ping()
-        true
-      } catch (e: JedisConnectionException) {
-        if (printStackTrace)
-          logger.error(e) { FAILED_TO_CONNECT_MSG }
-        else
-          logger.error { FAILED_TO_CONNECT_MSG }
-        false
-      }
-    return if (healthy) block.invoke(this) else block.invoke(null)
+    try {
+      ping()
+    } catch (e: JedisConnectionException) {
+      logConnectionFailure(e, printStackTrace)
+      return block.invoke(null)
+    }
+    return block.invoke(this)
   }
 
   /**
@@ -212,10 +217,7 @@ object RedisUtils {
     try {
       ping()
     } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
+      logConnectionFailure(e, printStackTrace)
       return null
     }
     return block.invoke(this)
@@ -236,18 +238,13 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: suspend (RedisClient?) -> T,
   ): T {
-    val healthy =
-      try {
-        ping()
-        true
-      } catch (e: JedisConnectionException) {
-        if (printStackTrace)
-          logger.error(e) { FAILED_TO_CONNECT_MSG }
-        else
-          logger.error { FAILED_TO_CONNECT_MSG }
-        false
-      }
-    return if (healthy) block.invoke(this) else block.invoke(null)
+    try {
+      ping()
+    } catch (e: JedisConnectionException) {
+      logConnectionFailure(e, printStackTrace)
+      return block.invoke(null)
+    }
+    return block.invoke(this)
   }
 
   /**
@@ -268,10 +265,7 @@ object RedisUtils {
     try {
       ping()
     } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
+      logConnectionFailure(e, printStackTrace)
       return null
     }
     return block.invoke(this)
@@ -297,10 +291,7 @@ object RedisUtils {
       try {
         createRedisClient(redisUrl)
       } catch (e: JedisConnectionException) {
-        if (printStackTrace)
-          logger.error(e) { FAILED_TO_CONNECT_MSG }
-        else
-          logger.error { FAILED_TO_CONNECT_MSG }
+        logConnectionFailure(e, printStackTrace)
         return block.invoke(null)
       }
     return client.use { block.invoke(it) }
@@ -326,10 +317,7 @@ object RedisUtils {
       try {
         createRedisClient(redisUrl)
       } catch (e: JedisConnectionException) {
-        if (printStackTrace)
-          logger.error(e) { FAILED_TO_CONNECT_MSG }
-        else
-          logger.error { FAILED_TO_CONNECT_MSG }
+        logConnectionFailure(e, printStackTrace)
         return null
       }
     return client.use { block.invoke(it) }
@@ -355,10 +343,7 @@ object RedisUtils {
       try {
         createRedisClient(redisUrl)
       } catch (e: JedisConnectionException) {
-        if (printStackTrace)
-          logger.error(e) { FAILED_TO_CONNECT_MSG }
-        else
-          logger.error { FAILED_TO_CONNECT_MSG }
+        logConnectionFailure(e, printStackTrace)
         return block.invoke(null)
       }
     return client.use { block.invoke(it) }
@@ -383,10 +368,7 @@ object RedisUtils {
       try {
         createRedisClient(redisUrl)
       } catch (e: JedisConnectionException) {
-        if (printStackTrace)
-          logger.error(e) { FAILED_TO_CONNECT_MSG }
-        else
-          logger.error { FAILED_TO_CONNECT_MSG }
+        logConnectionFailure(e, printStackTrace)
         return null
       }
     return client.use { block.invoke(it) }

@@ -29,10 +29,6 @@ import zipkin2.reporter.BytesMessageSender
 
 class ZipkinReporterServiceShutdownTests : StringSpec() {
   init {
-    // Bug #9: shutDown() called reporter.close() then sender.close(); if reporter.close()
-    // threw, sender.close() was never reached and the OkHttp connection pool leaked.
-    // After fix: try { reporter.close() } finally { sender.close() }.
-
     "sender is closed even when reporter close throws" {
       val mockReporter = mockk<AsyncReporter<*>>(relaxed = true)
       val mockSender = mockk<BytesMessageSender>(relaxed = true)
@@ -40,7 +36,6 @@ class ZipkinReporterServiceShutdownTests : StringSpec() {
 
       val service = ZipkinReporterService("http://localhost:9411/api/v2/spans")
 
-      // Replace the privately-held reporter and sender with our mocks.
       val reporterField = ZipkinReporterService::class.java.getDeclaredField("reporter")
       reporterField.isAccessible = true
       reporterField.set(service, mockReporter)
@@ -50,7 +45,6 @@ class ZipkinReporterServiceShutdownTests : StringSpec() {
       senderField.set(service, mockSender)
 
       shouldThrow<RuntimeException> {
-        // shutDown is protected on AbstractIdleService, expose via reflection.
         val shutDownMethod = ZipkinReporterService::class.java.getDeclaredMethod("shutDown")
         shutDownMethod.isAccessible = true
         try {

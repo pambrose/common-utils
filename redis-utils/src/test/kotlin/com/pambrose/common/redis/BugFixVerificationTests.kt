@@ -75,14 +75,7 @@ class BugFixVerificationTests : StringSpec() {
       }
     }
 
-    // Bugs #1 and #2: the catch around `block.invoke(client)` re-invoked the block with
-    // null when the *block itself* threw JedisConnectionException — meaning user
-    // operations could be silently double-executed. After fix: only connection setup
-    // (and, for pooled variants, the initial ping) is caught; block exceptions propagate,
-    // and the block is invoked at most once.
-
-    // Port 1 is unassigned and refuses connections — `ping()` against it throws
-    // JedisConnectionException, exercising the connection-failure path for pool variants.
+    // Port 1 reliably refuses connections, so `ping()` throws JedisConnectionException.
     val unreachableUrl = "redis://localhost:1"
 
     "withRedisPool: connection failure invokes block exactly once with null" {
@@ -155,11 +148,6 @@ class BugFixVerificationTests : StringSpec() {
       }
     }
 
-    // Block-throws path: regardless of which `with*` variant, if the user's block throws
-    // JedisConnectionException, the exception must propagate and the block must be
-    // invoked exactly once. Pre-fix, the catch would re-invoke block(null), double-firing
-    // any side effect (e.g., a write).
-
     "withRedis: block JedisConnectionException propagates and block invoked once" {
       val callCount = AtomicInteger(0)
       shouldThrow<JedisConnectionException> {
@@ -182,14 +170,7 @@ class BugFixVerificationTests : StringSpec() {
       callCount.get() shouldBe 1
     }
 
-    "withRedisPool: block JedisConnectionException propagates and block invoked once" {
-      // Use a server that responds to ping but where the user simulates a mid-block
-      // failure. Since we can't depend on a live Redis here, use an unreachable URL and
-      // skip if ping fails; otherwise the bug-fix path under test is unreachable.
-      // Instead, exercise via a real client with the block guaranteed to be called only
-      // when ping succeeds — which it won't here. Therefore this test asserts the more
-      // tractable invariant: when ping fails, the block runs exactly once with null and
-      // the caller's exception (if any) still propagates.
+    "withRedisPool: block exception from null branch propagates and block invoked once" {
       val callCount = AtomicInteger(0)
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
       try {
@@ -199,7 +180,6 @@ class BugFixVerificationTests : StringSpec() {
             throw JedisConnectionException("simulated mid-block failure")
           }
         }
-        // Pre-fix, the catch would have re-invoked block(null), bumping the counter to 2.
         callCount.get() shouldBe 1
       } finally {
         client.close()

@@ -31,10 +31,6 @@ private val logger = KotlinLogging.logger {}
 
 class BannerTests : StringSpec() {
   init {
-    // Bug #7: Banner.getBanner used a side-effectful `lineNum++` inside a filter predicate.
-    // After fix: filterIndexed is used; verify trimming + indenting work correctly across
-    // multiple invocations (catching any state-leak between calls).
-
     "banner trims leading and trailing blank lines, preserves middle blanks" {
       val result = getBanner("test-banner.txt", logger)
 
@@ -47,12 +43,11 @@ class BannerTests : StringSpec() {
       body.lines().first() shouldBe "     first"
       body.lines().last() shouldBe "     last"
 
-      // Ensure original leading/trailing blank lines are gone (not just leading newlines)
       body shouldNotStartWith " \n"
       body shouldNotEndWith "\n     "
     }
 
-    "banner is idempotent across calls (no shared mutable state)" {
+    "banner is idempotent across calls" {
       val a = getBanner("test-banner.txt", logger)
       val b = getBanner("test-banner.txt", logger)
       a shouldBe b
