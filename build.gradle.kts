@@ -19,12 +19,19 @@ allprojects {
     group = "com.pambrose.common-utils"
 }
 
+val projectHomepage = "https://github.com/pambrose/common-utils"
+val dokkaFooter = "common-utils"
+
+fun org.jetbrains.dokka.gradle.DokkaExtension.configureHtml() {
+    pluginsConfiguration.html {
+        homepageLink.set(projectHomepage)
+        footerMessage.set(dokkaFooter)
+    }
+}
+
 dokka {
     moduleName.set("common-utils")
-    pluginsConfiguration.html {
-        homepageLink.set("https://github.com/pambrose/common-utils")
-        footerMessage.set("common-utils")
-    }
+    configureHtml()
 }
 
 val subprojectPluginIds = listOf(
@@ -66,10 +73,7 @@ fun Project.configureKotlin() {
 
 fun Project.configureDokka() {
     extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
-        pluginsConfiguration.html {
-            homepageLink.set("https://github.com/pambrose/common-utils")
-            footerMessage.set("common-utils")
-        }
+        configureHtml()
     }
 }
 
