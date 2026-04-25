@@ -67,8 +67,11 @@ class ZipkinReporterService(
   }
 
   override fun shutDown() {
-    reporter.close()
-    sender.close()
+    try {
+      reporter.close()
+    } finally {
+      sender.close()
+    }
   }
 
   override fun toString() = toStringElements { add("url", url) }

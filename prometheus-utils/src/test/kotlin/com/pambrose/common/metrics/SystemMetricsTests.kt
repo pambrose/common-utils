@@ -3,10 +3,19 @@
 package com.pambrose.common.metrics
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 class SystemMetricsTests : StringSpec() {
   init {
+    // Bug #3: `initialized` is set inside @Synchronized initialize() but was a plain `var`;
+    // visibility to other threads was not guaranteed. After fix: marked @Volatile, which on
+    // the JVM produces a `volatile` modifier on the underlying field.
+    "initialized field is volatile" {
+      val field = SystemMetrics::class.java.getDeclaredField("initialized")
+      java.lang.reflect.Modifier.isVolatile(field.modifiers) shouldBe true
+    }
+
     "initialize with all exports enabled does not throw" {
       SystemMetrics.initialize(
         enableStandardExports = true,
