@@ -52,6 +52,16 @@ object RedisUtils {
 
   private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
 
+  private fun logConnectionFailure(
+    e: JedisConnectionException,
+    printStackTrace: Boolean,
+  ) {
+    if (printStackTrace)
+      logger.error(e) { FAILED_TO_CONNECT_MSG }
+    else
+      logger.error { FAILED_TO_CONNECT_MSG }
+  }
+
   private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
 
@@ -179,17 +189,15 @@ object RedisUtils {
   fun <T> RedisClient.withRedisPool(
     printStackTrace: Boolean = false,
     block: (RedisClient?) -> T,
-  ): T =
+  ): T {
     try {
       ping()
-      block.invoke(this)
     } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      block.invoke(null)
+      logConnectionFailure(e, printStackTrace)
+      return block.invoke(null)
     }
+    return block.invoke(this)
+  }
 
   /**
    * Executes [block] with this [RedisClient], returning `null` if the connection fails.
@@ -205,17 +213,15 @@ object RedisUtils {
   fun <T> RedisClient.withNonNullRedisPool(
     printStackTrace: Boolean = false,
     block: (RedisClient) -> T,
-  ): T? =
+  ): T? {
     try {
       ping()
-      block.invoke(this)
     } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      null
+      logConnectionFailure(e, printStackTrace)
+      return null
     }
+    return block.invoke(this)
+  }
 
   /**
    * Suspending variant of [withRedisPool]. Executes a suspending [block] with this [RedisClient],
@@ -231,17 +237,15 @@ object RedisUtils {
   suspend fun <T> RedisClient.withSuspendingRedisPool(
     printStackTrace: Boolean = false,
     block: suspend (RedisClient?) -> T,
-  ): T =
+  ): T {
     try {
       ping()
-      block.invoke(this)
     } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      block.invoke(null)
+      logConnectionFailure(e, printStackTrace)
+      return block.invoke(null)
     }
+    return block.invoke(this)
+  }
 
   /**
    * Suspending variant of [withNonNullRedisPool]. Executes a suspending [block] with this [RedisClient],
@@ -257,17 +261,15 @@ object RedisUtils {
   suspend fun <T> RedisClient.withSuspendingNonNullRedisPool(
     printStackTrace: Boolean = false,
     block: suspend (RedisClient) -> T,
-  ): T? =
+  ): T? {
     try {
       ping()
-      block.invoke(this)
     } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      null
+      logConnectionFailure(e, printStackTrace)
+      return null
     }
+    return block.invoke(this)
+  }
 
   /**
    * Creates a short-lived [RedisClient] connection, executes [block], and closes the client.
@@ -284,19 +286,16 @@ object RedisUtils {
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
     block: (RedisClient?) -> T,
-  ): T =
-    try {
-      createRedisClient(redisUrl)
-        .use { client ->
-          block.invoke(client)
-        }
-    } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      block.invoke(null)
-    }
+  ): T {
+    val client =
+      try {
+        createRedisClient(redisUrl)
+      } catch (e: JedisConnectionException) {
+        logConnectionFailure(e, printStackTrace)
+        return block.invoke(null)
+      }
+    return client.use { block.invoke(it) }
+  }
 
   /**
    * Creates a short-lived [RedisClient] connection, executes [block] with a non-null client, and closes it.
@@ -313,19 +312,16 @@ object RedisUtils {
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
     block: (RedisClient) -> T,
-  ): T? =
-    try {
-      createRedisClient(redisUrl)
-        .use { client ->
-          block.invoke(client)
-        }
-    } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      null
-    }
+  ): T? {
+    val client =
+      try {
+        createRedisClient(redisUrl)
+      } catch (e: JedisConnectionException) {
+        logConnectionFailure(e, printStackTrace)
+        return null
+      }
+    return client.use { block.invoke(it) }
+  }
 
   /**
    * Suspending variant of [withRedis]. Creates a short-lived connection, executes a suspending [block], and closes it.
@@ -342,19 +338,16 @@ object RedisUtils {
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
     block: suspend (RedisClient?) -> T,
-  ): T =
-    try {
-      createRedisClient(redisUrl)
-        .use { client ->
-          block.invoke(client)
-        }
-    } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      block.invoke(null)
-    }
+  ): T {
+    val client =
+      try {
+        createRedisClient(redisUrl)
+      } catch (e: JedisConnectionException) {
+        logConnectionFailure(e, printStackTrace)
+        return block.invoke(null)
+      }
+    return client.use { block.invoke(it) }
+  }
 
   /**
    * Suspending variant of [withNonNullRedis]. Creates a short-lived connection, executes a suspending [block],
@@ -370,19 +363,16 @@ object RedisUtils {
     redisUrl: String = defaultRedisUrl,
     printStackTrace: Boolean = false,
     block: suspend (RedisClient) -> T,
-  ): T? =
-    try {
-      createRedisClient(redisUrl)
-        .use { client ->
-          block.invoke(client)
-        }
-    } catch (e: JedisConnectionException) {
-      if (printStackTrace)
-        logger.error(e) { FAILED_TO_CONNECT_MSG }
-      else
-        logger.error { FAILED_TO_CONNECT_MSG }
-      null
-    }
+  ): T? {
+    val client =
+      try {
+        createRedisClient(redisUrl)
+      } catch (e: JedisConnectionException) {
+        logConnectionFailure(e, printStackTrace)
+        return null
+      }
+    return client.use { block.invoke(it) }
+  }
 
   /**
    * Lazily scans Redis keys matching the given [pattern] using the SCAN command.

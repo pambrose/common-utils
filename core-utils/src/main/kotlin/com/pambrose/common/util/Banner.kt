@@ -42,24 +42,17 @@ fun getBanner(
   // Trim initial and trailing blank lines, but preserve blank lines in middle;
   var first = -1
   var last = -1
-  var lineNum = 0
-  lines.forEach { arg1 ->
-    if (arg1.trim { arg2 -> arg2 <= ' ' }.isNotEmpty()) {
+  lines.forEachIndexed { index, line ->
+    if (line.trim { arg -> arg <= ' ' }.isNotEmpty()) {
       if (first == -1)
-        first = lineNum
-      last = lineNum
+        first = index
+      last = index
     }
-    lineNum++
   }
-
-  lineNum = 0
 
   val vals =
     lines
-      .filter {
-        val currLine = lineNum++
-        currLine in first..last
-      }
+      .filterIndexed { index, _ -> index in first..last }
       .map { arg -> "     $arg" }
 
   return "\n\n${vals.joinToString("\n")}\n\n"

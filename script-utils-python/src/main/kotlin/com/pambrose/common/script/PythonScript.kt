@@ -53,13 +53,13 @@ class PythonScript(
 
   @Synchronized
   fun eval(code: String): Any? {
-    if ("sys.exit(" in code)
+    if (SYS_EXIT_PATTERN.containsMatchIn(code))
       throw ScriptException("Illegal call to sys.exit()")
 
-    if ("exit(" in code)
+    if (EXIT_PATTERN.containsMatchIn(code))
       throw ScriptException("Illegal call to exit()")
 
-    if ("quit(" in code)
+    if (QUIT_PATTERN.containsMatchIn(code))
       throw ScriptException("Illegal call to quit()")
 
     if (!initialized) {
@@ -72,5 +72,11 @@ class PythonScript(
 
   override fun close() {
     (engine as PyScriptEngine).close()
+  }
+
+  companion object {
+    private val SYS_EXIT_PATTERN = Regex("""(?<!\w)sys\.exit\s*\(""")
+    private val EXIT_PATTERN = Regex("""(?<!\w)exit\s*\(""")
+    private val QUIT_PATTERN = Regex("""(?<!\w)quit\s*\(""")
   }
 }

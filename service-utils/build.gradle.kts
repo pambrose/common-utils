@@ -14,4 +14,6 @@ dependencies {
     implementation(libs.prometheus.servlet)
     implementation(libs.prometheus.dropwizard)
     implementation(libs.zipkin.sender.okhttp)
+
+    testImplementation(libs.mockk)
 }

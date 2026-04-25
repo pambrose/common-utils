@@ -33,6 +33,8 @@ import io.prometheus.client.hotspot.VersionInfoExports
  */
 object SystemMetrics {
   private val logger = KotlinLogging.logger {}
+
+  @Volatile
   private var initialized = false
 
   /**

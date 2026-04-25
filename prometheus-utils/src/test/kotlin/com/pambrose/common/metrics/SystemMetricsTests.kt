@@ -3,10 +3,16 @@
 package com.pambrose.common.metrics
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 class SystemMetricsTests : StringSpec() {
   init {
+    "initialized field is volatile" {
+      val field = SystemMetrics::class.java.getDeclaredField("initialized")
+      java.lang.reflect.Modifier.isVolatile(field.modifiers) shouldBe true
+    }
+
     "initialize with all exports enabled does not throw" {
       SystemMetrics.initialize(
         enableStandardExports = true,

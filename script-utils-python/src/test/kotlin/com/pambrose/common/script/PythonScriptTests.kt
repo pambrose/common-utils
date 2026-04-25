@@ -187,6 +187,31 @@ class PythonScriptTests : StringSpec() {
           shouldThrow<ScriptException> { eval("sys.exit(1)") }
           shouldThrow<ScriptException> { eval("exit(1)") }
           shouldThrow<ScriptException> { eval("quit(1)") }
+          shouldThrow<ScriptException> { eval("exit (1)") }
+        }
+      }
+    }
+
+    "exit guards do not match identifiers containing exit/quit substrings" {
+      PythonScript().use {
+        it.apply {
+          shouldNotThrow<ScriptException> {
+            eval(
+              """
+                  def my_exit(x):
+                    return x
+
+                  def quit_handler(x):
+                    return x + 1
+
+                  def sys_exit_wrapper(x):
+                    return x
+              """.trimIndent(),
+            )
+          }
+          eval("my_exit(7)") shouldBe 7
+          eval("quit_handler(10)") shouldBe 11
+          eval("sys_exit_wrapper(3)") shouldBe 3
         }
       }
     }
