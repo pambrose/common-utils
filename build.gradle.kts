@@ -15,7 +15,7 @@ plugins {
 }
 
 allprojects {
-    version = findProperty("overrideVersion")?.toString() ?: "2.8.1"
+    version = findProperty("overrideVersion")?.toString() ?: "2.8.2"
     group = "com.pambrose.common-utils"
 }
 
@@ -108,11 +108,8 @@ fun Project.configurePublishing() {
         }
 
         publishToMavenCentral(automaticRelease = true)
-        signAllPublications()
-    }
-
-    // Skip signing when no GPG key is provided (e.g., local publishing)
-    tasks.withType<Sign>().configureEach {
-        isEnabled = project.findProperty("signingInMemoryKey") != null
+        if (project.findProperty("signingInMemoryKey") != null) {
+            signAllPublications()
+        }
     }
 }

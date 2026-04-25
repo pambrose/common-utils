@@ -8,6 +8,7 @@ dependencies {
     api(project(":core-utils"))
 
     implementation(libs.bundles.ktor.client.json)
+    api(libs.kotlinx.serialization.json)
     api(libs.ktor.server.core)
     api(libs.kotlinx.html)
 }

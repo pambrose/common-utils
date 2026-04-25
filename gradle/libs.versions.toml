@@ -6,6 +6,7 @@ mavenPublish = "0.36.0"
 # Library versions
 brave = "6.3.1"
 coroutines = "1.10.2"
+# 0.6.x-compat variant kept for Exposed/jodatime interop — do not drop the suffix
 datetime = "0.7.1-0.6.x-compat"
 dropwizard = "4.2.38"
 exposed = "1.2.0"
@@ -130,6 +131,11 @@ ktor-client-json = [
   "ktor-client-cio",
   "ktor-client-content-negotiation",
   "ktor-serialization-kotlinx-json",
+]
+
+prometheus-service = [
+  "prometheus-servlet",
+  "prometheus-dropwizard",
 ]
 
 [plugins]

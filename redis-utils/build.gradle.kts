@@ -4,6 +4,4 @@ dependencies {
     api(project(":core-utils"))
 
     api(libs.redis)
-
-    testImplementation(libs.kotlinx.coroutines)
 }

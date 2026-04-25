@@ -11,8 +11,7 @@ dependencies {
 
     implementation(libs.bundles.dropwizard.service)
     implementation(libs.bundles.ktor.server.service)
-    implementation(libs.prometheus.servlet)
-    implementation(libs.prometheus.dropwizard)
+    implementation(libs.bundles.prometheus.service)
     implementation(libs.zipkin.sender.okhttp)
 
     testImplementation(libs.mockk)
