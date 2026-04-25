@@ -1,7 +1,7 @@
 description = "Service lifecycle and management utilities"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
     implementation(project(":ktor-server-utils"))
     implementation(project(":guava-utils"))
     implementation(project(":jetty-utils"))

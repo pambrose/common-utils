@@ -5,7 +5,7 @@ plugins {
 description = "Google reCAPTCHA verification utilities"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
 
     implementation(libs.bundles.ktor.client.json)
     api(libs.ktor.server.core)

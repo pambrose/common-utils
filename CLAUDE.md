@@ -20,7 +20,6 @@ cases. Published on Maven Central.
 - `./gradlew test` - Run all tests
 - `./gradlew :MODULE_NAME:test` - Run tests for specific module (e.g., `./gradlew :core-utils:test`)
 - `./gradlew :MODULE_NAME:test --tests "ClassName"` - Run a specific test class
-- `make reports` - Generate merged Kover coverage reports
 
 ### Code Quality
 

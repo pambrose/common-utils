@@ -1,7 +1,7 @@
 description = "Embedded Jetty server configuration utilities"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
 
     api(libs.jetty.servlet)
 

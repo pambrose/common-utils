@@ -81,7 +81,7 @@ fun Project.configurePublishing() {
                 sourcesJar = SourcesJar.Sources(),
             ),
         )
-        coordinates("com.pambrose.common-utils", project.name, version.toString())
+        coordinates(group.toString(), project.name, version.toString())
 
         pom {
             name.set(project.name)

@@ -1,7 +1,7 @@
 description = "Ktor HTTP client extension utilities"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
 
     api(libs.ktor.client.core)
 

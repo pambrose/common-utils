@@ -1,7 +1,7 @@
 description = "Zipkin distributed tracing utilities"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
 
     api(libs.brave)
     api(libs.zipkin.core)

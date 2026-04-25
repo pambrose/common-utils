@@ -5,7 +5,7 @@ plugins {
 description = "Ktor server framework extension utilities"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
 
     implementation(libs.kotlin.reflect)
     api(libs.ktor.server.core)
