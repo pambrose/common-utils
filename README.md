@@ -3,7 +3,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/pambrose/common-utils)](https://github.com/pambrose/common-utils/releases)
 [![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/core-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/core-utils)
 [![Tests](https://github.com/pambrose/common-utils/actions/workflows/test.yml/badge.svg)](https://github.com/pambrose/common-utils/actions/workflows/test.yml)
-[![Kotlin version](https://img.shields.io/badge/kotlin-2.3.20-red?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin version](https://img.shields.io/badge/kotlin-2.3.21-red?logo=kotlin)](http://kotlinlang.org)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/5bb4750894844031a55375227acfff6f)](https://app.codacy.com/gh/pambrose/common-utils/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
@@ -219,7 +219,7 @@ dependencies {
 
 ## Technology Stack
 
-- **Languages**: Kotlin 2.3.20, Java
+- **Languages**: Kotlin 2.3.21, Java
 - **Build System**: Gradle 9.4.1 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization

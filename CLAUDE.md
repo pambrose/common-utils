@@ -71,7 +71,7 @@ These opt-ins are enabled globally:
 
 ### Key Technologies
 
-- Kotlin 2.3.20 with JVM target 17
+- Kotlin 2.3.21 with JVM target 17
 - Gradle 9.4.1 with Kotlin DSL
 - Kotest + MockK for testing
 - Kotlinter for linting
