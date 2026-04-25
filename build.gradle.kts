@@ -2,9 +2,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
@@ -16,35 +14,11 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
 }
 
-version = findProperty("overrideVersion")?.toString() ?: "2.8.0"
+version = findProperty("overrideVersion")?.toString() ?: "2.8.1"
 group = "com.pambrose.common-utils"
 
-// Consolidate dokka docs into the root build/. Listed explicitly to avoid
-// reading `subprojects` at root configuration time.
-val publishedSubprojects = listOf(
-    "core-utils",
-    "dropwizard-utils",
-    "email-utils",
-    "exposed-utils",
-    "grpc-utils",
-    "guava-utils",
-    "json-utils",
-    "jetty-utils",
-    "ktor-client-utils",
-    "ktor-server-utils",
-    "prometheus-utils",
-    "recaptcha-utils",
-    "redis-utils",
-    "script-utils-common",
-    "script-utils-python",
-    "script-utils-java",
-    "script-utils-kotlin",
-    "service-utils",
-    "zipkin-utils",
-)
-
 dependencies {
-    publishedSubprojects.forEach { dokka(project(":$it")) }
+    subprojects.forEach { dokka(it) }
 }
 
 dokka {
@@ -88,12 +62,6 @@ fun Project.configureKotlin() {
             ).forEach {
                 languageSettings.optIn(it)
             }
-        }
-    }
-
-    tasks.withType<KotlinJvmCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 }
