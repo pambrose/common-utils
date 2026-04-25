@@ -14,11 +14,9 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
 }
 
-version = findProperty("overrideVersion")?.toString() ?: "2.8.1"
-group = "com.pambrose.common-utils"
-
-dependencies {
-    subprojects.forEach { dokka(it) }
+allprojects {
+    version = findProperty("overrideVersion")?.toString() ?: "2.8.1"
+    group = "com.pambrose.common-utils"
 }
 
 dokka {
@@ -39,13 +37,13 @@ val subprojectPluginIds = listOf(
 ).map { it.get().pluginId }
 
 subprojects {
-    version = rootProject.version
-    group = rootProject.group
-
     subprojectPluginIds.forEach(pluginManager::apply)
 
     configureKotlin()
+    configureDokka()
     configurePublishing()
+
+    rootProject.dependencies.add("dokka", this)
 }
 
 fun Project.configureKotlin() {
@@ -62,6 +60,15 @@ fun Project.configureKotlin() {
             ).forEach {
                 languageSettings.optIn(it)
             }
+        }
+    }
+}
+
+fun Project.configureDokka() {
+    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+        pluginsConfiguration.html {
+            homepageLink.set("https://github.com/pambrose/common-utils")
+            footerMessage.set("common-utils")
         }
     }
 }

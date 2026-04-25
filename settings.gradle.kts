@@ -14,9 +14,7 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(FAIL_ON_PROJECT_REPOS)
     repositories {
-        // mavenLocal()
         mavenCentral()
-        gradlePluginPortal()
     }
 }
 
@@ -28,8 +26,8 @@ include("email-utils")
 include("exposed-utils")
 include("grpc-utils")
 include("guava-utils")
-include("json-utils")
 include("jetty-utils")
+include("json-utils")
 include("ktor-client-utils")
 include("ktor-server-utils")
 include("prometheus-utils")

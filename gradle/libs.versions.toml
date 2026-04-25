@@ -28,7 +28,6 @@ resend = "4.13.0"
 serialization = "1.11.0"
 zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
-zipkinSender = "3.5.3"
 
 [libraries]
 # Kotlin
@@ -102,7 +101,7 @@ redis = { module = "redis.clients:jedis", version.ref = "redis" }
 brave = { module = "io.zipkin.brave:brave", version.ref = "brave" }
 zipkin-core = { module = "io.zipkin.zipkin2:zipkin", version.ref = "zipkin" }
 zipkin-reporter = { module = "io.zipkin.reporter2:zipkin-reporter-brave", version.ref = "zipkinReporter" }
-zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", version.ref = "zipkinSender" }
+zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", version.ref = "zipkinReporter" }
 
 # Testing
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
