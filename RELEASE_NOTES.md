@@ -5,6 +5,23 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v2.8.1 — 2026-04-24
+
+### Highlights
+
+- **Kotlin 2.3.21**: Bumped Kotlin to 2.3.21.
+- **Gradle build cleanup**: Moved shared configuration into the `allprojects` block, scoped Dokka per-subproject, simplified repository declarations, and adopted dependency bundles in `gradle/libs.versions.toml`.
+- **API scopes**: Promoted inter-module dependencies to the `api` configuration so transitive resolution is correct for consumers.
+
+### Housekeeping
+
+- Dropped the stale Kover target.
+- Refreshed dependency versions in `gradle/libs.versions.toml`.
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.8.0...2.8.1
+
+---
+
 ## v2.8.0 — 2026-04-22
 
 ### Highlights

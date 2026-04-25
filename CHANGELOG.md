@@ -2,6 +2,15 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.8.1] - 2026-04-24
+
+- Bump Kotlin to 2.3.21
+- Tighten root `build.gradle.kts`: move shared configuration into `allprojects`, scope Dokka per-subproject, simplify repository declarations
+- Promote inter-module dependencies to the `api` configuration so consumers get correct transitive resolution
+- Drop the stale Kover target
+- Refresh dependency versions in `gradle/libs.versions.toml` and adopt dependency bundles
+- Bump project version to 2.8.1
+
 ## [2.8.0] - 2026-04-22
 
 - Upgrade Jetty to 12 (EE11); move servlet imports from `org.eclipse.jetty.servlet.*` to `org.eclipse.jetty.ee11.servlet.*` (breaking)

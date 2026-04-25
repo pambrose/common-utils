@@ -2,9 +2,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
@@ -16,9 +14,9 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
 }
 
-// Consolidate dokka docs into the root build/
-dependencies {
-    subprojects.forEach { dokka(project(it.path)) }
+allprojects {
+    version = findProperty("overrideVersion")?.toString() ?: "2.8.1"
+    group = "com.pambrose.common-utils"
 }
 
 dokka {
@@ -27,11 +25,6 @@ dokka {
         homepageLink.set("https://github.com/pambrose/common-utils")
         footerMessage.set("common-utils")
     }
-}
-
-allprojects {
-    version = findProperty("overrideVersion")?.toString() ?: "2.8.0"
-    group = "com.pambrose.common-utils"
 }
 
 val subprojectPluginIds = listOf(
@@ -47,7 +40,10 @@ subprojects {
     subprojectPluginIds.forEach(pluginManager::apply)
 
     configureKotlin()
+    configureDokka()
     configurePublishing()
+
+    rootProject.dependencies.add("dokka", this)
 }
 
 fun Project.configureKotlin() {
@@ -66,22 +62,18 @@ fun Project.configureKotlin() {
             }
         }
     }
-
-    tasks.withType<KotlinJvmCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
 }
 
-fun Project.configurePublishing() {
-    dokka {
+fun Project.configureDokka() {
+    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
         pluginsConfiguration.html {
             homepageLink.set("https://github.com/pambrose/common-utils")
             footerMessage.set("common-utils")
         }
     }
+}
 
+fun Project.configurePublishing() {
     extensions.configure<MavenPublishBaseExtension> {
         configure(
             KotlinJvm(
@@ -89,7 +81,7 @@ fun Project.configurePublishing() {
                 sourcesJar = SourcesJar.Sources(),
             ),
         )
-        coordinates("com.pambrose.common-utils", project.name, version.toString())
+        coordinates(group.toString(), project.name, version.toString())
 
         pom {
             name.set(project.name)

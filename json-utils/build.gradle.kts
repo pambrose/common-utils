@@ -5,5 +5,5 @@ plugins {
 description = "JSON serialization and deserialization utilities"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
 }

@@ -5,9 +5,9 @@ plugins {
 description = "Email sending utilities with template support"
 
 dependencies {
-    implementation(project(":core-utils"))
+    api(project(":core-utils"))
 
-    implementation(libs.resend)
-    implementation(libs.kotlinx.html)
-    implementation(libs.ktor.http)
+    api(libs.resend)
+    api(libs.kotlinx.html)
+    api(libs.ktor.http)
 }

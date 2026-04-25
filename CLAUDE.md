@@ -20,7 +20,6 @@ cases. Published on Maven Central.
 - `./gradlew test` - Run all tests
 - `./gradlew :MODULE_NAME:test` - Run tests for specific module (e.g., `./gradlew :core-utils:test`)
 - `./gradlew :MODULE_NAME:test --tests "ClassName"` - Run a specific test class
-- `make reports` - Generate merged Kover coverage reports
 
 ### Code Quality
 
@@ -71,7 +70,7 @@ These opt-ins are enabled globally:
 
 ### Key Technologies
 
-- Kotlin 2.3.20 with JVM target 17
+- Kotlin 2.3.21 with JVM target 17
 - Gradle 9.4.1 with Kotlin DSL
 - Kotest + MockK for testing
 - Kotlinter for linting
@@ -82,6 +81,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.8.0" (set in `allprojects` block of root build.gradle.kts)
+- Project version: "2.8.1" (set in `allprojects` block of root build.gradle.kts)
 - Group: "com.pambrose.common-utils"
 - All library versions in `gradle/libs.versions.toml`

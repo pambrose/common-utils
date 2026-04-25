@@ -1,7 +1,7 @@
 [versions]
 # Plugin versions
 dokka = "2.2.0"
-maven-publish = "0.36.0"
+mavenPublish = "0.36.0"
 
 # Library versions
 brave = "6.3.1"
@@ -9,13 +9,13 @@ coroutines = "1.10.2"
 datetime = "0.7.1-0.6.x-compat"
 dropwizard = "4.2.38"
 exposed = "1.2.0"
-gradle-plugins = "1.0.14"
+gradlePlugins = "1.0.14"
 grpc = "1.80.0"
 guava = "33.0.0-jre"
 jakartaServlet = "6.1.0"
 javaScripting = "2.0.0"
 jetty = "12.1.8"
-kotlin = "2.3.20"
+kotlin = "2.3.21"
 kotlinxHtml = "0.12.0"
 ktor = "3.4.3"
 logging = "8.0.01"
@@ -28,7 +28,6 @@ resend = "4.13.0"
 serialization = "1.11.0"
 zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
-zipkinSender = "3.5.3"
 
 [libraries]
 # Kotlin
@@ -42,7 +41,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
 
 # Resend
-resend = { group = "com.resend", name = "resend-java", version.ref = "resend" }
+resend = { module = "com.resend:resend-java", version.ref = "resend" }
 
 # Guava
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -102,17 +101,42 @@ redis = { module = "redis.clients:jedis", version.ref = "redis" }
 brave = { module = "io.zipkin.brave:brave", version.ref = "brave" }
 zipkin-core = { module = "io.zipkin.zipkin2:zipkin", version.ref = "zipkin" }
 zipkin-reporter = { module = "io.zipkin.reporter2:zipkin-reporter-brave", version.ref = "zipkinReporter" }
-zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", version.ref = "zipkinSender" }
+zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", version.ref = "zipkinReporter" }
 
 # Testing
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
+[bundles]
+grpc = [
+  "grpc-netty",
+  "grpc-inprocess",
+  "grpc-protobuf",
+  "grpc-services",
+]
+
+dropwizard-service = [
+  "dropwizard-servlets",
+  "dropwizard-jmx",
+]
+
+ktor-server-service = [
+  "ktor-server-cio",
+  "ktor-server-call-logging",
+  "ktor-server-compression",
+]
+ktor-client-json = [
+  "ktor-client-core",
+  "ktor-client-cio",
+  "ktor-client-content-negotiation",
+  "ktor-serialization-kotlinx-json",
+]
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = "gradle-plugins" }
-pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradle-plugins" }
-pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradle-plugins" }
+pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = "gradlePlugins" }
+pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradlePlugins" }
+pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradlePlugins" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
