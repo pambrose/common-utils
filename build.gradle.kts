@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
+import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 plugins {
@@ -22,7 +23,7 @@ allprojects {
 val projectHomepage = "https://github.com/pambrose/common-utils"
 val dokkaFooter = "common-utils"
 
-fun org.jetbrains.dokka.gradle.DokkaExtension.configureHtml() {
+fun DokkaExtension.configureHtml() {
     pluginsConfiguration.html {
         homepageLink.set(projectHomepage)
         footerMessage.set(dokkaFooter)
@@ -72,7 +73,7 @@ fun Project.configureKotlin() {
 }
 
 fun Project.configureDokka() {
-    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+    extensions.configure<DokkaExtension> {
         configureHtml()
     }
 }
