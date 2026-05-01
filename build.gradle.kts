@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.pambrose.kotlinter) apply false
     alias(libs.plugins.pambrose.testing) apply false
     alias(libs.plugins.dokka)
+    alias(libs.plugins.kover)
     alias(libs.plugins.maven.publish) apply false
 }
 
@@ -41,6 +42,7 @@ val subprojectPluginIds = listOf(
     libs.plugins.pambrose.testing,
     libs.plugins.pambrose.stable.versions,
     libs.plugins.dokka,
+    libs.plugins.kover,
     libs.plugins.maven.publish,
 ).map { it.get().pluginId }
 
@@ -52,6 +54,7 @@ subprojects {
     configurePublishing()
 
     rootProject.dependencies.add("dokka", this)
+    rootProject.dependencies.add("kover", this)
 }
 
 fun Project.configureKotlin() {

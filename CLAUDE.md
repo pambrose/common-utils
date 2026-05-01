@@ -31,6 +31,8 @@ cases. Published on Maven Central.
 
 - `make lint` - Run Kotlinter linting
 - `./gradlew formatKotlinMain formatKotlinTest` - Auto-format code
+- `make coverage` - Generate aggregated Kover HTML coverage report (output under `build/reports/kover/html/`)
+- `make coverage-xml` - Generate aggregated Kover XML coverage report (e.g. for CI / Codacy)
 
 ### Dependencies
 
