@@ -11,12 +11,18 @@ cases. Published on Maven Central.
 
 ### Building
 
-- `make build` - Build without tests
+- `make build` (alias: `make compile`) - Build without tests
 - `./gradlew build` - Full build with tests
-- `make publishLocal` - Install to local Maven repo
+- `make clean` - Run `gradle clean`
+- `make stop` - Stop the Gradle daemon
+- `make publish-local` - Install to local Maven repo
+- `make publish-local-snapshot` - Install a `-SNAPSHOT` build to local Maven repo
+- `make kdocs` - Generate Dokka HTML documentation
+- `make upgrade-wrapper` - Re-run the Gradle wrapper task at the pinned version
 
 ### Testing
 
+- `make tests` - Run `./gradlew --rerun-tasks check` (lint + tests)
 - `./gradlew test` - Run all tests
 - `./gradlew :MODULE_NAME:test` - Run tests for specific module (e.g., `./gradlew :core-utils:test`)
 - `./gradlew :MODULE_NAME:test --tests "ClassName"` - Run a specific test class
@@ -28,8 +34,16 @@ cases. Published on Maven Central.
 
 ### Dependencies
 
-- `make versioncheck` - Check for dependency updates
-- `make tree` - Show dependency tree
+- `make versioncheck` - Check for dependency updates (default `make` target)
+- `make refresh` - Refresh dependencies and re-run `dependencyUpdates`
+- `make tree` - Show dependency tree (quiet)
+- `make depends` - Show dependency tree (verbose)
+
+### Publishing
+
+- `make publish-snapshot` - Publish `-SNAPSHOT` to Maven Central (requires `GPG_SIGNING_KEY_ID` env var and
+  `gradle-signing-password` keychain entry)
+- `make publish-maven-central` - Publish and release to Maven Central (same prerequisites)
 
 ## Architecture
 
@@ -81,6 +95,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.8.1" (set in `allprojects` block of root build.gradle.kts)
+- Project version: "2.8.2" (set in `allprojects` block of root build.gradle.kts)
 - Group: "com.pambrose.common-utils"
 - All library versions in `gradle/libs.versions.toml`

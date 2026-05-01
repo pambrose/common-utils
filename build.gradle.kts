@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
+import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 plugins {
@@ -15,16 +16,23 @@ plugins {
 }
 
 allprojects {
-    version = findProperty("overrideVersion")?.toString() ?: "2.8.1"
+    version = findProperty("overrideVersion")?.toString() ?: "2.8.2"
     group = "com.pambrose.common-utils"
+}
+
+val projectHomepage = "https://github.com/pambrose/common-utils"
+val dokkaFooter = "common-utils"
+
+fun DokkaExtension.configureHtml() {
+    pluginsConfiguration.html {
+        homepageLink.set(projectHomepage)
+        footerMessage.set(dokkaFooter)
+    }
 }
 
 dokka {
     moduleName.set("common-utils")
-    pluginsConfiguration.html {
-        homepageLink.set("https://github.com/pambrose/common-utils")
-        footerMessage.set("common-utils")
-    }
+    configureHtml()
 }
 
 val subprojectPluginIds = listOf(
@@ -65,11 +73,8 @@ fun Project.configureKotlin() {
 }
 
 fun Project.configureDokka() {
-    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
-        pluginsConfiguration.html {
-            homepageLink.set("https://github.com/pambrose/common-utils")
-            footerMessage.set("common-utils")
-        }
+    extensions.configure<DokkaExtension> {
+        configureHtml()
     }
 }
 
@@ -108,11 +113,8 @@ fun Project.configurePublishing() {
         }
 
         publishToMavenCentral(automaticRelease = true)
-        signAllPublications()
-    }
-
-    // Skip signing when no GPG key is provided (e.g., local publishing)
-    tasks.withType<Sign>().configureEach {
-        isEnabled = project.findProperty("signingInMemoryKey") != null
+        if (project.findProperty("signingInMemoryKey") != null) {
+            signAllPublications()
+        }
     }
 }

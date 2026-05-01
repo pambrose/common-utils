@@ -6,6 +6,7 @@ mavenPublish = "0.36.0"
 # Library versions
 brave = "6.3.1"
 coroutines = "1.10.2"
+# 0.6.x-compat variant kept for Exposed/jodatime interop — do not drop the suffix
 datetime = "0.7.1-0.6.x-compat"
 dropwizard = "4.2.38"
 exposed = "1.2.0"
@@ -23,7 +24,7 @@ mockk = "1.14.9"
 nettyTcNative = "2.0.76.Final"
 prometheus = "0.16.0"
 python = "2.7.4"
-redis = "7.4.1"
+redis = "7.5.0"
 resend = "4.13.0"
 serialization = "1.11.0"
 zipkin = "3.6.1"
@@ -32,9 +33,9 @@ zipkinReporter = "3.5.3"
 [libraries]
 # Kotlin
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
-kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
-kotlinx-html = { module = "org.jetbrains.kotlinx:kotlinx-html-jvm", version.ref = "kotlinxHtml" }
+kotlinx-html = { module = "org.jetbrains.kotlinx:kotlinx-html", version.ref = "kotlinxHtml" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 # Logging
@@ -130,6 +131,11 @@ ktor-client-json = [
   "ktor-client-cio",
   "ktor-client-content-negotiation",
   "ktor-serialization-kotlinx-json",
+]
+
+prometheus-service = [
+  "prometheus-servlet",
+  "prometheus-dropwizard",
 ]
 
 [plugins]
