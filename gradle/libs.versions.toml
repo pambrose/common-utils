@@ -1,6 +1,7 @@
 [versions]
 # Plugin versions
 dokka = "2.2.0"
+kover = "0.9.1"
 mavenPublish = "0.36.0"
 
 # Library versions
@@ -145,4 +146,5 @@ pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = 
 pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradlePlugins" }
 pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradlePlugins" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }

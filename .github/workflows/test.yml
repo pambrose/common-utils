@@ -28,3 +28,14 @@ jobs:
 
       - name: Lint
         run: ./gradlew lintKotlinMain lintKotlinTest
+
+      - name: Generate Kover XML coverage report
+        run: ./gradlew koverXmlReport
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: build/reports/kover/report.xml
+          fail_ci_if_error: false
+          verbose: true

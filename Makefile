@@ -1,6 +1,6 @@
 VERSION := $(shell grep -E '^[[:space:]]*version[[:space:]]*=' build.gradle.kts | head -1 | sed 's/.*"\(.*\)"/\1/')
 
-.PHONY: default clean stop compile build lint refresh tests tree depends versioncheck kdocs \
+.PHONY: default clean stop compile build lint refresh tests tree depends versioncheck kdocs coverage coverage-xml \
 	check-gpg-env publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper
 
 default: versioncheck
@@ -36,6 +36,12 @@ versioncheck:
 
 kdocs:
 	./gradlew :dokkaGenerate
+
+coverage:
+	./gradlew koverHtmlReport
+
+coverage-xml:
+	./gradlew koverXmlReport
 
 publish-local:
 	./gradlew publishToMavenLocal
