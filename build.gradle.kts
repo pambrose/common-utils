@@ -17,11 +17,13 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
 }
 
+// version/group are set in gradle.properties; -PoverrideVersion overrides version
 allprojects {
-    findProperty("overrideVersion")?.toString()?.let { version = it }
+    providers.gradleProperty("overrideVersion").orNull?.let { version = it }
 }
 
-val projectHomepage = "https://github.com/pambrose/common-utils"
+val scmHost = "github.com/pambrose/common-utils"
+val projectHomepage = "https://$scmHost"
 val dokkaFooter = "common-utils"
 
 fun DokkaExtension.configureHtml() {
@@ -34,6 +36,22 @@ fun DokkaExtension.configureHtml() {
 dokka {
     moduleName.set("common-utils")
     configureHtml()
+}
+
+val koverExcludeClasses = listOf(
+    "com.pambrose.common.concurrent.ConditionalValueKt*",
+    "com.pambrose.common.concurrent.LameBooleanWaiterKt*",
+    "com.pambrose.common.concurrent.GenericValueWaiterKt*",
+)
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(koverExcludeClasses)
+            }
+        }
+    }
 }
 
 val subprojectPluginIds = listOf(
@@ -56,20 +74,6 @@ subprojects {
 
     rootProject.dependencies.add("dokka", this)
     rootProject.dependencies.add("kover", this)
-}
-
-kover {
-    reports {
-        filters {
-            excludes {
-                classes(
-                    "com.pambrose.common.concurrent.ConditionalValueKt*",
-                    "com.pambrose.common.concurrent.LameBooleanWaiterKt*",
-                    "com.pambrose.common.concurrent.GenericValueWaiterKt*",
-                )
-            }
-        }
-    }
 }
 
 fun Project.configureKotlin() {
@@ -102,11 +106,7 @@ fun Project.configureKover() {
             filters {
                 excludes {
                     // Demo `main()`/`mainN()` functions colocated in production sources for manual playground use.
-                    classes(
-                        "com.pambrose.common.concurrent.ConditionalValueKt*",
-                        "com.pambrose.common.concurrent.LameBooleanWaiterKt*",
-                        "com.pambrose.common.concurrent.GenericValueWaiterKt*",
-                    )
+                    classes(koverExcludeClasses)
                 }
             }
         }
@@ -121,12 +121,12 @@ fun Project.configurePublishing() {
                 sourcesJar = SourcesJar.Sources(),
             ),
         )
-        coordinates(group.toString(), project.name, version.toString())
+        coordinates(project.group.toString(), project.name, project.version.toString())
 
         pom {
-            name.set(project.name)
+            name.set(provider { project.name })
             description.set(provider { project.description })
-            url.set("https://github.com/pambrose/common-utils")
+            url.set(projectHomepage)
             licenses {
                 license {
                     name.set("Apache License 2.0")
@@ -141,14 +141,14 @@ fun Project.configurePublishing() {
                 }
             }
             scm {
-                connection.set("scm:git:https://github.com/pambrose/common-utils.git")
-                developerConnection.set("scm:git:ssh://github.com/pambrose/common-utils.git")
-                url.set("https://github.com/pambrose/common-utils")
+                connection.set("scm:git:https://$scmHost.git")
+                developerConnection.set("scm:git:ssh://$scmHost.git")
+                url.set(projectHomepage)
             }
         }
 
         publishToMavenCentral(automaticRelease = true)
-        if (project.findProperty("signingInMemoryKey") != null) {
+        if (providers.gradleProperty("signingInMemoryKey").isPresent) {
             signAllPublications()
         }
     }
