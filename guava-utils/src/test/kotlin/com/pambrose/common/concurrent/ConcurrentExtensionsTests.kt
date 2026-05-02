@@ -23,6 +23,8 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class ConcurrentExtensionsTests : StringSpec() {
   init {
@@ -85,6 +87,20 @@ class ConcurrentExtensionsTests : StringSpec() {
       }
 
       semaphore.availablePermits() shouldBe 1
+    }
+
+    "count down latch await with duration returns true when reached" {
+      val latch = CountDownLatch(1)
+      latch.countDown()
+
+      latch.await(1.seconds) shouldBe true
+    }
+
+    "count down latch await with duration returns false on timeout" {
+      val latch = CountDownLatch(1)
+
+      latch.await(50.milliseconds) shouldBe false
+      latch.isFinished shouldBe false
     }
 
     "thread with latch" {
