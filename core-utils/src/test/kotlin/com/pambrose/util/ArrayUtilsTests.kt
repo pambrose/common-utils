@@ -77,5 +77,34 @@ class ArrayUtilsTests : StringSpec() {
       ArrayUtils.asString(arrayOf("hello")) shouldBe "[\"hello\"]"
       ArrayUtils.asString(arrayOf("a", "b", "c")) shouldBe "[\"a\", \"b\", \"c\"]"
     }
+
+    "arrayPrint writes asString output to stdout for every primitive overload" {
+      val originalOut = System.out
+      val captured = java.io.ByteArrayOutputStream()
+      System.setOut(java.io.PrintStream(captured))
+      try {
+        ArrayUtils.arrayPrint(booleanArrayOf(true, false))
+        ArrayUtils.arrayPrint(charArrayOf('a', 'b'))
+        ArrayUtils.arrayPrint(byteArrayOf(1, 2))
+        ArrayUtils.arrayPrint(shortArrayOf(3, 4))
+        ArrayUtils.arrayPrint(intArrayOf(5, 6))
+        ArrayUtils.arrayPrint(longArrayOf(7L, 8L))
+        ArrayUtils.arrayPrint(floatArrayOf(1.5f, 2.5f))
+        ArrayUtils.arrayPrint(doubleArrayOf(1.5, 2.5))
+        ArrayUtils.arrayPrint(arrayOf("x", "y"))
+      } finally {
+        System.setOut(originalOut)
+      }
+      val lines = captured.toString().lines()
+      lines[0] shouldBe "[true, false]"
+      lines[1] shouldBe "[a, b]"
+      lines[2] shouldBe "[1, 2]"
+      lines[3] shouldBe "[3, 4]"
+      lines[4] shouldBe "[5, 6]"
+      lines[5] shouldBe "[7, 8]"
+      lines[6] shouldBe "[1.5, 2.5]"
+      lines[7] shouldBe "[1.5, 2.5]"
+      lines[8] shouldBe "[\"x\", \"y\"]"
+    }
   }
 }

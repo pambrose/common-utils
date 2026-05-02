@@ -18,10 +18,14 @@
 
 package com.pambrose.common.email
 
+import com.pambrose.common.email.EmailUtils.email
 import com.pambrose.common.email.EmailUtils.isNotValidEmail
 import com.pambrose.common.email.EmailUtils.isValidEmail
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import kotlinx.html.h1
 
 class EmailUtilsTests : StringSpec() {
   init {
@@ -57,6 +61,26 @@ class EmailUtilsTests : StringSpec() {
     "is valid email with hyphens" {
       "user-name@example.com".isValidEmail() shouldBe true
       "test@my-domain.com".isValidEmail() shouldBe true
+    }
+
+    "email() builds an HTML doc with embedded css and body content" {
+      val html = email {
+        h1 { +"Hello" }
+      }
+      html shouldContain "<html"
+      html shouldContain "<head>"
+      html shouldContain "color: #222"
+      html shouldContain "color-scheme"
+      html shouldContain "supported-color-schemes"
+      html shouldContain "<h1>Hello</h1>"
+    }
+
+    "email() throws when the css resource cannot be found" {
+      shouldThrow<IllegalArgumentException> {
+        email(cssFilename = "css/does-not-exist.css") {
+          h1 { +"x" }
+        }
+      }
     }
   }
 }

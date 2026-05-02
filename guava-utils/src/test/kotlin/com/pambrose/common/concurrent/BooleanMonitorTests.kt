@@ -77,5 +77,19 @@ class BooleanMonitorTests : StringSpec() {
       val result = monitor.waitUntilFalse(50.milliseconds)
       result shouldBe true
     }
+
+    "BooleanMonitor.debug/info/warn/error MonitorAction factories invoke logger and return true" {
+      // Lambda-flavored factories
+      BooleanMonitor.debug { "dbg-lambda" }.invoke() shouldBe true
+      BooleanMonitor.info { "info-lambda" }.invoke() shouldBe true
+      BooleanMonitor.warn { "warn-lambda" }.invoke() shouldBe true
+      BooleanMonitor.error { "err-lambda" }.invoke() shouldBe true
+
+      // String-flavored factories
+      BooleanMonitor.debug("dbg-str").invoke() shouldBe true
+      BooleanMonitor.info("info-str").invoke() shouldBe true
+      BooleanMonitor.warn("warn-str").invoke() shouldBe true
+      BooleanMonitor.error("err-str").invoke() shouldBe true
+    }
   }
 }

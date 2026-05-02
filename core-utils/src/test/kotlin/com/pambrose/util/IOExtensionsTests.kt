@@ -14,11 +14,13 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "DEPRECATION")
 
 package com.pambrose.util
 
+import com.pambrose.common.util.toByteArray
 import com.pambrose.common.util.toByteArraySecure
+import com.pambrose.common.util.toObject
 import com.pambrose.common.util.toObjectSecure
 import com.pambrose.common.util.verifyChecksum
 import com.pambrose.common.util.withChecksum
@@ -84,6 +86,35 @@ class IOExtensionsTests : StringSpec() {
           expectedClass = Int::class.javaObjectType,
           allowedClasses = setOf(Int::class.javaObjectType, Number::class.java, String::class.java),
         )
+      }
+    }
+
+    "deprecated toByteArray and toObject round trip" {
+      val original = "legacy"
+      val bytes = (original as Serializable).toByteArray()
+      bytes.toObject() shouldBe original
+    }
+
+    "secure deserialization rejects classes outside whitelist" {
+      val original: Serializable = arrayListOf("a", "b")
+      val bytes = original.toByteArraySecure()
+
+      // ArrayList is Serializable and goes through resolveClass; restricting the whitelist
+      // to a different class should trip the SecurityException branch.
+      shouldThrow<SecurityException> {
+        bytes.toObjectSecure(
+          expectedClass = ArrayList::class.java,
+          allowedClasses = setOf(Int::class.javaObjectType),
+        )
+      }
+    }
+
+    "secure deserialization rejects oversized payloads" {
+      // 10MB + 1 byte = exceeds MAX_SERIALIZED_SIZE
+      val tooBig = ByteArray(10 * 1024 * 1024 + 1)
+
+      shouldThrow<SecurityException> {
+        tooBig.toObjectSecure(String::class.java, setOf(String::class.java))
       }
     }
   }

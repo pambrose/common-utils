@@ -20,9 +20,11 @@ package com.pambrose.common.email
 
 import com.pambrose.common.email.Email.Companion.EMPTY_EMAIL
 import com.pambrose.common.email.Email.Companion.UNKNOWN_EMAIL
+import com.pambrose.common.email.Email.Companion.getEmail
 import com.pambrose.common.email.Email.Companion.toResendEmail
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.ktor.http.parametersOf
 
 class EmailTests : StringSpec() {
   init {
@@ -75,6 +77,16 @@ class EmailTests : StringSpec() {
 
       val invalid = Email("not-an-email")
       invalid.isNotValidEmail() shouldBe true
+    }
+
+    "Parameters.getEmail returns the value when present" {
+      val params = parametersOf("user", "alice@example.com")
+      params.getEmail("user") shouldBe Email("alice@example.com")
+    }
+
+    "Parameters.getEmail returns EMPTY_EMAIL when absent" {
+      val params = parametersOf("user", "alice@example.com")
+      params.getEmail("missing") shouldBe EMPTY_EMAIL
     }
   }
 }

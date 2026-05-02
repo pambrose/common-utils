@@ -14,4 +14,5 @@ dependencies {
 
     testImplementation(libs.jakarta.servlet.api)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.mockk)
 }
