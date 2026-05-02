@@ -18,19 +18,28 @@
 
 package com.pambrose.util
 
+import com.pambrose.common.util.abbrevDayOfWeek
 import com.pambrose.common.util.capitalizeFirstChar
+import com.pambrose.common.util.captureStdout
 import com.pambrose.common.util.hostInfo
 import com.pambrose.common.util.isNotNull
 import com.pambrose.common.util.isNull
 import com.pambrose.common.util.lpad
 import com.pambrose.common.util.randomId
+import com.pambrose.common.util.repeatWithSleep
 import com.pambrose.common.util.rpad
+import com.pambrose.common.util.sleep
+import com.pambrose.common.util.toFullDateString
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldHaveLength
 import io.kotest.matchers.string.shouldMatch
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.datetime.LocalDateTime
 
 class MiscFuncsTests : StringSpec() {
   init {
@@ -98,6 +107,46 @@ class MiscFuncsTests : StringSpec() {
       "h".capitalizeFirstChar() shouldBe "H"
       "".capitalizeFirstChar() shouldBe ""
       "123abc".capitalizeFirstChar() shouldBe "123abc"
+    }
+
+    "sleep blocks for at least the requested duration" {
+      val start = System.currentTimeMillis()
+      sleep(50.milliseconds)
+      val elapsed = System.currentTimeMillis() - start
+      elapsed shouldBeGreaterThanOrEqual 40L
+    }
+
+    "repeatWithSleep invokes the block with each iteration index" {
+      val seen = mutableListOf<Int>()
+      repeatWithSleep(iterations = 3, sleepTime = 1.milliseconds) { i, _ -> seen += i }
+      seen shouldBe listOf(0, 1, 2)
+    }
+
+    "captureStdout captures println output" {
+      val out = captureStdout {
+        println("hello captured")
+      }
+      out shouldContain "hello captured"
+    }
+
+    "captureStdout restores System.out even if the block throws" {
+      val originalOut = System.out
+      runCatching {
+        captureStdout { error("boom") }
+      }
+      System.out shouldBe originalOut
+    }
+
+    "abbrevDayOfWeek returns 3-char capitalized day name" {
+      // 2026-04-29 is a Wednesday.
+      val wed = LocalDateTime.parse("2026-04-29T10:00:00")
+      wed.abbrevDayOfWeek() shouldHaveLength 3
+      wed.abbrevDayOfWeek() shouldBe "Wed"
+    }
+
+    "toFullDateString formats a date as 'Day MM/DD/YY HH:MM:SS PST'" {
+      val ldt = LocalDateTime.parse("2026-04-29T13:05:09")
+      ldt.toFullDateString() shouldBe "Wed 04/29/26 13:05:09 PST"
     }
   }
 }

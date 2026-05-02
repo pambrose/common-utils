@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
+import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
@@ -51,10 +52,25 @@ subprojects {
 
     configureKotlin()
     configureDokka()
+    configureKover()
     configurePublishing()
 
     rootProject.dependencies.add("dokka", this)
     rootProject.dependencies.add("kover", this)
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "com.pambrose.common.concurrent.ConditionalValueKt*",
+                    "com.pambrose.common.concurrent.LameBooleanWaiterKt*",
+                    "com.pambrose.common.concurrent.GenericValueWaiterKt*",
+                )
+            }
+        }
+    }
 }
 
 fun Project.configureKotlin() {
@@ -78,6 +94,23 @@ fun Project.configureKotlin() {
 fun Project.configureDokka() {
     extensions.configure<DokkaExtension> {
         configureHtml()
+    }
+}
+
+fun Project.configureKover() {
+    extensions.configure<KoverProjectExtension> {
+        reports {
+            filters {
+                excludes {
+                    // Demo `main()`/`mainN()` functions colocated in production sources for manual playground use.
+                    classes(
+                        "com.pambrose.common.concurrent.ConditionalValueKt*",
+                        "com.pambrose.common.concurrent.LameBooleanWaiterKt*",
+                        "com.pambrose.common.concurrent.GenericValueWaiterKt*",
+                    )
+                }
+            }
+        }
     }
 }
 
