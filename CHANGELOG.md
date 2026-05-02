@@ -2,6 +2,23 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.8.2] - 2026-05-02
+
+- Add Kotlinx Kover coverage with aggregated HTML/XML reports across all modules and Codecov upload from CI
+- Add `codecov.yml`; gate patch coverage at 70% and silence no-change PR comments
+- Improve repository line coverage from ~52% to ~62%
+- Upgrade Gradle wrapper to 9.5.0; add GPG environment validation in the publish targets; deduplicate Dokka configuration
+- Move `group` and `version` from `build.gradle.kts` to `gradle.properties`; preserve `-PoverrideVersion` for snapshot/publish targets; update `Makefile` to read `VERSION` from `gradle.properties`
+- Switch `overrideVersion` and `signingInMemoryKey` reads to `providers.gradleProperty(...)`
+- Hoist Kover excludes to a shared list reused by the root aggregator and per-project filter
+- Derive POM SCM and homepage URLs from a shared `scmHost` constant; wrap `pom.name` in a provider for consistency with `description`
+- Enable `org.gradle.parallel=true`; pass `--no-parallel` to `versioncheck` (manes plugin is not parallel-safe)
+- Replace deprecated `DefaultJedisClientConfig.ssl(Boolean)` with `sslOptions(SslOptions.defaults())` (Jedis 7.4.2+)
+- Fix functional bugs in Redis, Python script handling, Banner, SystemMetrics, and Zipkin
+- Add `CountDownLatch.await(Duration)` extension in `guava-utils`
+- Bump `kover` 0.9.1 → 0.9.8, `grpc` 1.80.0 → 1.81.0, `netty-tcnative` 2.0.76.Final → 2.0.77.Final
+- Bump project version to 2.8.2
+
 ## [2.8.1] - 2026-04-24
 
 - Bump Kotlin to 2.3.21

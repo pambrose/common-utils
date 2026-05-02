@@ -87,7 +87,7 @@ These opt-ins are enabled globally:
 ### Key Technologies
 
 - Kotlin 2.3.21 with JVM target 17
-- Gradle 9.4.1 with Kotlin DSL
+- Gradle 9.5.0 with Kotlin DSL
 - Kotest + MockK for testing
 - Kotlinter for linting
 
@@ -97,6 +97,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.8.2" (set in `allprojects` block of root build.gradle.kts)
-- Group: "com.pambrose.common-utils"
+- Project version: "2.8.2" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
+- Group: "com.pambrose.common-utils" (set in `gradle.properties`)
 - All library versions in `gradle/libs.versions.toml`
