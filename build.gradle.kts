@@ -18,8 +18,7 @@ plugins {
 }
 
 allprojects {
-    version = findProperty("overrideVersion")?.toString() ?: "2.8.2"
-    group = "com.pambrose.common-utils"
+    findProperty("overrideVersion")?.toString()?.let { version = it }
 }
 
 val projectHomepage = "https://github.com/pambrose/common-utils"
