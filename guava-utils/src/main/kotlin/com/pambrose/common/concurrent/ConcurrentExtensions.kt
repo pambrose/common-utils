@@ -20,7 +20,9 @@ package com.pambrose.common.concurrent
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.concurrent.thread
+import kotlin.time.Duration
 
 /** Whether this [CountDownLatch] has reached zero. */
 val CountDownLatch.isFinished: Boolean get() = count == 0L
@@ -38,6 +40,15 @@ fun CountDownLatch.countDown(block: () -> Unit) {
     countDown()
   }
 }
+
+/**
+ * Waits for the `CountDownLatch` to reach zero, or for the specified duration to elapse.
+ *
+ * @param duration the maximum time to wait, specified as a [Duration].
+ * @return `true` if the `CountDownLatch` reached zero within the specified duration,
+ *         `false` if the waiting time elapsed before the count reached zero.
+ */
+fun CountDownLatch.await(duration: Duration): Boolean = await(duration.inWholeMilliseconds, MILLISECONDS)
 
 /**
  * Acquires a permit from this [Semaphore], executes [block], and releases the permit in a `finally` block.

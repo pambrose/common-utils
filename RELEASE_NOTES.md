@@ -5,6 +5,37 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v2.8.2 — 2026-05-02
+
+### Highlights
+
+- **Coverage with Kover + Codecov**: Added Kotlinx Kover with aggregated HTML and XML reports across all modules, a `codecov.yml`, and a CI upload to Codecov. Patch coverage is gated at 70% on PRs.
+- **Improved test coverage**: Lifted line coverage from ~52% to ~62% across the repository.
+- **Gradle wrapper 9.5.0 + GPG validation**: Bumped the wrapper to 9.5.0, added GPG environment validation in the publish targets, deduplicated Dokka configuration, and bumped project version to 2.8.2.
+
+### Build improvements
+
+- Moved `group` and `version` from `build.gradle.kts` to `gradle.properties`; preserved `-PoverrideVersion` for the Makefile snapshot/publish targets and updated the Makefile to read `VERSION` from `gradle.properties`.
+- Switched property reads (`overrideVersion`, `signingInMemoryKey`) to `providers.gradleProperty(...)` for modern Gradle idiom.
+- Hoisted Kover excludes to a single shared list reused by the root aggregator and the per-project filter.
+- Derived the POM SCM and homepage URLs from a shared `scmHost` constant; wrapped `pom.name` in a provider for consistency with `description`.
+- Enabled `org.gradle.parallel=true`; passed `--no-parallel` to `versioncheck` (the `manes` plugin is not parallel-safe).
+
+### Bug fixes
+
+- Replaced deprecated `DefaultJedisClientConfig.ssl(Boolean)` with `sslOptions(SslOptions.defaults())` (Jedis 7.4.2+).
+- Fixed functional bugs in Redis, Python script handling, Banner, SystemMetrics, and Zipkin.
+
+### Dependency bumps
+
+- `kover` 0.9.1 → 0.9.8
+- `grpc` 1.80.0 → 1.81.0
+- `netty-tcnative` 2.0.76.Final → 2.0.77.Final
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.8.1...2.8.2
+
+---
+
 ## v2.8.1 — 2026-04-24
 
 ### Highlights

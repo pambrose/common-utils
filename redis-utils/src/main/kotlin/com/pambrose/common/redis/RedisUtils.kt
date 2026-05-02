@@ -25,6 +25,7 @@ import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
 import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
 import redis.clients.jedis.RedisClient
+import redis.clients.jedis.SslOptions
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.exceptions.JedisConnectionException
 import redis.clients.jedis.params.ScanParams
@@ -101,7 +102,7 @@ object RedisUtils {
       DefaultJedisClientConfig.builder()
         .connectionTimeoutMillis(DEFAULT_TIMEOUT)
         .socketTimeoutMillis(DEFAULT_TIMEOUT)
-        .ssl(isSsl)
+        .apply { if (isSsl) sslOptions(SslOptions.defaults()) }
 
     if (info.password.isNotBlank()) {
       if (info.includeUserInAuth)
