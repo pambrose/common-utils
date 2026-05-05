@@ -66,10 +66,10 @@ class BasicObject2(
   // val objList: List<BasicObject1>,
 ) {
   companion object {
-    val DEFAULT_BOOLEAN = true
-    val DEFAULT_STRING = "Default str value"
-    val DEFAULT_INT = 1234
-    val DEFAULT_DOUBLE = 5678.9
+    const val DEFAULT_BOOLEAN = true
+    const val DEFAULT_STRING = "Default str value"
+    const val DEFAULT_INT = 1234
+    const val DEFAULT_DOUBLE = 5678.9
     val DEFAULT_BOOLEAN_LIST = List(5) { DEFAULT_BOOLEAN }
     val DEFAULT_STRING_LIST = List(5) { DEFAULT_STRING }
     val DEFAULT_INT_LIST = List(5) { DEFAULT_INT }

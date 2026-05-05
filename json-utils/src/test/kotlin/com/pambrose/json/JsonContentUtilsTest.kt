@@ -31,8 +31,6 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 @Serializable
 data class SimpleData(
@@ -219,14 +217,8 @@ class JsonContentUtilsTest : StringSpec() {
       val jsonElement = originalJsonString.toJsonElement()
       val map = jsonElement.toMap()
 
-      // Create new JsonElement from map data (simulated)
-      val reconstructed = buildJsonObject {
-        put("id", map["id"] as String)
-        // Note: This is a simplified reconstruction for testing
-        // In practice, you'd use proper serialization
-      }
-
       // Verify the round trip preserved core data
+      map["id"] shouldBe complexData.id
       jsonElement.stringValue("id") shouldBe complexData.id
     }
 

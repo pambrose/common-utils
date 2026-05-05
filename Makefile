@@ -1,7 +1,8 @@
 VERSION := $(shell sed -n 's/^version=\(.*\)/\1/p' gradle.properties)
 
-.PHONY: default clean stop compile build lint refresh tests tree depends versioncheck kdocs coverage coverage-xml \
-	check-gpg-env publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper
+.PHONY: default clean stop compile build lint detekt detekt-baseline refresh tests tree depends versioncheck kdocs \
+	coverage coverage-xml check-gpg-env publish-local publish-local-snapshot publish-snapshot publish-maven-central \
+	upgrade-wrapper
 
 default: versioncheck
 
@@ -17,7 +18,43 @@ compile:
 build: compile
 
 lint:
-	./gradlew lintKotlinMain lintKotlinTest
+	./gradlew lintKotlinMain lintKotlinTest detekt
+
+detekt-baseline:
+	./gradlew detektBaseline
+
+coverage: coverage-html coverage-xml
+
+coverage-html:
+	./gradlew koverHtmlReport
+
+coverage-xml:
+	./gradlew koverXmlReport
+
+coverage-log:
+	./gradlew koverLog
+
+coverage-verify:
+	./gradlew koverVerify
+
+coverage-open: coverage-html
+	open build/reports/kover/html/index.html
+
+coverage-packages: coverage-xml
+	@python3 -c "import xml.etree.ElementTree as ET; \
+r = ET.parse('build/reports/kover/report.xml').getroot(); \
+pkgs = []; \
+[pkgs.append((p.get('name'), int(c.get('covered')), int(c.get('missed')))) \
+ for p in r.findall('package') for c in p.findall('counter') if c.get('type') == 'INSTRUCTION']; \
+pkgs.sort(key=lambda x: -x[2]); \
+print(f\"{'package':<55} {'cov%':>6} {'covered':>9} {'missed':>9} {'total':>9}\"); \
+[print(f'{n:<55} {(c/(c+m)*100 if c+m else 0):6.1f} {c:9d} {m:9d} {c+m:9d}') for n,c,m in pkgs]; \
+tc=sum(p[1] for p in pkgs); tm=sum(p[2] for p in pkgs); \
+print(f'\nOVERALL: {tc/(tc+tm)*100:.2f}% ({tc}/{tc+tm} instructions, {tm} missed)')"
+
+coverage-clean:
+	./gradlew cleanAllTests
+	rm -rf build/reports/kover build/kover
 
 refresh:
 	./gradlew --refresh-dependencies dependencyUpdates --no-configuration-cache
@@ -36,12 +73,6 @@ versioncheck:
 
 kdocs:
 	./gradlew :dokkaGenerate
-
-coverage:
-	./gradlew koverHtmlReport
-
-coverage-xml:
-	./gradlew koverXmlReport
 
 publish-local:
 	./gradlew publishToMavenLocal

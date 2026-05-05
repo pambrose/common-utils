@@ -51,7 +51,7 @@ object SingleAssignVar {
     ) {
       val holder = ValueHolder(value)
       if (!atomicValue.compareAndSet(null, holder)) {
-        throw IllegalStateException("Property ${property.name} cannot be assigned more than once.")
+        error("Property ${property.name} cannot be assigned more than once.")
       }
     }
 

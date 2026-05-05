@@ -31,6 +31,8 @@ cases. Published on Maven Central.
 
 - `make lint` - Run Kotlinter linting
 - `./gradlew formatKotlinMain formatKotlinTest` - Auto-format code
+- `make detekt` - Run Detekt static analysis across all modules (HTML/XML reports under `build/reports/detekt/`)
+- `make detekt-baseline` - Generate/update `config/detekt/baseline.xml` to suppress current findings
 - `make coverage` - Generate aggregated Kover HTML coverage report (output under `build/reports/kover/html/`)
 - `make coverage-xml` - Generate aggregated Kover XML coverage report (e.g. for CI / Codacy)
 
@@ -71,6 +73,8 @@ Common behavior for testing, linting, and dependency-update reporting is provide
 - `com.pambrose.testing` - JUnit Platform, `kotest-runner-junit5` and `kotlin-test` as default `testImplementation`, logback-classic on test runtime
 - `com.pambrose.kotlinter` - Kotlinter lint/format tasks
 - `com.pambrose.stable-versions` - stable-only filtering for `dependencyUpdates`
+
+Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present). Type-resolution rules are left disabled because detekt 1.23.x embeds the Kotlin 1.9 compiler.
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 

@@ -8,4 +8,6 @@ dependencies {
     implementation(libs.bundles.grpc)
 
     runtimeOnly(libs.netty.ssl)
+
+    testImplementation(libs.mockk)
 }
