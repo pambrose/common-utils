@@ -37,6 +37,7 @@ class Atomic<T>(
 
   @PublishedApi
   @Volatile
+  @Suppress("VariableNaming")
   internal var _value: T = initValue
 
   /** The current value. Reads are volatile but not mutex-protected. */

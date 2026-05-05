@@ -132,7 +132,7 @@ private class SingleSetAtomicReferenceDelegate<T>(
     value: T?,
   ) {
     if (!atomicVal.compareAndSet(compareValue, value)) {
-      throw IllegalStateException("Property ${property.name} has already been set")
+      error("Property ${property.name} has already been set")
     }
   }
 }

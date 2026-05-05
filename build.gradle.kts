@@ -2,6 +2,8 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
@@ -12,6 +14,7 @@ plugins {
     alias(libs.plugins.pambrose.stable.versions) apply false
     alias(libs.plugins.pambrose.kotlinter) apply false
     alias(libs.plugins.pambrose.testing) apply false
+    alias(libs.plugins.detekt) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
     alias(libs.plugins.maven.publish) apply false
@@ -59,6 +62,7 @@ val subprojectPluginIds = listOf(
     libs.plugins.pambrose.kotlinter,
     libs.plugins.pambrose.testing,
     libs.plugins.pambrose.stable.versions,
+    libs.plugins.detekt,
     libs.plugins.dokka,
     libs.plugins.kover,
     libs.plugins.maven.publish,
@@ -68,6 +72,7 @@ subprojects {
     subprojectPluginIds.forEach(pluginManager::apply)
 
     configureKotlin()
+    configureDetekt()
     configureDokka()
     configureKover()
     configurePublishing()
@@ -90,6 +95,35 @@ fun Project.configureKotlin() {
             ).forEach {
                 languageSettings.optIn(it)
             }
+        }
+    }
+}
+
+fun Project.configureDetekt() {
+    extensions.configure<DetektExtension> {
+        buildUponDefaultConfig = true
+        autoCorrect = false
+        parallel = true
+        basePath = rootProject.projectDir.absolutePath
+        val sharedConfig = rootProject.file("config/detekt/detekt.yml")
+        if (sharedConfig.exists()) {
+            config.setFrom(sharedConfig)
+        }
+        val sharedBaseline = rootProject.file("config/detekt/baseline.xml")
+        if (sharedBaseline.exists()) {
+            baseline = sharedBaseline
+        }
+    }
+    tasks.withType<Detekt>().configureEach {
+        jvmTarget = "17"
+        // Type-resolution rules require a Kotlin compiler matching the project's Kotlin version;
+        // detekt 1.23.x embeds Kotlin 1.9, so leave it disabled until detekt 2.0.
+        reports {
+            html.required.set(true)
+            xml.required.set(true)
+            sarif.required.set(false)
+            txt.required.set(false)
+            md.required.set(false)
         }
     }
 }

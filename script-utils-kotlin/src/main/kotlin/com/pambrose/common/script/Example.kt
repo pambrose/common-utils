@@ -42,6 +42,7 @@ private object ScriptExample {
     repeat(100) { i ->
       println("Invocation: $i")
       try {
+        @Suppress("UnusedPrivateProperty")
         val c = 1 * 4
         KotlinExprEvaluator().eval("1 == wrong")
       } catch (e: ScriptException) {

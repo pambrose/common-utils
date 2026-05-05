@@ -18,6 +18,7 @@
 
 package com.pambrose.common.time
 
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.DAYS
 import java.util.concurrent.TimeUnit.HOURS
@@ -81,7 +82,7 @@ fun Duration.format(includeMillis: Boolean = false): String {
   val prefix = if (negative) "-" else ""
 
   return if (includeMillis)
-    String.format("$prefix%d:%02d:%02d:%02d.%03d", day, hr, min, sec, ms)
+    String.format(Locale.ROOT, "$prefix%d:%02d:%02d:%02d.%03d", day, hr, min, sec, ms)
   else
-    String.format("$prefix%d:%02d:%02d:%02d", day, hr, min, sec)
+    String.format(Locale.ROOT, "$prefix%d:%02d:%02d:%02d", day, hr, min, sec)
 }

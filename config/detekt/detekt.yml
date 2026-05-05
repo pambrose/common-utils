@@ -1,0 +1,55 @@
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+complexity:
+  CyclomaticComplexMethod:
+    active: false
+  LongMethod:
+    active: false
+  LongParameterList:
+    active: false
+  NestedBlockDepth:
+    active: false
+  TooManyFunctions:
+    active: false
+  ComplexCondition:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+  TooGenericExceptionThrown:
+    active: false
+  SwallowedException:
+    active: false
+  ThrowingExceptionsWithoutMessageOrCause:
+    active: false
+
+style:
+  MagicNumber:
+    active: false
+  WildcardImport:
+    active: false
+  MaxLineLength:
+    active: false
+  ReturnCount:
+    active: false
+  ThrowsCount:
+    active: false
+  ForbiddenComment:
+    active: false
+  UnusedParameter:
+    active: true
+    allowedNames: "(_|ignored|expected|serialVersionUID|args)"
+  UnusedPrivateProperty:
+    active: true
+    allowedNames: "(_|ignored|expected|serialVersionUID)"
+
+naming:
+  VariableNaming:
+    excludes: ['**/test/**', '**/*Test.kt', '**/*Spec.kt']
+
+empty-blocks:
+  EmptyFunctionBlock:
+    excludes: ['**/test/**', '**/*Test.kt', '**/*Tests.kt', '**/*Spec.kt']
