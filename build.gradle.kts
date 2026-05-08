@@ -25,19 +25,21 @@ allprojects {
     providers.gradleProperty("overrideVersion").orNull?.let { version = it }
 }
 
-val scmHost = "github.com/pambrose/common-utils"
+val projectName = "common-utils"
+val scmHost = "github.com/pambrose/$projectName"
 val projectHomepage = "https://$scmHost"
-val dokkaFooter = "common-utils"
+val jvmTargetVersion = libs.versions.jvmTarget.get()
+val detektConfigDir = "config/detekt"
 
 fun DokkaExtension.configureHtml() {
     pluginsConfiguration.html {
         homepageLink.set(projectHomepage)
-        footerMessage.set(dokkaFooter)
+        footerMessage.set(projectName)
     }
 }
 
 dokka {
-    moduleName.set("common-utils")
+    moduleName.set(projectName)
     configureHtml()
 }
 
@@ -83,7 +85,7 @@ subprojects {
 
 fun Project.configureKotlin() {
     extensions.configure<KotlinJvmProjectExtension> {
-        jvmToolchain(17)
+        jvmToolchain(jvmTargetVersion.toInt())
 
         sourceSets.all {
             listOf(
@@ -105,17 +107,17 @@ fun Project.configureDetekt() {
         autoCorrect = false
         parallel = true
         basePath = rootProject.projectDir.absolutePath
-        val sharedConfig = rootProject.file("config/detekt/detekt.yml")
+        val sharedConfig = rootProject.file("$detektConfigDir/detekt.yml")
         if (sharedConfig.exists()) {
             config.setFrom(sharedConfig)
         }
-        val sharedBaseline = rootProject.file("config/detekt/baseline.xml")
+        val sharedBaseline = rootProject.file("$detektConfigDir/baseline.xml")
         if (sharedBaseline.exists()) {
             baseline = sharedBaseline
         }
     }
     tasks.withType<Detekt>().configureEach {
-        jvmTarget = "17"
+        jvmTarget = jvmTargetVersion
         // Type-resolution rules require a Kotlin compiler matching the project's Kotlin version;
         // detekt 1.23.x embeds Kotlin 1.9, so leave it disabled until detekt 2.0.
         reports {

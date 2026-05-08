@@ -1,8 +1,9 @@
-VERSION := $(shell sed -n 's/^version=\(.*\)/\1/p' gradle.properties)
-
 .PHONY: default clean stop compile build lint detekt detekt-baseline refresh tests tree depends versioncheck kdocs \
 	coverage coverage-xml check-gpg-env publish-local publish-local-snapshot publish-snapshot publish-maven-central \
 	upgrade-wrapper
+
+VERSION := $(shell sed -n 's/^version=\(.*\)/\1/p' gradle.properties)
+GRADLE_VERSION := $(shell sed -n 's/^gradle = "\(.*\)"/\1/p' gradle/libs.versions.toml)
 
 default: versioncheck
 
@@ -102,4 +103,4 @@ publish-maven-central: check-gpg-env
 	$(GPG_ENV) ./gradlew publishAndReleaseToMavenCentral
 
 upgrade-wrapper:
-	./gradlew wrapper --gradle-version=9.5.0 --distribution-type=bin
+	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
