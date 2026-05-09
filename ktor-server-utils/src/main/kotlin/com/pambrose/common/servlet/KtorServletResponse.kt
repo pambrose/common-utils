@@ -75,7 +75,7 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun getHeader(name: String): String? = headers[name]?.firstOrNull()
 
-  override fun getHeaders(name: String): Collection<String> = headers[name] ?: emptyList()
+  override fun getHeaders(name: String): Collection<String> = headers[name].orEmpty()
 
   override fun getHeaderNames(): Collection<String> = headers.keys
 
@@ -97,7 +97,7 @@ class KtorServletResponse : HttpServletResponse {
     if (printWriter == null) {
       printWriter = PrintWriter(buffer, true)
     }
-    return printWriter!!
+    return printWriter ?: error("PrintWriter is null")
   }
 
   override fun getOutputStream(): ServletOutputStream {
@@ -123,7 +123,7 @@ class KtorServletResponse : HttpServletResponse {
           override fun setWriteListener(writeListener: WriteListener) = Unit
         }
     }
-    return servletOutputStream!!
+    return servletOutputStream ?: error("ServletOutputStream is null")
   }
 
   // Unsupported methods below

@@ -4,6 +4,7 @@ package com.pambrose.common.concurrent
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
 import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -18,7 +19,7 @@ class GenericMonitorTests : StringSpec() {
         completed = true
       }
 
-      Thread.sleep(50)
+      delay(50.milliseconds)
       completed shouldBe false
       monitor.set(true)
       t.join(1000)
@@ -34,7 +35,7 @@ class GenericMonitorTests : StringSpec() {
         completed = true
       }
 
-      Thread.sleep(50)
+      delay(50.milliseconds)
       completed shouldBe false
       monitor.set(false)
       t.join(1000)

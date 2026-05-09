@@ -2,9 +2,12 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [2.8.3] - 2026-05-08
+## [2.8.3] - 2026-05-09
 
-- Wire **Detekt 1.23.8** into every subproject via `configureDetekt()` in the root `build.gradle.kts`, with HTML/XML reports per module and auto-detection of optional `config/detekt/detekt.yml` and `config/detekt/baseline.xml`
+- Wire **Detekt** into every subproject via `configureDetekt()` in the root `build.gradle.kts`, with HTML/checkstyle reports per module and auto-detection of optional `config/detekt/detekt.yml` and `config/detekt/baseline.xml`
+- Upgrade **Detekt** to `2.0.0-alpha.3` (plugin id `dev.detekt`), migrate the Gradle DSL to the Property API, and wire the aggregate `detekt` task to depend on `detektMain`/`detektTest` so analysis runs with full type resolution
+- Activate `LongMethod`; suppress `IgnoredReturnValue`
+- Resolve type-resolution findings surfaced by the Detekt 2.0 upgrade across `core-utils`, `ktor-server-utils`, `script-utils-common`, `script-utils-kotlin`, `script-utils-java`, `script-utils-python`, `guava-utils`, and `service-utils`
 - Add a `config/detekt/detekt.yml` tailored for a multi-module utility library (disables threshold-style rules, excludes test code from `EmptyFunctionBlock` / `VariableNaming`); resolve the remaining real findings in `core-utils`, `script-utils-kotlin`, and `json-utils` tests
 - Add `grpc-utils` tests: `TlsUtilsTests` (11 cases) and `ServerExtensionsTests` (5 cases); add `mockk` to `grpc-utils` test dependencies
 - Centralize the Gradle wrapper version (`9.5.0`) and JVM target (`17`) under a `# Toolchain` section in `gradle/libs.versions.toml`; consume them from `build.gradle.kts` and the `Makefile`'s `upgrade-wrapper` target
@@ -16,6 +19,8 @@ All notable changes to Common Utils are documented in this file.
 - Add fail-fast guards in the `Makefile` when `VERSION` or `GRADLE_VERSION` cannot be parsed, instead of silently passing empty strings to publish/wrapper commands
 - Pass `ORG_GRADLE_PROJECT_signingInMemoryKeyId` in `GPG_ENV` so the in-memory signing plugin has all three required properties
 - Drop the unused `compile` alias from the `Makefile`
+- Bump `kotlinx-coroutines` 1.10.2 → 1.11.0
+- Switch `kotlinx-datetime` from `0.7.1-0.6.x-compat` to `0.7.1` (drops the Exposed/jodatime-compat suffix)
 - Bump project version to 2.8.3
 
 ## [2.8.2] - 2026-05-02

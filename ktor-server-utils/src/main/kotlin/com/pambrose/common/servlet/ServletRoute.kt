@@ -46,6 +46,7 @@ fun Route.servlet(
     handle {
       val request = KtorServletRequest(call.request)
       val response = KtorServletResponse()
+      @Suppress("InjectDispatcher")
       withContext(Dispatchers.IO) { servlet.service(request, response) }
       response.getHeaderNames().forEach { name ->
         response.getHeaders(name).forEach { value ->
@@ -53,8 +54,7 @@ fun Route.servlet(
         }
       }
       val contentType =
-        response.getContentType()?.let { ContentType.parse(it) }
-          ?: ContentType.Application.OctetStream
+        response.getContentType()?.let { ContentType.parse(it) } ?: ContentType.Application.OctetStream
       call.response.status(HttpStatusCode.fromValue(response.status))
       call.respondBytes(response.getBodyBytes(), contentType)
     }

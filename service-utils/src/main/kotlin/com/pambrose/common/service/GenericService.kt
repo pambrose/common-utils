@@ -113,6 +113,7 @@ abstract class GenericService<T> protected constructor(
    *
    * @param servletInit An optional block to register additional servlets in the [ServletGroup].
    */
+  @Suppress("LongMethod")
   fun initServletService(servletInit: ServletGroup.() -> Unit = {}) {
     // See if admin servlets are enabled or something within the passed in lambda is enabled
     if (isAdminEnabled) {

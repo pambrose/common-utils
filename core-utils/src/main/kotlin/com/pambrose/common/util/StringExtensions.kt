@@ -380,6 +380,7 @@ fun String.sha256(salt: ByteArray): String = encodedByteArray(this, salt, "SHA-2
  *
  * Extension property on [ByteArray].
  */
+@Suppress("ImplicitDefaultLocale")
 val ByteArray.asText get() = fold("") { str, byte -> str + "%02x".format(byte) }
 
 private fun encodedByteArray(

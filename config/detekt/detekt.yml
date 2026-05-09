@@ -1,12 +1,8 @@
-build:
-  maxIssues: 0
-  excludeCorrectable: false
-
 complexity:
   CyclomaticComplexMethod:
     active: false
   LongMethod:
-    active: false
+    active: true
   LongParameterList:
     active: false
   NestedBlockDepth:
@@ -53,3 +49,7 @@ naming:
 empty-blocks:
   EmptyFunctionBlock:
     excludes: ['**/test/**', '**/*Test.kt', '**/*Tests.kt', '**/*Spec.kt']
+
+potential-bugs:
+  IgnoredReturnValue:
+    active: false

@@ -4,16 +4,15 @@ gradle = "9.5.0"
 jvmTarget = "17"
 
 # Plugin versions
-detekt = "1.23.8"
+detekt = "2.0.0-alpha.3"
 dokka = "2.2.0"
 kover = "0.9.8"
 mavenPublish = "0.36.0"
 
 # Library versions
 brave = "6.3.1"
-coroutines = "1.10.2"
-# 0.6.x-compat variant kept for Exposed/jodatime interop — do not drop the suffix
-datetime = "0.7.1-0.6.x-compat"
+coroutines = "1.11.0"
+datetime = "0.7.1"
 dropwizard = "4.2.38"
 exposed = "1.2.0"
 gradlePlugins = "1.0.14"
@@ -150,7 +149,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = "gradlePlugins" }
 pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradlePlugins" }
 pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradlePlugins" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }

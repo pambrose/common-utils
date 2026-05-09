@@ -182,44 +182,29 @@ class JavaScriptTests : StringSpec() {
     "unnecessary params" {
       val value = 5
 
-      JavaScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { add("value", value, typeOf<Int?>()) }
-        }
+      JavaScript().use { script ->
+        shouldThrow<ScriptException> { script.add("value", value, typeOf<Int?>()) }
       }
     }
 
     "unmatched params" {
       val list = mutableListOf(1)
 
-      JavaScript().use {
-        it.apply {
-          shouldThrow<ScriptException> {
-            add(
-              "list",
-              list,
-              typeOf<Int?>(),
-              typeOf<Int>(),
-            )
-          }
-        }
+      JavaScript().use { script ->
+        shouldThrow<ScriptException> { script.add("list", list, typeOf<Int?>(), typeOf<Int>()) }
       }
     }
 
     "missing collection type" {
       val list = mutableListOf(1)
-      JavaScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { add("list", list) }
-        }
+      JavaScript().use { script ->
+        shouldThrow<ScriptException> { script.add("list", list) }
       }
     }
 
     "invalid syntax" {
-      JavaScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { eval("junk") }
-        }
+      JavaScript().use { script ->
+        shouldThrow<ScriptException> { script.eval("junk") }
       }
     }
 

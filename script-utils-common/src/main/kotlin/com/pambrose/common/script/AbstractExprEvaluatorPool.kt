@@ -28,6 +28,7 @@ import kotlinx.coroutines.runBlocking
  * @param T the concrete type of [AbstractExprEvaluator] managed by this pool
  * @param size the number of evaluator instances in the pool
  */
+@Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
   val size: Int,
 ) {

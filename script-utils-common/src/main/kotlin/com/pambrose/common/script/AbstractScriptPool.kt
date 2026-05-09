@@ -29,6 +29,7 @@ import kotlinx.coroutines.channels.Channel
  * @param size the number of script instances in the pool
  * @param nullGlobalContext if `true`, resets the global scope bindings to `null` when recycling
  */
+@Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractScriptPool<T : AbstractScript>(
   val size: Int,
   private val nullGlobalContext: Boolean,

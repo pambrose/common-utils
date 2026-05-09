@@ -28,6 +28,7 @@ import javax.script.ScriptException
  * @param extension the file extension used to look up the script engine (e.g., `"kts"`, `"py"`, `"java"`)
  * @throws ScriptException if no engine is found for the given extension
  */
+@Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractEngine(
   extension: String,
 ) {

@@ -36,6 +36,7 @@ import kotlin.reflect.KType
  * @param extension the file extension used to look up the script engine (e.g., `"kts"`, `"py"`, `"java"`)
  * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
  */
+@Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractScript(
   extension: String,
   nullGlobalContext: Boolean,
@@ -74,7 +75,7 @@ abstract class AbstractScript(
    */
   open fun params(
     name: String,
-    types: Array<out KType> = typeMap[name]!!,
+    types: Array<out KType> = typeMap[name] ?: error("No type parameters registered for $name"),
   ): String {
     val params = types.map { type -> type.toString().removePrefix("kotlin.") }
     return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
