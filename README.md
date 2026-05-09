@@ -236,6 +236,9 @@ dependencies {
 ### Building the Project
 
 ```bash
+# Show every available make target with descriptions
+make help
+
 # Build all modules
 ./gradlew build
 
@@ -248,16 +251,23 @@ make build
 # Run tests for a specific module
 ./gradlew :core-utils:test
 
-# Lint check
+# Lint check (Kotlinter + Detekt)
 make lint
+
+# Detekt static analysis only
+make detekt
+
+# Aggregated Kover coverage reports (HTML + XML)
+make coverage
 ```
 
 ### Code Quality
 
 This project maintains high code quality standards:
 
-- **Linting**: Kotlinter (ktlint)
+- **Linting**: Kotlinter (ktlint) and Detekt (config in `config/detekt/`)
 - **Testing**: Comprehensive test coverage with Kotest
+- **Coverage**: Kotlinx Kover with aggregated HTML/XML reports and Codecov upload from CI
 - **Security**: Regular dependency updates and security reviews
 - **Documentation**: Comprehensive module documentation
 
