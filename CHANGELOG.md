@@ -2,6 +2,22 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.8.3] - 2026-05-08
+
+- Wire **Detekt 1.23.8** into every subproject via `configureDetekt()` in the root `build.gradle.kts`, with HTML/XML reports per module and auto-detection of optional `config/detekt/detekt.yml` and `config/detekt/baseline.xml`
+- Add a `config/detekt/detekt.yml` tailored for a multi-module utility library (disables threshold-style rules, excludes test code from `EmptyFunctionBlock` / `VariableNaming`); resolve the remaining real findings in `core-utils`, `script-utils-kotlin`, and `json-utils` tests
+- Add `grpc-utils` tests: `TlsUtilsTests` (11 cases) and `ServerExtensionsTests` (5 cases); add `mockk` to `grpc-utils` test dependencies
+- Centralize the Gradle wrapper version (`9.5.0`) and JVM target (`17`) under a `# Toolchain` section in `gradle/libs.versions.toml`; consume them from `build.gradle.kts` and the `Makefile`'s `upgrade-wrapper` target
+- Consolidate duplicated string literals in `build.gradle.kts` (`common-utils`, `"17"`, `config/detekt`) into named vals
+- Add `make detekt` and `make detekt-baseline` targets; `make lint` now also runs Detekt
+- Add `make help` for a self-documenting target list, parsed from `## description` comments
+- Add Kover coverage subcommands: `coverage-html`, `coverage-log`, `coverage-verify`, `coverage-open`, `coverage-packages`, `coverage-clean`; `make coverage` now generates both HTML and XML
+- Move the `coverage-packages` inline Python to `scripts/coverage-packages.py` with a friendlier missing-report error
+- Add fail-fast guards in the `Makefile` when `VERSION` or `GRADLE_VERSION` cannot be parsed, instead of silently passing empty strings to publish/wrapper commands
+- Pass `ORG_GRADLE_PROJECT_signingInMemoryKeyId` in `GPG_ENV` so the in-memory signing plugin has all three required properties
+- Drop the unused `compile` alias from the `Makefile`
+- Bump project version to 2.8.3
+
 ## [2.8.2] - 2026-05-02
 
 - Add Kotlinx Kover coverage with aggregated HTML/XML reports across all modules and Codecov upload from CI

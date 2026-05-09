@@ -9,9 +9,11 @@ cases. Published on Maven Central.
 
 ## Common Development Commands
 
+Run `make help` for a self-documenting list of every target.
+
 ### Building
 
-- `make build` (alias: `make compile`) - Build without tests
+- `make build` - Build without tests
 - `./gradlew build` - Full build with tests
 - `make clean` - Run `gradle clean`
 - `make stop` - Stop the Gradle daemon

@@ -5,6 +5,31 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v2.8.3 — 2026-05-08
+
+### Highlights
+
+- **Detekt static analysis**: Wired Detekt 1.23.8 into every subproject with HTML/XML reports per module, a tailored `config/detekt/detekt.yml`, and an optional shared `config/detekt/baseline.xml`. `make detekt` is now a first-class target and `make lint` includes it.
+- **Centralized toolchain**: Moved the Gradle wrapper version (9.5.0) and JVM target (17) into `gradle/libs.versions.toml` under a new `# Toolchain` section, consumed from both `build.gradle.kts` and the `Makefile`.
+- **Self-documenting Makefile**: New `make help` target prints every available target with its description, parsed from `## description` comments.
+
+### Build improvements
+
+- Consolidated duplicated string literals in `build.gradle.kts` (`common-utils`, `"17"`, `config/detekt`) into named vals.
+- Added Kover coverage subcommands: `coverage-html`, `coverage-log`, `coverage-verify`, `coverage-open`, `coverage-packages`, `coverage-clean`. `make coverage` now generates both HTML and XML.
+- Moved `coverage-packages` inline Python to `scripts/coverage-packages.py` with a friendlier missing-report error.
+- Added fail-fast guards so the `Makefile` errors clearly when `VERSION` or `GRADLE_VERSION` cannot be parsed.
+- Passed `ORG_GRADLE_PROJECT_signingInMemoryKeyId` in `GPG_ENV` so the in-memory signing plugin has all three required properties.
+- Dropped the unused `compile` Makefile alias.
+
+### Tests
+
+- Added `grpc-utils` tests: `TlsUtilsTests` (11 cases) and `ServerExtensionsTests` (5 cases) covering trust/cert/key validation, `TlsContext.desc()` branches, `PLAINTEXT_CONTEXT`, graceful shutdown ordering, and the `require(timeout > 0)` precondition. Added `mockk` to `grpc-utils` test dependencies.
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.8.2...2.8.3
+
+---
+
 ## v2.8.2 — 2026-05-02
 
 ### Highlights
