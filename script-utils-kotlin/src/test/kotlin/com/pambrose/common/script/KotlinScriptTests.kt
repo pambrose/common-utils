@@ -71,6 +71,7 @@ class KotlinScriptTests : StringSpec() {
       }
     }
 
+    @Suppress("VarCouldBeVal")
     "val var" {
       val intVal = 0
       var intVar = 0
@@ -217,36 +218,25 @@ class KotlinScriptTests : StringSpec() {
 
       val inner = InnerTest()
 
-      KotlinScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { add("inner", inner) }
-        }
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.add("inner", inner) }
       }
     }
 
     "unnecessary params" {
       val value = 5
 
-      KotlinScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { add("value", value, typeOf<Int?>()) }
-        }
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.add("value", value, typeOf<Int?>()) }
       }
     }
 
     "unmatched params" {
       val list = mutableListOf(1)
 
-      KotlinScript().use {
-        it.apply {
-          shouldThrow<ScriptException> {
-            add(
-              name = "list",
-              list,
-              typeOf<Int?>(),
-              typeOf<Int>(),
-            )
-          }
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> {
+          script.add(name = "list", list, typeOf<Int?>(), typeOf<Int>())
         }
       }
     }
@@ -254,18 +244,14 @@ class KotlinScriptTests : StringSpec() {
     "missing collection type" {
       val list = mutableListOf(1)
 
-      KotlinScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { add("list", list) }
-        }
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.add("list", list) }
       }
     }
 
     "invalid syntax" {
-      KotlinScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { eval("junk") }
-        }
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.eval("junk") }
       }
     }
 

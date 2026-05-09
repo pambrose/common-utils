@@ -52,7 +52,7 @@ class KotlinScript(
       valueMap
         .forEach { (name, value) ->
           val kotlinClazz = value.javaClass.kotlin
-          val kotlinQualified = kotlinClazz.qualifiedName!!
+          val kotlinQualified = kotlinClazz.qualifiedName ?: error("No qualified name for $kotlinClazz")
           val type = kotlinQualified.removePrefix("kotlin.")
           val p = params(name)
           assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type$p"

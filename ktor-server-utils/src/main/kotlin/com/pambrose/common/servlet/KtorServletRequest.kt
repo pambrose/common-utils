@@ -78,7 +78,7 @@ class KtorServletRequest(
   override fun getHeader(name: String): String? = request.headers[name]
 
   override fun getHeaders(name: String): Enumeration<String> =
-    Collections.enumeration(request.headers.getAll(name) ?: emptyList())
+    Collections.enumeration(request.headers.getAll(name).orEmpty())
 
   override fun getHeaderNames(): Enumeration<String> = Collections.enumeration(request.headers.names())
 

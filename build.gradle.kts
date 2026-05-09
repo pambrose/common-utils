@@ -2,8 +2,8 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.extensions.DetektExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
@@ -103,31 +103,30 @@ fun Project.configureKotlin() {
 
 fun Project.configureDetekt() {
     extensions.configure<DetektExtension> {
-        buildUponDefaultConfig = true
-        autoCorrect = false
-        parallel = true
-        basePath = rootProject.projectDir.absolutePath
+        buildUponDefaultConfig.set(true)
+        autoCorrect.set(false)
+        parallel.set(true)
+        basePath.set(rootProject.layout.projectDirectory)
         val sharedConfig = rootProject.file("$detektConfigDir/detekt.yml")
         if (sharedConfig.exists()) {
             config.setFrom(sharedConfig)
         }
         val sharedBaseline = rootProject.file("$detektConfigDir/baseline.xml")
         if (sharedBaseline.exists()) {
-            baseline = sharedBaseline
+            baseline.set(sharedBaseline)
         }
     }
     tasks.withType<Detekt>().configureEach {
-        jvmTarget = jvmTargetVersion
-        // Type-resolution rules require a Kotlin compiler matching the project's Kotlin version;
-        // detekt 1.23.x embeds Kotlin 1.9, so leave it disabled until detekt 2.0.
+        jvmTarget.set(jvmTargetVersion)
         reports {
             html.required.set(true)
-            xml.required.set(true)
+            checkstyle.required.set(true)
             sarif.required.set(false)
-            txt.required.set(false)
-            md.required.set(false)
+            markdown.required.set(false)
         }
     }
+    tasks.named("detekt").configure { dependsOn("detektMain", "detektTest") }
+    tasks.named("detektBaseline").configure { dependsOn("detektBaselineMain", "detektBaselineTest") }
 }
 
 fun Project.configureDokka() {

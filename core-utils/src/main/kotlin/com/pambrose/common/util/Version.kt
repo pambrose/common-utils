@@ -82,6 +82,7 @@ annotation class Version(
      * Returns the version string from the [Version] annotation on this [KClass],
      * or `"Unknown"` if the annotation is not present.
      */
+    @Suppress("MemberNameEqualsClassName")
     fun KClass<*>.version() = findAnnotation<Version>()?.run { version } ?: UNKNOWN
 
     /**

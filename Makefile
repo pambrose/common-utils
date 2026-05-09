@@ -14,6 +14,11 @@ ifeq ($(strip $(GRADLE_VERSION)),)
 $(error Could not determine gradle version from gradle/libs.versions.toml)
 endif
 
+GPG_ENV = \
+	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys $$GPG_SIGNING_KEY_ID)" \
+	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID" \
+	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)
+
 default: versioncheck
 
 help: ## Show available make targets
@@ -85,11 +90,6 @@ publish-local: ## Install to local Maven repo
 
 publish-local-snapshot: ## Install a -SNAPSHOT build to local Maven repo
 	./gradlew -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenLocal
-
-GPG_ENV = \
-	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys $$GPG_SIGNING_KEY_ID)" \
-	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID" \
-	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)
 
 check-gpg-env: ## Verify GPG signing environment is configured
 	@if [ -z "$$GPG_SIGNING_KEY_ID" ]; then \

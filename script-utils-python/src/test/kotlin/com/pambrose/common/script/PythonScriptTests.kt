@@ -174,10 +174,8 @@ class PythonScriptTests : StringSpec() {
     }
 
     "invalid syntax" {
-      PythonScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { eval("junk") }
-        }
+      PythonScript().use { script ->
+        shouldThrow<ScriptException> { script.eval("junk") }
       }
     }
 

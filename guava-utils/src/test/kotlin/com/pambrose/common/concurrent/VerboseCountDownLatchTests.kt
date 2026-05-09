@@ -4,8 +4,10 @@ package com.pambrose.common.concurrent
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.milliseconds
 
 class VerboseCountDownLatchTests : StringSpec() {
   init {
@@ -32,11 +34,11 @@ class VerboseCountDownLatchTests : StringSpec() {
         completed = true
       }
 
-      Thread.sleep(50)
+      delay(50.milliseconds)
       completed shouldBe false
 
       latch.countDown()
-      Thread.sleep(50)
+      delay(50.milliseconds)
       completed shouldBe false
 
       latch.countDown()

@@ -82,7 +82,7 @@ Common behavior for testing, linting, and dependency-update reporting is provide
 - `com.pambrose.kotlinter` - Kotlinter lint/format tasks
 - `com.pambrose.stable-versions` - stable-only filtering for `dependencyUpdates`
 
-Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present). Type-resolution rules are left disabled because detekt 1.23.x embeds the Kotlin 1.9 compiler.
+Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on the per-source-set `detektMain` and `detektTest` tasks, so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 

@@ -5,11 +5,12 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## v2.8.3 — 2026-05-08
+## v2.8.3 — 2026-05-09
 
 ### Highlights
 
-- **Detekt static analysis**: Wired Detekt 1.23.8 into every subproject with HTML/XML reports per module, a tailored `config/detekt/detekt.yml`, and an optional shared `config/detekt/baseline.xml`. `make detekt` is now a first-class target and `make lint` includes it.
+- **Detekt 2.0 with type resolution**: Upgraded Detekt to 2.0.0-alpha.3 (plugin id `dev.detekt`), migrated the Gradle DSL to the Property API, and wired the aggregate `detekt` task to depend on the per-source-set `detektMain` / `detektTest` tasks so analysis runs with full type resolution. Type-resolved rules now catch issues like `ImplicitDefaultLocale`, `UnsafeCallOnNullableType`, `SleepInsteadOfDelay`, `InjectDispatcher`, and `ArrayPrimitive`.
+- **Detekt static analysis** wired into every subproject with HTML/checkstyle reports per module, a tailored `config/detekt/detekt.yml`, and an optional shared `config/detekt/baseline.xml`. `make detekt` is a first-class target and `make lint` includes it.
 - **Centralized toolchain**: Moved the Gradle wrapper version (9.5.0) and JVM target (17) into `gradle/libs.versions.toml` under a new `# Toolchain` section, consumed from both `build.gradle.kts` and the `Makefile`.
 - **Self-documenting Makefile**: New `make help` target prints every available target with its description, parsed from `## description` comments.
 
@@ -21,6 +22,17 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - Added fail-fast guards so the `Makefile` errors clearly when `VERSION` or `GRADLE_VERSION` cannot be parsed.
 - Passed `ORG_GRADLE_PROJECT_signingInMemoryKeyId` in `GPG_ENV` so the in-memory signing plugin has all three required properties.
 - Dropped the unused `compile` Makefile alias.
+
+### Detekt rule tuning
+
+- Activated `LongMethod`; suppressed `IgnoredReturnValue`.
+- Resolved type-resolution findings surfaced by the upgrade across `core-utils`, `ktor-server-utils`, `script-utils-common`, `script-utils-kotlin`, `script-utils-java`, `script-utils-python`, `guava-utils`, and `service-utils` (locale-aware formatting, `orEmpty()` over `?: emptyList()`, `delay()` over `Thread.sleep()` in suspend tests, removed unnecessary `apply` blocks, removed unused variables, etc.).
+
+### Dependency bumps
+
+- `kotlinx-coroutines` 1.10.2 → 1.11.0
+- `kotlinx-datetime` 0.7.1-0.6.x-compat → 0.7.1 (drops the Exposed/jodatime-compat suffix)
+- `detekt` plugin 1.23.8 → 2.0.0-alpha.3
 
 ### Tests
 

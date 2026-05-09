@@ -18,6 +18,7 @@ package com.pambrose.common.script
 
 import com.pambrose.common.script.ScriptUtils.resetContext
 
+@Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractExprEvaluator(
   extension: String,
 ) : AbstractEngine(extension) {
