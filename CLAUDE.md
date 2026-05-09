@@ -33,8 +33,14 @@ cases. Published on Maven Central.
 - `./gradlew formatKotlinMain formatKotlinTest` - Auto-format code
 - `make detekt` - Run Detekt static analysis across all modules (HTML/XML reports under `build/reports/detekt/`)
 - `make detekt-baseline` - Generate/update `config/detekt/baseline.xml` to suppress current findings
-- `make coverage` - Generate aggregated Kover HTML coverage report (output under `build/reports/kover/html/`)
+- `make coverage` - Generate both aggregated Kover HTML and XML coverage reports
+- `make coverage-html` - Generate aggregated Kover HTML coverage report (output under `build/reports/kover/html/`)
 - `make coverage-xml` - Generate aggregated Kover XML coverage report (e.g. for CI / Codacy)
+- `make coverage-log` - Print Kover coverage summary to the build log
+- `make coverage-verify` - Run Kover coverage verification rules
+- `make coverage-open` - Generate the HTML report and open it in the default browser
+- `make coverage-packages` - Print a per-package coverage table derived from the XML report
+- `make coverage-clean` - Clean Kover outputs and previous test results
 
 ### Dependencies
 

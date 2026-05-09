@@ -1,9 +1,18 @@
-.PHONY: default clean stop compile build lint detekt detekt-baseline refresh tests tree depends versioncheck kdocs \
-	coverage coverage-xml check-gpg-env publish-local publish-local-snapshot publish-snapshot publish-maven-central \
-	upgrade-wrapper
+.PHONY: default clean stop build lint detekt detekt-baseline refresh tests tree depends versioncheck kdocs \
+	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-clean \
+	check-gpg-env publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper
 
 VERSION := $(shell sed -n 's/^version=\(.*\)/\1/p' gradle.properties)
+
+ifeq ($(strip $(VERSION)),)
+$(error Could not determine project version from gradle.properties)
+endif
+
 GRADLE_VERSION := $(shell sed -n 's/^gradle = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+
+ifeq ($(strip $(GRADLE_VERSION)),)
+$(error Could not determine gradle version from gradle/libs.versions.toml)
+endif
 
 default: versioncheck
 
@@ -13,13 +22,14 @@ clean:
 stop:
 	./gradlew --stop
 
-compile:
+build:
 	./gradlew build -xtest
 
-build: compile
+lint: detekt
+	./gradlew lintKotlinMain lintKotlinTest
 
-lint:
-	./gradlew lintKotlinMain lintKotlinTest detekt
+detekt:
+	./gradlew detekt
 
 detekt-baseline:
 	./gradlew detektBaseline
@@ -83,6 +93,7 @@ publish-local-snapshot:
 
 GPG_ENV = \
 	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys $$GPG_SIGNING_KEY_ID)" \
+	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID" \
 	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)
 
 check-gpg-env:
