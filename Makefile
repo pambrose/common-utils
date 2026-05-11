@@ -77,7 +77,7 @@ versioncheck: ## Check for dependency updates (default target)
 kdocs: ## Generate Dokka HTML documentation
 	./gradlew :dokkaGenerate
 
-publish-local: ## Install to local Maven repo
+publish-local: _require-version ## Install to local Maven repo
 	./gradlew publishToMavenLocal
 
 publish-local-snapshot: _require-version ## Install a -SNAPSHOT build to local Maven repo
@@ -86,7 +86,7 @@ publish-local-snapshot: _require-version ## Install a -SNAPSHOT build to local M
 publish-snapshot: _require-version _check-gpg-env ## Publish a -SNAPSHOT to Maven Central
 	$(GPG_ENV) ./gradlew -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenCentral
 
-publish-maven-central: _check-gpg-env ## Publish and release to Maven Central
+publish-maven-central: _require-version _check-gpg-env ## Publish and release to Maven Central
 	$(GPG_ENV) ./gradlew publishAndReleaseToMavenCentral
 
 upgrade-wrapper: _require-gradle-version ## Re-run the Gradle wrapper task at the pinned version
