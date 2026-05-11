@@ -3,40 +3,56 @@
 gradle = "9.5.0"
 jvmTarget = "17"
 
-# Plugin versions
+# Plugins
 detekt = "2.0.0-alpha.3"
 dokka = "2.2.0"
+gradlePlugins = "1.0.14"
 kover = "0.9.8"
 mavenPublish = "0.36.0"
 
-# Library versions
-brave = "6.3.1"
+# Kotlin & kotlinx
+kotlin = "2.3.21"
 coroutines = "1.11.0"
 datetime = "0.7.1"
-dropwizard = "4.2.38"
-exposed = "1.2.0"
-gradlePlugins = "1.0.14"
-grpc = "1.81.0"
-guava = "33.0.0-jre"
-jakartaServlet = "6.1.0"
-javaScripting = "2.0.0"
-jetty = "12.1.9"
-kotlin = "2.3.21"
 kotlinxHtml = "0.12.0"
-ktor = "3.4.3"
-logging = "8.0.02"
-mockk = "1.14.9"
-nettyTcNative = "2.0.77.Final"
-prometheus = "0.16.0"
-python = "2.7.4"
-redis = "7.5.0"
-resend = "4.13.0"
 serialization = "1.11.0"
+
+# Logging
+logging = "8.0.02"
+
+# Frameworks
+dropwizard = "4.2.38"
+grpc = "1.81.0"
+jakartaServlet = "6.1.0"
+jetty = "12.1.9"
+ktor = "3.4.3"
+nettyTcNative = "2.0.77.Final"
+
+# Data
+exposed = "1.2.0"
+redis = "7.5.0"
+
+# Scripting
+javaScripting = "2.0.0"
+python = "2.7.4"
+
+# Observability
+brave = "6.3.1"
+prometheus = "0.16.0"
 zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
 
+# Services
+guava = "33.0.0-jre"
+
+# Other
+resend = "4.13.0"
+
+# Testing
+mockk = "1.14.9"
+
 [libraries]
-# Kotlin
+# Kotlin & kotlinx
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
@@ -46,13 +62,13 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 # Logging
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
 
-# Resend
-resend = { module = "com.resend:resend-java", version.ref = "resend" }
+# Frameworks -- Dropwizard
+dropwizard-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard" }
+dropwizard-healthcheck = { module = "io.dropwizard.metrics:metrics-healthchecks", version.ref = "dropwizard" }
+dropwizard-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard" }
+dropwizard-servlets = { module = "io.dropwizard.metrics:metrics-jakarta-servlets", version.ref = "dropwizard" }
 
-# Guava
-guava = { module = "com.google.guava:guava", version.ref = "guava" }
-
-# gRPC
+# Frameworks -- gRPC
 grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
 grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
@@ -60,29 +76,13 @@ grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 netty-ssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "nettyTcNative" }
 
-# Dropwizard
-dropwizard-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard" }
-dropwizard-healthcheck = { module = "io.dropwizard.metrics:metrics-healthchecks", version.ref = "dropwizard" }
-dropwizard-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard" }
-dropwizard-servlets = { module = "io.dropwizard.metrics:metrics-jakarta-servlets", version.ref = "dropwizard" }
-
-# Exposed
-exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
-exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
-exposed-jodatime = { module = "org.jetbrains.exposed:exposed-jodatime", version.ref = "exposed" }
-
-# Scripting
-java-scripting = { module = "ch.obermuhlner:java-scriptengine", version.ref = "javaScripting" }
-python-scripting = { module = "org.python:jython-standalone", version.ref = "python" }
-kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", version.ref = "kotlin" }
-
-# Jakarta Servlet
+# Frameworks -- Jakarta Servlet
 jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakartaServlet" }
 
-# Jetty
+# Frameworks -- Jetty
 jetty-servlet = { module = "org.eclipse.jetty.ee11:jetty-ee11-servlet", version.ref = "jetty" }
 
-# Ktor
+# Frameworks -- Ktor
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -92,28 +92,45 @@ ktor-server-compression = { module = "io.ktor:ktor-server-compression", version.
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 
-# Prometheus
+# Data -- Exposed
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-jodatime = { module = "org.jetbrains.exposed:exposed-jodatime", version.ref = "exposed" }
+
+# Data -- Redis
+redis = { module = "redis.clients:jedis", version.ref = "redis" }
+
+# Scripting
+java-scripting = { module = "ch.obermuhlner:java-scriptengine", version.ref = "javaScripting" }
+kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", version.ref = "kotlin" }
+python-scripting = { module = "org.python:jython-standalone", version.ref = "python" }
+
+# Observability -- Prometheus
 prometheus-core = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
 prometheus-dropwizard = { module = "io.prometheus:simpleclient_dropwizard", version.ref = "prometheus" }
 prometheus-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
 prometheus-servlet = { module = "io.prometheus:simpleclient_servlet_jakarta", version.ref = "prometheus" }
 
-# Redis
-redis = { module = "redis.clients:jedis", version.ref = "redis" }
-
-# Zipkin
+# Observability -- Zipkin
 brave = { module = "io.zipkin.brave:brave", version.ref = "brave" }
 zipkin-core = { module = "io.zipkin.zipkin2:zipkin", version.ref = "zipkin" }
 zipkin-reporter = { module = "io.zipkin.reporter2:zipkin-reporter-brave", version.ref = "zipkinReporter" }
 zipkin-sender-okhttp = { module = "io.zipkin.reporter2:zipkin-sender-okhttp3", version.ref = "zipkinReporter" }
 
+# Services -- Guava
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+# Other -- Resend
+resend = { module = "com.resend:resend-java", version.ref = "resend" }
+
 # Testing
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 
 [bundles]
+# Frameworks
 grpc = [
   "grpc-netty",
   "grpc-inprocess",
@@ -138,18 +155,26 @@ ktor-client-json = [
   "ktor-serialization-kotlinx-json",
 ]
 
+# Observability
 prometheus-service = [
   "prometheus-servlet",
   "prometheus-dropwizard",
 ]
 
 [plugins]
+# Kotlin
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = "gradlePlugins" }
+
+# Pambrose convention plugins
 pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradlePlugins" }
+pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = "gradlePlugins" }
 pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradlePlugins" }
+
+# Quality & docs
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+
+# Publishing
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
