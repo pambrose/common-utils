@@ -84,7 +84,7 @@ fun String.ensurePrefix(prefix: CharSequence) = if (startsWith(prefix)) this els
  * @param suffix the required suffix
  * @return the string guaranteed to end with [suffix]
  */
-fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else this + suffix
+fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this else "$this$suffix"
 
 /** Ensures this [String] starts with a leading `/`. */
 fun String.ensureLeadingSlash() = ensurePrefix("/")
