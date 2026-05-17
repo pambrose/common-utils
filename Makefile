@@ -27,7 +27,7 @@ build: ## Build without running tests
 	./gradlew build -x test
 
 lint: ## Run Kotlinter and Detekt
-	./gradlew lintKotlinMain lintKotlinTest detekt
+	./gradlew lintKotlin detekt
 
 detekt: ## Run Detekt static analysis
 	./gradlew detekt
