@@ -13,9 +13,9 @@ GPG_ENV = \
 
 default: versioncheck
 
-help: ## Show available make targets
-	@awk 'BEGIN { FS = ":.*## "; printf "Usage: make <target>\n\nTargets:\n" } \
-		/^[a-zA-Z0-9_-]+:.*## / { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+help:  ## Show this help (list of targets)
+	@awk 'BEGIN {FS = ":.*?## "; printf "Usage: make <target>\n\nTargets:\n"} \
+		/^[a-zA-Z0-9_-]+:.*?## / {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 clean: ## Run gradle clean
 	./gradlew clean
@@ -24,7 +24,7 @@ stop: ## Stop the Gradle daemon
 	./gradlew --stop
 
 build: ## Build without running tests
-	./gradlew build -xtest
+	./gradlew build -x test
 
 lint: ## Run Kotlinter and Detekt
 	./gradlew lintKotlinMain lintKotlinTest detekt
