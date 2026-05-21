@@ -202,7 +202,7 @@ Modules without test files: `ktor-client-utils`, `common-utils-bom`
 
 - **Up-to-date Dependencies**: Recent versions across the stack
 - **Gradle Version Catalog**: Centralized version management
-- **Dependency Updates**: Good tooling with `make versioncheck`
+- **Dependency Updates**: Good tooling with `make versions`
 - **Minimal Dependency Tree**: Each module includes only necessary dependencies
 
 ### 📋 Key Dependencies

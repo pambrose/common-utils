@@ -1,4 +1,4 @@
-.PHONY: default help clean stop build lint detekt detekt-baseline refresh tests tree depends versioncheck kdocs \
+.PHONY: default help clean stop build lint detekt detekt-baseline refresh tests tree depends versions kdocs \
 	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-clean \
 	publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper \
 	_check-gpg-env _require-version _require-gradle-version
@@ -71,7 +71,7 @@ tree: ## Show dependency tree (quiet)
 depends: ## Show dependency tree (verbose)
 	./gradlew dependencies
 
-versions: ## Check for dependency updates (default target)
+versions: ## Check for dependency updates
 	./gradlew dependencyUpdates --no-configuration-cache --no-parallel
 
 kdocs: ## Generate Dokka HTML documentation
