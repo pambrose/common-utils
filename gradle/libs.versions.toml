@@ -11,14 +11,14 @@ kover = "0.9.8"
 mavenPublish = "0.36.0"
 
 # Kotlin & kotlinx
-kotlin = "2.3.21"
+kotlin = "2.4.0-RC"
 coroutines = "1.11.0"
 datetime = "0.7.1"
 kotlinxHtml = "0.12.0"
 serialization = "1.11.0"
 
 # Logging
-logging = "8.0.02"
+logging = "8.0.03"
 
 # Frameworks
 dropwizard = "4.2.38"

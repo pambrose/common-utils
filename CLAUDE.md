@@ -31,7 +31,7 @@ Run `make help` for a self-documenting list of every target.
 
 ### Code Quality
 
-- `make lint` - Run Kotlinter linting
+- `make lint` - Run Kotlinter and Detekt
 - `./gradlew formatKotlinMain formatKotlinTest` - Auto-format code
 - `make detekt` - Run Detekt static analysis across all modules (HTML/XML reports under `build/reports/detekt/`)
 - `make detekt-baseline` - Generate/update `config/detekt/baseline.xml` to suppress current findings
@@ -46,7 +46,7 @@ Run `make help` for a self-documenting list of every target.
 
 ### Dependencies
 
-- `make versioncheck` - Check for dependency updates (default `make` target)
+- `make versions` - Check for dependency updates
 - `make refresh` - Refresh dependencies and re-run `dependencyUpdates`
 - `make tree` - Show dependency tree (quiet)
 - `make depends` - Show dependency tree (verbose)
