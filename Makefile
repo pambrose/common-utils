@@ -11,7 +11,7 @@ GPG_ENV = \
 	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID" \
 	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)
 
-default: versioncheck
+default: help
 
 help:  ## Show this help (list of targets)
 	@awk 'BEGIN {FS = ":.*?## "; printf "Usage: make <target>\n\nTargets:\n"} \
@@ -71,7 +71,7 @@ tree: ## Show dependency tree (quiet)
 depends: ## Show dependency tree (verbose)
 	./gradlew dependencies
 
-versioncheck: ## Check for dependency updates (default target)
+versions: ## Check for dependency updates (default target)
 	./gradlew dependencyUpdates --no-configuration-cache --no-parallel
 
 kdocs: ## Generate Dokka HTML documentation
