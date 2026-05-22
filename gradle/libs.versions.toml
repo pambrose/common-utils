@@ -1,6 +1,6 @@
 [versions]
 # Toolchain
-gradle = "9.5.1"
+gradle-wrapper = "9.5.1"
 jvmTarget = "17"
 
 # Plugins
@@ -13,7 +13,7 @@ mavenPublish = "0.36.0"
 # Kotlin & kotlinx
 kotlin = "2.4.0-RC"
 coroutines = "1.11.0"
-datetime = "0.7.1"
+datetime = "0.7.1-0.6.x-compat"
 kotlinxHtml = "0.12.0"
 serialization = "1.11.0"
 
