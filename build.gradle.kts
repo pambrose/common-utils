@@ -43,6 +43,7 @@ dokka {
     configureHtml()
 }
 
+// Demo `main()`/`mainN()` functions colocated in production sources for manual playground use.
 val koverExcludeClasses = listOf(
     "com.pambrose.common.concurrent.ConditionalValueKt*",
     "com.pambrose.common.concurrent.LameBooleanWaiterKt*",
@@ -140,7 +141,6 @@ fun Project.configureKover() {
         reports {
             filters {
                 excludes {
-                    // Demo `main()`/`mainN()` functions colocated in production sources for manual playground use.
                     classes(koverExcludeClasses)
                 }
             }
