@@ -20,7 +20,18 @@ package com.pambrose.common.exposed
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldNotBeInstanceOf
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+
+private object UpsertTestTable : Table("upsert_test") {
+  val id = integer("id")
+  val email = varchar("email", 255).uniqueIndex()
+  val name = varchar("name", 255)
+}
 
 class BugFixVerificationTests : StringSpec() {
   init {
@@ -48,6 +59,42 @@ class BugFixVerificationTests : StringSpec() {
         timedReadOnlyTx(db = null) { }
       }
       exception.shouldNotBeInstanceOf<NullPointerException>()
+    }
+
+    // Bug #6: UpsertStatement emitted `ON CONFLICT ON CONSTRAINT <name>` using the column/index
+    // name as if it were a constraint name, which is invalid PostgreSQL unless a constraint happens
+    // to be named identically. It now uses the column-inference form `ON CONFLICT (<cols>)`.
+
+    "upsert with conflictColumn uses ON CONFLICT (column) not ON CONSTRAINT" {
+      Database.connect("jdbc:h2:mem:upsert_col;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
+      transaction {
+        val stmt = UpsertStatement<Number>(UpsertTestTable, conflictColumn = UpsertTestTable.email)
+        stmt[UpsertTestTable.id] = 1
+        stmt[UpsertTestTable.email] = "a@b.com"
+        stmt[UpsertTestTable.name] = "Alice"
+
+        val sql = stmt.prepareSQL(this, prepared = false)
+        sql shouldContain "ON CONFLICT ("
+        sql shouldContain "DO UPDATE SET"
+        sql shouldNotContain "ON CONSTRAINT"
+        // The conflict column is the arbiter; the non-conflict column is updated from EXCLUDED.
+        sql shouldContain "EXCLUDED"
+      }
+    }
+
+    "upsert with conflictIndex uses ON CONFLICT (columns) not ON CONSTRAINT" {
+      Database.connect("jdbc:h2:mem:upsert_idx;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
+      transaction {
+        val index = UpsertTestTable.indices.first()
+        val stmt = UpsertStatement<Number>(UpsertTestTable, conflictIndex = index)
+        stmt[UpsertTestTable.id] = 1
+        stmt[UpsertTestTable.email] = "a@b.com"
+        stmt[UpsertTestTable.name] = "Alice"
+
+        val sql = stmt.prepareSQL(this, prepared = false)
+        sql shouldContain "ON CONFLICT ("
+        sql shouldNotContain "ON CONSTRAINT"
+      }
     }
   }
 }

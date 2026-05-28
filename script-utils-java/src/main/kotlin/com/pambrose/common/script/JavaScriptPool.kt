@@ -25,12 +25,14 @@ import kotlinx.coroutines.runBlocking
  * after each use.
  *
  * @param size the number of [JavaScript] instances to create in the pool
- * @param nullGlobalContext if `true`, resets the global scope bindings to `null` when recycling
+ * @param nullGlobalContext ignored: [JavaScript] binds variables into the engine scope, never the
+ * global scope, so its global context is always non-null. Retained for API symmetry with the other
+ * script pools.
  */
 class JavaScriptPool(
   size: Int,
-  nullGlobalContext: Boolean,
-) : AbstractScriptPool<JavaScript>(size, nullGlobalContext) {
+  @Suppress("UNUSED_PARAMETER", "UnusedPrivateProperty") nullGlobalContext: Boolean = false,
+) : AbstractScriptPool<JavaScript>(size, false) {
   init {
     runBlocking {
       repeat(size) { channel.send(JavaScript()) }

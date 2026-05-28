@@ -65,8 +65,10 @@ class InstrumentedThreadFactory(
       try {
         runnable.run()
       } finally {
-        running.dec()
+        // Increment terminated before decrementing running so a concurrent scrape never
+        // observes a thread as neither running nor terminated (running + terminated < created).
         terminated.inc()
+        running.dec()
       }
     }
   }

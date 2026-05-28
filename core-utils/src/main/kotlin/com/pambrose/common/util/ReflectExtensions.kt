@@ -17,7 +17,6 @@
 package com.pambrose.common.util
 
 import java.lang.reflect.ParameterizedType
-import kotlin.reflect.full.isSubclassOf
 
 /**
  * Returns the number of generic type parameters of this object's class.
@@ -27,17 +26,15 @@ import kotlin.reflect.full.isSubclassOf
  * Extension property on [Any].
  */
 val Any.typeParameterCount: Int
-  get() =
-    when {
-      this is Array<*> -> { // Must come first in evaluation
-        1
-      }
+  get() {
+    // Arrays must be handled first; they always report a single type parameter.
+    if (this is Array<*>)
+      return 1
 
-      !javaClass.genericSuperclass.javaClass.kotlin.isSubclassOf(ParameterizedType::class) -> {
-        0
-      }
-
-      else -> {
-        (javaClass.genericSuperclass as ParameterizedType).actualTypeArguments.size
-      }
-    }
+    // genericSuperclass is null for Object, interfaces, primitives and void, so guard against it.
+    val genericSuperclass = javaClass.genericSuperclass
+    return if (genericSuperclass is ParameterizedType)
+      genericSuperclass.actualTypeArguments.size
+    else
+      0
+  }

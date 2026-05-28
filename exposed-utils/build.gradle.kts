@@ -6,4 +6,6 @@ dependencies {
     api(libs.exposed.core)
     api(libs.exposed.jdbc)
     api(libs.exposed.jodatime)
+
+    testImplementation(libs.h2)
 }

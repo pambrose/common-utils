@@ -34,5 +34,11 @@ class ReflectExtensionTests : StringSpec() {
       arrayOf(4).typeParameterCount shouldBe 1
       (IntArray(1) { 2 }).typeParameterCount shouldBe 0
     }
+
+    // Bug #8: typeParameterCount dereferenced javaClass.genericSuperclass, which is null for
+    // java.lang.Object (and interfaces/primitives/void), throwing an NPE. It now returns 0 instead.
+    "type param count handles a null generic superclass" {
+      Any().typeParameterCount shouldBe 0
+    }
   }
 }

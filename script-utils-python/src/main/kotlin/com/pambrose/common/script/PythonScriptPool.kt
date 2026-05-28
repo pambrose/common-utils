@@ -34,7 +34,7 @@ class PythonScriptPool(
 ) : AbstractScriptPool<PythonScript>(size, nullGlobalContext) {
   init {
     runBlocking {
-      repeat(size) { channel.send(PythonScript()) }
+      repeat(size) { channel.send(PythonScript(nullGlobalContext)) }
     }
   }
 }

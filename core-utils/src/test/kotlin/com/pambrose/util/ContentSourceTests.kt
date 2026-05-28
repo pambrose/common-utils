@@ -116,5 +116,19 @@ class ContentSourceTests : StringSpec() {
       file.remote shouldBe true
       file.toString() shouldContain "fileName='App.kt'"
     }
+
+    // Bug #1: GitLabFile hardcoded "gitlab.com" instead of using repo.domainName, so self-hosted
+    // GitLab instances always produced gitlab.com URLs.
+    "GitLabFile uses the repo domain for self-hosted GitLab" {
+      val repo = GitLabRepo(OwnerType.User, "alice", "demo", domainName = "gitlab.example.com")
+      val file = GitLabFile(repo, branchName = "main", srcPath = "src", fileName = "App.kt")
+      file.source shouldBe "https://gitlab.example.com/alice/demo/-/blob/main/src/App.kt"
+    }
+
+    "GitLabFile honors a custom scheme and domain with a port" {
+      val repo = GitLabRepo(OwnerType.User, "alice", "demo", scheme = "http://", domainName = "git.internal:8080")
+      val file = GitLabFile(repo, branchName = "dev", srcPath = "a/b", fileName = "x.kt")
+      file.source shouldBe "http://git.internal:8080/alice/demo/-/blob/dev/a/b/x.kt"
+    }
   }
 }

@@ -35,14 +35,17 @@ import kotlinx.html.script
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.Closeable
 
 /**
  * Provides Google reCAPTCHA verification and HTML widget rendering for Ktor applications.
  *
  * Includes server-side token verification via the Google reCAPTCHA API, a Ktor route-level
  * validation extension, and kotlinx.html helpers for embedding the reCAPTCHA script and widget.
+ *
+ * Holds a long-lived [HttpClient]; call [close] on application shutdown to release its resources.
  */
-object RecaptchaService {
+object RecaptchaService : Closeable {
   private val logger = KotlinLogging.logger {}
   private const val RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
   private val httpClient =
@@ -170,13 +173,11 @@ object RecaptchaService {
    * @param config the [RecaptchaConfig] providing the site key and enabled status.
    */
   fun HEAD.loadRecaptchaScript(config: RecaptchaConfig) {
-    if (config.isRecaptchaEnabled) {
-      if (!config.recaptchaSiteKey.isNullOrBlank()) {
-        script {
-          src = "https://www.google.com/recaptcha/api.js"
-          async = true
-          defer = true
-        }
+    if (isRecaptchaConfigured(config)) {
+      script {
+        src = "https://www.google.com/recaptcha/api.js"
+        async = true
+        defer = true
       }
     }
   }
@@ -189,16 +190,33 @@ object RecaptchaService {
    * @param config the [RecaptchaConfig] providing the site key and enabled status.
    */
   fun FlowContent.recaptchaWidget(config: RecaptchaConfig) {
-    if (config.isRecaptchaEnabled) {
-      val siteKey = config.recaptchaSiteKey
-      if (!siteKey.isNullOrBlank()) {
-        div(classes = "g-recaptcha") {
-          attributes["data-sitekey"] = siteKey
-        }
+    if (isRecaptchaConfigured(config)) {
+      val siteKey = config.recaptchaSiteKey ?: return
+      div(classes = "g-recaptcha") {
+        attributes["data-sitekey"] = siteKey
       }
     }
   }
 
+  /**
+   * Returns `true` only when reCAPTCHA is enabled *and* both the site key and secret key are present.
+   *
+   * Requiring both keys keeps rendering and validation in lockstep: the widget is never shown unless
+   * its response can actually be verified server-side, closing a fail-open gap where a missing secret
+   * key would render a widget but silently skip validation.
+   */
   private fun isRecaptchaConfigured(config: RecaptchaConfig): Boolean =
-    config.isRecaptchaEnabled && config.recaptchaSecretKey?.isNotBlank() == true
+    config.isRecaptchaEnabled &&
+      !config.recaptchaSiteKey.isNullOrBlank() &&
+      !config.recaptchaSecretKey.isNullOrBlank()
+
+  /**
+   * Releases the underlying [HttpClient] and its connection/thread pool.
+   *
+   * Call this when the application that uses reCAPTCHA verification shuts down. After [close] is
+   * invoked, [validateRecaptcha] can no longer perform server-side verification.
+   */
+  override fun close() {
+    httpClient.close()
+  }
 }

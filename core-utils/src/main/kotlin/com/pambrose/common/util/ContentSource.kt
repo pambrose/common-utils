@@ -204,7 +204,7 @@ open class GitLabFile(
   val fileName: String,
 ) : UrlSource(
   repo.scheme + listOf(
-    "gitlab.com",
+    repo.domainName,
     repo.ownerName,
     repo.repoName,
     "-/blob",

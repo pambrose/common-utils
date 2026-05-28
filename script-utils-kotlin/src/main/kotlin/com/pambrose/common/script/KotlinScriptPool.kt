@@ -34,7 +34,7 @@ class KotlinScriptPool(
 ) : AbstractScriptPool<KotlinScript>(size, nullGlobalContext) {
   init {
     runBlocking {
-      repeat(size) { channel.send(KotlinScript()) }
+      repeat(size) { channel.send(KotlinScript(nullGlobalContext)) }
     }
   }
 }

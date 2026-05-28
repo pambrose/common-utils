@@ -21,7 +21,10 @@ package com.pambrose.common.script
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.runBlocking
+import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 
 class BugFixVerificationTests : StringSpec() {
@@ -91,6 +94,51 @@ class BugFixVerificationTests : StringSpec() {
       evaluator.eval("false") shouldBe false
       evaluator.eval("1 > 0") shouldBe true
       evaluator.eval("1 < 0") shouldBe false
+    }
+
+    // Bug #3: AbstractExprEvaluator.compute() unconditionally cast to non-null Any
+    // Before fix: engine.eval(expr) as Any threw when the expression evaluated to null
+    // After fix: compute() returns Any? and propagates a null result
+
+    "compute returns null for a null-evaluating expression" {
+      val evaluator = KotlinExprEvaluator()
+      evaluator.compute("null") shouldBe null
+    }
+
+    "compute returns non-null results" {
+      val evaluator = KotlinExprEvaluator()
+      evaluator.compute("1 + 2") shouldBe 3
+      evaluator.compute("\"hello\"") shouldBe "hello"
+    }
+
+    // Bug #4: AbstractExprEvaluatorPool.eval()/blockingEval() were generic (<R> ... as R)
+    // even though the underlying evaluator only ever returns Boolean.
+    // Before fix: blockingEval<String>(expr) compiled but threw ClassCastException at the call site.
+    // After fix: eval()/blockingEval() return Boolean, so the result is usable directly.
+
+    "pool blockingEval returns boolean results" {
+      val pool = KotlinExprEvaluatorPool(2)
+      val result: Boolean = pool.blockingEval("1 > 0")
+      result shouldBe true
+      pool.blockingEval("1 < 0") shouldBe false
+    }
+
+    // Bug #5: script pools created their instances with KotlinScript() instead of
+    // KotlinScript(nullGlobalContext), so the pool's nullGlobalContext was ignored for the
+    // initial population (only honored later, on recycle).
+    // Before fix: a pool created with nullGlobalContext=true still had non-null global bindings
+    // on the first borrow. After fix: the initial instances honor the flag.
+
+    "pool honors nullGlobalContext for initial population" {
+      runBlocking {
+        KotlinScriptPool(2, nullGlobalContext = true).eval {
+          engine.getBindings(GLOBAL_SCOPE)
+        } shouldBe null
+
+        KotlinScriptPool(2, nullGlobalContext = false).eval {
+          engine.getBindings(GLOBAL_SCOPE)
+        } shouldNotBe null
+      }
     }
   }
 }
