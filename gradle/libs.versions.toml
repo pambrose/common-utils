@@ -11,17 +11,17 @@ kover = "0.9.8"
 mavenPublish = "0.36.0"
 
 # Kotlin & kotlinx
-kotlin = "2.4.0-RC"
+kotlin = "2.4.0-RC2"
 coroutines = "1.11.0"
 datetime = "0.7.1-0.6.x-compat"
 kotlinxHtml = "0.12.0"
 serialization = "1.11.0"
 
 # Logging
-logging = "8.0.03"
+logging = "8.0.4"
 
 # Frameworks
-dropwizard = "4.2.38"
+dropwizard = "4.2.39"
 grpc = "1.81.0"
 jakartaServlet = "6.1.0"
 jetty = "12.1.9"
