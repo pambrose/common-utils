@@ -26,11 +26,10 @@ object ListUtils {
    */
   @JvmStatic
   fun <T> listPrint(vals: List<T>) {
-    val hasString = vals.any { it is String }
     val str =
       vals.joinToString {
-        if (hasString)
-          (it as String?)?.toDoubleQuoted() ?: "".toDoubleQuoted()
+        if (it is String)
+          it.toDoubleQuoted()
         else
           it.toString()
       }
