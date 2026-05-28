@@ -63,5 +63,19 @@ class ListUtilsTests : StringSpec() {
       }
       output.trim() shouldBe "[1, \"a\", 2.5]"
     }
+
+    "list print mixed types with a leading string" {
+      val output = captureStdout {
+        ListUtils.listPrint(listOf("x", 1, true))
+      }
+      output.trim() shouldBe "[\"x\", 1, true]"
+    }
+
+    "list print quotes strings and stringifies nulls in a mixed list" {
+      val output = captureStdout {
+        ListUtils.listPrint(listOf("a", null, 1))
+      }
+      output.trim() shouldBe "[\"a\", null, 1]"
+    }
   }
 }

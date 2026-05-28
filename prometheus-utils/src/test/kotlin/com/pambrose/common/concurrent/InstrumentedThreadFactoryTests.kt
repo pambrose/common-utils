@@ -91,6 +91,27 @@ class InstrumentedThreadFactoryTests : StringSpec() {
       (running + terminated) shouldBe created
     }
 
+    "invariant holds after multiple threads complete" {
+      val factory = InstrumentedThreadFactory(
+        delegate = Executors.defaultThreadFactory(),
+        name = "itf_invariant_multi",
+        help = "Test",
+      )
+      val threads = (1..5).map { factory.newThread {} }
+      threads.forEach { it.start() }
+      threads.forEach { it.join() }
+
+      val registry = CollectorRegistry.defaultRegistry
+      val created = registry.getSampleValue("itf_invariant_multi_threads_created_total")
+      val running = registry.getSampleValue("itf_invariant_multi_threads_running")
+      val terminated = registry.getSampleValue("itf_invariant_multi_threads_terminated_total")
+
+      created shouldBe 5.0
+      running shouldBe 0.0
+      terminated shouldBe 5.0
+      (running + terminated) shouldBe created
+    }
+
     "daemon flag is propagated from delegate factory" {
       val daemonFactory = ThreadFactory { r ->
         Thread(r).apply { isDaemon = true }

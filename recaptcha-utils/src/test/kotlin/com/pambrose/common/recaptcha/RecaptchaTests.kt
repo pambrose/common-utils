@@ -19,6 +19,7 @@
 package com.pambrose.common.recaptcha
 
 import com.pambrose.common.recaptcha.RecaptchaService.recaptchaWidget
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -138,6 +139,16 @@ class RecaptchaTests : StringSpec() {
       config.isRecaptchaEnabled shouldBe true
       config.recaptchaSiteKey shouldNotBe null
       config.recaptchaSecretKey shouldBe null
+    }
+
+    // Bug #9: the singleton's HttpClient was never closed. close() now releases it; verify it runs
+    // without throwing and is idempotent. Kept last so it does not close the shared client before
+    // the other tests in this spec run (none of which touch the client anyway).
+    "close releases the http client without throwing and is idempotent" {
+      shouldNotThrowAny {
+        RecaptchaService.close()
+        RecaptchaService.close()
+      }
     }
   }
 }
