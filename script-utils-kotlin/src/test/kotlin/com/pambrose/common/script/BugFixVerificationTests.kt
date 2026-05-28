@@ -92,5 +92,20 @@ class BugFixVerificationTests : StringSpec() {
       evaluator.eval("1 > 0") shouldBe true
       evaluator.eval("1 < 0") shouldBe false
     }
+
+    // Bug #3: AbstractExprEvaluator.compute() unconditionally cast to non-null Any
+    // Before fix: engine.eval(expr) as Any threw when the expression evaluated to null
+    // After fix: compute() returns Any? and propagates a null result
+
+    "compute returns null for a null-evaluating expression" {
+      val evaluator = KotlinExprEvaluator()
+      evaluator.compute("null") shouldBe null
+    }
+
+    "compute returns non-null results" {
+      val evaluator = KotlinExprEvaluator()
+      evaluator.compute("1 + 2") shouldBe 3
+      evaluator.compute("\"hello\"") shouldBe "hello"
+    }
   }
 }

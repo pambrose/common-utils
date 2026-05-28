@@ -31,12 +31,12 @@ abstract class AbstractExprEvaluator(
   }
 
   /**
-   * Evaluates the given expression and returns the result as [Any].
+   * Evaluates the given expression and returns the result.
    *
    * @param expr the expression to evaluate
-   * @return the result of evaluating the expression
+   * @return the result of evaluating the expression, or `null` if the expression evaluates to `null`
    */
-  fun compute(expr: String) = engine.eval(expr) as Any
+  fun compute(expr: String): Any? = engine.eval(expr)
 
   /**
    * Resets the script engine context, clearing all bindings and state.
