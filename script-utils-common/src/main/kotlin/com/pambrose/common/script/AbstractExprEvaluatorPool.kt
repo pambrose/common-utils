@@ -45,21 +45,19 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
   /**
    * Evaluates the given expression by borrowing an evaluator from the pool, blocking the current thread.
    *
-   * @param R the expected return type of the evaluation
    * @param expr the expression to evaluate
-   * @return the result of the evaluation, cast to [R]
+   * @return the boolean result of the evaluation
    */
-  fun <R> blockingEval(expr: String): R =
+  fun blockingEval(expr: String): Boolean =
     runBlocking {
       eval(expr)
     }
 
-  suspend fun <R> eval(expr: String): R =
+  suspend fun eval(expr: String): Boolean =
     borrow()
       .let { engine ->
         try {
-          @Suppress("UNCHECKED_CAST")
-          engine.eval(expr) as R
+          engine.eval(expr)
         } finally {
           recycle(engine)
         }

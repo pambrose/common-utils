@@ -107,5 +107,17 @@ class BugFixVerificationTests : StringSpec() {
       evaluator.compute("1 + 2") shouldBe 3
       evaluator.compute("\"hello\"") shouldBe "hello"
     }
+
+    // Bug #4: AbstractExprEvaluatorPool.eval()/blockingEval() were generic (<R> ... as R)
+    // even though the underlying evaluator only ever returns Boolean.
+    // Before fix: blockingEval<String>(expr) compiled but threw ClassCastException at the call site.
+    // After fix: eval()/blockingEval() return Boolean, so the result is usable directly.
+
+    "pool blockingEval returns boolean results" {
+      val pool = KotlinExprEvaluatorPool(2)
+      val result: Boolean = pool.blockingEval("1 > 0")
+      result shouldBe true
+      pool.blockingEval("1 < 0") shouldBe false
+    }
   }
 }
