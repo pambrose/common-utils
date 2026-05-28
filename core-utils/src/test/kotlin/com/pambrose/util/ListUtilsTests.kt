@@ -53,5 +53,15 @@ class ListUtilsTests : StringSpec() {
       }
       output.trim() shouldBe "[1.5, 2.5, 3.5]"
     }
+
+    // Bug #2: a list containing at least one String cast every element to String?, throwing a
+    // ClassCastException on the non-String elements. Strings are now quoted per-element while
+    // other types use toString().
+    "list print mixed string and non-string types" {
+      val output = captureStdout {
+        ListUtils.listPrint(listOf(1, "a", 2.5))
+      }
+      output.trim() shouldBe "[1, \"a\", 2.5]"
+    }
   }
 }

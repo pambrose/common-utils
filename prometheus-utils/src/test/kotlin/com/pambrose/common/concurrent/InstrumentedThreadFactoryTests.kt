@@ -67,6 +67,30 @@ class InstrumentedThreadFactoryTests : StringSpec() {
       terminated shouldBe 1.0
     }
 
+    // Bug #10: the finally block decremented running before incrementing terminated, leaving a
+    // window where running + terminated < created. The order is now terminated.inc() then
+    // running.dec(); once a thread finishes, the invariant created == running + terminated holds.
+    "running plus terminated equals created after completion" {
+      val factory = InstrumentedThreadFactory(
+        delegate = Executors.defaultThreadFactory(),
+        name = "itf_invariant",
+        help = "Test",
+      )
+      val thread = factory.newThread {}
+      thread.start()
+      thread.join()
+
+      val registry = CollectorRegistry.defaultRegistry
+      val created = registry.getSampleValue("itf_invariant_threads_created_total")
+      val running = registry.getSampleValue("itf_invariant_threads_running")
+      val terminated = registry.getSampleValue("itf_invariant_threads_terminated_total")
+
+      created shouldBe 1.0
+      running shouldBe 0.0
+      terminated shouldBe 1.0
+      (running + terminated) shouldBe created
+    }
+
     "daemon flag is propagated from delegate factory" {
       val daemonFactory = ThreadFactory { r ->
         Thread(r).apply { isDaemon = true }

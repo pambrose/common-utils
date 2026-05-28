@@ -18,15 +18,53 @@
 
 package com.pambrose.common.recaptcha
 
+import com.pambrose.common.recaptcha.RecaptchaService.recaptchaWidget
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
+import kotlinx.html.body
+import kotlinx.html.stream.createHTML
 import kotlinx.serialization.json.Json
 
 class RecaptchaTests : StringSpec() {
   init {
     val jsonParser = Json { ignoreUnknownKeys = true }
+
+    fun config(
+      enabled: Boolean,
+      siteKey: String?,
+      secretKey: String?,
+    ) = object : RecaptchaConfig {
+      override val isRecaptchaEnabled = enabled
+      override val recaptchaSiteKey = siteKey
+      override val recaptchaSecretKey = secretKey
+    }
+
+    fun renderWidget(config: RecaptchaConfig): String =
+      with(RecaptchaService) {
+        createHTML().body { recaptchaWidget(config) }
+      }
+
+    // Bug #7: the widget was rendered when only the site key was present, but validation requires
+    // the secret key. A missing secret key therefore rendered a widget whose response was never
+    // validated (fail-open). Rendering and validation now share the same "fully configured" gate.
+
+    "widget renders when fully configured" {
+      renderWidget(config(enabled = true, siteKey = "site", secretKey = "secret")) shouldContain "g-recaptcha"
+    }
+
+    "widget is not rendered when secret key is missing" {
+      renderWidget(config(enabled = true, siteKey = "site", secretKey = null)) shouldNotContain "g-recaptcha"
+      renderWidget(config(enabled = true, siteKey = "site", secretKey = "")) shouldNotContain "g-recaptcha"
+    }
+
+    "widget is not rendered when disabled or site key is missing" {
+      renderWidget(config(enabled = false, siteKey = "site", secretKey = "secret")) shouldNotContain "g-recaptcha"
+      renderWidget(config(enabled = true, siteKey = null, secretKey = "secret")) shouldNotContain "g-recaptcha"
+    }
 
     "recaptcha config enabled" {
       val config = object : RecaptchaConfig {

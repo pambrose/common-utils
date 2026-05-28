@@ -74,26 +74,12 @@ class UpsertStatement<Key : Any>(
   conflictColumn: Column<*>? = null,
   conflictIndex: Index? = null,
 ) : InsertStatement<Key>(table, false) {
-  private val indexName: String
-  private val indexColumns: List<Column<*>>
-
-  init {
+  private val indexColumns: List<Column<*>> =
     when {
-      conflictIndex.isNotNull() -> {
-        indexName = conflictIndex.indexName
-        indexColumns = conflictIndex.columns
-      }
-
-      conflictColumn.isNotNull() -> {
-        indexName = conflictColumn.name
-        indexColumns = listOf(conflictColumn)
-      }
-
-      else -> {
-        throw IllegalArgumentException()
-      }
+      conflictIndex.isNotNull() -> conflictIndex.columns
+      conflictColumn.isNotNull() -> listOf(conflictColumn)
+      else -> throw IllegalArgumentException("Either conflictColumn or conflictIndex must be provided")
     }
-  }
 
   @OptIn(InternalApi::class)
   override fun prepareSQL(
@@ -102,7 +88,12 @@ class UpsertStatement<Key : Any>(
   ): String =
     buildString {
       append(super.prepareSQL(transaction, prepared))
-      append(" ON CONFLICT ON CONSTRAINT $indexName DO UPDATE SET ")
+      // Use the column-inference form `ON CONFLICT (cols)` rather than `ON CONFLICT ON CONSTRAINT`:
+      // it resolves the arbiter from the conflict columns and works for both a unique column and a
+      // unique index, whereas ON CONSTRAINT requires an actual constraint name.
+      append(" ON CONFLICT ")
+      indexColumns.joinTo(this, separator = ", ", prefix = "(", postfix = ")") { transaction.identity(it) }
+      append(" DO UPDATE SET ")
       values.keys
         .filter { it !in indexColumns }
         .joinTo(this) { "${transaction.identity(it)}=EXCLUDED.${transaction.identity(it)}" }
