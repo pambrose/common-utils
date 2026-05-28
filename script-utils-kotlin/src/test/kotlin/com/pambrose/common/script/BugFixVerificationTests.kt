@@ -21,7 +21,10 @@ package com.pambrose.common.script
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.runBlocking
+import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 
 class BugFixVerificationTests : StringSpec() {
@@ -118,6 +121,24 @@ class BugFixVerificationTests : StringSpec() {
       val result: Boolean = pool.blockingEval("1 > 0")
       result shouldBe true
       pool.blockingEval("1 < 0") shouldBe false
+    }
+
+    // Bug #5: script pools created their instances with KotlinScript() instead of
+    // KotlinScript(nullGlobalContext), so the pool's nullGlobalContext was ignored for the
+    // initial population (only honored later, on recycle).
+    // Before fix: a pool created with nullGlobalContext=true still had non-null global bindings
+    // on the first borrow. After fix: the initial instances honor the flag.
+
+    "pool honors nullGlobalContext for initial population" {
+      runBlocking {
+        KotlinScriptPool(2, nullGlobalContext = true).eval {
+          engine.getBindings(GLOBAL_SCOPE)
+        } shouldBe null
+
+        KotlinScriptPool(2, nullGlobalContext = false).eval {
+          engine.getBindings(GLOBAL_SCOPE)
+        } shouldNotBe null
+      }
     }
   }
 }

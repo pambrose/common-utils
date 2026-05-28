@@ -19,6 +19,9 @@ package com.pambrose.common.script
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.runBlocking
+import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 
@@ -214,6 +217,19 @@ class JavaScriptTests : StringSpec() {
           shouldThrow<ScriptException> { eval("sys.exit(1)") }
           shouldThrow<ScriptException> { eval("exit(1)") }
           shouldThrow<ScriptException> { eval("quit(1)") }
+        }
+      }
+    }
+
+    // Bug #5 (Java): JavaScriptPool's nullGlobalContext is ignored because Java binds variables
+    // into the engine scope, never the global scope. The global context must stay non-null on both
+    // the initial population and after recycling, even when the pool is created with true.
+    "pool keeps non-null global context regardless of nullGlobalContext" {
+      val pool = JavaScriptPool(2, nullGlobalContext = true)
+      runBlocking {
+        // Three evals on a pool of size two force a recycle between borrows.
+        repeat(3) {
+          pool.eval { engine.getBindings(GLOBAL_SCOPE) } shouldNotBe null
         }
       }
     }
