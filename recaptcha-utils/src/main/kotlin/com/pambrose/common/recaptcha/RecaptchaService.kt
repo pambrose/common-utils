@@ -35,14 +35,17 @@ import kotlinx.html.script
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.Closeable
 
 /**
  * Provides Google reCAPTCHA verification and HTML widget rendering for Ktor applications.
  *
  * Includes server-side token verification via the Google reCAPTCHA API, a Ktor route-level
  * validation extension, and kotlinx.html helpers for embedding the reCAPTCHA script and widget.
+ *
+ * Holds a long-lived [HttpClient]; call [close] on application shutdown to release its resources.
  */
-object RecaptchaService {
+object RecaptchaService : Closeable {
   private val logger = KotlinLogging.logger {}
   private const val RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
   private val httpClient =
@@ -206,4 +209,14 @@ object RecaptchaService {
     config.isRecaptchaEnabled &&
       !config.recaptchaSiteKey.isNullOrBlank() &&
       !config.recaptchaSecretKey.isNullOrBlank()
+
+  /**
+   * Releases the underlying [HttpClient] and its connection/thread pool.
+   *
+   * Call this when the application that uses reCAPTCHA verification shuts down. After [close] is
+   * invoked, [validateRecaptcha] can no longer perform server-side verification.
+   */
+  override fun close() {
+    httpClient.close()
+  }
 }
