@@ -27,8 +27,10 @@ import java.lang.reflect.ParameterizedType
  */
 val Any.typeParameterCount: Int
   get() {
-    if (this is Array<*>) // Must come first in evaluation
+    // Arrays must be handled first; they always report a single type parameter.
+    if (this is Array<*>)
       return 1
+
     // genericSuperclass is null for Object, interfaces, primitives and void, so guard against it.
     val genericSuperclass = javaClass.genericSuperclass
     return if (genericSuperclass is ParameterizedType)

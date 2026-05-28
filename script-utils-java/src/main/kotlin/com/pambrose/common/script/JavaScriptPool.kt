@@ -31,7 +31,7 @@ import kotlinx.coroutines.runBlocking
  */
 class JavaScriptPool(
   size: Int,
-  @Suppress("UNUSED_PARAMETER") nullGlobalContext: Boolean = false,
+  @Suppress("UNUSED_PARAMETER", "UnusedPrivateProperty") nullGlobalContext: Boolean = false,
 ) : AbstractScriptPool<JavaScript>(size, false) {
   init {
     runBlocking {
