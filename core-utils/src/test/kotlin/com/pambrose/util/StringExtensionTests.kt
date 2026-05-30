@@ -126,7 +126,9 @@ class StringExtensionTests : StringSpec() {
       "".singleToDoubleQuoted() shouldBe ""
       "'".singleToDoubleQuoted() shouldBe "'"
       "'test'".singleToDoubleQuoted() shouldBe """"test""""
-      """'te"st'""".singleToDoubleQuoted() shouldBe """"te"st""""
+      // Inner double quotes are backslash-escaped so the result is a well-formed double-quoted string
+      """'te"st'""".singleToDoubleQuoted() shouldBe "\"te\\\"st\""
+      """'a"b"c'""".singleToDoubleQuoted() shouldBe "\"a\\\"b\\\"c\""
       """"test"""".singleToDoubleQuoted() shouldBe """"test""""
     }
 
