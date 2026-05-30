@@ -17,8 +17,8 @@
 
 package com.pambrose.common.servlet
 
+import io.ktor.http.HttpHeaders
 import io.ktor.server.request.ApplicationRequest
-import io.ktor.server.request.contentType
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.httpVersion
 import io.ktor.server.request.path
@@ -90,7 +90,7 @@ class KtorServletRequest(
 
   override fun getProtocol(): String = request.httpVersion
 
-  override fun getContentType(): String = request.contentType().toString()
+  override fun getContentType(): String? = request.headers[HttpHeaders.ContentType]
 
   override fun getRemoteAddr(): String = request.local.remoteAddress
 

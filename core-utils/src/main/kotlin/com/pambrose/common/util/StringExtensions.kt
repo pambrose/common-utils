@@ -64,7 +64,7 @@ fun String.pluralize(
 fun String.singleToDoubleQuoted() =
   when {
     !isSingleQuoted() -> this
-    else -> subSequence(1, length - 1).replace(Regex("\""), "\\\"").toDoubleQuoted()
+    else -> subSequence(1, length - 1).toString().replace("\"", "\\\"").toDoubleQuoted()
   }
 
 /** Returns `null` if this [String] is blank, otherwise returns the string itself. */
