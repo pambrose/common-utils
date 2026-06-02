@@ -43,5 +43,26 @@ class ZipExtensionTests : StringSpec() {
       "".zip().unzip() shouldBe ""
       ByteArray(0).unzip() shouldBe ""
     }
+
+    "byte array zip round-trips through unzip" {
+      val s = "metric_value 42\nhttp_requests_total{code=\"200\"} 1027\n# EOF\n"
+      s.toByteArray(Charsets.UTF_8).zip().unzip() shouldBe s
+    }
+
+    "byte array zip round-trips multi-byte UTF-8 content" {
+      val s = "世界 metrics: éèê\n"
+      s.toByteArray(Charsets.UTF_8).zip().unzip() shouldBe s
+    }
+
+    "byte array zip produces identical output to string zip for the same content" {
+      val s = "kjwkjfhwekf cdsc ##444445 世界 wefwef\n".repeat(1000)
+      // ByteArray.zip() must be a drop-in for String.zip() when fed the string's UTF-8 bytes.
+      s.toByteArray(Charsets.UTF_8).zip().toList() shouldBe s.zip().toList()
+    }
+
+    "empty byte array zip test" {
+      ByteArray(0).zip() shouldBe ByteArray(0)
+      ByteArray(0).zip().unzip() shouldBe ""
+    }
   }
 }
