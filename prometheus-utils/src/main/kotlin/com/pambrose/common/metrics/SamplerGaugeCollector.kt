@@ -30,6 +30,7 @@ import io.prometheus.client.Collector
  * @param labelNames the label names for the metric. Defaults to empty.
  * @param labelValues the label values corresponding to [labelNames]. Defaults to empty.
  * @param data a lambda that returns the current gauge value as a [Double].
+ * @throws IllegalArgumentException if [labelNames] and [labelValues] differ in size.
  */
 class SamplerGaugeCollector(
   private val name: String,
@@ -39,6 +40,11 @@ class SamplerGaugeCollector(
   private val data: () -> Double,
 ) : Collector() {
   init {
+    // Validate eagerly: otherwise MetricFamilySamples.Sample throws on every collect() (i.e. every
+    // Prometheus scrape), far from the construction site, taking down the whole scrape.
+    require(labelNames.size == labelValues.size) {
+      "labelNames (${labelNames.size}) and labelValues (${labelValues.size}) must have the same size"
+    }
     register<Collector>()
   }
 
