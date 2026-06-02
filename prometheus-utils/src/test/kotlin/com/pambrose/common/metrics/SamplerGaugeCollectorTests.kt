@@ -18,10 +18,12 @@
 
 package com.pambrose.common.metrics
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import io.prometheus.client.Collector
 
 class SamplerGaugeCollectorTests : StringSpec() {
@@ -58,6 +60,20 @@ class SamplerGaugeCollectorTests : StringSpec() {
       samples[0].samples[0].labelNames shouldBe listOf("region", "instance")
       samples[0].samples[0].labelValues shouldBe listOf("us-east-1", "i-12345")
       samples[0].samples[0].value shouldBe 55.5
+    }
+
+    "rejects mismatched label names and values at construction" {
+      // Previously the mismatch was undetected until MetricFamilySamples.Sample threw on every scrape.
+      val ex = shouldThrow<IllegalArgumentException> {
+        SamplerGaugeCollector(
+          name = "test_sampler_gauge_mismatch",
+          help = "mismatched labels",
+          labelNames = listOf("region", "instance"),
+          labelValues = listOf("us-east-1"),
+          data = { 1.0 },
+        )
+      }
+      ex.message shouldContain "label"
     }
 
     "sampler gauge collector dynamic value" {
