@@ -69,6 +69,21 @@ class ServletRouteTests : StringSpec() {
       }
     }
 
+    "parameter access is case-insensitive and multi-valued across all accessors" {
+      testApplication {
+        routing {
+          servlet("/params", ParamServlet())
+        }
+        // Query has mixed-case names ("Name", "x") looked up with different casing.
+        client.get("/params?Name=Ktor&x=a&x=b").apply {
+          status shouldBe HttpStatusCode.OK
+          // getParameter("name") -> first value of "Name"; getParameterValues("X") -> all of "x";
+          // getParameterMap()["Name"] -> "Ktor" (map is keyed by the original-cased name)
+          bodyAsText() shouldBe "p=Ktor;v=a,b;map=Ktor;names=Name,x"
+        }
+      }
+    }
+
     "request header passthrough" {
       testApplication {
         routing {
@@ -164,6 +179,21 @@ class ServletRouteTests : StringSpec() {
       val name = req.getParameter("name") ?: "World"
       resp.contentType = "text/plain"
       resp.writer.print("Hello, $name!")
+    }
+  }
+
+  private class ParamServlet : HttpServlet() {
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      val p = req.getParameter("name") // first value, case-insensitive
+      val v = req.getParameterValues("X")?.joinToString(",") // all values, case-insensitive
+      // getParameterMap returns a plain Map keyed by the actual param names (looked up by exact case).
+      val map = req.parameterMap["Name"]?.firstOrNull()
+      val names = req.parameterNames.toList().sorted().joinToString(",")
+      resp.contentType = "text/plain"
+      resp.writer.print("p=$p;v=$v;map=$map;names=$names")
     }
   }
 
