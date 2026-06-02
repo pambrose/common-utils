@@ -34,18 +34,23 @@ import kotlinx.html.unsafe
  */
 object EmailUtils {
   private val emailPattern by lazy {
-    Pattern.compile(
-      "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@" +
-        "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
-        "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\." +
-        "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?" +
-        "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|" +
-        "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$",
-    )
+    // A practical, permissive validator (not full RFC 5322). The local part accepts the common
+    // specials, including plus-addressing (`user+tag`). The domain accepts single-character labels
+    // and modern long TLDs, or a bare IPv4 literal.
+    val localPart = "[A-Za-z0-9._%+-]+"
+    val domainName = "([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}"
+    val octet = "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+    val ipv4 = "$octet(\\.$octet){3}"
+    Pattern.compile("^$localPart@($domainName|$ipv4)$")
   }
 
   /**
-   * Returns `true` if this [String] matches a valid email address pattern.
+   * Returns `true` if this [String] looks like a valid email address.
+   *
+   * This is a pragmatic, permissive check rather than a full RFC 5322 implementation: it accepts the
+   * common local-part characters (letters, digits, and `._%+-`, so plus-addressing works), single-character
+   * domain labels, modern long TLDs, and bare IPv4-literal domains. It does not accept quoted local parts,
+   * internationalized (Unicode) domains, or bracketed/IPv6 address literals.
    */
   fun String.isValidEmail() = emailPattern.matcher(this).matches()
 
