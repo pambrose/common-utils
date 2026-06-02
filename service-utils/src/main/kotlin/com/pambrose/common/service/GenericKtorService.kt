@@ -78,22 +78,19 @@ abstract class GenericKtorService<T> protected constructor(
       servletGroup =
         adminConfig.run {
           HttpServletGroup().apply {
-            if (isAdminEnabled) {
-              addServlets(
-                pingPath.ensureLeadingSlash() to PingServlet(),
-                versionPath.ensureLeadingSlash() to VersionServlet(versionBlock()),
-                healthCheckPath.ensureLeadingSlash() to HealthCheckServlet(healthCheckRegistry),
-                threadDumpPath.ensureLeadingSlash() to ThreadDumpServlet(),
-              )
-            } else {
-              logger.info { "Admin service disabled" }
-            }
-
+            addServlets(
+              pingPath.ensureLeadingSlash() to PingServlet(),
+              versionPath.ensureLeadingSlash() to VersionServlet(versionBlock()),
+              healthCheckPath.ensureLeadingSlash() to HealthCheckServlet(healthCheckRegistry),
+              threadDumpPath.ensureLeadingSlash() to ThreadDumpServlet(),
+            )
             servletInit(this)
           }
         }
 
       servletService = KtorServletService(adminConfig.port, servletGroup, initKtor) { addService(this) }
+    } else {
+      logger.info { "Admin service disabled" }
     }
 
     initMetricsAndHealthChecks()

@@ -35,14 +35,14 @@ value class Email(
   /** Returns `true` if the email address string is blank. */
   fun isBlank() = value.isBlank()
 
-  /** Returns `true` if the email address string is blank or empty. */
-  fun isBlankOrEmpty() = value.isBlank() || value.isEmpty()
+  /** Returns `true` if the email address string is blank (`isBlank` already covers the empty case). */
+  fun isBlankOrEmpty() = value.isBlank()
 
   /** Returns `true` if the email address string is not blank. */
   fun isNotBlank() = value.isNotBlank()
 
-  /** Returns `true` if the email address string is neither blank nor empty. */
-  fun isNotBlankOrEmpty() = value.isNotBlank() && value.isNotEmpty()
+  /** Returns `true` if the email address string is not blank (`isNotBlank` already covers non-empty). */
+  fun isNotBlankOrEmpty() = value.isNotBlank()
 
   /** Returns `true` if the email address is not a valid email format. */
   fun isNotValidEmail() = value.isNotValidEmail()

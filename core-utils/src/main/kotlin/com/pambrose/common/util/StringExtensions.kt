@@ -90,10 +90,10 @@ fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this 
 fun String.ensureLeadingSlash() = ensurePrefix("/")
 
 /** URL-decodes this [String] using UTF-8 encoding. */
-fun String.decode() = URLDecoder.decode(this, UTF_8.toString()) ?: this
+fun String.decode(): String = URLDecoder.decode(this, UTF_8)
 
 /** URL-encodes this [String] using UTF-8 encoding. */
-fun String.encode() = URLEncoder.encode(this, UTF_8.toString()) ?: this
+fun String.encode(): String = URLEncoder.encode(this, UTF_8)
 
 /**
  * Joins this list of strings into a path without leading or trailing separators.

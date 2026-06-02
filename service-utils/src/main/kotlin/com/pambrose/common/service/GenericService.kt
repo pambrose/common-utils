@@ -67,21 +67,15 @@ abstract class GenericService<T> protected constructor(
    * @param servletInit An optional block to register additional servlets in the [ServletGroup].
    */
   fun initServletService(servletInit: ServletGroup.() -> Unit = {}) {
-    // See if admin servlets are enabled or something within the passed in lambda is enabled
     if (isAdminEnabled) {
       servletGroup =
         adminConfig.run {
           ServletGroup()
             .apply {
-              if (isAdminEnabled) {
-                addServlet(pingPath, PingServlet())
-                addServlet(versionPath, VersionServlet(versionBlock()))
-                addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
-                addServlet(threadDumpPath, ThreadDumpServlet())
-              } else {
-                logger.info { "Admin service disabled" }
-              }
-
+              addServlet(pingPath, PingServlet())
+              addServlet(versionPath, VersionServlet(versionBlock()))
+              addServlet(healthCheckPath, HealthCheckServlet(healthCheckRegistry))
+              addServlet(threadDumpPath, ThreadDumpServlet())
               servletInit(this)
             }
         }
@@ -90,6 +84,8 @@ abstract class GenericService<T> protected constructor(
         ServletService(port = adminConfig.port, servletGroup) {
           addService(this)
         }
+    } else {
+      logger.info { "Admin service disabled" }
     }
 
     initMetricsAndHealthChecks()
