@@ -91,5 +91,16 @@ class SamplerGaugeCollectorTests : StringSpec() {
       (value2 - value1) shouldBe 1.0
       (value3 - value2) shouldBe 1.0
     }
+
+    "a throwing sampler reports NaN instead of aborting the scrape" {
+      val collector = SamplerGaugeCollector(
+        name = "test_sampler_gauge_throws",
+        help = "throwing sampler",
+        data = { throw RuntimeException("boom") },
+      )
+      // collect() must not propagate the sampler's exception (that would take down the whole scrape).
+      val samples = collector.collect()
+      samples[0].samples[0].value.isNaN() shouldBe true
+    }
   }
 }

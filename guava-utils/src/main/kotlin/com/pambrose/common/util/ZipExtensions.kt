@@ -86,7 +86,9 @@ fun ByteArray.unzip(): String =
     }
 
     !isZipped() -> {
-      String(this)
+      // Decode explicitly as UTF-8 to match the encoding side ([String.zip] / [ByteArray.zip]); the
+      // bare String(this) used the JVM default charset and corrupted non-ASCII content on non-UTF-8 JVMs.
+      String(this, StandardCharsets.UTF_8)
     }
 
     else -> {

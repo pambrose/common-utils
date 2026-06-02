@@ -458,8 +458,12 @@ fun String.maskUrlCredentials() =
  *
  * @param freq the replacement frequency (default every 2nd character, starting at index 0)
  * @return the obfuscated string
+ * @throws IllegalArgumentException if [freq] is not positive (it is used as a modulus divisor).
  */
-fun String.obfuscate(freq: Int = 2) = mapIndexed { i, v -> if (i % freq == 0) '*' else v }.joinToString("")
+fun String.obfuscate(freq: Int = 2): String {
+  require(freq > 0) { "freq must be positive but was $freq" }
+  return mapIndexed { i, v -> if (i % freq == 0) '*' else v }.joinToString("")
+}
 
 /**
  * Truncates this [String] to at most [len] characters.

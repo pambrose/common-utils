@@ -30,6 +30,7 @@ import com.pambrose.common.util.pathOf
 import com.pambrose.common.util.sha256
 import com.pambrose.common.util.substringBetween
 import com.pambrose.common.util.withLineNumbers
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -127,6 +128,10 @@ class StringExtensionEdgeCaseTests : StringSpec() {
       "hello".obfuscate(3) shouldBe "*el*o" // freq=3: positions 0,3 replaced
       "ab".obfuscate() shouldBe "*b"
       "".obfuscate() shouldBe ""
+      "abc".obfuscate(1) shouldBe "***" // freq=1: every position replaced
+      // freq must be positive; a non-positive freq previously threw ArithmeticException (i % 0).
+      shouldThrow<IllegalArgumentException> { "abc".obfuscate(0) }
+      shouldThrow<IllegalArgumentException> { "abc".obfuscate(-1) }
     }
 
     "max length test" {

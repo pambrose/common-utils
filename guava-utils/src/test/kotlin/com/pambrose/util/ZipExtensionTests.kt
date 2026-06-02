@@ -16,6 +16,7 @@
 
 package com.pambrose.util
 
+import com.pambrose.common.util.isZipped
 import com.pambrose.common.util.unzip
 import com.pambrose.common.util.zip
 import io.kotest.core.spec.style.StringSpec
@@ -63,6 +64,14 @@ class ZipExtensionTests : StringSpec() {
     "empty byte array zip test" {
       ByteArray(0).zip() shouldBe ByteArray(0)
       ByteArray(0).zip().unzip() shouldBe ""
+    }
+
+    "unzip decodes non-gzipped bytes as UTF-8, not the platform default charset" {
+      val s = "héllo wörld 世界"
+      val raw = s.toByteArray(Charsets.UTF_8)
+      raw.isZipped() shouldBe false
+      // Locks the UTF-8 contract for the passthrough branch; previously it used the JVM default charset.
+      raw.unzip() shouldBe s
     }
   }
 }
