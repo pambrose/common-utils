@@ -45,6 +45,26 @@ fun String.zip(): ByteArray =
     }
 
 /**
+ * Compresses this [ByteArray] using GZIP encoding.
+ *
+ * Equivalent to [String.zip] but operates on raw bytes, avoiding a redundant UTF-8 re-encoding when
+ * the caller already holds the content as a byte array. For the same content, `bytes.zip()` produces
+ * identical output to `string.zip()` when `bytes == string.toByteArray(StandardCharsets.UTF_8)`.
+ *
+ * @return a GZIP-compressed byte array, or [EMPTY_BYTE_ARRAY] if this array is empty.
+ */
+fun ByteArray.zip(): ByteArray =
+  if (isEmpty())
+    EMPTY_BYTE_ARRAY
+  else
+    ByteArrayOutputStream().use { baos ->
+      GZIPOutputStream(baos).use { gzos ->
+        gzos.write(this)
+      }
+      baos.toByteArray()
+    }
+
+/**
  * Checks whether this [ByteArray] has a GZIP magic number header.
  *
  * @return `true` if the byte array starts with the GZIP magic bytes, `false` otherwise.
