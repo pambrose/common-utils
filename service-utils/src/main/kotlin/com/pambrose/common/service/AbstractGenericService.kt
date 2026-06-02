@@ -83,6 +83,12 @@ abstract class AbstractGenericService<T> protected constructor(
 
   private lateinit var serviceManager: ServiceManager
 
+  @Volatile
+  private var shutDownHook: Thread? = null
+
+  /** Visible for testing: the JVM shutdown hook currently registered for this service, or `null`. */
+  internal val registeredShutDownHook: Thread? get() = shutDownHook
+
   /** The JMX reporter for Dropwizard metrics. Initialized when metrics are enabled. */
   lateinit var jmxReporter: JmxReporter
 
@@ -169,7 +175,7 @@ abstract class AbstractGenericService<T> protected constructor(
 
     servletServiceOrNull?.startSync()
 
-    Runtime.getRuntime().addShutdownHook(shutDownHookAction(this))
+    shutDownHook = shutDownHookAction(this).also { Runtime.getRuntime().addShutdownHook(it) }
   }
 
   override fun shutDown() {
@@ -182,6 +188,14 @@ abstract class AbstractGenericService<T> protected constructor(
 
     if (isZipkinEnabled)
       zipkinReporterService.stopSync()
+
+    shutDownHook?.let { hook ->
+      // removeShutdownHook throws IllegalStateException if the JVM is already shutting down (e.g. when
+      // shutDown was triggered by the hook itself) and SecurityException under a SecurityManager; in both
+      // cases the hook simply remains registered until JVM exit, so swallow rather than fail the shutdown.
+      runCatching { Runtime.getRuntime().removeShutdownHook(hook) }
+      shutDownHook = null
+    }
 
     super.shutDown()
   }

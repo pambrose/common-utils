@@ -201,6 +201,18 @@ class GenericServiceTests : StringSpec() {
       service.isRunning shouldBe false
     }
 
+    "shutdown hook is registered on start and removed on stop" {
+      val service = TestJettyService(admin = disabledAdmin.copy(enabled = true, port = freePort()))
+      service.startSync()
+      val hook = service.registeredShutDownHook ?: error("expected a shutdown hook to be registered after start")
+
+      service.close()
+
+      service.registeredShutDownHook shouldBe null
+      // Removing it again reports false, proving shutDown already de-registered it (no leak).
+      Runtime.getRuntime().removeShutdownHook(hook) shouldBe false
+    }
+
     "addServices appends each provided service to the managed list" {
       val service = TestJettyService()
       val before = service.serviceCount
