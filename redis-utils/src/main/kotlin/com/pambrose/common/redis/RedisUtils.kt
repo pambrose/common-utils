@@ -63,7 +63,6 @@ object RedisUtils {
       logger.error { FAILED_TO_CONNECT_MSG }
   }
 
-  private val colon = Regex(":")
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
 
   /**
@@ -85,11 +84,8 @@ object RedisUtils {
 
   private fun urlDetails(redisUrl: String) =
     URI(redisUrl).let {
-      RedisInfo(
-        it,
-        (it.userInfo?.split(colon, 2)?.getOrElse(0) { "" }.orEmpty()),
-        (it.userInfo?.split(colon, 2)?.getOrElse(1) { "" }.orEmpty()),
-      )
+      val userInfo = it.userInfo?.split(":", limit = 2).orEmpty()
+      RedisInfo(it, userInfo.getOrElse(0) { "" }, userInfo.getOrElse(1) { "" })
     }
 
   private val String.isSsl: Boolean get() = lowercase(Locale.getDefault()).startsWith("rediss://")
@@ -391,15 +387,13 @@ object RedisUtils {
   ): Sequence<String> =
     sequence {
       val scanParams = ScanParams().match(pattern).count(count)
-      var cursorVal = "0"
+      var cursorVal = ScanParams.SCAN_POINTER_START
       while (true) {
-        cursorVal =
-          scan(cursorVal, scanParams).run {
-            result.forEach { yield(it) }
-            cursor
-          }
-        if (cursorVal == "0")
+        val res = scan(cursorVal, scanParams)
+        res.result.forEach { yield(it) }
+        if (res.isCompleteIteration)
           break
+        cursorVal = res.cursor
       }
     }
 }

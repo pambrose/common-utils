@@ -43,7 +43,7 @@ class KotlinScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("kts", nullGlobalContext),
   Closeable {
-  private val imports = mutableListOf(System::class.qualifiedName)
+  private val imports = listOf(System::class.qualifiedName)
 
   /**
    * Generates Kotlin `val` declarations that retrieve bound variables from the engine's bindings
@@ -68,10 +68,10 @@ class KotlinScript(
   internal fun String.toTempName() = "${this}_tmp"
 
   /**
-   * Generates Kotlin import statements for all registered import classes.
+   * The Kotlin import statements for all registered import classes (the import list is fixed, so this
+   * is computed once).
    */
-  val importDecls: String
-    get() = imports.joinToString("\n") { "import $it" }
+  val importDecls: String by lazy { imports.joinToString("\n") { "import $it" } }
 
   @Synchronized
   fun eval(code: String): Any? {
