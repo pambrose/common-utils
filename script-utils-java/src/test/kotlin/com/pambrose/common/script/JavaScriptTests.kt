@@ -221,6 +221,20 @@ class JavaScriptTests : StringSpec() {
       }
     }
 
+    "JVM termination calls are rejected before evaluation" {
+      // ScriptGuards rejects each of these before the engine compiles/runs, so the JVM is never killed.
+      JavaScript().use {
+        it.apply {
+          shouldThrow<ScriptException> { eval("System.exit(0)") }
+          // Previously the guard scanned only the expression, so a call in the action block slipped through.
+          shouldThrow<ScriptException> { eval("0", "System.exit(0);") }
+          shouldThrow<ScriptException> { eval("Runtime.getRuntime().halt(0)") }
+          // evalScript previously had no guard at all.
+          shouldThrow<ScriptException> { evalScript("System.exit(0);") }
+        }
+      }
+    }
+
     // Bug #5 (Java): JavaScriptPool's nullGlobalContext is ignored because Java binds variables
     // into the engine scope, never the global scope. The global context must stay non-null on both
     // the initial population and after recycling, even when the pool is created with true.

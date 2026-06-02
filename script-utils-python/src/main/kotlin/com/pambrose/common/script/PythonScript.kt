@@ -25,7 +25,13 @@ import org.python.jsr223.PyScriptEngine
  * A script engine wrapper for dynamically evaluating Python source code using the Jython engine.
  *
  * Variables are bound directly to the engine without type parameter support, since Python
- * is dynamically typed. Calls to `sys.exit()`, `exit()`, and `quit()` are blocked.
+ * is dynamically typed.
+ *
+ * Common literal calls to `sys.exit()`, `exit()`, and `quit()` are rejected on a best-effort basis.
+ * This is a convenience against accidental termination, **not** a security sandbox: it is trivially
+ * bypassed (e.g. `os._exit(0)`, `getattr(sys, 'ex' + 'it')(0)`, reflection, or any JVM access exposed
+ * by Jython), and it does not inspect string literals or comments. Run untrusted scripts in an isolated
+ * process or JVM. Method calls on user objects (for example `obj.exit()`) are intentionally allowed.
  *
  * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
  * @see AbstractScript
@@ -56,6 +62,11 @@ class PythonScript(
     if (SYS_EXIT_PATTERN.containsMatchIn(code))
       throw ScriptException("Illegal call to sys.exit()")
 
+    // sys.exit()/exit()/quit() are all implemented as `raise SystemExit`, which is the same
+    // termination written directly; reject it too.
+    if (SYSTEM_EXIT_PATTERN.containsMatchIn(code))
+      throw ScriptException("Illegal 'raise SystemExit'")
+
     if (EXIT_PATTERN.containsMatchIn(code))
       throw ScriptException("Illegal call to exit()")
 
@@ -75,8 +86,11 @@ class PythonScript(
   }
 
   companion object {
+    // (?<![\w.]) excludes a preceding word char *or* '.', so a method call on a user object
+    // (e.g. obj.exit(), queue.quit()) is not mistaken for the bare Python builtin. Best-effort only.
     private val SYS_EXIT_PATTERN = Regex("""(?<!\w)sys\.exit\s*\(""")
-    private val EXIT_PATTERN = Regex("""(?<!\w)exit\s*\(""")
-    private val QUIT_PATTERN = Regex("""(?<!\w)quit\s*\(""")
+    private val SYSTEM_EXIT_PATTERN = Regex("""(?<!\w)raise\s+SystemExit\b""")
+    private val EXIT_PATTERN = Regex("""(?<![\w.])exit\s*\(""")
+    private val QUIT_PATTERN = Regex("""(?<![\w.])quit\s*\(""")
   }
 }

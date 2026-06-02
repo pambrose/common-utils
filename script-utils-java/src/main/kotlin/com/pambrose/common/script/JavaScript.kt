@@ -21,7 +21,6 @@ import ch.obermuhlner.scriptengine.java.JavaScriptEngine
 import com.pambrose.common.script.ScriptUtils.engineBindings
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.Closeable
-import javax.script.ScriptException
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
@@ -34,7 +33,9 @@ import kotlin.reflect.typeOf
  * Supports adding named variables with type parameters, import declarations, and
  * configurable isolation levels. Note that Java cannot have a null global context.
  *
- * Note: Java cannot have a null global context.
+ * Common literal JVM-termination calls (`System.exit`, `Runtime.getRuntime().exit/halt`) are rejected
+ * on a best-effort basis via [ScriptGuards]. This is a convenience against accidental termination,
+ * **not** a security sandbox (see [ScriptGuards]) — run untrusted scripts in an isolated process or JVM.
  *
  * @see AbstractScript
  * @see <a href="https://github.com/eobermuhlner/java-scriptengine">java-scriptengine</a>
@@ -121,6 +122,8 @@ class JavaScript :
     script: String,
     verbose: Boolean = false,
   ): Any {
+    ScriptGuards.checkNoJvmExit(script)
+
     if (!initialized) {
       valueMap.forEach { (name, value) -> engine.engineBindings[name] = value }
       initialized = true
@@ -140,8 +143,7 @@ class JavaScript :
     action: String = "",
     verbose: Boolean = false,
   ): Any {
-    if ("System.exit" in expr)
-      throw ScriptException("Illegal call to System.exit()")
+    ScriptGuards.checkNoJvmExit(expr, action)
 
     val code = """
 $importDecls
