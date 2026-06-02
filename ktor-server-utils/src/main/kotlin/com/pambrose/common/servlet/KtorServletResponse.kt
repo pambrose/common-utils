@@ -36,7 +36,10 @@ import java.util.*
  * @see servlet
  */
 class KtorServletResponse : HttpServletResponse {
-  private val headers = mutableMapOf<String, MutableList<String>>()
+  // HTTP header field names are case-insensitive (RFC 9110 §5.1). A TreeMap with the
+  // case-insensitive comparator matches header names regardless of casing while retaining
+  // the first-inserted casing for getHeaderNames().
+  private val headers = TreeMap<String, MutableList<String>>(String.CASE_INSENSITIVE_ORDER)
   private val buffer = ByteArrayOutputStream()
   private var statusCode: Int = HttpServletResponse.SC_OK
   private var contentTypeValue: String? = null
