@@ -17,6 +17,7 @@
 
 package com.pambrose.common.metrics
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.Collector
 
 /**
@@ -49,7 +50,18 @@ class SamplerGaugeCollector(
   }
 
   override fun collect(): List<MetricFamilySamples> {
-    val sample = MetricFamilySamples.Sample(name, labelNames, labelValues, data())
+    // collect() runs on every Prometheus scrape; a throwing sampler must not abort the whole scrape
+    // (taking down every other metric), so guard it and report NaN instead.
+    val value =
+      runCatching { data() }.getOrElse { e ->
+        logger.warn(e) { "Sampler for metric \"$name\" threw; reporting NaN" }
+        Double.NaN
+      }
+    val sample = MetricFamilySamples.Sample(name, labelNames, labelValues, value)
     return listOf(MetricFamilySamples(name, Type.GAUGE, help, listOf(sample)))
+  }
+
+  companion object {
+    private val logger = KotlinLogging.logger {}
   }
 }
