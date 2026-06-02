@@ -32,13 +32,9 @@ import kotlin.concurrent.atomics.AtomicBoolean
 class BooleanMonitor(
   initValue: Boolean,
 ) : GenericMonitor() {
-  private val monVal = AtomicBoolean(false)
+  private val monVal = AtomicBoolean(initValue)
 
   override val monitorSatisfied get() = get()
-
-  init {
-    set(initValue)
-  }
 
   /**
    * Returns the current boolean value.

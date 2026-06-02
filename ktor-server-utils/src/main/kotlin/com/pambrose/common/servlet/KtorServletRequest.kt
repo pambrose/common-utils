@@ -18,6 +18,7 @@
 package com.pambrose.common.servlet
 
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Parameters
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.httpVersion
@@ -55,11 +56,9 @@ import java.util.*
 class KtorServletRequest(
   private val request: ApplicationRequest,
 ) : HttpServletRequest {
-  private val params: Map<String, List<String>> by lazy {
-    request.queryParameters
-      .entries()
-      .associate { (key, values) -> key to values }
-  }
+  // All four parameter accessors read this single, case-insensitive source (Ktor query
+  // parameters are case-insensitive), so they agree on lookups regardless of name casing.
+  private val params: Parameters by lazy { request.queryParameters }
 
   override fun getMethod(): String = request.httpMethod.value
 
@@ -67,13 +66,14 @@ class KtorServletRequest(
 
   override fun getQueryString(): String? = request.queryString().ifEmpty { null }
 
-  override fun getParameter(name: String): String? = request.queryParameters[name]
+  override fun getParameter(name: String): String? = params[name]
 
-  override fun getParameterNames(): Enumeration<String> = Collections.enumeration(params.keys)
+  override fun getParameterNames(): Enumeration<String> = Collections.enumeration(params.names())
 
-  override fun getParameterValues(name: String): Array<String>? = params[name]?.toTypedArray()
+  override fun getParameterValues(name: String): Array<String>? = params.getAll(name)?.toTypedArray()
 
-  override fun getParameterMap(): Map<String, Array<String>> = params.mapValues { it.value.toTypedArray() }
+  override fun getParameterMap(): Map<String, Array<String>> =
+    params.entries().associate { (key, values) -> key to values.toTypedArray() }
 
   override fun getHeader(name: String): String? = request.headers[name]
 

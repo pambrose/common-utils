@@ -71,14 +71,10 @@ fun Duration.format(includeMillis: Boolean = false): String {
   val negative = isNegative()
   val diff = kotlin.math.abs(inWholeMilliseconds)
   val day = MILLISECONDS.toDays(diff)
-  val dayMillis = DAYS.toMillis(day)
-  val hr = MILLISECONDS.toHours(diff - dayMillis)
-  val hrMillis = HOURS.toMillis(hr)
-  val min = MILLISECONDS.toMinutes(diff - dayMillis - hrMillis)
-  val minMillis = MINUTES.toMillis(min)
-  val sec = MILLISECONDS.toSeconds(diff - dayMillis - hrMillis - minMillis)
-  val secMillis = SECONDS.toMillis(sec)
-  val ms = MILLISECONDS.toMillis(diff - dayMillis - hrMillis - minMillis - secMillis)
+  val hr = MILLISECONDS.toHours(diff) % 24
+  val min = MILLISECONDS.toMinutes(diff) % 60
+  val sec = MILLISECONDS.toSeconds(diff) % 60
+  val ms = diff % 1000
   val prefix = if (negative) "-" else ""
 
   return if (includeMillis)
