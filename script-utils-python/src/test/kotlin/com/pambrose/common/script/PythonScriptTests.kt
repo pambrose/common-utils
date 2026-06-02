@@ -20,6 +20,7 @@ import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import javax.script.ScriptException
 
 class IncClass(
@@ -27,6 +28,19 @@ class IncClass(
 ) {
   fun inc() {
     i++
+  }
+}
+
+class Exitable {
+  var calls = 0
+    private set
+
+  fun exit() {
+    calls++
+  }
+
+  fun quit() {
+    calls++
   }
 }
 
@@ -190,6 +204,20 @@ class PythonScriptTests : StringSpec() {
       }
     }
 
+    "raise SystemExit is rejected but referencing the type is allowed" {
+      PythonScript().use {
+        it.apply {
+          // `raise SystemExit` is exactly what sys.exit()/exit()/quit() do under the hood. The guard
+          // rejects it before evaluation; its message starts with "Illegal" (vs. a Jython runtime error).
+          shouldThrow<ScriptException> { eval("raise SystemExit") }.message shouldContain "Illegal"
+          shouldThrow<ScriptException> { eval("raise SystemExit(0)") }
+          shouldThrow<ScriptException> { eval("raise SystemExit('bye')") }
+          // Catching it (no `raise`) is legitimate and must not be flagged.
+          shouldNotThrow<ScriptException> { eval("try:\n  pass\nexcept SystemExit:\n  pass") }
+        }
+      }
+    }
+
     "exit guards do not match identifiers containing exit/quit substrings" {
       PythonScript().use {
         it.apply {
@@ -212,6 +240,21 @@ class PythonScriptTests : StringSpec() {
           eval("sys_exit_wrapper(3)") shouldBe 3
         }
       }
+    }
+
+    "exit guards allow exit/quit method calls on bound objects" {
+      // A method call via `.` (e.g. obj.exit()) is a user method, not the Python builtin, so it must
+      // not be rejected. Previously the (?<!\w) lookbehind wrongly matched it because `.` is not a word char.
+      val widget = Exitable()
+      PythonScript().use {
+        it.apply {
+          add("widget", widget)
+          shouldNotThrow<ScriptException> { eval("widget.exit()") }
+          shouldNotThrow<ScriptException> { eval("widget.quit()") }
+        }
+      }
+      // Both calls were allowed through the guard and actually executed on the bound object.
+      widget.calls shouldBe 2
     }
 
     "expr evaluator" {

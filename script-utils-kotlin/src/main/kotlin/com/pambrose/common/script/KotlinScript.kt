@@ -18,7 +18,6 @@ package com.pambrose.common.script
 
 import com.pambrose.common.util.toDoubleQuoted
 import java.io.Closeable
-import javax.script.ScriptException
 
 // See: https://github.com/Kotlin/kotlin-script-examples/blob/master/jvm/jsr223/jsr223-simple/build.gradle.kts
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
@@ -31,6 +30,11 @@ import javax.script.ScriptException
  * Manages variable bindings via the JSR 223 `Bindings` mechanism, generates Kotlin `val`
  * declarations that cast bound values to their appropriate types, and prepends import statements
  * to evaluated code.
+ *
+ * Common literal JVM-termination calls (`System.exit`, `exitProcess`, `Runtime.getRuntime().exit/halt`)
+ * are rejected on a best-effort basis via [ScriptGuards]; bare `System.exit` is additionally shadowed by
+ * the auto-imported [System] object. This is a convenience against accidental termination, **not** a
+ * security sandbox (see [ScriptGuards]) — run untrusted scripts in an isolated process or JVM.
  *
  * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
  * @see AbstractScript
@@ -71,8 +75,7 @@ class KotlinScript(
 
   @Synchronized
   fun eval(code: String): Any? {
-    if ("java.lang.System.exit" in code)
-      throw ScriptException("Illegal call to System.exit()")
+    ScriptGuards.checkNoJvmExit(code)
 
     if (!initialized) {
       if (valueMap.isNotEmpty()) {

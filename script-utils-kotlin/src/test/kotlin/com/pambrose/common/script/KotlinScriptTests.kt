@@ -256,10 +256,15 @@ class KotlinScriptTests : StringSpec() {
     }
 
     "illegal calls" {
+      // ScriptGuards rejects each of these before the engine runs, so the JVM is never terminated.
       KotlinScript().use {
         it.apply {
           shouldThrow<ScriptException> { eval("System.exit(1)") }
           shouldThrow<ScriptException> { eval("com.lang.System.exit(1)") }
+          shouldThrow<ScriptException> { eval("exitProcess(0)") }
+          shouldThrow<ScriptException> { eval("kotlin.system.exitProcess(0)") }
+          shouldThrow<ScriptException> { eval("Runtime.getRuntime().exit(0)") }
+          shouldThrow<ScriptException> { eval("Runtime.getRuntime().halt(0)") }
         }
       }
     }
