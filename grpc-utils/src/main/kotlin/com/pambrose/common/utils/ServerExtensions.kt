@@ -33,7 +33,9 @@ fun Server.shutdownWithJvm(maxWaitTime: Duration) {
       try {
         shutdownGracefully(maxWaitTime)
       } catch (e: InterruptedException) {
-        // do nothing
+        // Intentionally not restoring the interrupt flag: this runs in a JVM shutdown-hook
+        // thread that terminates as soon as this block returns, so there is no caller higher
+        // up that could observe a restored flag.
       }
     },
   )

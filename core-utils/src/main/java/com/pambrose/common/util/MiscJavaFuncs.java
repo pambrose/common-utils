@@ -22,11 +22,11 @@ public class MiscJavaFuncs {
   private static final Random random = new Random();
 
   public static int random(int upper) {
-    return Math.abs(random.nextInt() % upper);
+    return random.nextInt(upper);
   }
 
   public static long random(long upper) {
-    return Math.abs(random.nextLong() % upper);
+    return random.nextLong(upper);
   }
 
   public static void sleepSecs(long time) {
@@ -37,7 +37,10 @@ public class MiscJavaFuncs {
     try {
       Thread.sleep(time);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      // Thread.sleep clears the interrupt flag when it throws; restore it so callers can
+      // still detect the interruption. An interrupted sleep is a normal cancellation
+      // signal, not an error, so we do not log a stack trace.
+      Thread.currentThread().interrupt();
     }
   }
 }

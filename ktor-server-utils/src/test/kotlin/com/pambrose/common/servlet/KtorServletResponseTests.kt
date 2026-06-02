@@ -49,6 +49,38 @@ class KtorServletResponseTests : StringSpec() {
       response.headerNames.toSet() shouldBe setOf("X-Custom")
     }
 
+    // HTTP header field names are case-insensitive (RFC 9110 §5.1); the HttpServletResponse
+    // contract treats them that way.
+    "header lookups are case-insensitive" {
+      val response = KtorServletResponse()
+      response.setHeader("X-Foo", "a")
+
+      response.containsHeader("x-foo") shouldBe true
+      response.containsHeader("X-FOO") shouldBe true
+      response.getHeader("x-foo") shouldBe "a"
+      response.getHeaders("X-fOo").toList() shouldBe listOf("a")
+    }
+
+    "setHeader with different casing overwrites rather than duplicating" {
+      val response = KtorServletResponse()
+      response.setHeader("X-Foo", "a")
+      response.setHeader("x-foo", "b")
+
+      response.getHeaders("X-Foo").toList() shouldBe listOf("b")
+      response.getHeader("x-FOO") shouldBe "b"
+      // A single logical header, retaining the first-inserted casing.
+      response.headerNames.toSet() shouldBe setOf("X-Foo")
+    }
+
+    "addHeader with different casing appends to the same header" {
+      val response = KtorServletResponse()
+      response.addHeader("Set-Cookie", "a")
+      response.addHeader("set-cookie", "b")
+
+      response.getHeaders("SET-COOKIE").toList() shouldBe listOf("a", "b")
+      response.headerNames.toSet() shouldBe setOf("Set-Cookie")
+    }
+
     "writer output captures content" {
       val response = KtorServletResponse()
       val writer = response.writer
