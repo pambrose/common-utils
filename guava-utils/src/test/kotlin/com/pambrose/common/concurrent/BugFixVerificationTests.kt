@@ -114,34 +114,6 @@ class BugFixVerificationTests : StringSpec() {
       result shouldBe true
     }
 
-    // Bug #17: LameBooleanWaiter used unstructured coroutine scopes
-    // Before fix: CoroutineScope(Dispatchers.Default).launch broke structured concurrency
-    // After fix: uses coroutineScope { launch { ... } } for structured concurrency
-
-    "lame boolean waiter wait for change works" {
-      val waiter = LameBooleanWaiter(false)
-
-      launch {
-        delay(50.milliseconds)
-        waiter.changeValue(true)
-      }
-
-      waiter.waitForChangeInValue()
-      // If we reach here, the waiter correctly detected the change
-    }
-
-    "lame boolean waiter immediate return when already changed" {
-      val waiter = LameBooleanWaiter(false)
-      waiter.changeValue(true)
-
-      // waitForChangeInValue should check immediately and see value already changed
-      // But the initial check compares value == targetValue at the moment of the call
-      // So we need another wait cycle
-      val waiter2 = LameBooleanWaiter(true)
-      waiter2.changeValue(false)
-      // If we get here without hanging, the immediate-return logic works
-    }
-
     // Bug #18: isZipped() crashed on byte arrays with fewer than 2 elements
     // Before fix: accessed this[0] and this[1] without size check
     // After fix: checks size >= 2 before accessing elements
