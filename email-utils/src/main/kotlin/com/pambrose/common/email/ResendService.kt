@@ -63,9 +63,9 @@ class ResendService(
         }
       val response: CreateEmailResponse = resend.emails().send(request)
 
-      val toStr = to.joinToString(", ").let { it.ifBlank { "None" } }
-      val ccStr = cc.joinToString(", ").let { it.ifBlank { "None" } }
-      val bccStr = bcc.joinToString(", ").let { it.ifBlank { "None" } }
+      val toStr = to.joinToString(", ").ifBlank { "None" }
+      val ccStr = cc.joinToString(", ").ifBlank { "None" }
+      val bccStr = bcc.joinToString(", ").ifBlank { "None" }
       logger.info { "Sent email to: $toStr cc: $ccStr bcc: $bccStr [${response.id}]" }
     }.onFailure { e ->
       logger.error(e) { "sendEmail() error: ${e.message}" }

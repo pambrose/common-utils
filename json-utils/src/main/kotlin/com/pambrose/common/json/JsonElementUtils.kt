@@ -103,8 +103,15 @@ operator fun JsonElement.get(vararg keys: String): JsonElement =
  * @param keys one or more dot-separated key paths
  * @return the [JsonElement] at the path, or `null` if not found or [JsonNull]
  */
-fun JsonElement.getOrNull(vararg keys: String): JsonElement? =
-  if (containsKeys(*keys)) get(*keys).takeIf { it != JsonNull } else null
+fun JsonElement.getOrNull(vararg keys: String): JsonElement? {
+  // Walk the path once and short-circuit on the first missing key, instead of traversing twice
+  // (containsKeys then get).
+  var current: JsonElement? = this
+  for (key in keys.flatMap { it.split(".") }) {
+    current = (current as? JsonObject)?.get(key) ?: return null
+  }
+  return current?.takeIf { it != JsonNull }
+}
 
 // Primitive values
 
@@ -212,6 +219,9 @@ private fun prettyPrint(indent: String) =
     prettyPrintIndent = indent
   }
 
+// Cache the default (two-space) formatter so the common path doesn't rebuild a Json on every call.
+private val defaultPrettyFormat by lazy { prettyPrint("  ") }
+
 /**
  * Encodes this [JsonElement] as a pretty-printed JSON string.
  *
@@ -220,7 +230,8 @@ private fun prettyPrint(indent: String) =
  * @param indent the indentation string to use (defaults to two spaces)
  * @return the formatted JSON string
  */
-fun JsonElement.toFormattedString(indent: String = "  "): String = prettyPrint(indent).encodeToString(this)
+fun JsonElement.toFormattedString(indent: String = "  "): String =
+  if (indent == "  ") defaultPrettyFormat.encodeToString(this) else prettyPrint(indent).encodeToString(this)
 
 /** Parses this [String] as JSON and re-encodes it as a pretty-printed JSON string. Extension function on [String]. */
 fun String.toJsonString() = toJsonElement().toJsonString(true)

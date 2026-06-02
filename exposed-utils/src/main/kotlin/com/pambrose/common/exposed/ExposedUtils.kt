@@ -61,7 +61,7 @@ class KotlinSqlLogger(
  * @throws IllegalArgumentException if no field exists at the given index
  */
 operator fun ResultRow.get(index: Int) =
-  fieldIndex.filter { it.value == index }.map { this[it.key] }.firstOrNull()
+  fieldIndex.entries.firstOrNull { it.value == index }?.let { this[it.key] }
     ?: throw IllegalArgumentException("No value at index $index")
 
 /**

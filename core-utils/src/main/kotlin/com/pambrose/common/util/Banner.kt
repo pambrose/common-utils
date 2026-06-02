@@ -43,7 +43,7 @@ fun getBanner(
   var first = -1
   var last = -1
   lines.forEachIndexed { index, line ->
-    if (line.trim { arg -> arg <= ' ' }.isNotEmpty()) {
+    if (line.isNotBlank()) {
       if (first == -1)
         first = index
       last = index

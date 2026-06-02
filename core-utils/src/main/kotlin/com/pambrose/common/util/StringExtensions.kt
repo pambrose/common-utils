@@ -245,37 +245,19 @@ fun String.asBracketed(
 ) = "$startChar$this$endChar"
 
 /** Returns `true` if this [String] can be parsed as an [Int]. */
-fun String.isInt() =
-  try {
-    this.toInt()
-    true
-  } catch (e: Exception) {
-    false
-  }
+fun String.isInt() = toIntOrNull() != null
 
 /** Returns `true` if this [String] cannot be parsed as an [Int]. */
 fun String.isNotInt() = !isInt()
 
 /** Returns `true` if this [String] can be parsed as a [Float]. */
-fun String.isFloat() =
-  try {
-    this.toFloat()
-    true
-  } catch (e: Exception) {
-    false
-  }
+fun String.isFloat() = toFloatOrNull() != null
 
 /** Returns `true` if this [String] cannot be parsed as a [Float]. */
 fun String.isNotFloat() = !isFloat()
 
 /** Returns `true` if this [String] can be parsed as a [Double]. */
-fun String.isDouble() =
-  try {
-    this.toDouble()
-    true
-  } catch (e: Exception) {
-    false
-  }
+fun String.isDouble() = toDoubleOrNull() != null
 
 /** Returns `true` if this [String] cannot be parsed as a [Double]. */
 fun String.isNotDouble() = !isDouble()
@@ -381,7 +363,7 @@ fun String.sha256(salt: ByteArray): String = encodedByteArray(this, salt, "SHA-2
  * Extension property on [ByteArray].
  */
 @Suppress("ImplicitDefaultLocale")
-val ByteArray.asText get() = fold("") { str, byte -> str + "%02x".format(byte) }
+val ByteArray.asText get() = joinToString("") { "%02x".format(it) }
 
 private fun encodedByteArray(
   input: String,

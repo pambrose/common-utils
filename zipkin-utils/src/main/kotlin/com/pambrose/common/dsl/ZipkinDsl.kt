@@ -31,8 +31,6 @@ object ZipkinDsl {
    */
   fun tracing(block: Tracing.Builder.() -> Unit): Tracing =
     Tracing.newBuilder()
-      .run {
-        block(this)
-        build()
-      }
+      .apply(block)
+      .build()
 }

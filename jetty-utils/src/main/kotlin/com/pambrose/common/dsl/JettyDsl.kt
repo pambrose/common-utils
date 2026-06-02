@@ -34,7 +34,7 @@ object JettyDsl {
   fun server(
     port: Int,
     block: Server.() -> Unit,
-  ) = Server(port).apply { block(this) }
+  ) = Server(port).apply(block)
 
   /**
    * Creates and configures a [ServletContextHandler].
@@ -42,5 +42,5 @@ object JettyDsl {
    * @param block a lambda with [ServletContextHandler] as receiver for adding servlets and filters.
    * @return the configured [ServletContextHandler] instance.
    */
-  fun servletContextHandler(block: ServletContextHandler.() -> Unit) = ServletContextHandler().apply { block(this) }
+  fun servletContextHandler(block: ServletContextHandler.() -> Unit) = ServletContextHandler().apply(block)
 }
