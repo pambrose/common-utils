@@ -32,8 +32,15 @@ class EmailUtilsTests : StringSpec() {
     "is valid email simple" {
       "test@example.com".isValidEmail() shouldBe true
       "user.name@domain.org".isValidEmail() shouldBe true
-      // Note: The email pattern doesn't support + character in local part
       "user@example.co.uk".isValidEmail() shouldBe true
+    }
+
+    "accepts plus-addressing, long TLDs, and single-character domain labels" {
+      "user+tag@example.com".isValidEmail() shouldBe true
+      "first.last+filter@example.com".isValidEmail() shouldBe true
+      "user@x.io".isValidEmail() shouldBe true
+      "user@example.travel".isValidEmail() shouldBe true
+      "user@sub.example.photography".isValidEmail() shouldBe true
     }
 
     "is valid email with subdomain" {
