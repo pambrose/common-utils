@@ -121,14 +121,15 @@ object RedisUtils {
   /**
    * Creates a new pooled [RedisClient] with the given configuration.
    *
-   * Pool sizes default to values from system properties (see [REDIS_MAX_POOL_SIZE], etc.)
-   * or sensible defaults if those properties are not set.
+   * Each pool parameter defaults to its system property (see [REDIS_MAX_POOL_SIZE], etc.) if set,
+   * otherwise to the concrete fallback noted below. The connection and socket timeouts both use Jedis'
+   * `DEFAULT_TIMEOUT`.
    *
    * @param redisUrl the Redis connection URL (defaults to the `REDIS_URL` environment variable)
-   * @param maxPoolSize maximum number of connections in the pool
-   * @param maxIdleSize maximum number of idle connections
-   * @param minIdleSize minimum number of idle connections
-   * @param maxWaitSecs maximum seconds to wait when borrowing a connection
+   * @param maxPoolSize maximum connections in the pool; defaults to the [REDIS_MAX_POOL_SIZE] property or 10
+   * @param maxIdleSize maximum idle connections; defaults to the [REDIS_MAX_IDLE_SIZE] property or 5
+   * @param minIdleSize minimum idle connections; defaults to the [REDIS_MIN_IDLE_SIZE] property or 1
+   * @param maxWaitSecs seconds to wait when borrowing a connection; defaults to the [REDIS_MAX_WAIT_SECS] property or 1
    * @return a configured [RedisClient] with connection pooling
    */
   fun newRedisClient(

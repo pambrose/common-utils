@@ -269,7 +269,8 @@ inline fun <reified T> T.toJsonElement() = json.encodeToJsonElement(this)
  *
  * Extension function on [String].
  *
- * @param verbose if `true`, logs a warning with the raw input on parse failure
+ * @param verbose if `true`, logs the full raw input string at WARN level on parse failure. Avoid this
+ *   for sensitive payloads, since the input may contain PII or secrets.
  * @return the parsed [JsonElement]
  * @throws kotlinx.serialization.SerializationException if parsing fails
  */
