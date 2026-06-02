@@ -54,10 +54,5 @@ object SingleAssignVar {
         error("Property ${property.name} cannot be assigned more than once.")
       }
     }
-
-    /**
-     * Returns true if the property has been assigned a value (including null).
-     */
-    fun isAssigned(): Boolean = atomicValue.get() != null
   }
 }

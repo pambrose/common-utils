@@ -24,6 +24,3 @@ val isWindows by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contain
 
 /** Whether the current operating system is Mac OS X. */
 val isMac by lazy { StandardSystemProperty.OS_NAME.value().orEmpty().contains("Mac OS X") }
-
-/** Whether the current JVM version is Java 6. */
-val isJava6 by lazy { StandardSystemProperty.JAVA_VERSION.value().orEmpty().startsWith("1.6") }

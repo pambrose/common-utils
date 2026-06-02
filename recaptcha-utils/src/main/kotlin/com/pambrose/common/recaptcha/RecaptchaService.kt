@@ -88,11 +88,8 @@ object RecaptchaService : Closeable {
       return true
     }
 
-    val secretKey = config.recaptchaSecretKey
-    if (secretKey.isNullOrBlank()) {
-      logger.warn { "reCAPTCHA secret key is not configured" }
-      return false
-    }
+    // isRecaptchaConfigured already guaranteed a non-blank secret key; assert the invariant explicitly.
+    val secretKey = requireNotNull(config.recaptchaSecretKey) { "reCAPTCHA secret key must be configured" }
 
     return try {
       val parameters =
@@ -191,7 +188,8 @@ object RecaptchaService : Closeable {
    */
   fun FlowContent.recaptchaWidget(config: RecaptchaConfig) {
     if (isRecaptchaConfigured(config)) {
-      val siteKey = config.recaptchaSiteKey ?: return
+      // isRecaptchaConfigured already guaranteed a non-blank site key; assert the invariant explicitly.
+      val siteKey = requireNotNull(config.recaptchaSiteKey) { "reCAPTCHA site key must be configured" }
       div(classes = "g-recaptcha") {
         attributes["data-sitekey"] = siteKey
       }

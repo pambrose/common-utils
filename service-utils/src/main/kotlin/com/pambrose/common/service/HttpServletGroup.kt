@@ -46,7 +46,7 @@ class HttpServletGroup {
     path: String,
     servlet: HttpServlet,
   ) {
-    if (path.isNotEmpty() && path.isNotBlank())
+    if (path.isNotBlank())
       servletMap[path] = servlet
   }
 }

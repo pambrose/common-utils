@@ -19,7 +19,6 @@
 package com.pambrose.common.util
 
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.types.shouldBeTypeOf
 
 class GuavaFuncsTests : StringSpec() {
@@ -30,12 +29,6 @@ class GuavaFuncsTests : StringSpec() {
 
     "is mac type" {
       isMac.shouldBeTypeOf<Boolean>()
-    }
-
-    "is java6 type" {
-      isJava6.shouldBeTypeOf<Boolean>()
-      // Modern JDKs should not be Java 6
-      isJava6.shouldBeFalse()
     }
   }
 }
