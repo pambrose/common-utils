@@ -1,16 +1,102 @@
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "InjectDispatcher")
 
 package com.pambrose.common.concurrent
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
+
+// Test-only subclass exposing the protected waitForCondition with an arbitrary predicate.
+private class IntWaiter(
+  init: Int,
+) : GenericValueWaiter<Int>(init) {
+  val current get() = currValue
+
+  suspend fun awaitValue(predicate: () -> Boolean) = waitForCondition(predicate, Duration.INFINITE)
+}
 
 class GenericValueWaiterTests : StringSpec() {
   init {
+    "a satisfied waiter resumes promptly rather than stalling for the full timeout" {
+      // Races registering a waiter against satisfying it, with a long timeout. If checkCondition cannot
+      // see (and cancel) the timeout job when it removes the waiter, the satisfied wait stalls until the
+      // timeout elapses because the structured coroutineScope waits for the orphaned delay.
+      withContext(Dispatchers.Default) {
+        repeat(200) {
+          val waiter = BooleanWaiter(false)
+          val job = launch { waiter.waitUntilTrue(5.seconds) }
+          launch { waiter.setValue(true) }
+          val mark = TimeSource.Monotonic.markNow()
+          job.join()
+          (mark.elapsedNow() < 2.seconds) shouldBe true
+        }
+      }
+    }
+
+    "a throwing predicate fails only its own waiter, not the others" {
+      val waiter = IntWaiter(0)
+      var goodResult: Boolean? = null
+      var badError: Throwable? = null
+
+      val good = launch { goodResult = waiter.awaitValue { waiter.current == 1 } }
+      val bad =
+        launch {
+          runCatching { waiter.awaitValue { if (waiter.current == 1) error("boom") else false } }
+            .onFailure { badError = it }
+        }
+      delay(50.milliseconds)
+
+      waiter.checkCondition(1)
+      good.join()
+      bad.join()
+
+      goodResult shouldBe true
+      badError!!.message shouldContain "boom"
+    }
+
+    "multiple coroutines waiting on the same condition are all resumed" {
+      val waiter = BooleanWaiter(false)
+      val results = CopyOnWriteArrayList<Boolean>()
+
+      val jobs =
+        (1..3).map {
+          launch { results += waiter.waitUntilTrue(1.seconds) }
+        }
+
+      delay(100.milliseconds)
+      waiter.setValue(true)
+      jobs.forEach { it.join() }
+
+      // Every waiter must be resumed with true; the old single-slot callback resumed only the last.
+      results.size shouldBe 3
+      results.all { it } shouldBe true
+    }
+
+    "a waiting waitUntilTrue is not clobbered by a concurrent waitUntilFalse" {
+      val waiter = BooleanWaiter(false)
+      var aResult: Boolean? = null
+
+      val a = launch { aResult = waiter.waitUntilTrue(1.seconds) }
+      delay(50.milliseconds)
+
+      // The value is already false, so this returns immediately. On the old code it overwrote the
+      // single shared predicate, so the still-waiting waitUntilTrue then missed the value becoming true.
+      waiter.waitUntilFalse(1.seconds) shouldBe true
+
+      waiter.setValue(true)
+      a.join()
+      aResult shouldBe true
+    }
+
     "BooleanWaiter setValue and waitUntilTrue work correctly" {
       val waiter = BooleanWaiter(false)
       var completed = false
