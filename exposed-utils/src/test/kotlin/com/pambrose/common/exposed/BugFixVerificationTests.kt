@@ -96,5 +96,22 @@ class BugFixVerificationTests : StringSpec() {
         sql shouldNotContain "ON CONSTRAINT"
       }
     }
+
+    // Bug: when every inserted column is part of the conflict key, the update-column list is empty,
+    // leaving a dangling `... DO UPDATE SET ` that PostgreSQL rejects. It must emit `DO NOTHING`.
+
+    "upsert with only conflict columns emits DO NOTHING instead of a dangling DO UPDATE SET" {
+      Database.connect("jdbc:h2:mem:upsert_nothing;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
+      transaction {
+        val stmt = UpsertStatement<Number>(UpsertTestTable, conflictColumn = UpsertTestTable.email)
+        // The only inserted column is the conflict column, so there is nothing to update.
+        stmt[UpsertTestTable.email] = "a@b.com"
+
+        val sql = stmt.prepareSQL(this, prepared = false)
+        sql shouldContain "ON CONFLICT ("
+        sql shouldContain "DO NOTHING"
+        sql shouldNotContain "DO UPDATE SET"
+      }
+    }
   }
 }

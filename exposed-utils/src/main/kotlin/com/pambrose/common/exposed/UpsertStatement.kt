@@ -60,8 +60,9 @@ inline fun <T : Table> T.upsert(
 /**
  * An [InsertStatement] that appends a PostgreSQL `ON CONFLICT ... DO UPDATE SET` clause.
  *
- * Generates SQL that inserts a row, and on conflict with the specified column or index constraint,
- * updates all non-conflict columns to the `EXCLUDED` values.
+ * Generates SQL that inserts a row and, on conflict with the specified column or index constraint,
+ * updates all non-conflict columns to their `EXCLUDED` values — or emits `DO NOTHING` when every
+ * inserted column belongs to the conflict key, since there is then nothing to update.
  *
  * @param Key the auto-generated key type
  * @param table the target table
@@ -93,9 +94,15 @@ class UpsertStatement<Key : Any>(
       // unique index, whereas ON CONSTRAINT requires an actual constraint name.
       append(" ON CONFLICT ")
       indexColumns.joinTo(this, separator = ", ", prefix = "(", postfix = ")") { transaction.identity(it) }
-      append(" DO UPDATE SET ")
-      values.keys
-        .filter { it !in indexColumns }
-        .joinTo(this) { "${transaction.identity(it)}=EXCLUDED.${transaction.identity(it)}" }
+
+      val updateColumns = values.keys.filter { it !in indexColumns }
+      if (updateColumns.isEmpty()) {
+        // Every inserted column is part of the conflict key, so there is nothing to update.
+        // `DO UPDATE SET` with no assignments is invalid SQL; `DO NOTHING` is the correct no-op.
+        append(" DO NOTHING")
+      } else {
+        append(" DO UPDATE SET ")
+        updateColumns.joinTo(this) { "${transaction.identity(it)}=EXCLUDED.${transaction.identity(it)}" }
+      }
     }
 }
