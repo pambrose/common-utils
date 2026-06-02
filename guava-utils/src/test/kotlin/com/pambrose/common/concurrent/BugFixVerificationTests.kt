@@ -73,8 +73,9 @@ class BugFixVerificationTests : StringSpec() {
     }
 
     // Bug #16: Race condition in GenericValueWaiter/BooleanWaiter
-    // Before fix: check and callback setup were not atomic; predicate was not volatile
-    // After fix: check and callback are set atomically under mutex; predicate is @Volatile
+    // The waiter now registers a per-call (predicate, continuation) under a lock and resumes each
+    // waiter independently, so concurrent waiters are no longer lost. (See GenericValueWaiterTests
+    // for the concurrent-waiter coverage.)
 
     "boolean waiter wait until true works" {
       val waiter = BooleanWaiter(false)
