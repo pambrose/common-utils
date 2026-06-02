@@ -46,7 +46,6 @@ dokka {
 // Demo `main()`/`mainN()` functions colocated in production sources for manual playground use.
 val koverExcludeClasses = listOf(
     "com.pambrose.common.concurrent.ConditionalValueKt*",
-    "com.pambrose.common.concurrent.LameBooleanWaiterKt*",
     "com.pambrose.common.concurrent.GenericValueWaiterKt*",
 )
 
