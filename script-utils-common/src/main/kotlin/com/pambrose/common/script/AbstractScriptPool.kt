@@ -39,7 +39,11 @@ abstract class AbstractScriptPool<T : AbstractScript>(
 
   private suspend fun borrow() = channel.receive()
 
-  /** Returns `true` if there are no script instances currently available in the pool. */
+  /**
+   * Returns an approximate, point-in-time indication of whether the pool currently has no script
+   * instances available. Delegates to [Channel.isEmpty], which is racy under concurrent borrow/recycle
+   * and may return a stale result, so do not rely on it for correctness.
+   */
   val isEmpty get() = channel.isEmpty
 
   // Reset the context before returning to pool

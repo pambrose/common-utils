@@ -72,6 +72,7 @@ abstract class AbstractScript(
    * @param name the variable name
    * @param types the type parameters; defaults to those previously registered for [name]
    * @return a formatted type parameter string, or an empty string if there are no parameters
+   * @throws IllegalStateException if [types] is omitted and no types were registered for [name]
    */
   open fun params(
     name: String,

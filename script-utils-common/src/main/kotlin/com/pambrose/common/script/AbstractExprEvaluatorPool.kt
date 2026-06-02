@@ -37,13 +37,22 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
 
   private suspend fun borrow() = channel.receive()
 
-  /** Returns `true` if there are no evaluator instances currently available in the pool. */
+  /**
+   * Returns an approximate, point-in-time indication of whether the pool currently has no evaluators
+   * available. Delegates to [Channel.isEmpty], which is racy under concurrent borrow/recycle and may
+   * return a stale result, so do not rely on it for correctness.
+   */
   val isEmpty get() = channel.isEmpty
 
   private suspend fun recycle(scriptObject: AbstractExprEvaluator) = channel.send(scriptObject)
 
   /**
-   * Evaluates the given expression by borrowing an evaluator from the pool, blocking the current thread.
+   * Evaluates [expr] by borrowing an evaluator from the pool, blocking the current thread until one is
+   * available and recycling it afterwards.
+   *
+   * The pool is a bounded buffer of [size] evaluators, so this blocks when all are in use and waits for
+   * one to be recycled. Do not call it more than [size] times concurrently, or from a context that
+   * already holds the pool's only evaluator, or it can deadlock.
    *
    * @param expr the expression to evaluate
    * @return the boolean result of the evaluation
@@ -53,6 +62,13 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
       eval(expr)
     }
 
+  /**
+   * Suspends until an evaluator can be borrowed from the pool, evaluates [expr], and recycles the
+   * evaluator afterwards. Suspends (rather than blocking) when all [size] evaluators are in use.
+   *
+   * @param expr the expression to evaluate
+   * @return the boolean result of the evaluation
+   */
   suspend fun eval(expr: String): Boolean =
     borrow()
       .let { engine ->

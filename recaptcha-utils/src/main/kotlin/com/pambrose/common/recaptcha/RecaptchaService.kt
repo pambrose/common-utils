@@ -163,7 +163,7 @@ object RecaptchaService : Closeable {
   }
 
   /**
-   * Adds the Google reCAPTCHA JavaScript to the HTML [HEAD] if reCAPTCHA is enabled and a site key is configured.
+   * Adds the Google reCAPTCHA JavaScript to the HTML [HEAD] if reCAPTCHA is enabled and both the site key and secret key are configured (kept in lockstep with server-side verification).
    *
    * This is an extension function on kotlinx.html [HEAD].
    *
@@ -180,7 +180,7 @@ object RecaptchaService : Closeable {
   }
 
   /**
-   * Renders the reCAPTCHA widget `<div>` in the HTML body if reCAPTCHA is enabled and a site key is configured.
+   * Renders the reCAPTCHA widget `<div>` in the HTML body if reCAPTCHA is enabled and both the site key and secret key are configured (kept in lockstep with server-side verification).
    *
    * This is an extension function on kotlinx.html [FlowContent].
    *

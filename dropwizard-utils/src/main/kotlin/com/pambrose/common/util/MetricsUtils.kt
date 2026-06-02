@@ -28,7 +28,7 @@ object MetricsUtils {
    * Creates a [HealthCheck] that reports unhealthy when the backlog size meets or exceeds the given threshold.
    *
    * @param backlogSize the current backlog size to evaluate.
-   * @param size the threshold above which the check is considered unhealthy.
+   * @param size the threshold at or above which the check is considered unhealthy.
    * @return a [HealthCheck] that monitors backlog size.
    */
   fun newBacklogHealthCheck(
@@ -45,7 +45,7 @@ object MetricsUtils {
    * Creates a [HealthCheck] that reports unhealthy when the map size meets or exceeds the given threshold.
    *
    * @param map the map whose size is evaluated.
-   * @param size the threshold above which the check is considered unhealthy.
+   * @param size the threshold at or above which the check is considered unhealthy.
    * @return a [HealthCheck] that monitors map size.
    */
   fun newMapHealthCheck(

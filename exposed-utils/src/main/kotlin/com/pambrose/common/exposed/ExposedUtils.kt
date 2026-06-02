@@ -65,9 +65,11 @@ operator fun ResultRow.get(index: Int) =
     ?: throw IllegalArgumentException("No value at index $index")
 
 /**
- * Converts this [ResultRow] to a human-readable string by joining all non-empty column values with " - ".
+ * Converts this [ResultRow] to a human-readable string by joining each column's string representation
+ * with " - ", omitting columns whose string form is empty.
  *
- * Extension function on [ResultRow].
+ * Extension function on [ResultRow]. Note that a `null` column value renders as the literal text
+ * `"null"` (its `toString()`), so null columns are included rather than skipped.
  *
  * @return a formatted string of the row's values
  */

@@ -22,6 +22,13 @@ import com.pambrose.common.script.ScriptUtils.resetContext
 abstract class AbstractExprEvaluator(
   extension: String,
 ) : AbstractEngine(extension) {
+  /**
+   * Evaluates [expr] and returns its [Boolean] result.
+   *
+   * @param expr the boolean expression to evaluate
+   * @return the boolean result of the evaluation
+   * @throws IllegalArgumentException if the expression does not evaluate to a [Boolean]
+   */
   fun eval(expr: String): Boolean {
     val result = engine.eval(expr)
     return result as? Boolean
