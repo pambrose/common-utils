@@ -10,4 +10,6 @@ dependencies {
     api(libs.resend)
     api(libs.kotlinx.html)
     api(libs.ktor.http)
+
+    testImplementation(libs.mockk)
 }
