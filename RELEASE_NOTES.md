@@ -5,40 +5,82 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## v2.8.3 — 2026-05-09
+## v2.9.0 — 2026-06-03
 
 ### Highlights
 
-- **Detekt 2.0 with type resolution**: Upgraded Detekt to 2.0.0-alpha.3 (plugin id `dev.detekt`), migrated the Gradle DSL to the Property API, and wired the aggregate `detekt` task to depend on the per-source-set `detektMain` / `detektTest` tasks so analysis runs with full type resolution. Type-resolved rules now catch issues like `ImplicitDefaultLocale`, `UnsafeCallOnNullableType`, `SleepInsteadOfDelay`, `InjectDispatcher`, and `ArrayPrimitive`.
-- **Detekt static analysis** wired into every subproject with HTML/checkstyle reports per module, a tailored `config/detekt/detekt.yml`, and an optional shared `config/detekt/baseline.xml`. `make detekt` is a first-class target and `make lint` includes it.
-- **Centralized toolchain**: Moved the Gradle wrapper version (9.5.0) and JVM target (17) into `gradle/libs.versions.toml` under a new `# Toolchain` section, consumed from both `build.gradle.kts` and the `Makefile`.
-- **Self-documenting Makefile**: New `make help` target prints every available target with its description, parsed from `## description` comments.
+- **Codebase-review hardening sweep**: A systematic review across all modules drove a large batch of correctness fixes — a leaked JVM shutdown hook in the service lifecycle, a metrics race in `InstrumentedThreadFactory`, modulo bias in `random()`, an UPSERT that emitted invalid SQL, concurrent-waiter clobbering in `GenericValueWaiter`/`BooleanWaiter`, and more.
+- **Service base-class consolidation**: `GenericService` and `GenericKtorService` were ~95% identical; their shared machinery now lives in a new `AbstractGenericService<T>` base class, with each subclass keeping only its servlet-hosting specifics. Public API is unchanged.
+- **Scripting exit guards centralized**: A new `ScriptGuards` (in script-utils-common) unifies JVM-termination detection across the Kotlin and Java engines and broadens it to cover `exitProcess` and `Runtime.exit`/`halt`. Documented prominently as best-effort guards against *accidental* termination, **not** a security sandbox.
+- **Detekt 2.0 static analysis**: Wired Detekt 2.0.0-alpha.3 (plugin id `dev.detekt`) into every subproject with full type resolution, HTML/checkstyle reports per module, and a tailored `config/detekt/detekt.yml`. `make detekt` is a first-class target and `make lint` includes it.
+- **Kotlin 2.4.0**: Upgraded to the final Kotlin 2.4.0 release.
 
-### Build improvements
+### Breaking changes
 
-- Consolidated duplicated string literals in `build.gradle.kts` (`common-utils`, `"17"`, `config/detekt`) into named vals.
-- Added Kover coverage subcommands: `coverage-html`, `coverage-log`, `coverage-verify`, `coverage-open`, `coverage-packages`, `coverage-clean`. `make coverage` now generates both HTML and XML.
-- Moved `coverage-packages` inline Python to `scripts/coverage-packages.py` with a friendlier missing-report error.
-- Added fail-fast guards so the `Makefile` errors clearly when `VERSION` or `GRADLE_VERSION` cannot be parsed.
-- Passed `ORG_GRADLE_PROJECT_signingInMemoryKeyId` in `GPG_ENV` so the in-memory signing plugin has all three required properties.
-- Dropped the unused `compile` Makefile alias.
+- `JavaScript.eval`/`evalScript` now return `Any?` instead of `Any`, so a null script result is returned honestly (fixing a `NullPointerException` on `eval("null")`). Binary-compatible; source-breaking only for Kotlin callers that bound the result to a non-null type — exactly the call sites that previously hit the runtime NPE. Aligns `JavaScript` with `KotlinScript`/`PythonScript`.
+- `KtorServletRequest.getContentType()` now returns `String?` and yields `null` when no `Content-Type` header is present, matching the `HttpServletRequest` contract (previously returned `"*/*"`).
+- Removed the always-false `isJava6` public val from `guava-utils`.
 
-### Detekt rule tuning
+### Bug fixes
 
-- Activated `LongMethod`; suppressed `IgnoredReturnValue`.
-- Resolved type-resolution findings surfaced by the upgrade across `core-utils`, `ktor-server-utils`, `script-utils-common`, `script-utils-kotlin`, `script-utils-java`, `script-utils-python`, `guava-utils`, and `service-utils` (locale-aware formatting, `orEmpty()` over `?: emptyList()`, `delay()` over `Thread.sleep()` in suspend tests, removed unnecessary `apply` blocks, removed unused variables, etc.).
+- `ContentSource.GitLabFile` resolves against `repo.domainName` instead of a hardcoded `gitlab.com`, so self-hosted GitLab instances work.
+- `ListUtils.listPrint` quotes String elements per element, fixing a `ClassCastException` on mixed-type lists.
+- `AbstractExprEvaluator.compute()` returns `Any?` and propagates null instead of throwing.
+- `String.singleToDoubleQuoted()` now escapes inner double quotes per its KDoc.
+- `AbstractGenericService` removes its JVM shutdown hook on `shutDown()`, fixing a hook leak (one hook per service instance for the life of the JVM).
+- `UpsertStatement` emits `DO NOTHING` when every inserted column is part of the conflict key, instead of a dangling `DO UPDATE SET` that PostgreSQL rejects.
+- `SamplerGaugeCollector` validates label sizes at construction (fail-fast); `collect()` guards the user-supplied sampler with `runCatching` and reports `Double.NaN` instead of aborting the whole scrape.
+- `GenericValueWaiter`/`BooleanWaiter` support concurrent waiters, with the satisfied-wait liveness bug and throwing-predicate starvation both fixed and regression-tested.
+- `ZipExtensions.unzip()` decodes non-gzipped bytes explicitly as UTF-8.
+- `String.obfuscate()` requires `freq > 0` instead of throwing `ArithmeticException`.
+- `MiscJavaFuncs.random(int)`/`random(long)` use the unbiased `nextInt`/`nextLong(bound)` and reject `bound <= 0`; `sleepMillis` restores the interrupt flag when interrupted.
+- `KtorServletResponse` headers are now case-insensitive per RFC 9110 §5.1.
 
-### Dependency bumps
+### New features
 
-- `kotlinx-coroutines` 1.10.2 → 1.11.0
-- `kotlinx-datetime` 0.7.1-0.6.x-compat → 0.7.1 (drops the Exposed/jodatime-compat suffix)
-- `detekt` plugin 1.23.8 → 2.0.0-alpha.3
+- `ByteArray.zip()` GZIP overload mirroring `String.zip()`, avoiding a redundant UTF-8 re-encode for callers that already hold bytes.
+- Broader `isValidEmail()`: accepts plus-addressing (`user+tag@example.com`), long TLDs (`.travel`, `.email`), and single-character domain labels (`user@x.io`), while still rejecting clearly invalid input.
+
+### Refactoring & internals
+
+- Removed `LameBooleanWaiter` (a redundant duplicate of `BooleanWaiter`).
+- Dead-code sweep across eight modules (unreachable branches, dead fallbacks, a shipped `Example.kt` demo, stale suppressions).
+- Idiomatic-Kotlin and small performance cleanups (single-pass JSON path walks, a cached default `Json`, `joinToString` hex building, `toXOrNull()` numeric checks), each behavior-equivalence verified.
+- Refactored four convoluted-logic targets (`Duration.format`, `BooleanMonitor`, `JavaScript.javaEquiv`, `KtorServletRequest` parameter access) with characterization tests.
+
+### Documentation
+
+- KDoc accuracy fixes across dropwizard-utils, recaptcha-utils, exposed-utils, json-utils, redis-utils, and script-utils-common.
 
 ### Tests
 
-- Added `grpc-utils` tests: `TlsUtilsTests` (11 cases) and `ServerExtensionsTests` (5 cases) covering trust/cert/key validation, `TlsContext.desc()` branches, `PLAINTEXT_CONTEXT`, graceful shutdown ordering, and the `require(timeout > 0)` precondition. Added `mockk` to `grpc-utils` test dependencies.
+- Added `grpc-utils` tests: `TlsUtilsTests` (11 cases) and `ServerExtensionsTests` (5 cases) covering trust/cert/key validation, `TlsContext.desc()` branches, `PLAINTEXT_CONTEXT`, graceful-shutdown ordering, and the `require(timeout > 0)` precondition. Added `mockk` to `grpc-utils` test dependencies.
+- Added tests for open coverage gaps across six modules.
+- Dropped redundant `runBlocking { }` wrappers from suspend Kotest test bodies in script-utils-kotlin, script-utils-java, and redis-utils.
 
-**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.8.2...2.8.3
+### Static analysis, coverage & tooling
+
+- Wired **Detekt** into every subproject via `configureDetekt()` with HTML/checkstyle reports per module and auto-detection of an optional `config/detekt/detekt.yml` and shared `config/detekt/baseline.xml`. Added a tailored `config/detekt/detekt.yml`, activated `LongMethod`, suppressed `IgnoredReturnValue`, and resolved the type-resolution findings surfaced across eight modules. Added `make detekt` / `make detekt-baseline`.
+- Added Kover coverage subcommands: `coverage-html`, `coverage-log`, `coverage-verify`, `coverage-open`, `coverage-packages`, `coverage-clean`. `make coverage` now generates both HTML and XML. Moved the `coverage-packages` inline Python to `scripts/coverage-packages.py`.
+- Organized `gradle/libs.versions.toml` into functional categories and centralized the Gradle wrapper version and JVM target (17) under a `# Toolchain` section, consumed from both `build.gradle.kts` and the `Makefile`.
+- Consolidated duplicated string literals in `build.gradle.kts` into named vals.
+- Added `make help`, a self-documenting target list parsed from `## description` comments, plus fail-fast guards when `VERSION` / `GRADLE_VERSION` cannot be parsed. Passed `ORG_GRADLE_PROJECT_signingInMemoryKeyId` in `GPG_ENV`, and dropped the unused `compile` Makefile alias.
+
+### Dependency bumps
+
+- Added **Detekt** plugin `2.0.0-alpha.3` (`dev.detekt`)
+- Gradle wrapper 9.5.0 → 9.5.1
+- `kotlin` 2.3.21 → 2.4.0
+- `kotlinx-coroutines` 1.10.2 → 1.11.0
+- `ktor` 3.4.3 → 3.5.0
+- `exposed` 1.2.0 → 1.3.0
+- `jetty` 12.1.8 → 12.1.10
+- `redis` 7.5.0 → 7.5.2
+- `logging` 8.0.1 → 8.0.4
+- `dropwizard` 4.2.38 → 4.2.39
+- Added `h2` 2.3.232 as a test dependency
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.8.2...2.9.0
 
 ---
 

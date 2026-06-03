@@ -2,26 +2,87 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [2.8.3] - 2026-05-09
+## [2.9.0] - 2026-06-03
 
-- Wire **Detekt** into every subproject via `configureDetekt()` in the root `build.gradle.kts`, with HTML/checkstyle reports per module and auto-detection of optional `config/detekt/detekt.yml` and `config/detekt/baseline.xml`
-- Upgrade **Detekt** to `2.0.0-alpha.3` (plugin id `dev.detekt`), migrate the Gradle DSL to the Property API, and wire the aggregate `detekt` task to depend on `detektMain`/`detektTest` so analysis runs with full type resolution
-- Activate `LongMethod`; suppress `IgnoredReturnValue`
-- Resolve type-resolution findings surfaced by the Detekt 2.0 upgrade across `core-utils`, `ktor-server-utils`, `script-utils-common`, `script-utils-kotlin`, `script-utils-java`, `script-utils-python`, `guava-utils`, and `service-utils`
-- Add a `config/detekt/detekt.yml` tailored for a multi-module utility library (disables threshold-style rules, excludes test code from `EmptyFunctionBlock` / `VariableNaming`); resolve the remaining real findings in `core-utils`, `script-utils-kotlin`, and `json-utils` tests
-- Add `grpc-utils` tests: `TlsUtilsTests` (11 cases) and `ServerExtensionsTests` (5 cases); add `mockk` to `grpc-utils` test dependencies
-- Centralize the Gradle wrapper version (`9.5.0`) and JVM target (`17`) under a `# Toolchain` section in `gradle/libs.versions.toml`; consume them from `build.gradle.kts` and the `Makefile`'s `upgrade-wrapper` target
-- Consolidate duplicated string literals in `build.gradle.kts` (`common-utils`, `"17"`, `config/detekt`) into named vals
-- Add `make detekt` and `make detekt-baseline` targets; `make lint` now also runs Detekt
-- Add `make help` for a self-documenting target list, parsed from `## description` comments
+### Breaking changes
+
+- `JavaScript.eval`/`evalScript` now return `Any?` instead of `Any`, so a null script result is returned honestly (fixes a `NullPointerException` on `eval("null")`); binary-compatible, source-breaking only for Kotlin callers that bound the result to a non-null type, and aligns `JavaScript` with `KotlinScript`/`PythonScript`
+- `KtorServletRequest.getContentType()` now returns `String?` and yields `null` when no `Content-Type` header is present, matching the `HttpServletRequest` contract (previously returned `"*/*"`)
+- Remove the always-false `isJava6` public val from `guava-utils`
+
+### Bug fixes
+
+- `ContentSource.GitLabFile` uses `repo.domainName` instead of a hardcoded `gitlab.com`, so self-hosted GitLab instances resolve correctly
+- `ListUtils.listPrint` quotes String elements per element instead of casting the whole list, fixing a `ClassCastException` on mixed-type lists
+- `InstrumentedThreadFactory` increments terminated before decrementing running, so a concurrent scrape never sees `running + terminated < created`
+- `AbstractExprEvaluator.compute()` returns `Any?` and propagates null instead of throwing on a null expression result
+- `String.singleToDoubleQuoted()` now escapes inner double quotes per its KDoc (`te"st` → `"te\"st"`)
+- `AbstractGenericService` removes its JVM shutdown hook on `shutDown()`, fixing a hook leak that left one hook registered per service instance for the life of the JVM
+- `UpsertStatement` emits `DO NOTHING` when every inserted column is part of the conflict key, instead of generating a dangling `DO UPDATE SET` that PostgreSQL rejects
+- `SamplerGaugeCollector` validates `labelNames`/`labelValues` sizes at construction (fail-fast) instead of throwing on every Prometheus scrape; `collect()` now guards the user-supplied sampler with `runCatching` and reports `Double.NaN` instead of aborting the whole scrape
+- `GenericValueWaiter`/`BooleanWaiter` support concurrent waiters via per-call `(predicate, continuation)` pairs under a lock, fixing waiters clobbering each other; also fixes a liveness bug where a satisfied wait could stall for the full timeout, and isolates a throwing predicate so it no longer starves the other waiters
+- `ZipExtensions.unzip()` decodes non-gzipped bytes explicitly as UTF-8 (was the JVM default charset, which corrupted non-ASCII content on a non-UTF-8 JVM)
+- `String.obfuscate()` requires `freq > 0` instead of throwing `ArithmeticException` (divide by zero)
+- `MiscJavaFuncs.random(int)`/`random(long)` use the unbiased `nextInt`/`nextLong(bound)`, removing modulo bias and rejecting `bound <= 0`
+- `MiscJavaFuncs.sleepMillis` restores the thread interrupt flag when `Thread.sleep` is interrupted
+- `KtorServletResponse` backs its header map with a case-insensitive `TreeMap` per RFC 9110 §5.1 / the `HttpServletResponse` contract
+
+### New features
+
+- Add a `ByteArray.zip()` GZIP overload mirroring `String.zip()`, avoiding a redundant UTF-8 re-encode for callers that already hold bytes
+- Broaden `isValidEmail()` to accept plus-addressing (`user+tag@example.com`), TLDs longer than four characters (`.travel`, `.email`), and single-character domain labels (`user@x.io`), while still rejecting clearly invalid input
+
+### Refactoring & internals
+
+- Extract `AbstractGenericService<T>` to de-duplicate the ~95% identical `GenericService` and `GenericKtorService` base classes; public API unchanged
+- Centralize JVM-termination detection in a new `ScriptGuards` (script-utils-common), broadened to cover `System.exit`, `kotlin.system.exitProcess`, and `Runtime.exit`/`halt` across the Kotlin and Java engines; documented everywhere as best-effort guards against accidental termination, **not** a security sandbox
+- Remove `LameBooleanWaiter` (a redundant, lower-quality duplicate of `BooleanWaiter`)
+- Dead-code sweep: remove unreachable branches, dead fallbacks, a shipped `Example.kt` demo, and stale suppressions across eight modules
+- Idiomatic-Kotlin and small performance cleanups (single-pass JSON path walks, a cached default `Json`, `joinToString` hex building, `toXOrNull()` numeric checks, etc.), each behavior-equivalence verified
+- Refactor four convoluted-logic targets (`Duration.format`, `BooleanMonitor` init, `JavaScript.javaEquiv`, and `KtorServletRequest` case-insensitive parameter access) with characterization tests
+
+### Documentation
+
+- KDoc accuracy fixes across dropwizard-utils, recaptcha-utils, exposed-utils, json-utils, redis-utils, and script-utils-common so the public docs match actual behavior
+
+### Tests
+
+- Add `grpc-utils` tests: `TlsUtilsTests` (11 cases) and `ServerExtensionsTests` (5 cases) covering trust/cert/key validation, `TlsContext.desc()`, `PLAINTEXT_CONTEXT`, graceful-shutdown ordering, and the `require(timeout > 0)` precondition; add `mockk` to `grpc-utils` test dependencies
+- Add tests for open coverage gaps across six modules (script-utils-kotlin, recaptcha-utils, jetty-utils, email-utils, and others)
+- Drop redundant `runBlocking { }` wrappers from suspend Kotest test bodies in script-utils-kotlin, script-utils-java, and redis-utils
+
+### Static analysis & coverage
+
+- Wire **Detekt** into every subproject via `configureDetekt()` in the root `build.gradle.kts`, with HTML/checkstyle reports per module and auto-detection of optional `config/detekt/detekt.yml` and `config/detekt/baseline.xml`; `make lint` now also runs Detekt
+- Add a `config/detekt/detekt.yml` tailored for a multi-module utility library (disables threshold-style rules, excludes test code from `EmptyFunctionBlock` / `VariableNaming`); activate `LongMethod`, suppress `IgnoredReturnValue`, and resolve the type-resolution findings surfaced by the upgrade across eight modules
+- Add `make detekt` and `make detekt-baseline` targets
 - Add Kover coverage subcommands: `coverage-html`, `coverage-log`, `coverage-verify`, `coverage-open`, `coverage-packages`, `coverage-clean`; `make coverage` now generates both HTML and XML
 - Move the `coverage-packages` inline Python to `scripts/coverage-packages.py` with a friendlier missing-report error
+
+### Build & tooling
+
+- Tidy Gradle config: organize `gradle/libs.versions.toml` into functional categories, alphabetize the scripting module includes, and dedupe the Kover excludes comment
+- Centralize the Gradle wrapper version and JVM target (`17`) under a `# Toolchain` section in `gradle/libs.versions.toml`, consumed from `build.gradle.kts` and the `Makefile`'s `upgrade-wrapper` target
+- Consolidate duplicated string literals in `build.gradle.kts` (`common-utils`, `"17"`, `config/detekt`) into named vals
+- Add `make help` for a self-documenting target list, parsed from `## description` comments
 - Add fail-fast guards in the `Makefile` when `VERSION` or `GRADLE_VERSION` cannot be parsed, instead of silently passing empty strings to publish/wrapper commands
 - Pass `ORG_GRADLE_PROJECT_signingInMemoryKeyId` in `GPG_ENV` so the in-memory signing plugin has all three required properties
 - Drop the unused `compile` alias from the `Makefile`
+
+### Dependencies
+
+- Add **Detekt** `2.0.0-alpha.3` (plugin id `dev.detekt`), with the aggregate `detekt` task depending on the per-source-set `detektMain`/`detektTest` tasks so analysis runs with full type resolution
+- Upgrade Gradle wrapper 9.5.0 → 9.5.1
+- Bump `kotlin` 2.3.21 → 2.4.0
 - Bump `kotlinx-coroutines` 1.10.2 → 1.11.0
-- Switch `kotlinx-datetime` from `0.7.1-0.6.x-compat` to `0.7.1` (drops the Exposed/jodatime-compat suffix)
-- Bump project version to 2.8.3
+- Bump `ktor` 3.4.3 → 3.5.0
+- Bump `exposed` 1.2.0 → 1.3.0
+- Bump `jetty` 12.1.8 → 12.1.10
+- Bump `redis` 7.5.0 → 7.5.2
+- Bump `logging` 8.0.1 → 8.0.4
+- Bump `dropwizard` 4.2.38 → 4.2.39
+- Add `h2` 2.3.232 as a test dependency
+- Bump project version to 2.9.0
 
 ## [2.8.2] - 2026-05-02
 
