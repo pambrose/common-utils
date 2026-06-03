@@ -113,13 +113,13 @@ class JavaScript :
    *
    * @param script the Java source code to evaluate
    * @param verbose if `true`, logs the generated script before evaluation
-   * @return the result of the script evaluation
+   * @return the result of the script evaluation, or `null` if the script evaluates to `null`
    */
   @Synchronized
   fun evalScript(
     script: String,
     verbose: Boolean = false,
-  ): Any {
+  ): Any? {
     ScriptGuards.checkNoJvmExit(script)
 
     if (!initialized) {
@@ -135,12 +135,23 @@ class JavaScript :
     return engine.eval(code)
   }
 
+  /**
+   * Evaluates a Java [expr] (optionally preceded by an [action] statement block) inside a generated
+   * `Main.getValue()` method, prepending any registered imports and variable declarations.
+   *
+   * On the first call, registered variable bindings are placed into the engine context.
+   *
+   * @param expr the Java expression whose value is returned
+   * @param action optional Java statements executed before [expr] is evaluated
+   * @param verbose if `true`, logs the generated script before evaluation
+   * @return the result of evaluating [expr], or `null` if it evaluates to `null`
+   */
   @Synchronized
   fun eval(
     expr: String,
     action: String = "",
     verbose: Boolean = false,
-  ): Any {
+  ): Any? {
     ScriptGuards.checkNoJvmExit(expr, action)
 
     val code = """
