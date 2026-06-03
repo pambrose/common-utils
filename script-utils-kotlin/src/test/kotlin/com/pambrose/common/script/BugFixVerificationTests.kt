@@ -23,7 +23,6 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
-import kotlinx.coroutines.runBlocking
 import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 
@@ -130,15 +129,13 @@ class BugFixVerificationTests : StringSpec() {
     // on the first borrow. After fix: the initial instances honor the flag.
 
     "pool honors nullGlobalContext for initial population" {
-      runBlocking {
-        KotlinScriptPool(2, nullGlobalContext = true).eval {
-          engine.getBindings(GLOBAL_SCOPE)
-        } shouldBe null
+      KotlinScriptPool(2, nullGlobalContext = true).eval {
+        engine.getBindings(GLOBAL_SCOPE)
+      } shouldBe null
 
-        KotlinScriptPool(2, nullGlobalContext = false).eval {
-          engine.getBindings(GLOBAL_SCOPE)
-        } shouldNotBe null
-      }
+      KotlinScriptPool(2, nullGlobalContext = false).eval {
+        engine.getBindings(GLOBAL_SCOPE)
+      } shouldNotBe null
     }
   }
 }
