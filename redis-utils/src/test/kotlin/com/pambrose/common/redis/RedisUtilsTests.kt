@@ -22,6 +22,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import java.net.URI
 
 class RedisUtilsTests : StringSpec() {
   init {
@@ -86,6 +87,35 @@ class RedisUtilsTests : StringSpec() {
       )
       client shouldNotBe null
       client.close()
+    }
+
+    // RedisInfo.includeUserInAuth decides whether to send the username in AUTH: only when the
+    // user is a real (non-placeholder) name and the password is not the "none" placeholder.
+    "includeUserInAuth is true for a real user with a real password" {
+      RedisUtils.RedisInfo(URI("redis://h"), "alice", "secret").includeUserInAuth shouldBe true
+    }
+
+    "includeUserInAuth is false for the 'default' placeholder user" {
+      RedisUtils.RedisInfo(URI("redis://h"), "default", "secret").includeUserInAuth shouldBe false
+    }
+
+    "includeUserInAuth is false for the 'user' placeholder user" {
+      RedisUtils.RedisInfo(URI("redis://h"), "user", "secret").includeUserInAuth shouldBe false
+    }
+
+    "includeUserInAuth is false when the password is the 'none' placeholder" {
+      RedisUtils.RedisInfo(URI("redis://h"), "alice", "none").includeUserInAuth shouldBe false
+    }
+
+    "includeUserInAuth is false when the user is blank" {
+      RedisUtils.RedisInfo(URI("redis://h"), "", "secret").includeUserInAuth shouldBe false
+    }
+
+    "RedisInfo exposes the parsed uri, user, and password" {
+      val info = RedisUtils.RedisInfo(URI("redis://h:6379"), "alice", "secret")
+      info.user shouldBe "alice"
+      info.password shouldBe "secret"
+      info.uri.host shouldBe "h"
     }
   }
 }

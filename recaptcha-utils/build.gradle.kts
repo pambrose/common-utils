@@ -10,4 +10,6 @@ dependencies {
     implementation(libs.bundles.ktor.client.json)
     api(libs.ktor.server.core)
     api(libs.kotlinx.html)
+
+    testImplementation(libs.ktor.server.test.host)
 }
