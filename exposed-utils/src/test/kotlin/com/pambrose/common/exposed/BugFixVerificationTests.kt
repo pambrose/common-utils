@@ -20,13 +20,8 @@ package com.pambrose.common.exposed
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldNotBeInstanceOf
 import org.jetbrains.exposed.v1.core.Table
-import org.jetbrains.exposed.v1.core.statements.UpsertStatement
-import org.jetbrains.exposed.v1.jdbc.Database
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 private object UpsertTestTable : Table("upsert_test") {
   val id = integer("id")
