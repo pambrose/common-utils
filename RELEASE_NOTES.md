@@ -5,6 +5,26 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v2.9.1 — 2026-06-11
+
+### Highlights
+
+- **Native Exposed upsert**: `Table.upsert` is now a thin convenience overload of Exposed's own `upsert`. The hand-rolled `UpsertStatement` (with its custom `prepareSQL` building the `ON CONFLICT` clause) is gone — the overload simply forwards a unique `Index`'s columns as the conflict keys, so named index definitions stay the single source of truth while Exposed generates the SQL.
+- **gRPC 1.82.0**: Bumped gRPC and pinned `netty-tcnative-boringssl-static` to the matching 2.0.75.Final.
+
+### Breaking changes
+
+- `Table.upsert` takes only a unique `Index` as the conflict target (`upsert(conflictIndex = myUniqueIndex) { ... }`); the `conflictColumn` parameter and the custom `UpsertStatement` class have been removed. Callers that passed a single column should pass a single-column unique index. The lambda receiver is now Exposed's `org.jetbrains.exposed.v1.core.statements.UpsertStatement<Long>`.
+
+### Dependency bumps
+
+- `grpc` 1.81.0 → 1.82.0
+- `netty-tcnative-boringssl-static` pinned to 2.0.75.Final (catalog alias `netty-ssl` → `netty-tcnative`)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.9.0...2.9.1
+
+---
+
 ## v2.9.0 — 2026-06-03
 
 ### Highlights

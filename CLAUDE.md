@@ -109,6 +109,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.9.0" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
+- Project version: "2.9.1" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
 - Group: "com.pambrose.common-utils" (set in `gradle.properties`)
 - All library versions in `gradle/libs.versions.toml`

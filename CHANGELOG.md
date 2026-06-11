@@ -2,6 +2,21 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.9.1] - 2026-06-11
+
+### Breaking changes
+
+- `Table.upsert` (exposed-utils) is now a thin overload of Exposed's native `upsert` and takes only a unique `Index` as the conflict target (`upsert(conflictIndex = myUniqueIndex) { ... }`). The hand-rolled `UpsertStatement` class and the `conflictColumn` parameter have been removed; pass a single-column unique index instead of a column. The lambda receiver is now Exposed's `org.jetbrains.exposed.v1.core.statements.UpsertStatement<Long>`.
+
+### Refactoring & internals
+
+- Replace the custom `UpsertStatement` and its `prepareSQL` override with a forwarding call to Exposed's native `upsert`, keeping named index definitions as the single source of truth for conflict columns while letting Exposed generate the `ON CONFLICT` SQL
+
+### Dependency bumps
+
+- `grpc` 1.81.0 → 1.82.0
+- `netty-tcnative-boringssl-static` pinned to 2.0.75.Final to match gRPC 1.82.0 (catalog alias `netty-ssl` renamed to `netty-tcnative`)
+
 ## [2.9.0] - 2026-06-03
 
 ### Breaking changes
