@@ -7,7 +7,7 @@ dependencies {
 
     implementation(libs.bundles.grpc)
 
-    runtimeOnly(libs.netty.ssl)
+    runtimeOnly(libs.netty.tcnative)
 
     testImplementation(libs.mockk)
 }
