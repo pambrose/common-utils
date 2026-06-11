@@ -78,22 +78,27 @@ println("Row data: ${row.toRowString()}")
 
 ```kotlin
 import com.pambrose.common.exposed.upsert
-import org.jetbrains.exposed.v1.jdbc.insert
 
-// Upsert with conflict on constraint
-MyTable.upsert(conflictIndex = "unique_email_idx") {
+object MyTable : Table("my_table") {
+  val name = varchar("name", 255)
+  val email = varchar("email", 255)
+  val updatedAt = long("updated_at")
+
+  // Declare the unique index used as the conflict target
+  val uniqueEmail = uniqueIndex("unique_email_idx", email)
+}
+
+// Upsert with the unique index as the conflict target.
+// `conflictIndex` forwards the index's columns as the `ON CONFLICT (...)` keys,
+// delegating to Exposed's native upsert.
+MyTable.upsert(conflictIndex = MyTable.uniqueEmail) {
   it[name] = "John Doe"
   it[email] = "john@example.com"
   it[updatedAt] = System.currentTimeMillis()
 }
-
-// Upsert with conflict on column
-MyTable.upsert(conflictColumn = MyTable.email) {
-  it[name] = "Jane Doe"
-  it[email] = "jane@example.com"
-  it[updatedAt] = System.currentTimeMillis()
-}
 ```
+
+> **Note**: As of 2.9.1, `upsert` is a thin convenience overload of Exposed's native `upsert` and accepts only a unique `Index` as the conflict target. To conflict on a single column, declare a single-column `uniqueIndex` and pass it.
 
 ## Dependencies
 
