@@ -30,6 +30,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.testing.testApplication
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.delay
 
 class ResponseUtilsTests : StringSpec() {
   init {
@@ -59,6 +60,23 @@ class ResponseUtilsTests : StringSpec() {
           status shouldBe HttpStatusCode.OK
           bodyAsText() shouldBe "hello"
           ContentType.parse(headers[HttpHeaders.ContentType]!!).match(ContentType.Text.Plain) shouldBe true
+        }
+      }
+    }
+
+    "ApplicationCall respondWith accepts a suspending block" {
+      testApplication {
+        routing {
+          get("/suspending") {
+            call.respondWith {
+              delay(1)
+              "<h1>suspended</h1>"
+            }
+          }
+        }
+        client.get("/suspending").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "<h1>suspended</h1>"
         }
       }
     }
@@ -103,6 +121,24 @@ class ResponseUtilsTests : StringSpec() {
         val client = createClient { followRedirects = false }
         client.get("/old").apply {
           status shouldBe HttpStatusCode.MovedPermanently
+          headers[HttpHeaders.Location] shouldBe "/new"
+        }
+      }
+    }
+
+    "ApplicationCall redirectTo accepts a suspending block" {
+      testApplication {
+        routing {
+          get("/old") {
+            call.redirectTo {
+              delay(1)
+              "/new"
+            }
+          }
+        }
+        val client = createClient { followRedirects = false }
+        client.get("/old").apply {
+          status shouldBe HttpStatusCode.Found
           headers[HttpHeaders.Location] shouldBe "/new"
         }
       }
