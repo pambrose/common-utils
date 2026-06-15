@@ -2,6 +2,16 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.9.2] - 2026-06-14
+
+### New features
+
+- `ApplicationCall.respondWith`/`redirectTo` and their `RoutingContext` overloads (ktor-server-utils) now accept a `suspend () -> String` block, so the body/redirect-target lambda can call suspending functions. Existing non-suspending lambdas remain valid, since `() -> String` is a subtype of `suspend () -> String`.
+
+### Dependency bumps
+
+- `detekt` 2.0.0-alpha.3 → 2.0.0-alpha.4
+
 ## [2.9.1] - 2026-06-11
 
 ### Breaking changes
