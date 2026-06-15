@@ -198,9 +198,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:2.9.1")
-  implementation("com.pambrose.common-utils:json-utils:2.9.1")
-  implementation("com.pambrose.common-utils:ktor-server-utils:2.9.1")
+  implementation("com.pambrose.common-utils:core-utils:2.9.2")
+  implementation("com.pambrose.common-utils:json-utils:2.9.2")
+  implementation("com.pambrose.common-utils:ktor-server-utils:2.9.2")
     // ... other modules
 }
 ```
@@ -212,7 +212,7 @@ dependencies {
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils</artifactId>
-      <version>2.9.1</version>
+      <version>2.9.2</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>

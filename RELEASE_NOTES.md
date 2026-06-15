@@ -5,6 +5,20 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v2.9.2 — 2026-06-14
+
+### Highlights
+
+- **Suspending response blocks**: The `respondWith` and `redirectTo` helpers (ktor-server-utils), on both `ApplicationCall` and `RoutingContext`, now take a `suspend () -> String` block, so the body/redirect-target lambda can call suspending functions directly. The change is source-compatible — existing non-suspending lambdas still work, since `() -> String` is a subtype of `suspend () -> String`.
+
+### Dependency bumps
+
+- `detekt` 2.0.0-alpha.3 → 2.0.0-alpha.4
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.9.1...2.9.2
+
+---
+
 ## v2.9.1 — 2026-06-11
 
 ### Highlights
