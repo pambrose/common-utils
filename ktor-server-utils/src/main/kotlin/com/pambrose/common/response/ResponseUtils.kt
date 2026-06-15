@@ -27,27 +27,29 @@ import io.ktor.server.routing.RoutingContext
 /**
  * Responds to the client with text content produced by [block].
  *
- * This is an extension function on [ApplicationCall].
+ * This is an extension function on [ApplicationCall]. The [block] is a suspending lambda; a
+ * non-suspending lambda is also accepted since `() -> String` is a subtype of `suspend () -> String`.
  *
  * @param contentType the content type of the response; defaults to [ContentType.Text.Html]
  * @param block a lambda that returns the response body as a [String]
  */
 suspend inline fun ApplicationCall.respondWith(
   contentType: ContentType = Text.Html,
-  block: () -> String,
+  block: suspend () -> String,
 ) = respondText(block.invoke(), contentType)
 
 /**
  * Redirects the client to the URL produced by [block].
  *
- * This is an extension function on [ApplicationCall].
+ * This is an extension function on [ApplicationCall]. The [block] is a suspending lambda; a
+ * non-suspending lambda is also accepted since `() -> String` is a subtype of `suspend () -> String`.
  *
  * @param permanent whether to issue a 301 (permanent) redirect; defaults to `false` (302 temporary)
  * @param block a lambda that returns the redirect target URL as a [String]
  */
 suspend inline fun ApplicationCall.redirectTo(
   permanent: Boolean = false,
-  block: () -> String,
+  block: suspend () -> String,
 ) = respondRedirect(block.invoke(), permanent)
 
 /**
@@ -60,7 +62,7 @@ suspend inline fun ApplicationCall.redirectTo(
  */
 suspend inline fun RoutingContext.respondWith(
   contentType: ContentType = Text.Html,
-  block: () -> String,
+  block: suspend () -> String,
 ) = call.respondWith(contentType, block)
 
 /**
@@ -73,7 +75,7 @@ suspend inline fun RoutingContext.respondWith(
  */
 suspend inline fun RoutingContext.redirectTo(
   permanent: Boolean = false,
-  block: () -> String,
+  block: suspend () -> String,
 ) = call.redirectTo(permanent, block)
 
 /**

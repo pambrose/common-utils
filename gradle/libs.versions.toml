@@ -4,7 +4,7 @@ gradle-wrapper = "9.5.1"
 jvmTarget = "17"
 
 # Plugins
-detekt = "2.0.0-alpha.3"
+detekt = "2.0.0-alpha.4"
 dokka = "2.2.0"
 gradlePlugins = "1.0.14"
 kover = "0.9.8"
