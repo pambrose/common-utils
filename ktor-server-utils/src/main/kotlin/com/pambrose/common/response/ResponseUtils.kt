@@ -39,19 +39,6 @@ suspend inline fun ApplicationCall.respondWith(
 ) = respondText(block.invoke(), contentType)
 
 /**
- * Responds to the client with text content produced by [block].
- *
- * This is an extension function on [RoutingContext] that delegates to [ApplicationCall.respondWith].
- *
- * @param contentType the content type of the response; defaults to [ContentType.Text.Html]
- * @param block a lambda that returns the response body as a [String]
- */
-suspend inline fun RoutingContext.respondWith(
-  contentType: ContentType = Text.Html,
-  block: suspend () -> String,
-) = call.respondWith(contentType, block)
-
-/**
  * Redirects the client to the URL produced by [block].
  *
  * This is an extension function on [ApplicationCall]. The [block] is a suspending lambda; a
@@ -64,6 +51,19 @@ suspend inline fun ApplicationCall.redirectTo(
   permanent: Boolean = false,
   block: suspend () -> String,
 ) = respondRedirect(block.invoke(), permanent)
+
+/**
+ * Responds to the client with text content produced by [block].
+ *
+ * This is an extension function on [RoutingContext] that delegates to [ApplicationCall.respondWith].
+ *
+ * @param contentType the content type of the response; defaults to [ContentType.Text.Html]
+ * @param block a lambda that returns the response body as a [String]
+ */
+suspend inline fun RoutingContext.respondWith(
+  contentType: ContentType = Text.Html,
+  block: suspend () -> String,
+) = call.respondWith(contentType, block)
 
 /**
  * Redirects the client to the URL produced by [block].
