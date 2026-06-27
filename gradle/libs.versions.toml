@@ -1,6 +1,6 @@
 [versions]
 # Toolchain
-gradle-wrapper = "9.5.1"
+gradle-wrapper = "9.6.1"
 jvmTarget = "17"
 
 # Plugins
@@ -8,7 +8,8 @@ detekt = "2.0.0-alpha.4"
 dokka = "2.2.0"
 gradlePlugins = "1.0.14"
 kover = "0.9.8"
-mavenPublish = "0.36.0"
+mavenPublish = "0.37.0"
+versions = "0.54.0"
 
 # Kotlin & kotlinx
 kotlin = "2.4.0"
@@ -22,10 +23,10 @@ logging = "8.0.4"
 
 # Frameworks
 dropwizard = "4.2.39"
-grpc = "1.82.0"
+grpc = "1.82.1"
 jakartaServlet = "6.1.0"
 jetty = "12.1.10"
-ktor = "3.5.0"
+ktor = "3.5.1"
 # Keep in sync with grpc
 tcnative = "2.0.75.Final"
 
@@ -169,9 +170,10 @@ prometheus-service = [
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
+ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "versions" }
+
 # Pambrose convention plugins
 pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradlePlugins" }
-pambrose-stable-versions = { id = "com.pambrose.stable-versions", version.ref = "gradlePlugins" }
 pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradlePlugins" }
 
 # Quality & docs
