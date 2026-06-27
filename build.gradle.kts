@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.pambrose.stable.versions) apply false
+    alias(libs.plugins.ben.manes.versions) apply false
     alias(libs.plugins.pambrose.kotlinter) apply false
     alias(libs.plugins.pambrose.testing) apply false
     alias(libs.plugins.detekt) apply false
@@ -63,7 +63,7 @@ val subprojectPluginIds = listOf(
     libs.plugins.kotlin.jvm,
     libs.plugins.pambrose.kotlinter,
     libs.plugins.pambrose.testing,
-    libs.plugins.pambrose.stable.versions,
+    libs.plugins.ben.manes.versions,
     libs.plugins.detekt,
     libs.plugins.dokka,
     libs.plugins.kover,
