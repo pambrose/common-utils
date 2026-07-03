@@ -198,9 +198,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:2.9.2")
-  implementation("com.pambrose.common-utils:json-utils:2.9.2")
-  implementation("com.pambrose.common-utils:ktor-server-utils:2.9.2")
+  implementation("com.pambrose.common-utils:core-utils:2.9.3")
+  implementation("com.pambrose.common-utils:json-utils:2.9.3")
+  implementation("com.pambrose.common-utils:ktor-server-utils:2.9.3")
     // ... other modules
 }
 ```
@@ -212,7 +212,7 @@ dependencies {
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils</artifactId>
-      <version>2.9.2</version>
+      <version>2.9.3</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
@@ -220,8 +220,8 @@ dependencies {
 
 ## Technology Stack
 
-- **Languages**: Kotlin 2.3.21, Java
-- **Build System**: Gradle 9.5.0 with Kotlin DSL
+- **Languages**: Kotlin 2.4.0, Java
+- **Build System**: Gradle 9.6.1 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava

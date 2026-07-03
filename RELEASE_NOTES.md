@@ -5,6 +5,29 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v2.9.3 — 2026-07-03
+
+### Highlights
+
+- **New scope & property helpers (core-utils)**: A two-receiver `with(a, b) { ... }` that exposes both arguments as context parameters — each keeping its distinct type, unlike a `vararg` — and `readProperties(...)`, which loads `key=value` files into JVM system properties.
+- **Correct pre-release filtering for `make versions`**: The `dependencyUpdates` stable-version filter moved inline into `configureVersions()` (replacing the `com.pambrose.stable-versions` convention plugin) and now uses a delimiter-anchored regex. It recognizes dot-separated qualifiers like Netty's `.Beta1` while leaving classifier versions such as guava's `-jre` stable, and only rejects a pre-release candidate when the current version is stable — so dependencies intentionally tracked on a pre-release line (e.g. detekt alphas) still surface updates.
+- **Return-value checker on production code**: Kotlin's `-Xreturn-value-checker=check` is enabled for `compileKotlin` (test sources excluded to avoid Kotest DSL false positives).
+
+### Dependency bumps
+
+- Gradle wrapper 9.5.1 → 9.6.1
+- `detekt` 2.0.0-alpha.4 → 2.0.0-alpha.5
+- `gradlePlugins` 1.0.14 → 1.1.0
+- `mavenPublish` 0.36.0 → 0.37.0
+- `grpc` 1.82.0 → 1.82.1
+- `ktor` 3.5.0 → 3.5.1
+- `exposed` 1.3.0 → 1.3.1
+- `redis` 7.5.2 → 7.5.3
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.9.2...2.9.3
+
+---
+
 ## v2.9.2 — 2026-06-14
 
 ### Highlights

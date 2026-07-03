@@ -2,6 +2,30 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [2.9.3] - 2026-07-03
+
+### New features
+
+- `with(a, b) { ... }` (core-utils, `ScopeFunctions.kt`): a two-receiver variant of the standard `with` that runs a `context(A, B) () -> R` block with both `a` and `b` available as context parameters. The two type parameters keep each receiver's distinct type, so each can satisfy a separate `context(...)` parameter (a `vararg` would collapse them to their common supertype). For more receivers, add further fixed-arity overloads.
+- `readProperties(vararg fileNames)` / `readProperties(List<String>)` (core-utils, `PropertyFunctions.kt`): load `key=value` lines from the given files into JVM system properties via `System.setProperty`, skipping `#`-comment and non-`key=value` lines and failing fast when a file is missing.
+
+### Build & tooling
+
+- Enable Kotlin's unused-return-value checker (`-Xreturn-value-checker=check`) on the production `compileKotlin` task only; test source sets are skipped so Kotest's assertion DSL (which returns its receiver) does not emit false positives.
+- Replace the `com.pambrose.stable-versions` convention plugin with a direct `com.github.ben-manes.versions` plugin plus an inline `configureVersions()` helper. Its `isNonStable` filter now uses a delimiter-anchored regex that recognizes dot-separated qualifiers (Netty's `.Beta1`, Spring/Hibernate `.RC1`/`.CR1`) while leaving classifier versions such as guava's `-jre` stable, and it rejects a pre-release candidate only when the current version is stable — so dependencies intentionally tracked on a pre-release line (e.g. detekt alphas) still surface updates. The `DependencyUpdatesTask` is now configured lazily via `configureEach`.
+
+### Dependency bumps
+
+- Gradle wrapper 9.5.1 → 9.6.1
+- `detekt` 2.0.0-alpha.4 → 2.0.0-alpha.5
+- `gradlePlugins` (pambrose convention plugins) 1.0.14 → 1.1.0
+- `mavenPublish` 0.36.0 → 0.37.0
+- `grpc` 1.82.0 → 1.82.1
+- `ktor` 3.5.0 → 3.5.1
+- `exposed` 1.3.0 → 1.3.1
+- `redis` 7.5.2 → 7.5.3
+- Bump project version to 2.9.3
+
 ## [2.9.2] - 2026-06-14
 
 ### New features
