@@ -52,6 +52,11 @@ programming tasks.
 - **Number Extensions**: Mathematical operations and formatting for numbers
 - **Random Utilities**: Secure random number generation
 
+### Scope & Property Functions
+
+- **Two-receiver `with`**: A `with(a, b) { ... }` overload that runs a block with both `a` and `b` in scope as context parameters, each keeping its distinct type
+- **Property Loading**: `readProperties(...)` loads `key=value` files into JVM system properties
+
 ## Usage Examples
 
 ### Atomic Operations
@@ -116,6 +121,29 @@ class MyApp
 
 val version = Version.versionOf<MyApp>()
 println(version.json()) // {"version": "1.0.0", "build_time": "..."}
+```
+
+### Scope Functions
+
+```kotlin
+import com.pambrose.common.util.with
+
+// Two-receiver `with`: both arguments are available as context parameters
+// inside the block, each keeping its own type (unlike a `vararg`).
+with(logger, config) {
+  // context(Logger, Config) is in scope here
+}
+```
+
+### Property Files
+
+```kotlin
+import com.pambrose.common.util.readProperties
+
+// Load `key=value` lines from one or more files into JVM system properties.
+// `#`-comment and non-`key=value` lines are skipped; a missing file fails fast.
+readProperties("app.properties", "secrets.properties")
+val token = System.getProperty("api.token")
 ```
 
 ## Dependencies

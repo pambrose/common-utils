@@ -220,8 +220,8 @@ dependencies {
 
 ## Technology Stack
 
-- **Languages**: Kotlin 2.3.21, Java
-- **Build System**: Gradle 9.5.0 with Kotlin DSL
+- **Languages**: Kotlin 2.4.0, Java
+- **Build System**: Gradle 9.6.1 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava

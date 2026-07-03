@@ -71,16 +71,18 @@ Run `make help` for a self-documenting list of every target.
 
 ### Build Configuration
 
-The root `build.gradle.kts` applies a shared set of plugins to every subproject and defines two inline configuration functions:
+The root `build.gradle.kts` applies a shared set of plugins to every subproject and defines several inline configuration functions, including:
 
 - `configureKotlin()` - JVM 17 target, experimental opt-ins
 - `configurePublishing()` - Maven publication setup (vanniktech maven-publish) and per-module Dokka configuration
+- `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
 
-Common behavior for testing, linting, and dependency-update reporting is provided by [`pambrose-gradle-plugins`](https://github.com/pambrose/pambrose-gradle-plugins) convention plugins applied to every subproject:
+Common behavior for testing and linting is provided by [`pambrose-gradle-plugins`](https://github.com/pambrose/pambrose-gradle-plugins) convention plugins applied to every subproject:
 
 - `com.pambrose.testing` - JUnit Platform, `kotest-runner-junit5` and `kotlin-test` as default `testImplementation`, logback-classic on test runtime
 - `com.pambrose.kotlinter` - Kotlinter lint/format tasks
-- `com.pambrose.stable-versions` - stable-only filtering for `dependencyUpdates`
+
+Dependency-update reporting uses the `com.github.ben-manes.versions` plugin, configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates.
 
 Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on the per-source-set `detektMain` and `detektTest` tasks, so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
 
@@ -99,7 +101,7 @@ These opt-ins are enabled globally:
 ### Key Technologies
 
 - Kotlin 2.4.0 with JVM target 17
-- Gradle 9.5.1 with Kotlin DSL
+- Gradle 9.6.1 with Kotlin DSL
 - Kotest + MockK for testing
 - Kotlinter for linting
 
@@ -109,6 +111,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.9.2" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
+- Project version: "2.9.3" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
 - Group: "com.pambrose.common-utils" (set in `gradle.properties`)
 - All library versions in `gradle/libs.versions.toml`
