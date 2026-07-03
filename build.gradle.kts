@@ -1,3 +1,4 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
@@ -5,7 +6,7 @@ import com.vanniktech.maven.publish.SourcesJar
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
-import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -80,6 +81,7 @@ subprojects {
     configureDokka()
     configureKover()
     configurePublishing()
+    configureVersions()
 
     rootProject.dependencies.add("dokka", this)
     rootProject.dependencies.add("kover", this)
@@ -199,3 +201,25 @@ fun Project.configurePublishing() {
         }
     }
 }
+
+fun Project.configureVersions() {
+    // A pre-release qualifier is a `.` or `-` delimiter followed by a known unstable
+    // keyword. `m\d` matches milestones (`-M1`/`.M2`) without catching stable classifiers
+    // like `-macos`/`-MR1`, and the `[.-]` delimiter catches both dash-style (`-alpha`)
+    // and dot-style (Netty's `.Beta1`) qualifiers while leaving `-jre`/`.Final` stable.
+    val preReleaseQualifier =
+        Regex("""[.-](rc|beta|alpha|m\d|cr|snapshot|eap|dev|milestone|pre)""", RegexOption.IGNORE_CASE)
+
+    fun isNonStable(version: String): Boolean = preReleaseQualifier.containsMatchIn(version)
+
+    tasks.withType<DependencyUpdatesTask>().configureEach {
+        notCompatibleWithConfigurationCache("the dependency updates plugin is not compatible with the configuration cache")
+        // Reject a pre-release candidate only when the current version is stable. For
+        // dependencies we intentionally track on a pre-release line (e.g. a detekt
+        // alpha), newer pre-releases are still surfaced as available updates.
+        rejectVersionIf {
+            isNonStable(candidate.version) && !isNonStable(currentVersion)
+        }
+    }
+}
+
