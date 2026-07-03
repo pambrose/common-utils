@@ -5,8 +5,10 @@ import com.vanniktech.maven.publish.SourcesJar
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
+import org.gradle.kotlin.dsl.named
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
@@ -96,6 +98,16 @@ fun Project.configureKotlin() {
                 "kotlinx.serialization.ExperimentalSerializationApi",
             ).forEach {
                 languageSettings.optIn(it)
+            }
+        }
+
+        // Run the unused-return-value checker over production code only. Kotest's
+        // assertion DSL (e.g. shouldBe) returns its receiver, and tests intentionally
+        // discard that result, so applying the checker to the test source set would
+        // emit only false-positive warnings.
+        tasks.named<KotlinCompile>("compileKotlin") {
+            compilerOptions {
+                freeCompilerArgs.add("-Xreturn-value-checker=check")
             }
         }
     }
