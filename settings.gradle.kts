@@ -1,4 +1,4 @@
-import org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_REPOS
+import org.gradle.api.initialization.resolve.RepositoriesMode.PREFER_SETTINGS
 
 pluginManagement {
     repositories {
@@ -12,9 +12,46 @@ plugins {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(FAIL_ON_PROJECT_REPOS)
+    // PREFER_SETTINGS rather than FAIL_ON_PROJECT_REPOS: the Kotlin JS/Wasm toolchain
+    // registers its distribution repositories at the project level, which the FAIL
+    // mode turns into an error. PREFER_SETTINGS ignores those and resolves everything
+    // from the repositories declared here.
+    repositoriesMode.set(PREFER_SETTINGS)
     repositories {
         mavenCentral()
+
+        // The Kotlin JS/Wasm toolchain downloads its Node.js, Yarn, and Binaryen
+        // distributions through these ivy repositories.
+        exclusiveContent {
+            forRepository {
+                ivy("https://nodejs.org/dist") {
+                    name = "Node Distributions"
+                    patternLayout { artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]") }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeModule("org.nodejs", "node") }
+        }
+        exclusiveContent {
+            forRepository {
+                ivy("https://github.com/yarnpkg/yarn/releases/download") {
+                    name = "Yarn Distributions"
+                    patternLayout { artifact("v[revision]/[artifact](-v[revision]).[ext]") }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeModule("com.yarnpkg", "yarn") }
+        }
+        exclusiveContent {
+            forRepository {
+                ivy("https://github.com/WebAssembly/binaryen/releases/download") {
+                    name = "Binaryen Distributions"
+                    patternLayout { artifact("version_[revision]/[module]-version_[revision]-[classifier].[ext]") }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeModule("com.github.webassembly", "binaryen") }
+        }
     }
 }
 

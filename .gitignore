@@ -11,3 +11,7 @@ build/
 
 .jython_cache
 
+# Kotlin/JS-Wasm package lockfiles must be tracked for reproducible builds
+# (a user-global ignore may exclude *.lock, so re-include them explicitly).
+!kotlin-js-store/**/yarn.lock
+

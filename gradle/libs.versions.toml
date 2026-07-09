@@ -7,6 +7,7 @@ jvmTarget = "17"
 detekt = "2.0.0-alpha.5"
 dokka = "2.2.0"
 gradlePlugins = "1.1.0"
+kotlinter = "5.5.0"
 kover = "0.9.8"
 mavenPublish = "0.37.0"
 versions = "0.54.0"
@@ -19,6 +20,7 @@ kotlinxHtml = "0.12.0"
 serialization = "1.11.0"
 
 # Logging
+logback = "1.5.32"
 logging = "8.0.4"
 
 # Frameworks
@@ -52,6 +54,9 @@ guava = "33.0.0-jre"
 resend = "4.13.0"
 
 # Testing
+kotest = "6.2.1"
+# KSP versions independently of Kotlin since 2.3.0 (required by the kotest plugin)
+ksp = "2.3.9"
 mockk = "1.14.9"
 
 [libraries]
@@ -63,7 +68,9 @@ kotlinx-html = { module = "org.jetbrains.kotlinx:kotlinx-html", version.ref = "k
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 # Logging
-kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
+# Multiplatform root artifact; JVM consumers resolve the jvm variant automatically.
+kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "logging" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 # Frameworks -- Dropwizard
 dropwizard-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard" }
@@ -129,6 +136,9 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 resend = { module = "com.resend:resend-java", version.ref = "resend" }
 
 # Testing
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
@@ -168,6 +178,7 @@ prometheus-service = [
 [plugins]
 # Kotlin
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "versions" }
@@ -175,6 +186,14 @@ ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "vers
 # Pambrose convention plugins
 pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradlePlugins" }
 pambrose-testing = { id = "com.pambrose.testing", version.ref = "gradlePlugins" }
+
+# Raw kotlinter for KMP modules (the convention plugin assumes kotlin/jvm)
+kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter" }
+
+# Kotest Gradle plugin: runs commonTest specs on non-JVM targets of the KMP modules
+# (requires KSP for spec discovery)
+kotest = { id = "io.kotest", version.ref = "kotest" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
 # Quality & docs
 detekt = { id = "dev.detekt", version.ref = "detekt" }

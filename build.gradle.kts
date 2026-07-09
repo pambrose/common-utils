@@ -1,22 +1,34 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
+import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.DetektCreateBaselineTask
 import dev.detekt.gradle.extensions.DetektExtension
+import io.kotest.framework.gradle.KotestGradleExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
+import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jmailen.gradle.kotlinter.KotlinterExtension
+import org.jmailen.gradle.kotlinter.tasks.FormatTask
+import org.jmailen.gradle.kotlinter.tasks.LintTask
 
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ben.manes.versions) apply false
     alias(libs.plugins.pambrose.kotlinter) apply false
     alias(libs.plugins.pambrose.testing) apply false
+    alias(libs.plugins.kotlinter) apply false
+    alias(libs.plugins.kotest) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
@@ -33,6 +45,14 @@ val scmHost = "github.com/pambrose/$projectName"
 val projectHomepage = "https://$scmHost"
 val jvmTargetVersion = libs.versions.jvmTarget.get()
 val detektConfigDir = "config/detekt"
+
+val experimentalOptIns = listOf(
+    "kotlin.contracts.ExperimentalContracts",
+    "kotlinx.coroutines.ExperimentalCoroutinesApi",
+    "kotlin.time.ExperimentalTime",
+    "kotlin.concurrent.atomics.ExperimentalAtomicApi",
+    "kotlinx.serialization.ExperimentalSerializationApi",
+)
 
 fun DokkaExtension.configureHtml() {
     pluginsConfiguration.html {
@@ -62,10 +82,26 @@ kover {
     }
 }
 
-val subprojectPluginIds = listOf(
+// Modules built with kotlin("multiplatform"); all other modules stay kotlin("jvm").
+val kmpModuleNames = setOf(
+    "core-utils",
+    "json-utils",
+    "ktor-client-utils",
+)
+
+// The pambrose convention plugins assume the kotlin/jvm plugin, so KMP modules apply
+// the raw kotlinter plugin instead and get the equivalent configuration inline below.
+val jvmPluginIds = listOf(
     libs.plugins.kotlin.jvm,
     libs.plugins.pambrose.kotlinter,
     libs.plugins.pambrose.testing,
+).map { it.get().pluginId }
+
+val kmpPluginIds = listOf(
+    libs.plugins.kotlinter,
+).map { it.get().pluginId }
+
+val sharedPluginIds = listOf(
     libs.plugins.ben.manes.versions,
     libs.plugins.detekt,
     libs.plugins.dokka,
@@ -74,31 +110,45 @@ val subprojectPluginIds = listOf(
 ).map { it.get().pluginId }
 
 subprojects {
-    subprojectPluginIds.forEach(pluginManager::apply)
+    val isKmp = name in kmpModuleNames
 
-    configureKotlin()
+    ((if (isKmp) kmpPluginIds else jvmPluginIds) + sharedPluginIds).forEach(pluginManager::apply)
+
+    if (isKmp) {
+        // The multiplatform plugin itself is applied by each KMP module's own plugins
+        // block; targets and publishing can only be configured once it is present.
+        pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+            configureKotlinMultiplatform()
+            configurePublishing(isKmp = true)
+        }
+        // The kotest plugin queries customGradleTask without a default in some code
+        // paths; false means "wire specs into the standard Gradle test tasks".
+        pluginManager.withPlugin("io.kotest") {
+            extensions.configure<KotestGradleExtension> {
+                customGradleTask.set(false)
+            }
+        }
+        configureKotlinterForKmp()
+    } else {
+        configureKotlinJvm()
+        configurePublishing(isKmp = false)
+    }
+
     configureDetekt()
     configureDokka()
     configureKover()
-    configurePublishing()
     configureVersions()
 
     rootProject.dependencies.add("dokka", this)
     rootProject.dependencies.add("kover", this)
 }
 
-fun Project.configureKotlin() {
+fun Project.configureKotlinJvm() {
     extensions.configure<KotlinJvmProjectExtension> {
         jvmToolchain(jvmTargetVersion.toInt())
 
         sourceSets.all {
-            listOf(
-                "kotlin.contracts.ExperimentalContracts",
-                "kotlinx.coroutines.ExperimentalCoroutinesApi",
-                "kotlin.time.ExperimentalTime",
-                "kotlin.concurrent.atomics.ExperimentalAtomicApi",
-                "kotlinx.serialization.ExperimentalSerializationApi",
-            ).forEach {
+            experimentalOptIns.forEach {
                 languageSettings.optIn(it)
             }
         }
@@ -112,6 +162,84 @@ fun Project.configureKotlin() {
                 freeCompilerArgs.add("-Xreturn-value-checker=check")
             }
         }
+    }
+}
+
+fun Project.configureKotlinMultiplatform() {
+    extensions.configure<KotlinMultiplatformExtension> {
+        jvmToolchain(jvmTargetVersion.toInt())
+
+        jvm()
+        js { nodejs() }
+        wasmJs { nodejs() }
+        macosArm64()
+        iosArm64()
+        iosX64()
+        iosSimulatorArm64()
+        tvosArm64()
+        tvosSimulatorArm64()
+        watchosArm32()
+        watchosArm64()
+        watchosSimulatorArm64()
+        watchosDeviceArm64()
+        linuxX64()
+        linuxArm64()
+        mingwX64()
+
+        sourceSets.configureEach {
+            experimentalOptIns.forEach {
+                languageSettings.optIn(it)
+            }
+        }
+
+        // Same production-only unused-return-value rule as the JVM modules, applied
+        // to every target's main compilation (tests discard Kotest assertion results).
+        targets.configureEach {
+            compilations.matching { it.name == "main" }.configureEach {
+                compileTaskProvider.configure {
+                    compilerOptions {
+                        freeCompilerArgs.add("-Xreturn-value-checker=check")
+                    }
+                }
+            }
+        }
+    }
+
+    // The com.pambrose.testing convention plugin does this for the JVM modules.
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
+    }
+
+    // Kotest specs are executed on the JVM through the JUnit Platform runner. The
+    // js/wasm/native test tasks compile the specs (which enforces portability) but
+    // discover none of them, so they must not fail on empty discovery.
+    tasks.withType<AbstractTestTask>().configureEach {
+        if (this !is Test) {
+            failOnNoDiscoveredTests.set(false)
+        }
+    }
+
+    // Xcode installs the iOS simulator runtime by default, but not the watchOS/tvOS
+    // ones; macOS + iOS simulator runs already exercise the Apple targets.
+    tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+        if (name.startsWith("watchos") || name.startsWith("tvos")) {
+            enabled = false
+        }
+    }
+}
+
+// Inline equivalent of the com.pambrose.kotlinter convention plugin.
+fun Project.configureKotlinterForKmp() {
+    extensions.configure<KotlinterExtension> {
+        reporters = arrayOf("checkstyle", "plain")
+    }
+    // The kotest plugin generates spec-launcher sources via KSP that do not follow
+    // the ktlint style; only hand-written sources should be linted.
+    tasks.withType<LintTask>().configureEach {
+        exclude { it.file.path.contains("/build/generated/") }
+    }
+    tasks.withType<FormatTask>().configureEach {
+        exclude { it.file.path.contains("/build/generated/") }
     }
 }
 
@@ -139,8 +267,15 @@ fun Project.configureDetekt() {
             markdown.required.set(false)
         }
     }
-    tasks.named("detekt").configure { dependsOn("detektMain", "detektTest") }
-    tasks.named("detektBaseline").configure { dependsOn("detektBaselineMain", "detektBaselineTest") }
+    // Wire the aggregate tasks to every per-source-set task by type so analysis runs
+    // with full type resolution on both kotlin/jvm modules (detektMain/detektTest) and
+    // KMP modules (detektJvmMain, detektMetadataCommonMain, ...).
+    tasks.matching { it.name == "detekt" }.configureEach {
+        dependsOn(tasks.withType<Detekt>().matching { it.name != "detekt" })
+    }
+    tasks.matching { it.name == "detektBaseline" }.configureEach {
+        dependsOn(tasks.withType<DetektCreateBaselineTask>().matching { it.name != "detektBaseline" })
+    }
 }
 
 fun Project.configureDokka() {
@@ -161,13 +296,19 @@ fun Project.configureKover() {
     }
 }
 
-fun Project.configurePublishing() {
+fun Project.configurePublishing(isKmp: Boolean) {
     extensions.configure<MavenPublishBaseExtension> {
         configure(
-            KotlinJvm(
-                javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
-                sourcesJar = SourcesJar.Sources(),
-            ),
+            if (isKmp)
+                KotlinMultiplatform(
+                    javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
+                    sourcesJar = SourcesJar.Sources(),
+                )
+            else
+                KotlinJvm(
+                    javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
+                    sourcesJar = SourcesJar.Sources(),
+                ),
         )
         coordinates(project.group.toString(), project.name, project.version.toString())
 
@@ -222,4 +363,3 @@ fun Project.configureVersions() {
         }
     }
 }
-
