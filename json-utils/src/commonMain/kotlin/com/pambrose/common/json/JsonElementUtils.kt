@@ -18,6 +18,7 @@ package com.pambrose.common.json
 
 import com.pambrose.common.json.JsonDefaults.json
 import com.pambrose.common.json.JsonElementUtils.logger
+import com.pambrose.common.util.simpleClassName
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -295,7 +296,7 @@ fun JsonElement.toJsonElementList() = jsonArray.toList()
  * @throws IllegalArgumentException if this element is not a [JsonObject]
  */
 fun JsonElement.toMap(): Map<String, Any?> {
-  require(this is JsonObject) { "Can only convert JsonObject to Map, not a ${this::class.simpleName}" }
+  require(this is JsonObject) { "Can only convert JsonObject to Map, not a $simpleClassName" }
 
   return entries.associate { (key, value) ->
     key to value.toAny()

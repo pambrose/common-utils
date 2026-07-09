@@ -45,7 +45,7 @@ class KtorDslTests : StringSpec() {
       providedClient.close()
     }
 
-    "blockingGet performs a GET request" {
+    "get performs a GET request" {
       val mockEngine =
         MockEngine { request ->
           respond(content = "hello from mock", status = HttpStatusCode.OK)

@@ -28,8 +28,8 @@ import io.ktor.http.HttpMethod
 /**
  * A DSL object providing factory methods and utilities for Ktor [HttpClient] operations.
  *
- * Supports both suspending and blocking HTTP request patterns with automatic
- * client lifecycle management.
+ * Supports suspending HTTP request patterns with automatic client lifecycle
+ * management; a blocking variant is available on the JVM as the `blockingGet` extension.
  */
 object KtorDsl {
   /**

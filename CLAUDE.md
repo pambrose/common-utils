@@ -35,8 +35,8 @@ Run `make help` for a self-documenting list of every target.
 - `./gradlew :MODULE_NAME:test --tests "ClassName"` - Run a specific test class in a JVM module
 - KMP modules (core-utils, json-utils, ktor-client-utils) have no `test` task; use `jvmTest`
   (e.g., `./gradlew :core-utils:jvmTest`, filter with `--tests "ClassName"`) or `allTests` for every
-  host-runnable target. Kotest specs currently execute on the JVM; other targets compile the tests
-  (portability check) but discover none.
+  host-runnable target. `commonTest` Kotest specs execute on every host-runnable target (JVM,
+  Node.js for js/wasmJs, and macOS/iOS simulators); JVM-bound specs live in `jvmTest`.
 
 ### Code Quality
 

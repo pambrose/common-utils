@@ -14,11 +14,11 @@ import org.gradle.kotlin.dsl.withType
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTargetWithSimulatorTests
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.konan.target.Family
 import org.jmailen.gradle.kotlinter.KotlinterExtension
-import org.jmailen.gradle.kotlinter.tasks.FormatTask
-import org.jmailen.gradle.kotlinter.tasks.LintTask
+import org.jmailen.gradle.kotlinter.tasks.ConfigurableKtLintTask
 
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
@@ -53,6 +53,8 @@ val experimentalOptIns = listOf(
     "kotlin.concurrent.atomics.ExperimentalAtomicApi",
     "kotlinx.serialization.ExperimentalSerializationApi",
 )
+
+val returnValueCheckerArg = "-Xreturn-value-checker=check"
 
 fun DokkaExtension.configureHtml() {
     pluginsConfiguration.html {
@@ -159,7 +161,7 @@ fun Project.configureKotlinJvm() {
         // emit only false-positive warnings.
         tasks.named<KotlinCompile>("compileKotlin") {
             compilerOptions {
-                freeCompilerArgs.add("-Xreturn-value-checker=check")
+                freeCompilerArgs.add(returnValueCheckerArg)
             }
         }
     }
@@ -198,11 +200,19 @@ fun Project.configureKotlinMultiplatform() {
             compilations.matching { it.name == "main" }.configureEach {
                 compileTaskProvider.configure {
                     compilerOptions {
-                        freeCompilerArgs.add("-Xreturn-value-checker=check")
+                        freeCompilerArgs.add(returnValueCheckerArg)
                     }
                 }
             }
         }
+
+        // Xcode installs the iOS simulator runtime by default, but not the watchOS/tvOS
+        // ones; macOS + iOS simulator runs already exercise the Apple targets.
+        targets.withType<KotlinNativeTargetWithSimulatorTests>()
+            .matching { it.konanTarget.family == Family.WATCHOS || it.konanTarget.family == Family.TVOS }
+            .configureEach {
+                tasks.named("${name}Test") { enabled = false }
+            }
     }
 
     // The com.pambrose.testing convention plugin does this for the JVM modules.
@@ -210,20 +220,12 @@ fun Project.configureKotlinMultiplatform() {
         useJUnitPlatform()
     }
 
-    // Kotest specs are executed on the JVM through the JUnit Platform runner. The
-    // js/wasm/native test tasks compile the specs (which enforces portability) but
-    // discover none of them, so they must not fail on empty discovery.
+    // Kotest discovers commonTest specs on the non-JVM targets too, but a target whose
+    // test binary contains no specs (e.g. a module whose specs are all JVM-bound) must
+    // not fail on empty discovery.
     tasks.withType<AbstractTestTask>().configureEach {
         if (this !is Test) {
             failOnNoDiscoveredTests.set(false)
-        }
-    }
-
-    // Xcode installs the iOS simulator runtime by default, but not the watchOS/tvOS
-    // ones; macOS + iOS simulator runs already exercise the Apple targets.
-    tasks.withType<KotlinNativeSimulatorTest>().configureEach {
-        if (name.startsWith("watchos") || name.startsWith("tvos")) {
-            enabled = false
         }
     }
 }
@@ -235,11 +237,9 @@ fun Project.configureKotlinterForKmp() {
     }
     // The kotest plugin generates spec-launcher sources via KSP that do not follow
     // the ktlint style; only hand-written sources should be linted.
-    tasks.withType<LintTask>().configureEach {
-        exclude { it.file.path.contains("/build/generated/") }
-    }
-    tasks.withType<FormatTask>().configureEach {
-        exclude { it.file.path.contains("/build/generated/") }
+    val buildDirFile = layout.buildDirectory.get().asFile
+    tasks.withType<ConfigurableKtLintTask>().configureEach {
+        exclude { it.file.startsWith(buildDirFile) }
     }
 }
 
@@ -270,10 +270,10 @@ fun Project.configureDetekt() {
     // Wire the aggregate tasks to every per-source-set task by type so analysis runs
     // with full type resolution on both kotlin/jvm modules (detektMain/detektTest) and
     // KMP modules (detektJvmMain, detektMetadataCommonMain, ...).
-    tasks.matching { it.name == "detekt" }.configureEach {
+    tasks.named("detekt") {
         dependsOn(tasks.withType<Detekt>().matching { it.name != "detekt" })
     }
-    tasks.matching { it.name == "detektBaseline" }.configureEach {
+    tasks.named("detektBaseline") {
         dependsOn(tasks.withType<DetektCreateBaselineTask>().matching { it.name != "detektBaseline" })
     }
 }
@@ -298,17 +298,13 @@ fun Project.configureKover() {
 
 fun Project.configurePublishing(isKmp: Boolean) {
     extensions.configure<MavenPublishBaseExtension> {
+        val javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml")
+        val sourcesJar = SourcesJar.Sources()
         configure(
             if (isKmp)
-                KotlinMultiplatform(
-                    javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
-                    sourcesJar = SourcesJar.Sources(),
-                )
+                KotlinMultiplatform(javadocJar = javadocJar, sourcesJar = sourcesJar)
             else
-                KotlinJvm(
-                    javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
-                    sourcesJar = SourcesJar.Sources(),
-                ),
+                KotlinJvm(javadocJar = javadocJar, sourcesJar = sourcesJar),
         )
         coordinates(project.group.toString(), project.name, project.version.toString())
 
