@@ -48,7 +48,10 @@ import java.io.Closeable
 object RecaptchaService : Closeable {
   private val logger = KotlinLogging.logger {}
   private const val RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
-  private val httpClient =
+
+  // Internal (not private) so tests can swap in a MockEngine-backed client to exercise the
+  // verification response branches hermetically; production code always uses this CIO client.
+  internal var httpClient =
     HttpClient(CIO) {
       install(ContentNegotiation) {
         json(

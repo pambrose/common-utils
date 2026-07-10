@@ -21,15 +21,24 @@ package com.pambrose.common.recaptcha
 import com.pambrose.common.recaptcha.RecaptchaService.loadRecaptchaScript
 import com.pambrose.common.recaptcha.RecaptchaService.validateRecaptcha
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.http.headersOf
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.post
@@ -37,14 +46,14 @@ import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.html.head
 import kotlinx.html.stream.createHTML
+import kotlinx.serialization.json.Json
 
 /**
- * Covers the previously-untested routing logic of [RecaptchaService.validateRecaptcha] and the
- * HEAD script injection. Only the network-free branches are exercised: the disabled-gate
- * short-circuit, the missing/blank-token 400 path, and the verification-error 400 path (driven by
- * closing the service's HttpClient so the request fails before any I/O). The success/failure
- * *response* branches flow through a private, hardcoded CIO [io.ktor.client.HttpClient] against the
- * real Google siteverify URL and are not testable without a production injection seam.
+ * Covers the routing logic of [RecaptchaService.validateRecaptcha] and the HEAD script injection:
+ * the disabled-gate short-circuit, the missing/blank-token 400 path, the verification-error 400
+ * path (driven by closing the service's HttpClient so the request fails before any I/O), and the
+ * success/failure *response* branches, exercised hermetically by swapping the service's internal
+ * client for a MockEngine-backed one that fakes Google's siteverify endpoint.
  */
 class RecaptchaServiceTests : StringSpec() {
   init {
@@ -143,6 +152,88 @@ class RecaptchaServiceTests : StringSpec() {
       renderHead(config(enabled = false, siteKey = "site", secretKey = "secret")) shouldNotContain "api.js"
       renderHead(config(enabled = true, siteKey = null, secretKey = "secret")) shouldNotContain "api.js"
       renderHead(config(enabled = true, siteKey = "site", secretKey = null)) shouldNotContain "api.js"
+    }
+
+    // Fakes Google's siteverify endpoint by swapping the service's internal client for a
+    // MockEngine-backed one; the original client is restored (and the mock closed) afterward.
+    fun mockVerificationClient(engine: MockEngine): HttpClient =
+      HttpClient(engine) {
+        install(ContentNegotiation) {
+          json(
+            Json {
+              ignoreUnknownKeys = true
+              coerceInputValues = true
+            },
+          )
+        }
+      }
+
+    suspend fun postToken(engine: MockEngine): Pair<HttpStatusCode, String> {
+      val previous = RecaptchaService.httpClient
+      RecaptchaService.httpClient = mockVerificationClient(engine)
+      try {
+        var result: Pair<HttpStatusCode, String>? = null
+        testApplication {
+          routing {
+            post("/v") {
+              val ok =
+                with(RecaptchaService) {
+                  validateRecaptcha(
+                    config(enabled = true, siteKey = "site", secretKey = "secret"),
+                    call.receiveParameters(),
+                  )
+                }
+              if (ok) call.respondText("passed")
+            }
+          }
+          client.post("/v") {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody("g-recaptcha-response=test-token")
+          }.apply {
+            result = status to bodyAsText()
+          }
+        }
+        return result!!
+      } finally {
+        RecaptchaService.httpClient.close()
+        RecaptchaService.httpClient = previous
+      }
+    }
+
+    "validateRecaptcha passes when the verification response reports success" {
+      val engine =
+        MockEngine {
+          respond(
+            content = """{"success": true, "hostname": "example.com"}""",
+            status = HttpStatusCode.OK,
+            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+          )
+        }
+      val (status, body) = postToken(engine)
+      status shouldBe HttpStatusCode.OK
+      body shouldBe "passed"
+
+      // The verification request carried the secret, token, and remote ip as form parameters.
+      val sent = engine.requestHistory.single()
+      sent.url.toString() shouldBe "https://www.google.com/recaptcha/api/siteverify"
+      val form = (sent.body as FormDataContent).formData
+      form["secret"] shouldBe "secret"
+      form["response"] shouldBe "test-token"
+      form["remoteip"].shouldNotBeNull()
+    }
+
+    "validateRecaptcha responds 400 when the verification response reports failure" {
+      val engine =
+        MockEngine {
+          respond(
+            content = """{"success": false, "error-codes": ["invalid-input-response"]}""",
+            status = HttpStatusCode.OK,
+            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+          )
+        }
+      val (status, body) = postToken(engine)
+      status shouldBe HttpStatusCode.BadRequest
+      body shouldContain "reCAPTCHA verification failed"
     }
 
     // Kept last because it closes the singleton's HttpClient (close() is idempotent, and no other
