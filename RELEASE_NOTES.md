@@ -5,6 +5,35 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v3.0.0 — 2026-07-09
+
+### Highlights
+
+- **Kotlin Multiplatform (core-utils, json-utils, ktor-client-utils)**: The three modules are now KMP, targeting JVM, JS, wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code moved to `commonMain` and JVM-bound code to `jvmMain`, keeping the published JVM API unchanged; the mixed files are split with `@file:JvmName` + `@file:JvmMultifileClass` so the compiled JVM facade classes stay binary-identical. The remaining 16 framework modules stay Kotlin/JVM and consume core-utils' jvm variant transparently. The Intel-based Apple targets (`macosX64`, `tvosX64`, `watchosX64`), which Kotlin 2.4 deprecates for removal, are not published; Apple platforms are covered by the Arm64 device/simulator targets.
+- **Why 3.0.0 (breaking changes)**: Non-Gradle (Maven) consumers of the three KMP modules must now depend on the `-jvm` artifact (e.g. `core-utils-jvm`); Gradle consumers resolve the correct variant from the root coordinate automatically. `KtorDsl.blockingGet(...)` became a JVM-only extension function — qualified call sites compile unchanged, but the compiled symbol moved from `KtorDsl` to `KtorDslJvmKt` (binary-incompatible for this one function), and member-import call sites must switch to `import com.pambrose.common.dsl.blockingGet`.
+- **Test coverage**: Aggregate JVM instruction coverage raised from 83.5% to 98.7% with new hermetic Kotest specs across every module — in-process gRPC and TLS-context fixtures, mocked-Jedis Redis tests, H2 in-memory Exposed tests (including the custom `upsert`), servlet adapter and concurrency-waiter tests, and an injectable HTTP client seam in `RecaptchaService` so verification responses are testable without network access.
+- Portable Kotest specs now execute on every host-runnable target (JVM, Node.js for js/wasmJs, and macOS/iOS simulators) via the Kotest Gradle plugin.
+
+### Build & tooling
+
+- Build-script cleanups: aggregate detekt tasks wired via `tasks.named()`, kotlinter excludes unified on the
+  `ConfigurableKtLintTask` supertype with the excluded path derived from the build directory, watchOS/tvOS
+  simulator test disabling keyed on `konanTarget.family`, and shared publishing/compiler-flag values hoisted.
+- Node.js/Yarn/Binaryen toolchain distributions resolve from settings-level ivy repositories under
+  `FAIL_ON_PROJECT_REPOS` (toolchain `downloadBaseUrl`s are unset, so the Kotlin plugin registers no
+  project-level repositories); `kotlin-js-store/` lockfiles are now tracked.
+
+### Dependency bumps
+
+- `jetty` 12.1.10 → 12.1.11
+- `kotest` 6.2.1 → 6.2.2
+- Security (npm test toolchain): Yarn resolutions force `ws` 8.21.0, `serialize-javascript` 7.0.5, and
+  `diff` 8.0.3, clearing all five Dependabot alerts on the JS/wasmJs lockfiles (dev-time only).
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/2.9.3...3.0.0
+
+---
+
 ## v2.9.3 — 2026-07-03
 
 ### Highlights

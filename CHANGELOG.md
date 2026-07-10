@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [3.0.0] - 2026-07-09
 
 ### Kotlin Multiplatform conversion
 
@@ -24,18 +24,50 @@ All notable changes to Common Utils are documented in this file.
 - Tests: portable Kotest specs moved to `commonTest` and now execute on JVM (JUnit Platform), Node.js,
   wasmJs, and native simulators via the Kotest Gradle plugin (`io.kotest` + KSP); JVM-bound specs stay in
   `jvmTest`. watchOS/tvOS simulator test tasks are disabled (no simulator runtimes installed by default).
-- Tests: aggregate JVM instruction coverage raised from 83.5% to 98.1% with new hermetic Kotest specs across
-  grpc-utils (in-process gRPC + TLS-context fixtures), ktor-server-utils (servlet adapters), redis-utils
-  (mocked Jedis incl. `scanKeys`), exposed-utils (H2 in-memory incl. custom `upsert`), guava-utils
-  (monitor/waiter concurrency), recaptcha-utils, email-utils webhooks, script pools, and the core-utils and
-  ktor-client-utils JVM extensions (`blockingGet`, salted hashes).
 - The native target set excludes the Intel-based Apple targets (`macosX64`, `tvosX64`, `watchosX64`), which
   Kotlin 2.4 deprecates for removal (https://kotl.in/native-targets-tiers); Apple platforms are covered by the
   Arm64 device/simulator targets.
 - Build: `kmpModuleNames` switch in the root `build.gradle.kts` selects KMP vs JVM configuration;
-  settings repositories mode changed from `FAIL_ON_PROJECT_REPOS` to `PREFER_SETTINGS` with ivy repositories
-  for the Node.js/Yarn/Binaryen toolchain downloads; `kotlin-js-store/` lockfiles are now tracked;
-  Gradle heap raised to 8g for Kotlin/Native link tasks.
+  settings-level ivy repositories serve the Node.js/Yarn/Binaryen toolchain downloads under
+  `FAIL_ON_PROJECT_REPOS` (each toolchain env spec's `downloadBaseUrl` is unset so the Kotlin plugin never
+  registers project-level repositories); `kotlin-js-store/` lockfiles are now tracked; Gradle heap raised
+  to 8g for Kotlin/Native link tasks.
+
+### Testing
+
+- Aggregate JVM instruction coverage raised from 83.5% to 98.7%; the remaining misses are almost entirely
+  unreachable defensive branches. Coverage of the core-utils and ktor-client-utils JVM extensions
+  (`blockingGet` against a loopback HTTP server, salted hashes with known-answer vectors) closes the
+  codecov patch findings from the multiplatform conversion.
+- `RecaptchaService`'s verification `HttpClient` is now an internal, swappable property, giving tests a seam
+  to fake Google's siteverify endpoint with a MockEngine-backed client; new tests cover the verification
+  success/failure response branches, the outgoing form parameters, and `RecaptchaResponse`'s serializer
+  write path. Production behavior and the public API are unchanged.
+- New hermetic specs across the JVM modules: in-process gRPC round-trip and TLS-context construction from
+  committed self-signed PEM fixtures (grpc-utils), MockK-based servlet adapter and Jedis tests
+  (ktor-server-utils, redis-utils), H2 in-memory Exposed tests including the custom `upsert`
+  (exposed-utils), latch-handshake concurrency tests (guava-utils), webhook serialization branches
+  (email-utils), and Jython pool lifecycle (script-utils-python).
+
+### Build & tooling
+
+- Aggregate `detekt`/`detektBaseline` tasks are wired with `tasks.named()` instead of a name-matching live
+  spec; the kotlinter lint/format generated-source excludes collapsed onto the shared
+  `ConfigurableKtLintTask` supertype with the excluded path derived from `layout.buildDirectory`
+  (separator-safe); watchOS/tvOS simulator test disabling selects targets by `konanTarget.family` instead of
+  task-name prefixes; duplicated publishing jar arguments and the `-Xreturn-value-checker` flag hoisted to
+  shared values.
+
+### Dependency bumps
+
+- `jetty` 12.1.10 → 12.1.11
+- `kotest` 6.2.1 → 6.2.2
+- Security: Yarn resolution overrides force patched versions of vulnerable transitive npm packages in the
+  JS/wasmJs test toolchains — `ws` 8.20.1 → 8.21.0 (memory-exhaustion DoS), `serialize-javascript`
+  6.0.2 → 7.0.5 (RCE + CPU DoS), `diff` 7.0.0 → 8.0.3 (parsePatch DoS) — clearing all five Dependabot
+  alerts on the `kotlin-js-store/` lockfiles. Dev-time test infrastructure only; nothing ships in
+  published artifacts.
+- Bump project version to 3.0.0 (major: the two binary/coordinate deviations above for the KMP modules)
 
 ## [2.9.3] - 2026-07-03
 
