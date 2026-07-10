@@ -19,8 +19,9 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - Build-script cleanups: aggregate detekt tasks wired via `tasks.named()`, kotlinter excludes unified on the
   `ConfigurableKtLintTask` supertype with the excluded path derived from the build directory, watchOS/tvOS
   simulator test disabling keyed on `konanTarget.family`, and shared publishing/compiler-flag values hoisted.
-- Settings repositories switched to `PREFER_SETTINGS` with ivy repositories for the Node.js/Yarn/Binaryen
-  toolchains; `kotlin-js-store/` lockfiles are now tracked.
+- Node.js/Yarn/Binaryen toolchain distributions resolve from settings-level ivy repositories under
+  `FAIL_ON_PROJECT_REPOS` (toolchain `downloadBaseUrl`s are unset, so the Kotlin plugin registers no
+  project-level repositories); `kotlin-js-store/` lockfiles are now tracked.
 
 ### Dependency bumps
 

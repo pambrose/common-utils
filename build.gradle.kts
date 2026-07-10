@@ -1,3 +1,5 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
@@ -15,9 +17,19 @@ import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTargetWithSimulatorTests
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
+import org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenEnvSpec
+import org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenPlugin
+import org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsPlugin
+import org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin
+import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootEnvSpec
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.target.Family
@@ -98,13 +110,47 @@ val yarnResolutions = mapOf(
     "diff" to "8.0.3",
 )
 
+// The settings script declares ivy repositories for the Node.js/Yarn/Binaryen distributions
+// and uses FAIL_ON_PROJECT_REPOS; unsetting each toolchain env spec's downloadBaseUrl stops
+// the Kotlin plugin registering equivalent project-level repositories (which that mode would
+// reject). Clear the convention too — set(null) alone falls back to it.
+fun Property<String>.unsetDownloadBaseUrl() {
+    convention(null as String?)
+    set(null as String?)
+}
+
+plugins.withType<NodeJsRootPlugin> {
+    the<NodeJsEnvSpec>().downloadBaseUrl.unsetDownloadBaseUrl()
+}
+
+plugins.withType<WasmNodeJsRootPlugin> {
+    the<WasmNodeJsEnvSpec>().downloadBaseUrl.unsetDownloadBaseUrl()
+}
+
+plugins.withType<BinaryenPlugin> {
+    the<BinaryenEnvSpec>().downloadBaseUrl.unsetDownloadBaseUrl()
+}
+
+// The per-project NodeJs plugins register their own env spec (and distribution repository)
+// on each subproject with a JS or wasmJs target, so the root-level unset does not cover them.
+subprojects {
+    plugins.withType<NodeJsPlugin> {
+        the<NodeJsEnvSpec>().downloadBaseUrl.unsetDownloadBaseUrl()
+    }
+    plugins.withType<WasmNodeJsPlugin> {
+        the<WasmNodeJsEnvSpec>().downloadBaseUrl.unsetDownloadBaseUrl()
+    }
+}
+
 plugins.withType<YarnPlugin> {
+    the<YarnRootEnvSpec>().downloadBaseUrl.unsetDownloadBaseUrl()
     the<YarnRootExtension>().apply {
         yarnResolutions.forEach { (pkg, version) -> resolution(pkg, version) }
     }
 }
 
 plugins.withType<WasmYarnPlugin> {
+    the<WasmYarnRootEnvSpec>().downloadBaseUrl.unsetDownloadBaseUrl()
     the<WasmYarnRootExtension>().apply {
         yarnResolutions.forEach { (pkg, version) -> resolution(pkg, version) }
     }

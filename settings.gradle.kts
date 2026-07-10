@@ -1,4 +1,4 @@
-import org.gradle.api.initialization.resolve.RepositoriesMode.PREFER_SETTINGS
+import org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_REPOS
 
 pluginManagement {
     repositories {
@@ -12,11 +12,11 @@ plugins {
 }
 
 dependencyResolutionManagement {
-    // PREFER_SETTINGS rather than FAIL_ON_PROJECT_REPOS: the Kotlin JS/Wasm toolchain
-    // registers its distribution repositories at the project level, which the FAIL
-    // mode turns into an error. PREFER_SETTINGS ignores those and resolves everything
-    // from the repositories declared here.
-    repositoriesMode.set(PREFER_SETTINGS)
+    // The Kotlin JS/Wasm toolchain would register its distribution repositories at the
+    // project level, which this mode turns into an error; the root build script unsets
+    // each toolchain env spec's downloadBaseUrl so those repositories are never added,
+    // and the ivy repositories declared below serve the distributions instead.
+    repositoriesMode.set(FAIL_ON_PROJECT_REPOS)
     repositories {
         mavenCentral()
 

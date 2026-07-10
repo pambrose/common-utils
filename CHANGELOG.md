@@ -28,9 +28,10 @@ All notable changes to Common Utils are documented in this file.
   Kotlin 2.4 deprecates for removal (https://kotl.in/native-targets-tiers); Apple platforms are covered by the
   Arm64 device/simulator targets.
 - Build: `kmpModuleNames` switch in the root `build.gradle.kts` selects KMP vs JVM configuration;
-  settings repositories mode changed from `FAIL_ON_PROJECT_REPOS` to `PREFER_SETTINGS` with ivy repositories
-  for the Node.js/Yarn/Binaryen toolchain downloads; `kotlin-js-store/` lockfiles are now tracked;
-  Gradle heap raised to 8g for Kotlin/Native link tasks.
+  settings-level ivy repositories serve the Node.js/Yarn/Binaryen toolchain downloads under
+  `FAIL_ON_PROJECT_REPOS` (each toolchain env spec's `downloadBaseUrl` is unset so the Kotlin plugin never
+  registers project-level repositories); `kotlin-js-store/` lockfiles are now tracked; Gradle heap raised
+  to 8g for Kotlin/Native link tasks.
 
 ### Testing
 

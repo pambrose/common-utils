@@ -123,8 +123,9 @@ These opt-ins are enabled globally:
 
 - `kotlin-js-store/` holds the Node/Yarn lockfiles for the JS and wasmJs toolchains; commit changes to it
   (run `./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock` when JS dependencies change).
-- `settings.gradle.kts` uses `PREFER_SETTINGS` repositories mode with ivy repositories for the Node.js, Yarn,
-  and Binaryen distributions.
+- `settings.gradle.kts` uses `FAIL_ON_PROJECT_REPOS` repositories mode with ivy repositories for the Node.js,
+  Yarn, and Binaryen distributions; the root build script unsets every toolchain env spec's `downloadBaseUrl`
+  (root and per-subproject) so the Kotlin plugin never registers project-level repositories.
 - The mixed common/JVM files (`StringExtensions`, `MiscExtensions`, `MiscFuncs` in core-utils) are split across
   `commonMain` and `jvmMain` using `@file:JvmName` + `@file:JvmMultifileClass` so the compiled JVM facade classes
   (and therefore the published JVM ABI) are unchanged.
