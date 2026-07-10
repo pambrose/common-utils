@@ -50,7 +50,8 @@ class VersionTests : StringSpec() {
 
     "buildString() returns formatted timestamp when annotated" {
       val s = Annotated::class.buildString()
-      s shouldContain "PST"
+      // buildTime is fixed, so toFullDateString is deterministic in the America/Los_Angeles zone.
+      s shouldContain "Sun 03/31/24 17:00:00"
     }
 
     "buildString() returns Unknown when annotation is missing" {

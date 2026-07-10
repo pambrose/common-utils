@@ -84,7 +84,6 @@ coverage has been significantly expanded with **53 test files** across 18 module
 | `StringExtensions.trimEnds()`     | Could throw if `len*2 > string.length`   |
 | `StringExtensions.linesBetween()` | Returns empty list if patterns not found |
 | `NumberExtensions.random()`       | Throws if called with 0 or negative      |
-| `MiscFuncs.toFullDateString()`    | Hardcoded "PST" doesn't account for DST  |
 
 ---
 

@@ -20,7 +20,7 @@
 
 Use core-utils for general Kotlin/Java utility needs. Other modules target specific frameworks — pick only what you need.
 
-- [core-utils](core-utils/README.md): General-purpose Kotlin extensions and helpers (multiplatform). Use for string/number/collection operations, I/O, atomic delegates, time/duration helpers, reflection, version management. No framework dependencies. Foundation for most other modules.
+- [core-utils](core-utils/README.md): General-purpose Kotlin extensions and helpers (multiplatform). Use for string/number/collection operations, I/O, atomic delegates, date/time formatting and duration helpers (DateUtils; zone-neutral, no bundled tz database), reflection, version management. No framework dependencies. Foundation for most other modules.
 - [json-utils](json-utils/README.md): Kotlinx.serialization helpers (multiplatform). Use for JsonElement navigation (dot-notation paths), type-safe extraction, format configs (pretty/raw/lenient/strict). Depends on: core-utils.
 - [exposed-utils](exposed-utils/README.md): JetBrains Exposed SQL extensions. Use for custom SQL expressions, UPSERT, timed transactions, ResultRow helpers. Standalone.
 - [redis-utils](redis-utils/README.md): Jedis client extensions. Use for Redis connection management and common operation patterns. Depends on: core-utils.

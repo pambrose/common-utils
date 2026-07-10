@@ -2,6 +2,40 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### New features
+
+- New `DateUtils` object (core-utils, `DateUtils.kt`) collecting multiplatform date/time helpers built on
+  `kotlinx-datetime`: ISO parsing (`parseToLocalDate`/`parseToLocalTime`/`parseToLocalDateTime`),
+  `instantNow`/`localDateNow`/`localDateTimeNow`, US-style formatters (`toMMDDYYYY`, `toMMDDYY`, `toMMDD`,
+  `toDashedYYYYMMDD`, `toFullDateString`, `toLogString`, `toMMDDYYYYHHMM`, `toCreated`, `toISO8601`,
+  `toUTCDateTime`), `abbrevDayOfWeek`, and duration/age helpers (`age`, `toAdjustedString`). Every member is
+  KDoc-documented.
+- `DateUtils` is time-zone-neutral: `localDateNow`/`localDateTimeNow` default to
+  `TimeZone.currentSystemDefault()` instead of a hardcoded region, and no named zone is resolved internally,
+  so core-utils pulls no IANA time-zone database into JS/wasmJs consumers. Callers needing a fixed zone pass
+  one explicitly (which on JS/wasmJs requires the `@js-joda/timezone` npm package on the consumer side).
+- **Moved (source-incompatible)**: `toFullDateString` and `abbrevDayOfWeek`, previously top-level functions in
+  `com.pambrose.common.util`, are now members of the `DateUtils` object; update call sites to
+  `import com.pambrose.common.util.DateUtils.toFullDateString` (and `.abbrevDayOfWeek`).
+
+### Bug fixes
+
+- `DateUtils.toFullDateString` no longer appends a hardcoded `"PST"` suffix, which was incorrect during
+  Pacific Daylight Time.
+- `DateUtils.toLogString` left-pads the millisecond field, so `5 ms` renders as `.005` (previously `.500`).
+- `DateUtils.toMMDDYYYYHHMM` zero-pads the hour, so 9 AM renders as `09:05` (previously `9:05`).
+
+### Build & tooling
+
+- KMP module `Test` tasks configure `testLogging` (PASSED/SKIPPED/FAILED events with full exception format).
+
+### Dependency bumps
+
+- `logback` 1.5.32 → 1.5.38
+- `grpc` 1.82.1 → 1.82.2
+
 ## [3.0.0] - 2026-07-09
 
 ### Kotlin Multiplatform conversion

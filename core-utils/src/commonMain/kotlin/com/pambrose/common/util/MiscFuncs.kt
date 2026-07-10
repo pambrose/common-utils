@@ -22,8 +22,6 @@ package com.pambrose.common.util
 import kotlin.contracts.contract
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.number
 
 /**
  * Returns `true` if this value is not null, with a Kotlin contract that smart-casts the receiver.
@@ -48,17 +46,6 @@ fun Any?.isNull(): Boolean {
   }
   return this == null
 }
-
-/**
- * Formats this [LocalDateTime] as a full date string, e.g., `"Mon 04/10/26 14:30:00 PST"`.
- *
- * Extension function on [LocalDateTime].
- *
- * @return the formatted date/time string
- */
-fun LocalDateTime.toFullDateString(): String =
-  "${abbrevDayOfWeek()} ${month.number.lpad(2)}/${day.lpad(2)}/${(year - 2000).lpad(2)} " +
-    "${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)} PST"
 
 /**
  * Left-pads this [Int] to the specified [width] with [padChar].
@@ -87,13 +74,6 @@ fun Int.rpad(
   width: Int,
   padChar: Char = '0',
 ): String = toString().padEnd(width, padChar)
-
-/**
- * Returns the abbreviated day-of-week name (e.g., `"Mon"`, `"Tue"`).
- *
- * Extension function on [LocalDateTime].
- */
-fun LocalDateTime.abbrevDayOfWeek(): String = dayOfWeek.name.lowercase().capitalizeFirstChar().substring(0, 3)
 
 /**
  * Capitalizes the first character of this [String].

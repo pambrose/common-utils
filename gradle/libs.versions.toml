@@ -20,12 +20,12 @@ kotlinxHtml = "0.12.0"
 serialization = "1.11.0"
 
 # Logging
-logback = "1.5.32"
+logback = "1.5.38"
 logging = "8.0.4"
 
 # Frameworks
 dropwizard = "4.2.39"
-grpc = "1.82.1"
+grpc = "1.82.2"
 jakartaServlet = "6.1.0"
 jetty = "12.1.11"
 ktor = "3.5.1"
