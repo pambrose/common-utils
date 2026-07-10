@@ -2,26 +2,30 @@
 
 > Modular Kotlin/Java utility libraries providing extension functions, DSLs, and helpers for common frameworks. Each module is independently consumable via Maven Central.
 
-- Version: 2.9.3
+- Version: 3.0.0
 - Group: com.pambrose.common-utils
 - Repository: https://github.com/pambrose/common-utils
 - Maven Central: https://central.sonatype.com/namespace/com.pambrose.common-utils
 - License: Apache 2.0
 - Kotlin: 2.4.0, JVM 17
 - Base package: com.pambrose.common.*
-- Install: `implementation("com.pambrose.common-utils:<module>:2.9.3")`
+- Install: `implementation("com.pambrose.common-utils:<module>:3.0.0")`
+- Multiplatform: core-utils, json-utils, and ktor-client-utils are Kotlin Multiplatform (JVM, JS, wasmJs,
+  Native — iOS/macOS/tvOS/watchOS/Linux/Windows); all other modules are JVM-only
+- Maven (non-Gradle) consumers of the three multiplatform modules must use the `-jvm` artifact
+  (e.g. `core-utils-jvm`); Gradle resolves the correct variant from the root coordinate
 
 
 ## Modules
 
 Use core-utils for general Kotlin/Java utility needs. Other modules target specific frameworks — pick only what you need.
 
-- [core-utils](core-utils/README.md): General-purpose Kotlin extensions and helpers. Use for string/number/collection operations, I/O, atomic delegates, time/duration helpers, reflection, version management. No framework dependencies. Foundation for most other modules.
-- [json-utils](json-utils/README.md): Kotlinx.serialization helpers. Use for JsonElement navigation (dot-notation paths), type-safe extraction, format configs (pretty/raw/lenient/strict). Depends on: core-utils.
+- [core-utils](core-utils/README.md): General-purpose Kotlin extensions and helpers (multiplatform). Use for string/number/collection operations, I/O, atomic delegates, time/duration helpers, reflection, version management. No framework dependencies. Foundation for most other modules.
+- [json-utils](json-utils/README.md): Kotlinx.serialization helpers (multiplatform). Use for JsonElement navigation (dot-notation paths), type-safe extraction, format configs (pretty/raw/lenient/strict). Depends on: core-utils.
 - [exposed-utils](exposed-utils/README.md): JetBrains Exposed SQL extensions. Use for custom SQL expressions, UPSERT, timed transactions, ResultRow helpers. Standalone.
 - [redis-utils](redis-utils/README.md): Jedis client extensions. Use for Redis connection management and common operation patterns. Depends on: core-utils.
 - [ktor-server-utils](ktor-server-utils/README.md): Ktor server extensions. Use for Heroku HTTPS redirect, response utilities, servlet integration. Depends on: core-utils.
-- [ktor-client-utils](ktor-client-utils/README.md): Ktor HTTP client DSL. Use for client configuration and request/response utilities. Depends on: core-utils.
+- [ktor-client-utils](ktor-client-utils/README.md): Ktor HTTP client DSL (multiplatform; `blockingGet` is JVM-only). Use for client configuration and request/response utilities. Depends on: core-utils.
 - [jetty-utils](jetty-utils/README.md): Jetty 12 (EE11) server DSL. Use for server config, lambda-based servlets (Jakarta Servlet 6.1), version endpoints. Depends on: core-utils.
 - [grpc-utils](grpc-utils/README.md): gRPC channel/server DSL. Use for TLS/SSL setup, server lifecycle, StreamObserver helpers. Standalone.
 - [dropwizard-utils](dropwizard-utils/README.md): Dropwizard Metrics DSL. Use for metric definitions, health checks, JMX integration. Standalone.

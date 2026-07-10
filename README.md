@@ -204,21 +204,25 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:2.9.3")
-  implementation("com.pambrose.common-utils:json-utils:2.9.3")
-  implementation("com.pambrose.common-utils:ktor-server-utils:2.9.3")
+  implementation("com.pambrose.common-utils:core-utils:3.0.0")
+  implementation("com.pambrose.common-utils:json-utils:3.0.0")
+  implementation("com.pambrose.common-utils:ktor-server-utils:3.0.0")
     // ... other modules
 }
 ```
 
 ### Maven
 
+For the multiplatform modules (**core-utils**, **json-utils**, **ktor-client-utils**), Maven consumers must
+depend on the `-jvm` artifact (e.g. `core-utils-jvm`); Gradle consumers resolve the correct variant from the
+root coordinate automatically. The JVM-only modules keep their plain artifact ids.
+
 ```xml
 <dependencies>
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
-        <artifactId>core-utils</artifactId>
-      <version>2.9.3</version>
+        <artifactId>core-utils-jvm</artifactId>
+      <version>3.0.0</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>

@@ -131,12 +131,22 @@ These opt-ins are enabled globally:
 - watchOS/tvOS simulator test tasks are disabled (host Xcode lacks those simulator runtimes); Apple coverage
   comes from macOS and iOS simulator test tasks.
 
+### Testing Notes
+
+- All tests are hermetic: no network, no external services. gRPC tests use the in-process transport and
+  committed self-signed PEM fixtures (`grpc-utils/src/test/resources/tls/`); Exposed tests use in-memory H2;
+  Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
+- `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
+  MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
+- Demo `main()` functions in guava-utils concurrent classes are excluded from coverage via
+  `koverExcludeClasses` in the root build script; don't write tests for them.
+
 ### Package Structure
 
 All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "2.9.3" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
+- Project version: "3.0.0" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
 - Group: "com.pambrose.common-utils" (set in `gradle.properties`)
 - All library versions in `gradle/libs.versions.toml`
