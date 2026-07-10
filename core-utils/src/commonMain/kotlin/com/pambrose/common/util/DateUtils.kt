@@ -112,7 +112,6 @@ object DateUtils {
       (if (str.contains(".")) str.substringBefore(".") else str) + "Z"
     }
 
-  /** Returns the three-letter, title-cased abbreviation of this [DayOfWeek] (e.g. `"Mon"`). */
   private fun DayOfWeek.abbrev(): String = name.lowercase().capitalizeFirstChar().substring(0, 3)
 
   /**
