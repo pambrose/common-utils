@@ -61,6 +61,11 @@ All notable changes to Common Utils are documented in this file.
 
 - `jetty` 12.1.10 → 12.1.11
 - `kotest` 6.2.1 → 6.2.2
+- Security: Yarn resolution overrides force patched versions of vulnerable transitive npm packages in the
+  JS/wasmJs test toolchains — `ws` 8.20.1 → 8.21.0 (memory-exhaustion DoS), `serialize-javascript`
+  6.0.2 → 7.0.5 (RCE + CPU DoS), `diff` 7.0.0 → 8.0.3 (parsePatch DoS) — clearing all five Dependabot
+  alerts on the `kotlin-js-store/` lockfiles. Dev-time test infrastructure only; nothing ships in
+  published artifacts.
 - Bump project version to 3.0.0 (major: the two binary/coordinate deviations above for the KMP modules)
 
 ## [2.9.3] - 2026-07-03

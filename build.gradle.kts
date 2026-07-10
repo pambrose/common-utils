@@ -15,6 +15,10 @@ import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTargetWithSimulatorTests
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
+import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin
+import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.target.Family
 import org.jmailen.gradle.kotlinter.KotlinterExtension
@@ -81,6 +85,28 @@ kover {
                 classes(koverExcludeClasses)
             }
         }
+    }
+}
+
+// Force patched versions of vulnerable transitive npm packages in the JS/wasmJs test
+// toolchains (Dependabot: ws DoS, serialize-javascript RCE/DoS, jsdiff DoS). The toolchain
+// requests them with pins/ranges that cannot reach the fixed versions on their own. After
+// changing these, re-run `./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock`.
+val yarnResolutions = mapOf(
+    "ws" to "8.21.0",
+    "serialize-javascript" to "7.0.5",
+    "diff" to "8.0.3",
+)
+
+plugins.withType<YarnPlugin> {
+    the<YarnRootExtension>().apply {
+        yarnResolutions.forEach { (pkg, version) -> resolution(pkg, version) }
+    }
+}
+
+plugins.withType<WasmYarnPlugin> {
+    the<WasmYarnRootExtension>().apply {
+        yarnResolutions.forEach { (pkg, version) -> resolution(pkg, version) }
     }
 }
 

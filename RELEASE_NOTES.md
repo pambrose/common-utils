@@ -26,6 +26,8 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 - `jetty` 12.1.10 → 12.1.11
 - `kotest` 6.2.1 → 6.2.2
+- Security (npm test toolchain): Yarn resolutions force `ws` 8.21.0, `serialize-javascript` 7.0.5, and
+  `diff` 8.0.3, clearing all five Dependabot alerts on the JS/wasmJs lockfiles (dev-time only).
 
 **Full Changelog**: https://github.com/pambrose/common-utils/compare/2.9.3...3.0.0
 
