@@ -131,6 +131,10 @@ These opt-ins are enabled globally:
   (and therefore the published JVM ABI) are unchanged.
 - watchOS/tvOS simulator test tasks are disabled (host Xcode lacks those simulator runtimes); Apple coverage
   comes from macOS and iOS simulator test tasks.
+- core-utils bundles no IANA time-zone database: `DateUtils` resolves only `TimeZone.currentSystemDefault()`
+  and UTC, so named zones (which need the `@js-joda/timezone` npm package on JS/wasm) stay a consumer
+  concern. Keep new common code zone-neutral to preserve this — a hardcoded named zone would force the tz
+  database into every JS/wasmJs consumer.
 
 ### Testing Notes
 

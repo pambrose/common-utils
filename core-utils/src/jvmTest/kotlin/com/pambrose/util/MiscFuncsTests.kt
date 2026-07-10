@@ -18,7 +18,6 @@
 
 package com.pambrose.util
 
-import com.pambrose.common.util.abbrevDayOfWeek
 import com.pambrose.common.util.capitalizeFirstChar
 import com.pambrose.common.util.captureStdout
 import com.pambrose.common.util.hostInfo
@@ -29,7 +28,6 @@ import com.pambrose.common.util.randomId
 import com.pambrose.common.util.repeatWithSleep
 import com.pambrose.common.util.rpad
 import com.pambrose.common.util.sleep
-import com.pambrose.common.util.toFullDateString
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
@@ -150,18 +148,6 @@ class MiscFuncsTests : StringSpec() {
         captureStdout { error("boom") }
       }
       System.out shouldBe originalOut
-    }
-
-    "abbrevDayOfWeek returns 3-char capitalized day name" {
-      // 2026-04-29 is a Wednesday.
-      val wed = LocalDateTime.parse("2026-04-29T10:00:00")
-      wed.abbrevDayOfWeek() shouldHaveLength 3
-      wed.abbrevDayOfWeek() shouldBe "Wed"
-    }
-
-    "toFullDateString formats a date as 'Day MM/DD/YY HH:MM:SS PST'" {
-      val ldt = LocalDateTime.parse("2026-04-29T13:05:09")
-      ldt.toFullDateString() shouldBe "Wed 04/29/26 13:05:09 PST"
     }
   }
 }

@@ -12,6 +12,8 @@ import dev.detekt.gradle.extensions.DetektExtension
 import io.kotest.framework.gradle.KotestGradleExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.gradle.api.tasks.testing.AbstractTestTask
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
@@ -290,6 +292,11 @@ fun Project.configureKotlinMultiplatform() {
     // The com.pambrose.testing convention plugin does this for the JVM modules.
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+        testLogging {
+            events = setOf(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED, TestLogEvent.STANDARD_ERROR)
+            exceptionFormat = TestExceptionFormat.FULL
+            showStandardStreams = false
+        }
     }
 
     // Kotest discovers commonTest specs on the non-JVM targets too, but a target whose

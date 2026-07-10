@@ -5,6 +5,26 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## Unreleased
+
+### Highlights
+
+- **New `DateUtils` object (core-utils)**: multiplatform date/time parsing, US-style formatting, and
+  duration/age helpers built on kotlinx-datetime, with KDoc on every member. `localDateNow`/
+  `localDateTimeNow` default to the system time zone rather than a hardcoded region, so core-utils bundles no
+  IANA time-zone database into JS/wasmJs consumers; callers needing a fixed zone pass one explicitly.
+- **Moved (source-incompatible)**: `toFullDateString` and `abbrevDayOfWeek` are now members of `DateUtils`
+  rather than top-level `com.pambrose.common.util` functions — update the corresponding member imports.
+- **Formatter fixes**: `toFullDateString` drops the misleading hardcoded `PST` label; `toLogString` left-pads
+  milliseconds (`.005`, not `.500`); `toMMDDYYYYHHMM` zero-pads the hour.
+
+### Dependency bumps
+
+- `logback` 1.5.32 → 1.5.38
+- `grpc` 1.82.1 → 1.82.2
+
+---
+
 ## v3.0.0 — 2026-07-09
 
 ### Highlights
