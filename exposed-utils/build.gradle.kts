@@ -8,4 +8,5 @@ dependencies {
     api(libs.exposed.jodatime)
 
     testImplementation(libs.h2)
+    testImplementation(libs.mockk)
 }

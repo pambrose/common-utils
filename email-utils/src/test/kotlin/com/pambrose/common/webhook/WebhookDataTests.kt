@@ -2,8 +2,11 @@
 
 package com.pambrose.common.webhook
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 class WebhookDataTests : StringSpec() {
@@ -179,6 +182,101 @@ class WebhookDataTests : StringSpec() {
       decoded.to?.size shouldBe 3
       decoded.headers?.size shouldBe 2
       decoded shouldBe data
+    }
+
+    "click JSON round-trip with linkTags present" {
+      val click = Click(
+        ipAddress = "172.16.0.9",
+        link = "https://example.com/sale",
+        linkTags = "campaign-42",
+        timestamp = "2026-04-01T08:30:00Z",
+        userAgent = "Safari/17.0",
+      )
+      val json = Json.encodeToString(click)
+      json shouldContain "\"linkTags\":\"campaign-42\""
+      val decoded = Json.decodeFromString<Click>(json)
+      decoded shouldBe click
+      decoded.linkTags shouldBe "campaign-42"
+    }
+
+    "click decodes from raw JSON with all fields" {
+      val json =
+        """
+        {
+          "ipAddress": "1.2.3.4",
+          "link": "https://example.com/promo",
+          "linkTags": "tag-1",
+          "timestamp": "2026-05-01T00:00:00Z",
+          "userAgent": "curl/8.5"
+        }
+        """.trimIndent()
+      val click = Json.decodeFromString<Click>(json)
+      click.ipAddress shouldBe "1.2.3.4"
+      click.link shouldBe "https://example.com/promo"
+      click.linkTags shouldBe "tag-1"
+      click.timestamp shouldBe "2026-05-01T00:00:00Z"
+      click.userAgent shouldBe "curl/8.5"
+    }
+
+    "click decoding fails when required fields are missing" {
+      shouldThrow<SerializationException> {
+        Json.decodeFromString<Click>("""{"link":"https://example.com"}""")
+      }
+    }
+
+    "data JSON round-trip with bounce and click present" {
+      val data = Data(
+        createdAt = "2026-06-01T00:00:00Z",
+        emailId = "email-400",
+        from = "sender@example.com",
+        subject = "Bounced and clicked",
+        to = listOf("user@test.com"),
+        headers = listOf(Header(name = "X-Env", value = "prod")),
+        bounce = Bounce(message = "mailbox unavailable"),
+        click = Click(
+          ipAddress = "10.1.1.1",
+          link = "https://example.com/cta",
+          linkTags = "cta",
+          timestamp = "2026-06-01T00:00:01Z",
+          userAgent = "Firefox/126",
+        ),
+      )
+      val json = Json.encodeToString(data)
+      val decoded = Json.decodeFromString<Data>(json)
+      decoded shouldBe data
+      decoded.bounce?.message shouldBe "mailbox unavailable"
+      decoded.click?.link shouldBe "https://example.com/cta"
+    }
+
+    "data decodes from raw JSON with only required fields" {
+      val json = """{"created_at":"2026-01-01T00:00:00Z","email_id":"email-500","from":"a@b.com"}"""
+      val data = Json.decodeFromString<Data>(json)
+      data.createdAt shouldBe "2026-01-01T00:00:00Z"
+      data.emailId shouldBe "email-500"
+      data.from shouldBe "a@b.com"
+      data.subject shouldBe null
+      data.to shouldBe null
+      data.headers shouldBe null
+      data.bounce shouldBe null
+      data.click shouldBe null
+    }
+
+    "data decoding fails when a required field is missing" {
+      shouldThrow<SerializationException> {
+        Json.decodeFromString<Data>("""{"email_id":"email-600","from":"a@b.com"}""")
+      }
+    }
+
+    "data encodes with snake_case serial names" {
+      val data = Data(
+        createdAt = "2026-01-01T00:00:00Z",
+        emailId = "email-700",
+        from = "sender@example.com",
+      )
+      val json = Json.encodeToString(data)
+      json shouldContain "\"created_at\""
+      json shouldContain "\"email_id\""
+      json shouldContain "\"from\""
     }
   }
 }

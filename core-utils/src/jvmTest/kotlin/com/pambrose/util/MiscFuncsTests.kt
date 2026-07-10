@@ -1,0 +1,167 @@
+/*
+ *   Copyright © 2026 Paul Ambrose (pambrose@mac.com)
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
+
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+
+package com.pambrose.util
+
+import com.pambrose.common.util.abbrevDayOfWeek
+import com.pambrose.common.util.capitalizeFirstChar
+import com.pambrose.common.util.captureStdout
+import com.pambrose.common.util.hostInfo
+import com.pambrose.common.util.isNotNull
+import com.pambrose.common.util.isNull
+import com.pambrose.common.util.lpad
+import com.pambrose.common.util.randomId
+import com.pambrose.common.util.repeatWithSleep
+import com.pambrose.common.util.rpad
+import com.pambrose.common.util.sleep
+import com.pambrose.common.util.toFullDateString
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldHaveLength
+import io.kotest.matchers.string.shouldMatch
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.datetime.LocalDateTime
+
+class MiscFuncsTests : StringSpec() {
+  init {
+    "host info test" {
+      hostInfo shouldNotBe null
+      hostInfo.hostName shouldNotBe null
+      hostInfo.ipAddress shouldNotBe null
+    }
+
+    "random id default test" {
+      val id = randomId()
+      id shouldHaveLength 10
+      id shouldMatch Regex("[a-zA-Z0-9]+")
+    }
+
+    "random id custom length test" {
+      randomId(5) shouldHaveLength 5
+      randomId(20) shouldHaveLength 20
+      randomId(1) shouldHaveLength 1
+    }
+
+    "random id custom char pool test" {
+      val numericId = randomId(10, ('0'..'9').toList())
+      numericId shouldMatch Regex("[0-9]+")
+
+      val lowercaseId = randomId(10, ('a'..'z').toList())
+      lowercaseId shouldMatch Regex("[a-z]+")
+    }
+
+    "random id uniqueness test" {
+      val ids = (1..100).map { randomId() }.toSet()
+      ids.size shouldBeGreaterThan 95 // Should be mostly unique
+    }
+
+    "is null test" {
+      val nullValue: String? = null
+      val nonNullValue: String? = "test"
+
+      nullValue.isNull() shouldBe true
+      nonNullValue.isNull() shouldBe false
+
+      nullValue.isNotNull() shouldBe false
+      nonNullValue.isNotNull() shouldBe true
+    }
+
+    "lpad test" {
+      1.lpad(3) shouldBe "001"
+      42.lpad(5) shouldBe "00042"
+      123.lpad(2) shouldBe "123" // When number is longer, no padding
+      0.lpad(3) shouldBe "000"
+      1.lpad(3, ' ') shouldBe "  1"
+    }
+
+    "rpad test" {
+      1.rpad(3) shouldBe "100"
+      42.rpad(5) shouldBe "42000"
+      123.rpad(2) shouldBe "123" // When number is longer, no padding
+      0.rpad(3) shouldBe "000"
+      1.rpad(3, ' ') shouldBe "1  "
+    }
+
+    "capitalize first char test" {
+      "hello".capitalizeFirstChar() shouldBe "Hello"
+      "Hello".capitalizeFirstChar() shouldBe "Hello"
+      "h".capitalizeFirstChar() shouldBe "H"
+      "".capitalizeFirstChar() shouldBe ""
+      "123abc".capitalizeFirstChar() shouldBe "123abc"
+    }
+
+    "sleep blocks for at least the requested duration" {
+      val start = System.currentTimeMillis()
+      sleep(50.milliseconds)
+      val elapsed = System.currentTimeMillis() - start
+      elapsed shouldBeGreaterThanOrEqual 40L
+    }
+
+    "repeatWithSleep invokes the block with each iteration index" {
+      val seen = mutableListOf<Int>()
+      repeatWithSleep(iterations = 3, sleepTime = 1.milliseconds) { i, _ -> seen += i }
+      seen shouldBe listOf(0, 1, 2)
+    }
+
+    "repeatWithSleep with the default sleepTime and zero iterations never invokes the block" {
+      // Zero iterations exercises the default sleepTime argument without actually sleeping
+      var calls = 0
+      repeatWithSleep(iterations = 0) { _, _ -> calls++ }
+      calls shouldBe 0
+    }
+
+    "repeatWithSleep passes the same startMillis to every iteration" {
+      val before = System.currentTimeMillis()
+      val startTimes = mutableSetOf<Long>()
+      repeatWithSleep(iterations = 3, sleepTime = 1.milliseconds) { _, startMillis -> startTimes += startMillis }
+      startTimes.size shouldBe 1
+      (startTimes.single() >= before) shouldBe true
+    }
+
+    "captureStdout captures println output" {
+      val out = captureStdout {
+        println("hello captured")
+      }
+      out shouldContain "hello captured"
+    }
+
+    "captureStdout restores System.out even if the block throws" {
+      val originalOut = System.out
+      runCatching {
+        captureStdout { error("boom") }
+      }
+      System.out shouldBe originalOut
+    }
+
+    "abbrevDayOfWeek returns 3-char capitalized day name" {
+      // 2026-04-29 is a Wednesday.
+      val wed = LocalDateTime.parse("2026-04-29T10:00:00")
+      wed.abbrevDayOfWeek() shouldHaveLength 3
+      wed.abbrevDayOfWeek() shouldBe "Wed"
+    }
+
+    "toFullDateString formats a date as 'Day MM/DD/YY HH:MM:SS PST'" {
+      val ldt = LocalDateTime.parse("2026-04-29T13:05:09")
+      ldt.toFullDateString() shouldBe "Wed 04/29/26 13:05:09 PST"
+    }
+  }
+}

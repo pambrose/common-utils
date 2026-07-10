@@ -2,9 +2,15 @@
 
 package com.pambrose.common.servlet
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.mockk.mockk
+import jakarta.servlet.WriteListener
+import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
+import java.util.Locale
 
 class KtorServletResponseTests : StringSpec() {
   init {
@@ -90,6 +96,78 @@ class KtorServletResponseTests : StringSpec() {
 
       val body = response.getBodyBytes().toString(Charsets.UTF_8)
       body shouldBe "Hello, World!"
+    }
+
+    "missing headers return null and an empty collection" {
+      val response = KtorServletResponse()
+      response.getHeader("X-Missing") shouldBe null
+      response.getHeaders("X-Missing").toList() shouldBe emptyList()
+    }
+
+    "character encoding defaults to UTF-8 and reflects updates" {
+      val response = KtorServletResponse()
+      response.characterEncoding shouldBe "UTF-8"
+
+      response.setCharacterEncoding("ISO-8859-1")
+      response.characterEncoding shouldBe "ISO-8859-1"
+    }
+
+    "getWriter returns the same writer on repeated calls" {
+      val response = KtorServletResponse()
+      val writer = response.writer
+      response.writer shouldBeSameInstanceAs writer
+    }
+
+    "outputStream captures single-byte and ranged writes" {
+      val response = KtorServletResponse()
+      val stream = response.outputStream
+      response.outputStream shouldBeSameInstanceAs stream
+
+      stream.write('H'.code)
+      stream.write("Hello".toByteArray(), 1, 4)
+      stream.isReady shouldBe true
+      stream.setWriteListener(mockk<WriteListener>())
+
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "Hello"
+    }
+
+    "getWriter after getOutputStream throws IllegalStateException" {
+      val response = KtorServletResponse()
+      response.outputStream
+      shouldThrow<IllegalStateException> { response.writer }
+    }
+
+    "getOutputStream after getWriter throws IllegalStateException" {
+      val response = KtorServletResponse()
+      response.writer
+      shouldThrow<IllegalStateException> { response.outputStream }
+    }
+
+    "unsupported response methods throw UnsupportedOperationException" {
+      val response = KtorServletResponse()
+      shouldThrow<UnsupportedOperationException> { response.addCookie(Cookie("name", "value")) }
+      shouldThrow<UnsupportedOperationException> { response.encodeURL("/url") }
+      shouldThrow<UnsupportedOperationException> { response.encodeRedirectURL("/url") }
+      shouldThrow<UnsupportedOperationException> { response.sendError(HttpServletResponse.SC_BAD_REQUEST, "bad") }
+      shouldThrow<UnsupportedOperationException> { response.sendError(HttpServletResponse.SC_BAD_REQUEST) }
+      shouldThrow<UnsupportedOperationException> { response.sendRedirect("/elsewhere") }
+      shouldThrow<UnsupportedOperationException> {
+        response.sendRedirect("/elsewhere", HttpServletResponse.SC_MOVED_PERMANENTLY, true)
+      }
+      shouldThrow<UnsupportedOperationException> { response.setDateHeader("Date", 0L) }
+      shouldThrow<UnsupportedOperationException> { response.addDateHeader("Date", 0L) }
+      shouldThrow<UnsupportedOperationException> { response.setIntHeader("X-Count", 1) }
+      shouldThrow<UnsupportedOperationException> { response.addIntHeader("X-Count", 1) }
+      shouldThrow<UnsupportedOperationException> { response.setContentLength(10) }
+      shouldThrow<UnsupportedOperationException> { response.setContentLengthLong(10L) }
+      shouldThrow<UnsupportedOperationException> { response.setBufferSize(1024) }
+      shouldThrow<UnsupportedOperationException> { response.bufferSize }
+      shouldThrow<UnsupportedOperationException> { response.flushBuffer() }
+      shouldThrow<UnsupportedOperationException> { response.resetBuffer() }
+      shouldThrow<UnsupportedOperationException> { response.isCommitted }
+      shouldThrow<UnsupportedOperationException> { response.reset() }
+      shouldThrow<UnsupportedOperationException> { response.setLocale(Locale.US) }
+      shouldThrow<UnsupportedOperationException> { response.locale }
     }
   }
 }

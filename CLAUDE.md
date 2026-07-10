@@ -7,6 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Multi-module Kotlin/Java utility library (20+ modules) providing common functionality for various frameworks and use
 cases. Published on Maven Central.
 
+Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, and **ktor-client-utils**. They target
+JVM, JS, wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code lives in `src/commonMain`, JVM-bound
+code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM and depend
+on core-utils' jvm variant via ordinary project dependencies.
+
 ## Common Development Commands
 
 Run `make help` for a self-documenting list of every target.
@@ -25,9 +30,13 @@ Run `make help` for a self-documenting list of every target.
 ### Testing
 
 - `make tests` - Run `./gradlew --rerun-tasks check` (lint + tests)
-- `./gradlew test` - Run all tests
-- `./gradlew :MODULE_NAME:test` - Run tests for specific module (e.g., `./gradlew :core-utils:test`)
-- `./gradlew :MODULE_NAME:test --tests "ClassName"` - Run a specific test class
+- `./gradlew test` - Run all JVM-module tests
+- `./gradlew :MODULE_NAME:test` - Run tests for a JVM module (e.g., `./gradlew :redis-utils:test`)
+- `./gradlew :MODULE_NAME:test --tests "ClassName"` - Run a specific test class in a JVM module
+- KMP modules (core-utils, json-utils, ktor-client-utils) have no `test` task; use `jvmTest`
+  (e.g., `./gradlew :core-utils:jvmTest`, filter with `--tests "ClassName"`) or `allTests` for every
+  host-runnable target. `commonTest` Kotest specs execute on every host-runnable target (JVM,
+  Node.js for js/wasmJs, and macOS/iOS simulators); JVM-bound specs live in `jvmTest`.
 
 ### Code Quality
 
@@ -73,18 +82,23 @@ Run `make help` for a self-documenting list of every target.
 
 The root `build.gradle.kts` applies a shared set of plugins to every subproject and defines several inline configuration functions, including:
 
-- `configureKotlin()` - JVM 17 target, experimental opt-ins
-- `configurePublishing()` - Maven publication setup (vanniktech maven-publish) and per-module Dokka configuration
+- `configureKotlinJvm()` - JVM 17 target, experimental opt-ins (kotlin/jvm modules)
+- `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
+- `configurePublishing(isKmp)` - Maven publication setup (vanniktech maven-publish, `KotlinJvm` or `KotlinMultiplatform` platform) and per-module Dokka configuration
 - `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
 
-Common behavior for testing and linting is provided by [`pambrose-gradle-plugins`](https://github.com/pambrose/pambrose-gradle-plugins) convention plugins applied to every subproject:
+The `kmpModuleNames` set in the root build script decides which modules build with `kotlin("multiplatform")`; everything else gets `kotlin("jvm")`.
+
+Common behavior for testing and linting on the **JVM modules** is provided by [`pambrose-gradle-plugins`](https://github.com/pambrose/pambrose-gradle-plugins) convention plugins:
 
 - `com.pambrose.testing` - JUnit Platform, `kotest-runner-junit5` and `kotlin-test` as default `testImplementation`, logback-classic on test runtime
 - `com.pambrose.kotlinter` - Kotlinter lint/format tasks
 
+The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts` (versions pinned in the catalog to match the convention plugin).
+
 Dependency-update reporting uses the `com.github.ben-manes.versions` plugin, configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates.
 
-Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on the per-source-set `detektMain` and `detektTest` tasks, so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
+Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 
@@ -100,10 +114,22 @@ These opt-ins are enabled globally:
 
 ### Key Technologies
 
-- Kotlin 2.4.0 with JVM target 17
+- Kotlin 2.4.0 with JVM target 17 (KMP modules additionally target JS, wasmJs, and Native)
 - Gradle 9.6.1 with Kotlin DSL
 - Kotest + MockK for testing
 - Kotlinter for linting
+
+### Kotlin Multiplatform Notes
+
+- `kotlin-js-store/` holds the Node/Yarn lockfiles for the JS and wasmJs toolchains; commit changes to it
+  (run `./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock` when JS dependencies change).
+- `settings.gradle.kts` uses `PREFER_SETTINGS` repositories mode with ivy repositories for the Node.js, Yarn,
+  and Binaryen distributions.
+- The mixed common/JVM files (`StringExtensions`, `MiscExtensions`, `MiscFuncs` in core-utils) are split across
+  `commonMain` and `jvmMain` using `@file:JvmName` + `@file:JvmMultifileClass` so the compiled JVM facade classes
+  (and therefore the published JVM ABI) are unchanged.
+- watchOS/tvOS simulator test tasks are disabled (host Xcode lacks those simulator runtimes); Apple coverage
+  comes from macOS and iOS simulator test tasks.
 
 ### Package Structure
 

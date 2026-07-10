@@ -11,5 +11,6 @@ dependencies {
     api(libs.ktor.server.core)
     api(libs.kotlinx.html)
 
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.ktor.server.test.host)
 }

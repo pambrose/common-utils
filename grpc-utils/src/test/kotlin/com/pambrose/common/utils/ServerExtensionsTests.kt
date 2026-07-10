@@ -19,10 +19,17 @@
 package com.pambrose.common.utils
 
 import io.grpc.Server
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.util.concurrent.TimeUnit
@@ -80,6 +87,56 @@ class ServerExtensionsTests : StringSpec() {
       shouldThrow<IllegalArgumentException> {
         server.shutdownGracefully(0.milliseconds)
       }
+    }
+
+    "shutdownWithJvm registers a shutdown hook that shuts down the server" {
+      val server = mockk<Server>(relaxed = true)
+      every { server.awaitTermination(any(), any()) } returns true
+
+      val hookSlot = slot<Thread>()
+      val runtime = mockk<Runtime>(relaxed = true)
+      every { runtime.addShutdownHook(capture(hookSlot)) } just Runs
+
+      mockkStatic(Runtime::class)
+      try {
+        every { Runtime.getRuntime() } returns runtime
+        server.shutdownWithJvm(2.seconds)
+      } finally {
+        unmockkStatic(Runtime::class)
+      }
+
+      hookSlot.isCaptured shouldBe true
+      hookSlot.captured.run()
+
+      verifyOrder {
+        server.shutdown()
+        server.awaitTermination(2_000L, TimeUnit.MILLISECONDS)
+        server.shutdownNow()
+      }
+    }
+
+    "shutdownWithJvm hook swallows InterruptedException from awaitTermination" {
+      val server = mockk<Server>(relaxed = true)
+      every { server.awaitTermination(any(), any()) } throws InterruptedException("interrupted")
+
+      val hookSlot = slot<Thread>()
+      val runtime = mockk<Runtime>(relaxed = true)
+      every { runtime.addShutdownHook(capture(hookSlot)) } just Runs
+
+      mockkStatic(Runtime::class)
+      try {
+        every { Runtime.getRuntime() } returns runtime
+        server.shutdownWithJvm(1.seconds)
+      } finally {
+        unmockkStatic(Runtime::class)
+      }
+
+      hookSlot.isCaptured shouldBe true
+      shouldNotThrowAny {
+        hookSlot.captured.run()
+      }
+      verify(exactly = 1) { server.shutdown() }
+      verify(exactly = 1) { server.shutdownNow() }
     }
   }
 }

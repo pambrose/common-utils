@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
+import kotlin.time.Duration.Companion.seconds
 
 class ConditionalTests : StringSpec() {
   init {
@@ -134,6 +135,33 @@ class ConditionalTests : StringSpec() {
       jobs.joinAll()
 
       results shouldBe expected
+    }
+
+    "wait until false returns immediately when already false" {
+      ConditionalBoolean(false).waitUntilFalse() shouldBe true
+    }
+
+    "wait until false resumes when value becomes false" {
+      val bool = ConditionalBoolean(true)
+      var result: Boolean? = null
+
+      val job = launch {
+        result = bool.waitUntilFalse(5.seconds)
+      }
+
+      yield()
+      bool.set(false)
+      job.join()
+
+      result shouldBe true
+    }
+
+    "get returns the current value" {
+      val cv = ConditionalValue(1)
+      cv.get() shouldBe 1
+
+      cv.set(5)
+      cv.get() shouldBe 5
     }
   }
 }

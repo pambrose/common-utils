@@ -81,6 +81,21 @@ class ResponseUtilsTests : StringSpec() {
       }
     }
 
+    "RoutingContext respondWith uses default text/html content type" {
+      testApplication {
+        routing {
+          get("/route-default") {
+            respondWith { "<h1>routed</h1>" }
+          }
+        }
+        client.get("/route-default").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "<h1>routed</h1>"
+          ContentType.parse(headers[HttpHeaders.ContentType]!!).match(ContentType.Text.Html) shouldBe true
+        }
+      }
+    }
+
     "RoutingContext respondWith delegates to ApplicationCall" {
       testApplication {
         routing {
@@ -138,6 +153,21 @@ class ResponseUtilsTests : StringSpec() {
         }
         val client = createClient { followRedirects = false }
         client.get("/old").apply {
+          status shouldBe HttpStatusCode.Found
+          headers[HttpHeaders.Location] shouldBe "/new"
+        }
+      }
+    }
+
+    "RoutingContext redirectTo issues a 302 by default" {
+      testApplication {
+        routing {
+          get("/old-default") {
+            redirectTo { "/new" }
+          }
+        }
+        val client = createClient { followRedirects = false }
+        client.get("/old-default").apply {
           status shouldBe HttpStatusCode.Found
           headers[HttpHeaders.Location] shouldBe "/new"
         }

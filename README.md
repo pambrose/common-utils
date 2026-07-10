@@ -17,11 +17,17 @@ This repository contains a modular collection of utility libraries designed to s
 development. Each module focuses on a specific domain or framework, providing extension functions, DSLs, and utility
 classes that reduce boilerplate code and improve developer productivity.
 
+Three modules — **core-utils**, **json-utils**, and **ktor-client-utils** — are built with
+[Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) and can be used from JVM, JS, wasmJs, and
+Native (iOS/macOS/tvOS/watchOS/Linux/Windows) projects. Their portable APIs live in `commonMain`; JVM-specific
+functions (e.g. hashing, URL codecs, classpath resources) remain available to JVM consumers unchanged via `jvmMain`.
+The remaining modules are JVM-only, as they integrate JVM-specific frameworks.
+
 ## Module Structure
 
 ### Core Utilities
 
-#### [**core-utils**](core-utils/README.md)
+#### [**core-utils**](core-utils/README.md) _(multiplatform)_
 
 Fundamental utility functions and extensions for common programming tasks.
 
@@ -74,7 +80,7 @@ Jetty 12 (EE11) web server integration utilities.
 - Lambda-based servlet implementations (Jakarta Servlet 6.1)
 - Version endpoint utilities
 
-#### [**ktor-client-utils**](ktor-client-utils/README.md)
+#### [**ktor-client-utils**](ktor-client-utils/README.md) _(multiplatform)_
 
 Ktor HTTP client enhancements.
 
@@ -91,7 +97,7 @@ Ktor server-side utilities.
 
 ### Data & Serialization
 
-#### [**json-utils**](json-utils/README.md)
+#### [**json-utils**](json-utils/README.md) _(multiplatform)_
 
 JSON processing utilities with Kotlinx.serialization.
 

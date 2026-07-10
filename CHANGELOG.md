@@ -2,6 +2,41 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Kotlin Multiplatform conversion
+
+- `core-utils`, `json-utils`, and `ktor-client-utils` are now Kotlin Multiplatform modules targeting JVM, JS,
+  wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code moved to `commonMain`; JVM-bound
+  declarations moved verbatim to `jvmMain`, so the published JVM API is unchanged. The mixed files
+  (`StringExtensions`, `MiscExtensions`, `MiscFuncs`) are split across source sets with `@file:JvmName` +
+  `@file:JvmMultifileClass`, keeping the compiled JVM facade classes binary-identical.
+- The remaining 16 framework modules stay Kotlin/JVM and consume `core-utils`' jvm variant transparently.
+- **Consumer note (Maven only)**: non-Gradle consumers of the three KMP modules must depend on the `-jvm`
+  artifact (e.g. `core-utils-jvm`); Gradle consumers resolve the correct variant from the root coordinate
+  automatically.
+- **Known deviation**: `KtorDsl.blockingGet(...)` is now a JVM-only extension function on `KtorDsl`
+  (`runBlocking` does not exist in common code). Qualified call sites compile unchanged, but the member-import
+  form becomes `import com.pambrose.common.dsl.blockingGet`, and the compiled symbol moved from `KtorDsl` to
+  `KtorDslJvmKt` (binary-incompatible for this one function).
+- `kotlin-logging` dependency switched from the `-jvm` artifact to the multiplatform root artifact
+  (JVM consumers resolve the same jar as before).
+- Tests: portable Kotest specs moved to `commonTest` and now execute on JVM (JUnit Platform), Node.js,
+  wasmJs, and native simulators via the Kotest Gradle plugin (`io.kotest` + KSP); JVM-bound specs stay in
+  `jvmTest`. watchOS/tvOS simulator test tasks are disabled (no simulator runtimes installed by default).
+- Tests: aggregate JVM instruction coverage raised from 83.5% to 98.1% with new hermetic Kotest specs across
+  grpc-utils (in-process gRPC + TLS-context fixtures), ktor-server-utils (servlet adapters), redis-utils
+  (mocked Jedis incl. `scanKeys`), exposed-utils (H2 in-memory incl. custom `upsert`), guava-utils
+  (monitor/waiter concurrency), recaptcha-utils, email-utils webhooks, script pools, and the core-utils and
+  ktor-client-utils JVM extensions (`blockingGet`, salted hashes).
+- The native target set excludes the Intel-based Apple targets (`macosX64`, `tvosX64`, `watchosX64`), which
+  Kotlin 2.4 deprecates for removal (https://kotl.in/native-targets-tiers); Apple platforms are covered by the
+  Arm64 device/simulator targets.
+- Build: `kmpModuleNames` switch in the root `build.gradle.kts` selects KMP vs JVM configuration;
+  settings repositories mode changed from `FAIL_ON_PROJECT_REPOS` to `PREFER_SETTINGS` with ivy repositories
+  for the Node.js/Yarn/Binaryen toolchain downloads; `kotlin-js-store/` lockfiles are now tracked;
+  Gradle heap raised to 8g for Kotlin/Native link tasks.
+
 ## [2.9.3] - 2026-07-03
 
 ### New features

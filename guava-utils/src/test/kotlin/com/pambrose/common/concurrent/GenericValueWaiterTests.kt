@@ -6,6 +6,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -21,7 +22,10 @@ private class IntWaiter(
 ) : GenericValueWaiter<Int>(init) {
   val current get() = currValue
 
-  suspend fun awaitValue(predicate: () -> Boolean) = waitForCondition(predicate, Duration.INFINITE)
+  suspend fun awaitValue(
+    timeout: Duration = Duration.INFINITE,
+    predicate: () -> Boolean,
+  ) = waitForCondition(predicate, timeout)
 }
 
 class GenericValueWaiterTests : StringSpec() {
@@ -163,6 +167,48 @@ class GenericValueWaiterTests : StringSpec() {
 
       val result = waiter.waitUntilTrue(100.milliseconds)
       result shouldBe true
+    }
+
+    "BooleanWaiter waitUntilTrue with the default timeout returns immediately when already true" {
+      BooleanWaiter(true).waitUntilTrue() shouldBe true
+    }
+
+    "BooleanWaiter waitUntilFalse with the default timeout returns immediately when already false" {
+      BooleanWaiter(false).waitUntilFalse() shouldBe true
+    }
+
+    "a cancelled waiter is deregistered and later updates remain safe" {
+      val waiter = BooleanWaiter(false)
+
+      val job = launch { waiter.waitUntilTrue() }
+      delay(100.milliseconds) // let the waiter register and suspend
+      job.cancelAndJoin()
+      job.isCancelled shouldBe true
+
+      // The cancelled waiter was removed on cancellation, so signaling now resumes no one
+      // and must not fail, and new waits observe the updated value.
+      waiter.setValue(true)
+      waiter.waitUntilTrue(1.seconds) shouldBe true
+    }
+
+    "a throwing predicate with a finite timeout still fails its waiter promptly" {
+      val waiter = IntWaiter(0)
+      var badError: Throwable? = null
+
+      val mark = TimeSource.Monotonic.markNow()
+      val bad =
+        launch {
+          runCatching { waiter.awaitValue(5.seconds) { if (waiter.current == 1) error("kaboom") else false } }
+            .onFailure { badError = it }
+        }
+      delay(50.milliseconds)
+
+      waiter.checkCondition(1)
+      bad.join()
+
+      badError!!.message shouldContain "kaboom"
+      // The armed timeout job was cancelled, so the waiter failed well before the 5s timeout.
+      (mark.elapsedNow() < 2.seconds) shouldBe true
     }
   }
 }

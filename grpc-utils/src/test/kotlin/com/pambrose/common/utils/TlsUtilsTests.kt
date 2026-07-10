@@ -20,6 +20,7 @@ package com.pambrose.common.utils
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.io.File
@@ -89,6 +90,131 @@ class TlsUtilsTests : StringSpec() {
       ex.message shouldContain "certChainFilePath is required"
     }
 
+    "buildClientTlsContext builds a TLS context from a trust cert file" {
+      val context = TlsUtils.buildClientTlsContext(trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"))
+      context.sslContext.shouldNotBeNull().isClient shouldBe true
+      context.mutualAuth shouldBe false
+      context.desc() shouldBe "TLS (no mutual auth)"
+    }
+
+    "buildClientTlsContext with cert and key enables mutual auth" {
+      val context = TlsUtils.buildClientTlsContext(
+        certChainFilePath = tlsResourcePath("client-cert.pem"),
+        privateKeyFilePath = tlsResourcePath("client-key.pem"),
+        trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"),
+      )
+      context.sslContext.shouldNotBeNull().isClient shouldBe true
+      context.mutualAuth shouldBe true
+      context.desc() shouldBe "TLS with mutual auth"
+    }
+
+    "clientTlsContextBuilder returns a buildable builder without mutual auth for trust-only config" {
+      val result = TlsUtils.clientTlsContextBuilder(trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"))
+      result.mutualAuth shouldBe false
+      result.builder.build().isClient shouldBe true
+    }
+
+    "clientTlsContextBuilder requires privateKeyFilePath when certChainFilePath is specified" {
+      val ex = shouldThrow<IllegalArgumentException> {
+        TlsUtils.clientTlsContextBuilder(
+          certChainFilePath = tlsResourcePath("client-cert.pem"),
+          trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"),
+        )
+      }
+      ex.message shouldContain "privateKeyFilePath required if certChainFilePath specified"
+    }
+
+    "clientTlsContextBuilder requires certChainFilePath when privateKeyFilePath is specified" {
+      val ex = shouldThrow<IllegalArgumentException> {
+        TlsUtils.clientTlsContextBuilder(
+          privateKeyFilePath = tlsResourcePath("client-key.pem"),
+          trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"),
+        )
+      }
+      ex.message shouldContain "certChainFilePath required if privateKeyFilePath specified"
+    }
+
+    "clientTlsContextBuilder rejects missing certChain file" {
+      val ex = shouldThrow<IllegalArgumentException> {
+        TlsUtils.clientTlsContextBuilder(
+          certChainFilePath = "/tmp/missing-cert-${System.nanoTime()}.pem",
+          privateKeyFilePath = tlsResourcePath("client-key.pem"),
+          trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"),
+        )
+      }
+      ex.message shouldContain "does not exist"
+    }
+
+    "clientTlsContextBuilder rejects missing privateKey file" {
+      val ex = shouldThrow<IllegalArgumentException> {
+        TlsUtils.clientTlsContextBuilder(
+          certChainFilePath = tlsResourcePath("client-cert.pem"),
+          privateKeyFilePath = "/tmp/missing-key-${System.nanoTime()}.pem",
+          trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"),
+        )
+      }
+      ex.message shouldContain "does not exist"
+    }
+
+    "clientTlsContextBuilder rejects a directory as trust path" {
+      val directory = File(tlsResourcePath("server-cert.pem")).parentFile.absolutePath
+      val ex = shouldThrow<IllegalArgumentException> {
+        TlsUtils.clientTlsContextBuilder(trustCertCollectionFilePath = directory)
+      }
+      ex.message shouldContain "does not exist"
+    }
+
+    "buildServerTlsContext builds a TLS context without mutual auth" {
+      val context = TlsUtils.buildServerTlsContext(
+        certChainFilePath = tlsResourcePath("server-cert.pem"),
+        privateKeyFilePath = tlsResourcePath("server-key.pem"),
+      )
+      context.sslContext.shouldNotBeNull().isServer shouldBe true
+      context.mutualAuth shouldBe false
+      context.desc() shouldBe "TLS (no mutual auth)"
+    }
+
+    "buildServerTlsContext with trust collection enables mutual auth" {
+      val context = TlsUtils.buildServerTlsContext(
+        certChainFilePath = tlsResourcePath("server-cert.pem"),
+        privateKeyFilePath = tlsResourcePath("server-key.pem"),
+        trustCertCollectionFilePath = tlsResourcePath("client-cert.pem"),
+      )
+      context.sslContext.shouldNotBeNull().isServer shouldBe true
+      context.mutualAuth shouldBe true
+      context.desc() shouldBe "TLS with mutual auth"
+    }
+
+    "serverTlsContext returns a buildable builder without mutual auth when no trust file is given" {
+      val result = TlsUtils.serverTlsContext(
+        certChainFilePath = tlsResourcePath("server-cert.pem"),
+        privateKeyFilePath = tlsResourcePath("server-key.pem"),
+      )
+      result.mutualAuth shouldBe false
+      result.builder.build().isServer shouldBe true
+    }
+
+    "serverTlsContext rejects missing privateKey file" {
+      val ex = shouldThrow<IllegalArgumentException> {
+        TlsUtils.serverTlsContext(
+          certChainFilePath = tlsResourcePath("server-cert.pem"),
+          privateKeyFilePath = "/tmp/missing-key-${System.nanoTime()}.pem",
+        )
+      }
+      ex.message shouldContain "does not exist"
+    }
+
+    "serverTlsContext rejects missing trust file" {
+      val ex = shouldThrow<IllegalArgumentException> {
+        TlsUtils.serverTlsContext(
+          certChainFilePath = tlsResourcePath("server-cert.pem"),
+          privateKeyFilePath = tlsResourcePath("server-key.pem"),
+          trustCertCollectionFilePath = "/tmp/missing-trust-${System.nanoTime()}.pem",
+        )
+      }
+      ex.message shouldContain "does not exist"
+    }
+
     "TlsContext desc reflects mutual-auth flag for non-null sslContext" {
       val mutual = TlsContext(sslContext = stubSslContext(), mutualAuth = true)
       mutual.desc() shouldBe "TLS with mutual auth"
@@ -117,3 +243,9 @@ class TlsUtilsTests : StringSpec() {
 }
 
 private fun stubSslContext(): io.netty.handler.ssl.SslContext = io.mockk.mockk(relaxed = true)
+
+private fun tlsResourcePath(name: String): String {
+  val url = TlsUtilsTests::class.java.classLoader.getResource("tls/$name")
+    ?: error("Missing test resource: tls/$name")
+  return File(url.toURI()).absolutePath
+}

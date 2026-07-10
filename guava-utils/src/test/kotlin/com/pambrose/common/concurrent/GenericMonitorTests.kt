@@ -5,6 +5,8 @@ package com.pambrose.common.concurrent
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.delay
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -105,6 +107,149 @@ class GenericMonitorTests : StringSpec() {
 
       blockCalled shouldBe true
       result shouldBe false
+    }
+
+    "waitUntilTrueWithInterruption returns when condition is true" {
+      val monitor = BooleanMonitor(false)
+      val done = CountDownLatch(1)
+
+      val t = thread {
+        monitor.waitUntilTrueWithInterruption()
+        done.countDown()
+      }
+
+      monitor.set(true)
+      done.await(5, TimeUnit.SECONDS) shouldBe true
+      t.join(5000)
+    }
+
+    "waitUntilTrueWithInterruption throws InterruptedException when interrupted" {
+      val monitor = BooleanMonitor(false)
+      val started = CountDownLatch(1)
+      val interrupted = CountDownLatch(1)
+
+      val t = thread {
+        started.countDown()
+        try {
+          monitor.waitUntilTrueWithInterruption()
+        } catch (e: InterruptedException) {
+          interrupted.countDown()
+        }
+      }
+
+      started.await(5, TimeUnit.SECONDS) shouldBe true
+      t.interrupt()
+      interrupted.await(5, TimeUnit.SECONDS) shouldBe true
+      t.join(5000)
+    }
+
+    "waitUntilTrueWithInterruption with timeout returns true when condition met" {
+      val monitor = BooleanMonitor(true)
+      monitor.waitUntilTrueWithInterruption(500.milliseconds) shouldBe true
+    }
+
+    "waitUntilTrueWithInterruption with timeout returns false when not met" {
+      val monitor = BooleanMonitor(false)
+      monitor.waitUntilTrueWithInterruption(50.milliseconds) shouldBe false
+    }
+
+    "waitUntilTrue with block returns true when block makes condition true" {
+      val monitor = BooleanMonitor(false)
+      var calls = 0
+
+      val result =
+        monitor.waitUntilTrue(50.milliseconds) {
+          calls++
+          monitor.set(true)
+          true // keep waiting
+        }
+
+      result shouldBe true
+      calls shouldBe 1
+    }
+
+    "waitUntilTrueWithInterruption with block returns true when block makes condition true" {
+      val monitor = BooleanMonitor(false)
+      var calls = 0
+
+      val result =
+        monitor.waitUntilTrueWithInterruption(50.milliseconds) {
+          calls++
+          monitor.set(true)
+          true // keep waiting
+        }
+
+      result shouldBe true
+      calls shouldBe 1
+    }
+
+    "waitUntilTrueWithInterruption with block stops when block returns false" {
+      val monitor = BooleanMonitor(false)
+
+      val result =
+        monitor.waitUntilTrueWithInterruption(50.milliseconds) {
+          false // stop waiting
+        }
+
+      result shouldBe false
+    }
+
+    "waitUntilTrueWithInterruption with maxWait returns false when exceeded" {
+      val monitor = BooleanMonitor(false)
+      val result =
+        monitor.waitUntilTrueWithInterruption(
+          timeout = 50.milliseconds,
+          maxWait = 100.milliseconds,
+          block = null,
+        )
+      result shouldBe false
+    }
+
+    "waitUntilFalse with block returns true when block makes condition false" {
+      val monitor = BooleanMonitor(true)
+      var calls = 0
+
+      val result =
+        monitor.waitUntilFalse(50.milliseconds) {
+          calls++
+          monitor.set(false)
+          true // keep waiting
+        }
+
+      result shouldBe true
+      calls shouldBe 1
+    }
+
+    "waitUntilFalse with block stops when block returns false" {
+      val monitor = BooleanMonitor(true)
+
+      val result =
+        monitor.waitUntilFalse(50.milliseconds) {
+          false // stop waiting
+        }
+
+      result shouldBe false
+    }
+
+    "waitUntilFalse with maxWait returns false when exceeded" {
+      val monitor = BooleanMonitor(true)
+      val result =
+        monitor.waitUntilFalse(
+          timeout = 50.milliseconds,
+          maxWait = 100.milliseconds,
+          block = null,
+        )
+      result shouldBe false
+    }
+
+    "waitUntil without timeout returns immediately when condition already matches" {
+      val monitorTrue = BooleanMonitor(true)
+      monitorTrue.waitUntil(true)
+      monitorTrue.get() shouldBe true
+
+      val monitorFalse = BooleanMonitor(false)
+      monitorFalse.waitUntil(false)
+      monitorFalse.get() shouldBe false
     }
   }
 }

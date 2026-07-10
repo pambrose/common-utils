@@ -130,6 +130,111 @@ class RecaptchaTests : StringSpec() {
       response.errorCodes.shouldBeEmpty()
     }
 
+    // Remaining field-presence combinations, so every optional property is decoded both with the
+    // field present and absent (each combination drives different seen-bit branches in the
+    // serialization-generated constructor).
+    "recaptcha response deserialization with all fields" {
+      val json = """
+      {
+        "success": false,
+        "error-codes": ["timeout-or-duplicate"],
+        "hostname": "example.com",
+        "challenge_ts": "2024-06-01T12:00:00Z"
+      }
+    """.trimIndent()
+
+      val response = jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(json)
+
+      response.success shouldBe false
+      response.errorCodes shouldBe listOf("timeout-or-duplicate")
+      response.hostname shouldBe "example.com"
+      response.challengeTs shouldBe "2024-06-01T12:00:00Z"
+    }
+
+    "recaptcha response deserialization with only error codes" {
+      val json = """{"success": false, "error-codes": ["invalid-input-secret", "bad-request"]}"""
+
+      val response = jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(json)
+
+      response.success shouldBe false
+      response.errorCodes shouldBe listOf("invalid-input-secret", "bad-request")
+      response.hostname shouldBe null
+      response.challengeTs shouldBe null
+    }
+
+    "recaptcha response deserialization with only challenge timestamp" {
+      val json = """{"success": true, "challenge_ts": "2024-06-01T12:00:00Z"}"""
+
+      val response = jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(json)
+
+      response.success shouldBe true
+      response.challengeTs shouldBe "2024-06-01T12:00:00Z"
+      response.hostname shouldBe null
+    }
+
+    // Encoding was previously never exercised; cover the serializer's write path with defaults
+    // omitted (encodeDefaults = false is the Json default) and with every field populated.
+    "recaptcha response serialization omits defaulted fields and writes populated ones" {
+      val defaulted = RecaptchaService.RecaptchaResponse(success = true)
+      val defaultedJson = jsonParser.encodeToString(RecaptchaService.RecaptchaResponse.serializer(), defaulted)
+      defaultedJson shouldBe """{"success":true}"""
+
+      val populated =
+        RecaptchaService.RecaptchaResponse(
+          success = false,
+          errorCodes = listOf("invalid-input-response"),
+          hostname = "example.com",
+          challengeTs = "2024-06-01T12:00:00Z",
+        )
+      val populatedJson = jsonParser.encodeToString(RecaptchaService.RecaptchaResponse.serializer(), populated)
+      populatedJson shouldContain """"error-codes":["invalid-input-response"]"""
+      populatedJson shouldContain """"hostname":"example.com""""
+      populatedJson shouldContain """"challenge_ts":"2024-06-01T12:00:00Z""""
+
+      jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(populatedJson) shouldBe populated
+    }
+
+    // The JSON tests above exercise only the serialization-generated constructor; these cover the
+    // primary constructor directly, both fully specified and with each defaulted property.
+    "recaptcha response direct construction with all properties" {
+      val response =
+        RecaptchaService.RecaptchaResponse(
+          success = false,
+          errorCodes = listOf("invalid-input-secret"),
+          hostname = "example.com",
+          challengeTs = "2024-06-01T12:00:00Z",
+        )
+
+      response.success shouldBe false
+      response.errorCodes shouldBe listOf("invalid-input-secret")
+      response.hostname shouldBe "example.com"
+      response.challengeTs shouldBe "2024-06-01T12:00:00Z"
+    }
+
+    "recaptcha response direct construction defaults optional properties" {
+      val response = RecaptchaService.RecaptchaResponse(success = true)
+
+      response.success shouldBe true
+      response.errorCodes.shouldBeEmpty()
+      response.hostname shouldBe null
+      response.challengeTs shouldBe null
+    }
+
+    "recaptcha response value semantics" {
+      val original = RecaptchaService.RecaptchaResponse(success = true, hostname = "localhost")
+      val changed = original.copy(success = false, errorCodes = listOf("timeout-or-duplicate"))
+
+      changed shouldBe
+        RecaptchaService.RecaptchaResponse(
+          success = false,
+          errorCodes = listOf("timeout-or-duplicate"),
+          hostname = "localhost",
+        )
+      changed shouldNotBe original
+      changed.hashCode() shouldBe changed.copy().hashCode()
+      original.toString() shouldContain "hostname=localhost"
+    }
+
     "recaptcha config partial keys" {
       val config = object : RecaptchaConfig {
         override val isRecaptchaEnabled = true

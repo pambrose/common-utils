@@ -24,7 +24,7 @@ stop: ## Stop the Gradle daemon
 	./gradlew --stop
 
 build: ## Build without running tests
-	./gradlew build -x test
+	./gradlew build -x test -x allTests
 
 lint: ## Run Kotlinter and Detekt
 	./gradlew lintKotlin detekt
