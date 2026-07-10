@@ -27,7 +27,9 @@ import com.pambrose.common.util.withChecksum
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import java.io.Serializable
+import javax.management.ObjectName
 
 class IOExtensionsTests : StringSpec() {
   init {
@@ -116,6 +118,26 @@ class IOExtensionsTests : StringSpec() {
       shouldThrow<SecurityException> {
         tooBig.toObjectSecure(String::class.java, setOf(String::class.java))
       }
+    }
+
+    "secure deserialization with the default empty whitelist allows non-dangerous classes" {
+      val original = "no whitelist"
+      val bytes = original.toByteArraySecure()
+
+      // Omitting allowedClasses disables the whitelist check but keeps the dangerous-class block
+      bytes.toObjectSecure(String::class.java) shouldBe original
+    }
+
+    "secure deserialization blocks dangerous classes" {
+      // javax.management.* is on the SecureObjectInputStream blocklist, and ObjectName is
+      // Serializable, so its class descriptor trips the block during resolveClass.
+      val dangerous: Serializable = ObjectName("example:type=Test")
+      val bytes = dangerous.toByteArraySecure()
+
+      val ex = shouldThrow<SecurityException> {
+        bytes.toObjectSecure(Serializable::class.java)
+      }
+      ex.message shouldContain "Blocked dangerous class"
     }
   }
 }

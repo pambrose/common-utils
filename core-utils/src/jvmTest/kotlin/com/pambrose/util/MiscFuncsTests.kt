@@ -122,6 +122,21 @@ class MiscFuncsTests : StringSpec() {
       seen shouldBe listOf(0, 1, 2)
     }
 
+    "repeatWithSleep with the default sleepTime and zero iterations never invokes the block" {
+      // Zero iterations exercises the default sleepTime argument without actually sleeping
+      var calls = 0
+      repeatWithSleep(iterations = 0) { _, _ -> calls++ }
+      calls shouldBe 0
+    }
+
+    "repeatWithSleep passes the same startMillis to every iteration" {
+      val before = System.currentTimeMillis()
+      val startTimes = mutableSetOf<Long>()
+      repeatWithSleep(iterations = 3, sleepTime = 1.milliseconds) { _, startMillis -> startTimes += startMillis }
+      startTimes.size shouldBe 1
+      (startTimes.single() >= before) shouldBe true
+    }
+
     "captureStdout captures println output" {
       val out = captureStdout {
         println("hello captured")

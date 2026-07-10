@@ -130,6 +130,47 @@ class RecaptchaTests : StringSpec() {
       response.errorCodes.shouldBeEmpty()
     }
 
+    // The JSON tests above exercise only the serialization-generated constructor; these cover the
+    // primary constructor directly, both fully specified and with each defaulted property.
+    "recaptcha response direct construction with all properties" {
+      val response =
+        RecaptchaService.RecaptchaResponse(
+          success = false,
+          errorCodes = listOf("invalid-input-secret"),
+          hostname = "example.com",
+          challengeTs = "2024-06-01T12:00:00Z",
+        )
+
+      response.success shouldBe false
+      response.errorCodes shouldBe listOf("invalid-input-secret")
+      response.hostname shouldBe "example.com"
+      response.challengeTs shouldBe "2024-06-01T12:00:00Z"
+    }
+
+    "recaptcha response direct construction defaults optional properties" {
+      val response = RecaptchaService.RecaptchaResponse(success = true)
+
+      response.success shouldBe true
+      response.errorCodes.shouldBeEmpty()
+      response.hostname shouldBe null
+      response.challengeTs shouldBe null
+    }
+
+    "recaptcha response value semantics" {
+      val original = RecaptchaService.RecaptchaResponse(success = true, hostname = "localhost")
+      val changed = original.copy(success = false, errorCodes = listOf("timeout-or-duplicate"))
+
+      changed shouldBe
+        RecaptchaService.RecaptchaResponse(
+          success = false,
+          errorCodes = listOf("timeout-or-duplicate"),
+          hostname = "localhost",
+        )
+      changed shouldNotBe original
+      changed.hashCode() shouldBe changed.copy().hashCode()
+      original.toString() shouldContain "hostname=localhost"
+    }
+
     "recaptcha config partial keys" {
       val config = object : RecaptchaConfig {
         override val isRecaptchaEnabled = true

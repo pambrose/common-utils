@@ -21,6 +21,7 @@ package com.pambrose.common.exposed
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import org.jetbrains.exposed.v1.core.QueryBuilder
 
 class CustomExprTests : StringSpec() {
   init {
@@ -42,6 +43,16 @@ class CustomExprTests : StringSpec() {
 
       expr1.text shouldBe "NOW()"
       expr2.text shouldBe "CURRENT_DATE"
+    }
+
+    "custom expr toQueryBuilder appends the raw sql text" {
+      val builder = QueryBuilder(prepared = false)
+      customDateTimeConstant("NOW()").toQueryBuilder(builder)
+      builder.toString() shouldBe "NOW()"
+    }
+
+    "custom expr renders as its raw sql text" {
+      dateTimeExpr("CURRENT_TIMESTAMP").toString() shouldBe "CURRENT_TIMESTAMP"
     }
   }
 }

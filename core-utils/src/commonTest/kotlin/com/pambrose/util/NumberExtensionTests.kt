@@ -18,6 +18,7 @@
 
 package com.pambrose.util
 
+import com.pambrose.common.util.random
 import com.pambrose.common.util.times
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -58,6 +59,23 @@ class NumberExtensionTests : StringSpec() {
         runs++
       }
       cnt shouldBe runs
+    }
+
+    "int random test" {
+      repeat(1_000) {
+        val v = 10.random()
+        (v in 0 until 10) shouldBe true
+      }
+      // An upper bound of 1 leaves only one possible value
+      repeat(100) { 1.random() shouldBe 0 }
+    }
+
+    "long random test" {
+      repeat(1_000) {
+        val v = 10L.random()
+        (v in 0L until 10L) shouldBe true
+      }
+      repeat(100) { 1L.random() shouldBe 0L }
     }
   }
 }

@@ -18,10 +18,13 @@
 
 package com.pambrose.common.dsl
 
+import com.google.common.util.concurrent.Service
 import com.pambrose.common.dsl.GuavaDsl.toStringElements
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.mockk.mockk
 
 class GuavaDslTests : StringSpec() {
   init {
@@ -91,6 +94,77 @@ class GuavaDslTests : StringSpec() {
 
       listener.stopped()
       stoppedCalled shouldBe true
+    }
+
+    "service listener invokes all lifecycle callbacks with their arguments" {
+      var startingCalled = false
+      var runningCalled = false
+      var stoppingFrom: Service.State? = null
+      var terminatedFrom: Service.State? = null
+      var failedFrom: Service.State? = null
+      var failedCause: Throwable? = null
+
+      val listener = GuavaDsl.serviceListener {
+        starting { startingCalled = true }
+        running { runningCalled = true }
+        stopping { stoppingFrom = it }
+        terminated { terminatedFrom = it }
+        failed { from, cause ->
+          failedFrom = from
+          failedCause = cause
+        }
+      }
+
+      listener.starting()
+      startingCalled shouldBe true
+
+      listener.running()
+      runningCalled shouldBe true
+
+      listener.stopping(Service.State.RUNNING)
+      stoppingFrom shouldBe Service.State.RUNNING
+
+      listener.terminated(Service.State.STOPPING)
+      terminatedFrom shouldBe Service.State.STOPPING
+
+      val cause = IllegalStateException("service failed")
+      listener.failed(Service.State.RUNNING, cause)
+      failedFrom shouldBe Service.State.RUNNING
+      failedCause shouldBe cause
+    }
+
+    "service listener without callbacks ignores lifecycle events" {
+      val listener = GuavaDsl.serviceListener {}
+
+      shouldNotThrowAny {
+        listener.starting()
+        listener.running()
+        listener.stopping(Service.State.STARTING)
+        listener.terminated(Service.State.RUNNING)
+        listener.failed(Service.State.RUNNING, IllegalStateException("ignored"))
+      }
+    }
+
+    "service manager listener invokes failure callback with the failed service" {
+      val service = mockk<Service>()
+      var failedService: Service? = null
+
+      val listener = GuavaDsl.serviceManagerListener {
+        failure { failedService = it }
+      }
+
+      listener.failure(service)
+      failedService shouldBe service
+    }
+
+    "service manager listener without callbacks ignores lifecycle events" {
+      val listener = GuavaDsl.serviceManagerListener {}
+
+      shouldNotThrowAny {
+        listener.healthy()
+        listener.stopped()
+        listener.failure(mockk<Service>())
+      }
     }
   }
 }

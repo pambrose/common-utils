@@ -82,5 +82,13 @@ class VersionTests : StringSpec() {
       json shouldContain "\"version\":\"Unknown\""
       json shouldContain "\"release_date\":\"Unknown\""
     }
+
+    "versionDesc defaults to plain text output" {
+      val desc = Annotated::class.versionDesc()
+      desc shouldBe Annotated::class.versionDesc(asJson = false)
+      desc shouldContain "Version: 9.9.9"
+
+      Bare::class.versionDesc() shouldContain "Version: Unknown"
+    }
   }
 }

@@ -22,6 +22,7 @@ import com.pambrose.common.util.MiscJavaFuncs
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 class MiscJavaFuncsTests : StringSpec() {
   init {
@@ -86,6 +87,30 @@ class MiscJavaFuncsTests : StringSpec() {
       Thread.interrupted() // defensive cleanup
       MiscJavaFuncs.sleepMillis(1)
       Thread.interrupted() shouldBe false
+    }
+
+    "sleepSecs completes on the normal path with a zero duration" {
+      Thread.interrupted() // defensive cleanup
+      MiscJavaFuncs.sleepSecs(0)
+      Thread.interrupted() shouldBe false
+    }
+
+    "sleepSecs restores the interrupt flag and clamps huge values without overflow" {
+      Thread.interrupted() // clear any leaked flag first
+      Thread.currentThread().interrupt()
+
+      // The pending interrupt makes the underlying Thread.sleep throw immediately. If the
+      // seconds-to-millis clamp overflowed to a negative value, Thread.sleep would instead
+      // throw IllegalArgumentException, which sleepMillis does not catch, failing this test.
+      MiscJavaFuncs.sleepSecs(Long.MAX_VALUE)
+
+      // Thread.interrupted() reads-and-clears: asserts the flag was restored and cleans up.
+      Thread.interrupted() shouldBe true
+    }
+
+    "MiscJavaFuncs is instantiable via its default constructor" {
+      // The class only exposes static members; this exercises the implicit constructor.
+      MiscJavaFuncs() shouldNotBe null
     }
   }
 }

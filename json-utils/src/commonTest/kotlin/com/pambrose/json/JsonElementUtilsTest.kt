@@ -53,6 +53,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.SerializationException
 
 @Serializable
@@ -284,6 +285,14 @@ class JsonElementUtilsTest : StringSpec() {
       @Suppress("UNCHECKED_CAST")
       val contactMap = profileMap["contact"] as Map<String, Any?>
       contactMap["email"] shouldBe "jane@example.com"
+    }
+
+    "to map conversion rejects non-object elements" {
+      val exception =
+        shouldThrow<IllegalArgumentException> {
+          JsonPrimitive("scalar").toMap()
+        }
+      exception.message shouldContain "Can only convert JsonObject to Map"
     }
 
     "is empty and is not empty" {

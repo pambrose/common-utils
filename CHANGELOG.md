@@ -24,6 +24,11 @@ All notable changes to Common Utils are documented in this file.
 - Tests: portable Kotest specs moved to `commonTest` and now execute on JVM (JUnit Platform), Node.js,
   wasmJs, and native simulators via the Kotest Gradle plugin (`io.kotest` + KSP); JVM-bound specs stay in
   `jvmTest`. watchOS/tvOS simulator test tasks are disabled (no simulator runtimes installed by default).
+- Tests: aggregate JVM instruction coverage raised from 83.5% to 98.1% with new hermetic Kotest specs across
+  grpc-utils (in-process gRPC + TLS-context fixtures), ktor-server-utils (servlet adapters), redis-utils
+  (mocked Jedis incl. `scanKeys`), exposed-utils (H2 in-memory incl. custom `upsert`), guava-utils
+  (monitor/waiter concurrency), recaptcha-utils, email-utils webhooks, script pools, and the core-utils and
+  ktor-client-utils JVM extensions (`blockingGet`, salted hashes).
 - The native target set excludes the Intel-based Apple targets (`macosX64`, `tvosX64`, `watchosX64`), which
   Kotlin 2.4 deprecates for removal (https://kotl.in/native-targets-tiers); Apple platforms are covered by the
   Arm64 device/simulator targets.

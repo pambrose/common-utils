@@ -4,4 +4,6 @@ dependencies {
     api(project(":core-utils"))
 
     api(libs.guava)
+
+    testImplementation(libs.mockk)
 }

@@ -41,9 +41,10 @@ import kotlinx.html.stream.createHTML
 /**
  * Covers the previously-untested routing logic of [RecaptchaService.validateRecaptcha] and the
  * HEAD script injection. Only the network-free branches are exercised: the disabled-gate
- * short-circuit and the missing/blank-token 400 path. The success/failure branches flow through a
- * private, hardcoded CIO [io.ktor.client.HttpClient] against the real Google siteverify URL and are
- * not testable without a production injection seam.
+ * short-circuit, the missing/blank-token 400 path, and the verification-error 400 path (driven by
+ * closing the service's HttpClient so the request fails before any I/O). The success/failure
+ * *response* branches flow through a private, hardcoded CIO [io.ktor.client.HttpClient] against the
+ * real Google siteverify URL and are not testable without a production injection seam.
  */
 class RecaptchaServiceTests : StringSpec() {
   init {
@@ -142,6 +143,35 @@ class RecaptchaServiceTests : StringSpec() {
       renderHead(config(enabled = false, siteKey = "site", secretKey = "secret")) shouldNotContain "api.js"
       renderHead(config(enabled = true, siteKey = null, secretKey = "secret")) shouldNotContain "api.js"
       renderHead(config(enabled = true, siteKey = "site", secretKey = null)) shouldNotContain "api.js"
+    }
+
+    // Kept last because it closes the singleton's HttpClient (close() is idempotent, and no other
+    // test performs a live verification). With the client closed, submitForm fails immediately with
+    // ClientEngineClosedException before any network I/O, driving verifyRecaptcha through its
+    // catch branch and validateRecaptcha through the verification-failed 400 response.
+    "validateRecaptcha responds 400 when configured and verification errors out" {
+      RecaptchaService.close()
+      testApplication {
+        routing {
+          post("/v") {
+            val ok =
+              with(RecaptchaService) {
+                validateRecaptcha(
+                  config(enabled = true, siteKey = "site", secretKey = "secret"),
+                  call.receiveParameters(),
+                )
+              }
+            if (ok) call.respondText("passed")
+          }
+        }
+        client.post("/v") {
+          contentType(ContentType.Application.FormUrlEncoded)
+          setBody("g-recaptcha-response=test-token")
+        }.apply {
+          status shouldBe HttpStatusCode.BadRequest
+          bodyAsText() shouldContain "reCAPTCHA verification failed"
+        }
+      }
     }
   }
 }

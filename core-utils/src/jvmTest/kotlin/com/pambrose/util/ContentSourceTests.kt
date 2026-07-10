@@ -73,6 +73,15 @@ class ContentSourceTests : StringSpec() {
       src.remote shouldBe true
     }
 
+    "UrlSource reads content from a file URL" {
+      val tmp = Files.createTempFile("url-source-test", ".txt").toFile()
+      tmp.writeText("hello via url")
+      tmp.deleteOnExit()
+      val src = UrlSource(tmp.toURI().toURL().toString())
+      src.content shouldBe "hello via url"
+      src.remote shouldBe true
+    }
+
     "GitHubRepo builds sourcePrefix from owner and repo" {
       val repo = GitHubRepo(OwnerType.Organization, "anthropic", "claude")
       repo.scheme shouldBe "https://"

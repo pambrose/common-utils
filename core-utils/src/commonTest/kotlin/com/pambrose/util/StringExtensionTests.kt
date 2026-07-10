@@ -19,16 +19,21 @@
 package com.pambrose.util
 
 import com.pambrose.common.util.asRegex
+import com.pambrose.common.util.ensureLeadingSlash
+import com.pambrose.common.util.ensurePrefix
 import com.pambrose.common.util.firstLineNumberOf
 import com.pambrose.common.util.isBracketed
 import com.pambrose.common.util.isDouble
 import com.pambrose.common.util.isDoubleQuoted
 import com.pambrose.common.util.isFloat
 import com.pambrose.common.util.isInt
+import com.pambrose.common.util.isNotBracketed
 import com.pambrose.common.util.isNotDouble
+import com.pambrose.common.util.isNotDoubleQuoted
 import com.pambrose.common.util.isNotFloat
 import com.pambrose.common.util.isNotInt
 import com.pambrose.common.util.isNotQuoted
+import com.pambrose.common.util.isNotSingleQuoted
 import com.pambrose.common.util.isQuoted
 import com.pambrose.common.util.isSingleQuoted
 import com.pambrose.common.util.join
@@ -37,9 +42,11 @@ import com.pambrose.common.util.length
 import com.pambrose.common.util.linesBetween
 import com.pambrose.common.util.pluralize
 import com.pambrose.common.util.singleToDoubleQuoted
+import com.pambrose.common.util.toDoubleQuoted
 import com.pambrose.common.util.toPath
 import com.pambrose.common.util.toPattern
 import com.pambrose.common.util.toRootPath
+import com.pambrose.common.util.toSingleQuoted
 import com.pambrose.common.util.trimEnds
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -214,6 +221,48 @@ class StringExtensionTests : StringSpec() {
     "trim ends test" {
       "  [fddsf]  ".trimEnds() shouldBe "fddsf"
       "  [fddsf]  ".trimEnds(2) shouldBe "dds"
+    }
+
+    "not quoted variant test" {
+      "'test'".isNotSingleQuoted() shouldBe false
+      "  'test'  ".isNotSingleQuoted() shouldBe false
+      "\"test\"".isNotSingleQuoted() shouldBe true
+      "test".isNotSingleQuoted() shouldBe true
+      "".isNotSingleQuoted() shouldBe true
+
+      "\"test\"".isNotDoubleQuoted() shouldBe false
+      "  \"test\"  ".isNotDoubleQuoted() shouldBe false
+      "'test'".isNotDoubleQuoted() shouldBe true
+      "test".isNotDoubleQuoted() shouldBe true
+      "".isNotDoubleQuoted() shouldBe true
+    }
+
+    "to quoted test" {
+      "test".toSingleQuoted() shouldBe "'test'"
+      "".toSingleQuoted() shouldBe "''"
+      "test".toDoubleQuoted() shouldBe "\"test\""
+      "".toDoubleQuoted() shouldBe "\"\""
+    }
+
+    "ensure prefix test" {
+      "path".ensurePrefix("/") shouldBe "/path"
+      "/path".ensurePrefix("/") shouldBe "/path"
+      "path".ensurePrefix("pa") shouldBe "path"
+      "".ensurePrefix("/") shouldBe "/"
+
+      "path".ensureLeadingSlash() shouldBe "/path"
+      "/path".ensureLeadingSlash() shouldBe "/path"
+    }
+
+    "is not bracketed test" {
+      "[fddsf]".isNotBracketed() shouldBe false
+      "  [fddsf]  ".isNotBracketed() shouldBe false
+      "fddsf".isNotBracketed() shouldBe true
+      "[".isNotBracketed() shouldBe true
+      "".isNotBracketed() shouldBe true
+
+      "{fddsf}".isNotBracketed('{', '}') shouldBe false
+      "[fddsf]".isNotBracketed('{', '}') shouldBe true
     }
 
     "pattern match test" {

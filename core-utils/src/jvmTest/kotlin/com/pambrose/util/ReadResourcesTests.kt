@@ -49,6 +49,15 @@ class ReadResourcesTests : StringSpec() {
       (elapsed < 1000) shouldBe true
     }
 
+    "MiscFuncs.waitForPortAvailable with default arguments returns for a free port" {
+      // Bind to find a free port, then close it so the port is unbound. With the port
+      // already free, the first attempt succeeds and the defaults never trigger a retry.
+      val freePort = ServerSocket(0).use { it.localPort }
+      MiscFuncs.waitForPortAvailable(freePort)
+      // The port is still bindable after the call returns
+      ServerSocket(freePort).use { it.localPort shouldBe freePort }
+    }
+
     "MiscFuncs.waitForPortAvailable gives up after maxAttempts when port stays bound" {
       ServerSocket(0).use { occupied ->
         val start = System.currentTimeMillis()
