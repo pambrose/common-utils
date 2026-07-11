@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [3.1.0] - 2026-07-10
 
 ### New features
 
@@ -19,6 +19,11 @@ All notable changes to Common Utils are documented in this file.
 - **Moved (source-incompatible)**: `toFullDateString` and `abbrevDayOfWeek`, previously top-level functions in
   `com.pambrose.common.util`, are now members of the `DateUtils` object; update call sites to
   `import com.pambrose.common.util.DateUtils.toFullDateString` (and `.abbrevDayOfWeek`).
+- `DateUtils.toFullDateString(timeZone)` overload appends the DST-aware UTC offset for the given zone
+  (e.g. `"Mon 04/10/26 14:30:00 -04:00"`, `Z` for a zero offset). kotlinx-datetime exposes the numeric
+  offset rather than a letter abbreviation such as `EST`/`EDT`, which is ambiguous across regions; the
+  no-argument `toFullDateString()` is unchanged. Resolving a named zone on JS/wasmJs still requires the
+  consumer to add `@js-joda/timezone`; fixed-offset and UTC zones need no database.
 
 ### Bug fixes
 
@@ -35,6 +40,7 @@ All notable changes to Common Utils are documented in this file.
 
 - `logback` 1.5.32 → 1.5.38
 - `grpc` 1.82.1 → 1.82.2
+- Bump project version to 3.1.0
 
 ## [3.0.0] - 2026-07-09
 

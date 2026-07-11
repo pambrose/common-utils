@@ -5,7 +5,7 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## Unreleased
+## v3.1.0 — 2026-07-10
 
 ### Highlights
 
@@ -17,11 +17,16 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   rather than top-level `com.pambrose.common.util` functions — update the corresponding member imports.
 - **Formatter fixes**: `toFullDateString` drops the misleading hardcoded `PST` label; `toLogString` left-pads
   milliseconds (`.005`, not `.500`); `toMMDDYYYYHHMM` zero-pads the hour.
+- **Zone-aware formatting**: a new `toFullDateString(timeZone)` overload appends the DST-aware UTC offset
+  (e.g. `-04:00`, or `Z` for zero) — the numeric offset rather than an ambiguous letter abbreviation like
+  `EST`/`EDT`; the no-argument overload is unchanged.
 
 ### Dependency bumps
 
 - `logback` 1.5.32 → 1.5.38
 - `grpc` 1.82.1 → 1.82.2
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/3.0.0...3.1.0
 
 ---
 
