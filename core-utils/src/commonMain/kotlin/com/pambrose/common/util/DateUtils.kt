@@ -8,6 +8,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.TimeZone.Companion.UTC
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.number
+import kotlinx.datetime.offsetIn
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
@@ -138,6 +139,25 @@ object DateUtils {
   fun LocalDateTime.toFullDateString(): String =
     "${abbrevDayOfWeek()} ${month.number.lpad(2)}/${day.lpad(2)}/${(year - 2000).lpad(2)} " +
       "${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)}"
+
+  /**
+   * Formats this [LocalDateTime] as a full date string suffixed with the UTC offset for [timeZone],
+   * e.g., `"Mon 04/10/26 14:30:00 -04:00"` (a zero offset renders as `"Z"`).
+   *
+   * The receiver is interpreted as a wall-clock time in [timeZone], so the offset reflects daylight
+   * saving where applicable — the same wall-clock time yields `-05:00` in winter and `-04:00` in summer
+   * for an eastern-US zone. kotlinx-datetime exposes the numeric offset rather than a letter
+   * abbreviation such as `EST`/`EDT`, which is ambiguous across regions. Resolving a named zone on
+   * Kotlin/JS and wasmJs requires the `@js-joda/timezone` npm package on the consumer side; fixed-offset
+   * and UTC zones need no database.
+   *
+   * Extension function on [LocalDateTime].
+   *
+   * @param timeZone the zone used to resolve the offset
+   * @return the formatted date/time string with a trailing UTC offset
+   */
+  fun LocalDateTime.toFullDateString(timeZone: TimeZone): String =
+    "${toFullDateString()} ${toInstant(timeZone).offsetIn(timeZone)}"
 
   /**
    * Formats this [LocalDateTime] as a log-friendly timestamp with milliseconds, e.g.

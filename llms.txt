@@ -2,14 +2,14 @@
 
 > Modular Kotlin/Java utility libraries providing extension functions, DSLs, and helpers for common frameworks. Each module is independently consumable via Maven Central.
 
-- Version: 3.0.0
+- Version: 3.1.0
 - Group: com.pambrose.common-utils
 - Repository: https://github.com/pambrose/common-utils
 - Maven Central: https://central.sonatype.com/namespace/com.pambrose.common-utils
 - License: Apache 2.0
 - Kotlin: 2.4.0, JVM 17
 - Base package: com.pambrose.common.*
-- Install: `implementation("com.pambrose.common-utils:<module>:3.0.0")`
+- Install: `implementation("com.pambrose.common-utils:<module>:3.1.0")`
 - Multiplatform: core-utils, json-utils, and ktor-client-utils are Kotlin Multiplatform (JVM, JS, wasmJs,
   Native — iOS/macOS/tvOS/watchOS/Linux/Windows); all other modules are JVM-only
 - Maven (non-Gradle) consumers of the three multiplatform modules must use the `-jvm` artifact

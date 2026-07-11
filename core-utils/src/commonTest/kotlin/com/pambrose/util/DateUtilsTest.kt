@@ -28,6 +28,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.UtcOffset
+import kotlinx.datetime.asTimeZone
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -87,6 +89,16 @@ class DateUtilsTest : StringSpec() {
       ldt.toFullDateString() shouldBe "Thu 03/07/24 09:05:07"
       // The misleading hardcoded "PST" label (wrong during PDT) must no longer be emitted
       ldt.toFullDateString() shouldNotContain "PST"
+    }
+
+    "toFullDateString(timeZone) - appends the fixed UTC offset" {
+      val ldt = LocalDateTime(2024, 3, 7, 9, 5, 7)
+      ldt.toFullDateString(UtcOffset(hours = -4).asTimeZone()) shouldBe "${ldt.toFullDateString()} -04:00"
+    }
+
+    "toFullDateString(timeZone) - renders a zero offset as Z" {
+      val ldt = LocalDateTime(2024, 3, 7, 9, 5, 7)
+      ldt.toFullDateString(TimeZone.UTC) shouldBe "${ldt.toFullDateString()} Z"
     }
 
     "toLogString - includes mm/dd/yy time and ms without a hardcoded zone label" {
