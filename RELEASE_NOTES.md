@@ -5,6 +5,24 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v3.2.0 — 2026-07-14
+
+### Highlights
+
+- **Kotlin 2.4.10**: the build toolchain moves from Kotlin 2.4.0 to 2.4.10 (patch-level compiler and
+  standard-library updates); common-utils' own source and published API are unchanged.
+- **Cleaner test build**: the grpc-utils test suite no longer emits the `io.grpc.Attributes.keys()`
+  deprecation warning. It is suppressed narrowly while keeping the assertion, since gRPC offers no public
+  replacement for enumerating attribute keys.
+
+### Dependency bumps
+
+- `kotlin` 2.4.0 → 2.4.10
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/3.1.0...3.2.0
+
+---
+
 ## v3.1.0 — 2026-07-10
 
 ### Highlights

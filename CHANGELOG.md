@@ -2,6 +2,20 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [3.2.0] - 2026-07-14
+
+### Build & tooling
+
+- Silence the deprecated `io.grpc.Attributes.keys()` warning in the grpc-utils test suite with a scoped
+  `@Suppress("DEPRECATION")`. gRPC exposes no public replacement for enumerating attribute keys
+  (`keysForTest()` is package-private), so the test's exact-key-set assertion is preserved rather than
+  dropped. Test-only — no API or behavior change.
+
+### Dependency bumps
+
+- `kotlin` 2.4.0 → 2.4.10
+- Bump project version to 3.2.0
+
 ## [3.1.0] - 2026-07-10
 
 ### New features
