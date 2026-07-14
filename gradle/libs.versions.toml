@@ -13,7 +13,7 @@ mavenPublish = "0.37.0"
 versions = "0.54.0"
 
 # Kotlin & kotlinx
-kotlin = "2.4.0"
+kotlin = "2.4.10"
 coroutines = "1.11.0"
 datetime = "0.7.1-0.6.x-compat"
 kotlinxHtml = "0.12.0"

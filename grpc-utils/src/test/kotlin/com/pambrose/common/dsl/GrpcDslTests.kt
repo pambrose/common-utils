@@ -43,6 +43,7 @@ class GrpcDslTests : StringSpec() {
           set(key, "test-value")
         }
       attributes.get(key) shouldBe "test-value"
+      @Suppress("DEPRECATION")
       attributes.keys() shouldBe setOf(key)
     }
 
