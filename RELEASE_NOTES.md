@@ -5,6 +5,28 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v3.2.1 — 2026-07-25
+
+### Highlights
+
+- **Collection literals**: adopt Kotlin 2.4's `[...]` collection-literal syntax across every module
+  (`src` and `test`). The experimental `-Xcollection-literals` compiler flag is enabled on all JVM and KMP
+  compilations (main and test), and eligible `listOf(...)` and `mutableListOf(...)` call sites are converted
+  to bracket literals — each `mutableListOf` conversion carries an explicit `MutableList<T>` on the variable,
+  and `emptyList()` is intentionally left unchanged. The change is source-only and ABI-neutral: no published
+  bytecode signature changes, so Maven Central consumers are unaffected. The flag is experimental in
+  Kotlin 2.4 and may require source revisiting on a future Kotlin bump.
+
+### Dependency bumps
+
+- `kover` 0.9.8 → 0.9.9
+- `grpc` 1.82.2 → 1.83.0
+- `kotest` 6.2.2 → 6.2.3
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/3.2.0...3.2.1
+
+---
+
 ## v3.2.0 — 2026-07-14
 
 ### Highlights

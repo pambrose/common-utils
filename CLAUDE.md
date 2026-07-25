@@ -112,6 +112,11 @@ These opt-ins are enabled globally:
 - `kotlin.concurrent.atomics.ExperimentalAtomicApi`
 - `kotlinx.serialization.ExperimentalSerializationApi`
 
+Additionally, the experimental `-Xcollection-literals` compiler flag is enabled on every compilation
+(JVM and KMP, main and test) so `[...]` collection-literal syntax can be used in place of `listOf(...)` /
+`mutableListOf(...)`. The flag is experimental in Kotlin 2.4 and may need revisiting on a future Kotlin
+upgrade (if the syntax changes or the feature stabilizes and the flag can be dropped).
+
 ### Key Technologies
 
 - Kotlin 2.4.10 with JVM target 17 (KMP modules additionally target JS, wasmJs, and Native)
@@ -152,6 +157,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "3.2.0" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
+- Project version: "3.2.1" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
 - Group: "com.pambrose.common-utils" (set in `gradle.properties`)
 - All library versions in `gradle/libs.versions.toml`

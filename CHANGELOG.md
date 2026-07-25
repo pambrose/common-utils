@@ -2,6 +2,23 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [3.2.1] - 2026-07-25
+
+### Build & tooling
+
+- Adopt Kotlin 2.4 collection-literal syntax (`[...]`) across every module (`src` and `test`). Enable the
+  experimental `-Xcollection-literals` compiler flag on all JVM and KMP compilations (main and test), and
+  convert eligible `listOf(...)` and `mutableListOf(...)` call sites to bracket literals; each
+  `mutableListOf` conversion adds an explicit `MutableList<T>` on the variable, and `emptyList()` is left
+  unchanged. Source-only and ABI-neutral — no published signature changes.
+
+### Dependency bumps
+
+- `kover` 0.9.8 → 0.9.9
+- `grpc` 1.82.2 → 1.83.0
+- `kotest` 6.2.2 → 6.2.3
+- Bump project version to 3.2.1
+
 ## [3.2.0] - 2026-07-14
 
 ### Build & tooling
