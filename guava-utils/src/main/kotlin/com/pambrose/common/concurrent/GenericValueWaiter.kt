@@ -86,7 +86,7 @@ abstract class GenericValueWaiter<T>(
   protected val initValue: T,
 ) {
   private val lock = ReentrantLock()
-  private val waiters = mutableListOf<Waiter>()
+  private val waiters: MutableList<Waiter> = []
 
   protected var currValue = initValue
 
@@ -153,8 +153,8 @@ abstract class GenericValueWaiter<T>(
    * @param value the new value.
    */
   fun checkCondition(value: T) {
-    val satisfied = mutableListOf<Waiter>()
-    val failed = mutableListOf<Pair<Waiter, Throwable>>()
+    val satisfied: MutableList<Waiter> = []
+    val failed: MutableList<Pair<Waiter, Throwable>> = []
     lock.withLock {
       currValue = value
       // Evaluate each predicate in isolation so a single misbehaving one cannot starve the others, and

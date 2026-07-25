@@ -31,9 +31,9 @@ import kotlin.time.Duration.Companion.seconds
 class ConditionalTests : StringSpec() {
   init {
     "simple bools" {
-      val results = mutableListOf<Int>()
+      val results: MutableList<Int> = []
       val mutex = Mutex()
-      val jobs = mutableListOf<Job>()
+      val jobs: MutableList<Job> = []
       val bool1 = ConditionalBoolean(false)
       val bool2 = ConditionalBoolean(false)
       val bool3 = ConditionalBoolean(false)
@@ -65,9 +65,9 @@ class ConditionalTests : StringSpec() {
 
     "list bools" {
       val mutex = Mutex()
-      val jobs = mutableListOf<Job>()
-      val results = mutableListOf<Int>()
-      val expected = mutableListOf<Int>()
+      val jobs: MutableList<Job> = []
+      val results: MutableList<Int> = []
+      val expected: MutableList<Int> = []
       val bools = List(1000) { it to ConditionalBoolean(false) }
 
       for ((id, bool) in bools) {
@@ -89,9 +89,9 @@ class ConditionalTests : StringSpec() {
 
     "multi int listeners" {
       val mutex = Mutex()
-      val jobs = mutableListOf<Job>()
-      val results = mutableListOf<Int>()
-      val expected = mutableListOf<Int>()
+      val jobs: MutableList<Job> = []
+      val results: MutableList<Int> = []
+      val expected: MutableList<Int> = []
       val vals = List(1000) { it to ConditionalValue(-1) }
 
       for ((id, cv) in vals.shuffled()) {
@@ -113,10 +113,10 @@ class ConditionalTests : StringSpec() {
 
     "multi list listeners" {
       val mutex = Mutex()
-      val jobs = mutableListOf<Job>()
-      val results = mutableListOf<Int>()
-      val expected = mutableListOf<Int>()
-      val listVals = mutableListOf<Int>()
+      val jobs: MutableList<Job> = []
+      val results: MutableList<Int> = []
+      val expected: MutableList<Int> = []
+      val listVals: MutableList<Int> = []
       val vals = List(1000) { it to ConditionalValue(emptyList<Int>()) }
 
       for ((id, cv) in vals.shuffled()) {

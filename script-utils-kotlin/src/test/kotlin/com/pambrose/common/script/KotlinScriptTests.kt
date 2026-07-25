@@ -116,7 +116,7 @@ class KotlinScriptTests : StringSpec() {
     }
 
     "object with types" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
       val map = mutableMapOf("k1" to 1)
 
       KotlinScript().use {
@@ -148,7 +148,7 @@ class KotlinScriptTests : StringSpec() {
     }
 
     "object with KType" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
 
       KotlinScript().use {
         it.apply {
@@ -172,7 +172,7 @@ class KotlinScriptTests : StringSpec() {
     }
 
     "null object" {
-      val list = mutableListOf<Int?>()
+      val list: MutableList<Int?> = []
 
       KotlinScript().use {
         it.apply {
@@ -232,7 +232,7 @@ class KotlinScriptTests : StringSpec() {
     }
 
     "unmatched params" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
 
       KotlinScript().use { script ->
         shouldThrow<ScriptException> {
@@ -242,7 +242,7 @@ class KotlinScriptTests : StringSpec() {
     }
 
     "missing collection type" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
 
       KotlinScript().use { script ->
         shouldThrow<ScriptException> { script.add("list", list) }

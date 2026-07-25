@@ -51,7 +51,7 @@ class KotlinScript(
    */
   val varDecls: String
     get() {
-      val assigns = mutableListOf<String>()
+      val assigns: MutableList<String> = []
 
       valueMap
         .forEach { (name, value) ->

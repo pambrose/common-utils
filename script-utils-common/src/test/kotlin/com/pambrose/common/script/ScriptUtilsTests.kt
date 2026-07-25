@@ -63,7 +63,7 @@ class ScriptUtilsTests : StringSpec() {
       engine.resetContext()
 
       verify(exactly = 1) { engine.context = any() }
-      val capturedContext = mutableListOf<ScriptContext>()
+      val capturedContext: MutableList<ScriptContext> = []
       verify { engine.context = capture(capturedContext) }
       val newContext = capturedContext.first()
       newContext.shouldBeInstanceOf<javax.script.SimpleScriptContext>()

@@ -67,7 +67,7 @@ class KotlinSqlLoggerTests : StringSpec() {
     }
 
     "log writes the expanded sql statement at info level" {
-      val messages = mutableListOf<String>()
+      val messages: MutableList<String> = []
       val mockLogger = mockk<KLogger>()
       every { mockLogger.info(any<() -> Any?>()) } answers {
         messages += firstArg<() -> Any?>().invoke().toString()

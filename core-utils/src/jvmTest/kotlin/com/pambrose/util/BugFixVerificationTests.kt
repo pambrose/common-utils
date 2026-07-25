@@ -223,7 +223,7 @@ class BugFixVerificationTests : StringSpec() {
     }
 
     "short times passes correct indices" {
-      val indices = mutableListOf<Short>()
+      val indices: MutableList<Short> = []
       val n: Short = 5
       n times { indices.add(it) }
       indices shouldBe listOf<Short>(0, 1, 2, 3, 4)
