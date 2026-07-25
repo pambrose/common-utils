@@ -43,7 +43,7 @@ class KotlinScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("kts", nullGlobalContext),
   Closeable {
-  private val imports = listOf(System::class.qualifiedName)
+  private val imports = [System::class.qualifiedName]
 
   /**
    * Generates Kotlin `val` declarations that retrieve bound variables from the engine's bindings

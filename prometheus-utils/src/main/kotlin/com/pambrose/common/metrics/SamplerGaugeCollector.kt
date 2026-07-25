@@ -58,7 +58,7 @@ class SamplerGaugeCollector(
         Double.NaN
       }
     val sample = MetricFamilySamples.Sample(name, labelNames, labelValues, value)
-    return listOf(MetricFamilySamples(name, Type.GAUGE, help, listOf(sample)))
+    return [MetricFamilySamples(name, Type.GAUGE, help, [sample])]
   }
 
   companion object {

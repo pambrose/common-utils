@@ -85,7 +85,7 @@ abstract class AbstractRepo(
   val ownerName: String,
   val repoName: String,
 ) : ContentRoot {
-  override val sourcePrefix: String get() = scheme + listOf(domainName, ownerName, repoName).join()
+  override val sourcePrefix: String get() = scheme + [domainName, ownerName, repoName].join()
   override val remote = true
 
   /** The URL prefix used to access raw file content from this repository. */
@@ -175,14 +175,14 @@ open class GitHubFile(
   val srcPath: String,
   val fileName: String,
 ) : UrlSource(
-  repo.scheme + listOf(
+  repo.scheme + [
     GITHUB_USER_CONTENT,
     repo.ownerName,
     repo.repoName,
     branchName,
     srcPath,
     fileName,
-  ).join(),
+  ].join(),
 ) {
   override fun toString() = "GitHubFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
@@ -203,7 +203,7 @@ open class GitLabFile(
   val srcPath: String,
   val fileName: String,
 ) : UrlSource(
-  repo.scheme + listOf(
+  repo.scheme + [
     repo.domainName,
     repo.ownerName,
     repo.repoName,
@@ -211,7 +211,7 @@ open class GitLabFile(
     branchName,
     srcPath,
     fileName,
-  ).join(),
+  ].join(),
 ) {
   override fun toString() = "GitLabFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
