@@ -8,7 +8,7 @@ detekt = "2.0.0-alpha.5"
 dokka = "2.2.0"
 gradlePlugins = "1.1.0"
 kotlinter = "5.5.0"
-kover = "0.9.8"
+kover = "0.9.9"
 mavenPublish = "0.37.0"
 versions = "0.54.0"
 
@@ -25,7 +25,7 @@ logging = "8.0.4"
 
 # Frameworks
 dropwizard = "4.2.39"
-grpc = "1.82.2"
+grpc = "1.83.0"
 jakartaServlet = "6.1.0"
 jetty = "12.1.11"
 ktor = "3.5.1"
@@ -54,8 +54,8 @@ guava = "33.0.0-jre"
 resend = "4.13.0"
 
 # Testing
-kotest = "6.2.2"
-# KSP versions independently of Kotlin since 2.3.0 (required by the kotest plugin)
+kotest = "6.2.3"
+# KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
 ksp = "2.3.9"
 mockk = "1.14.9"
 
