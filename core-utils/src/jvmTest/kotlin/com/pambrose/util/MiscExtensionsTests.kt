@@ -39,16 +39,16 @@ class MiscExtensionsTests : StringSpec() {
     "simple class name test" {
       "hello".simpleClassName shouldBe "String"
       42.simpleClassName shouldBe "Int"
-      listOf(1, 2, 3).simpleClassName shouldBe "ArrayList"
+      [1, 2, 3].simpleClassName shouldBe "ArrayList"
       // Single entry maps may use optimized implementations like SingletonMap
       mapOf("a" to 1, "b" to 2).simpleClassName shouldBe "LinkedHashMap"
     }
 
     "to csv test" {
       emptyList<String>().toCsv() shouldBe ""
-      listOf("a").toCsv() shouldBe "a"
-      listOf("a", "b", "c").toCsv() shouldBe "a, b, c"
-      listOf(1, 2, 3).toCsv() shouldBe "1, 2, 3"
+      ["a"].toCsv() shouldBe "a"
+      ["a", "b", "c"].toCsv() shouldBe "a, b, c"
+      [1, 2, 3].toCsv() shouldBe "1, 2, 3"
     }
   }
 }

@@ -174,7 +174,7 @@ class BugFixVerificationTests : StringSpec() {
 
     "lines between works when patterns exist" {
       val text = "aaa\nbbb\nccc\nddd"
-      text.linesBetween(Regex("aaa"), Regex("ddd")) shouldBe listOf("bbb", "ccc")
+      text.linesBetween(Regex("aaa"), Regex("ddd")) shouldBe ["bbb", "ccc"]
     }
 
     // Bug #20: JSON key "build_time: " had a trailing colon and space
@@ -226,7 +226,7 @@ class BugFixVerificationTests : StringSpec() {
       val indices: MutableList<Short> = []
       val n: Short = 5
       n times { indices.add(it) }
-      indices shouldBe listOf<Short>(0, 1, 2, 3, 4)
+      indices shouldBe [0, 1, 2, 3, 4]
     }
 
     "short times zero does nothing" {

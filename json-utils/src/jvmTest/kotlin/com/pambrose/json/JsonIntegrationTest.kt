@@ -107,7 +107,7 @@ class JsonIntegrationTest : StringSpec() {
           "linkedin" to "https://linkedin.com/in/johndoe",
         ),
       ),
-      permissions = listOf("read", "write", "admin"),
+      permissions = ["read", "write", "admin"],
       settings = UserSettings(
         theme = "dark",
         notifications = NotificationSettings(
@@ -317,11 +317,11 @@ class JsonIntegrationTest : StringSpec() {
 
     "bulk data processing" {
       // Simulate processing a batch of users
-      val users = listOf(
+      val users = [
         sampleUser.copy(id = 1, username = "user1"),
         sampleUser.copy(id = 2, username = "user2", settings = sampleUser.settings.copy(theme = "light")),
-        sampleUser.copy(id = 3, username = "user3", permissions = listOf("read")),
-      )
+        sampleUser.copy(id = 3, username = "user3", permissions = ["read"]),
+      ]
 
       val batchResponse = ApiResponse(
         success = true,

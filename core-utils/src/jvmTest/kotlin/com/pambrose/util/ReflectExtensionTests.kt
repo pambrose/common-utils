@@ -28,7 +28,7 @@ class ReflectExtensionTests : StringSpec() {
     "type param count test" {
       4.typeParameterCount shouldBe 0
       "dd".typeParameterCount shouldBe 0
-      listOf(3).typeParameterCount shouldBe 1
+      [3].typeParameterCount shouldBe 1
       mapOf(3 to "d").typeParameterCount shouldBe 2
       mutableMapOf("k1" to 1).typeParameterCount shouldBe 2
       arrayOf(4).typeParameterCount shouldBe 1

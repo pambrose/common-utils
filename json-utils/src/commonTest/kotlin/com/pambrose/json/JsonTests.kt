@@ -142,7 +142,7 @@ class JsonTests : StringSpec() {
     }
 
     "Object types" {
-      listOf(json1, json2).forEach { json ->
+      [json1, json2].forEach { json ->
         val objVal = json.jsonObjectValue("objectVal")
         objVal.booleanValue("boolVal") shouldBe DEFAULT_BOOLEAN
         objVal.stringValue("strVal") shouldBe DEFAULT_STRING
@@ -152,7 +152,7 @@ class JsonTests : StringSpec() {
     }
 
     "List types" {
-      listOf(json1, json2).forEach { json ->
+      [json1, json2].forEach { json ->
         json.jsonElementList("boolList").map { it.booleanValue } shouldBe DEFAULT_BOOLEAN_LIST
         json.jsonElementList("strList").map { it.stringValue } shouldBe DEFAULT_STRING_LIST
         json.jsonElementList("intList").map { it.intValue } shouldBe DEFAULT_INT_LIST
@@ -161,7 +161,7 @@ class JsonTests : StringSpec() {
     }
 
     "Embedded object types" {
-      listOf(json1, json2).forEach { json ->
+      [json1, json2].forEach { json ->
         json.booleanValue("objectVal.boolVal") shouldBe DEFAULT_BOOLEAN
         json.stringValue("objectVal.strVal") shouldBe DEFAULT_STRING
         json.intValue("objectVal.intVal") shouldBe DEFAULT_INT

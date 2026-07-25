@@ -52,10 +52,10 @@ class JsonContentUtilsTest : StringSpec() {
     val complexData = ComplexData(
       id = "complex-1",
       metadata = mapOf("version" to "1.0", "type" to "test"),
-      items = listOf(
+      items = [
         SimpleData("item1", 10),
         SimpleData("item2", 20, false),
-      ),
+      ],
     )
 
     "JsonContentUtils formats are properly configured" {

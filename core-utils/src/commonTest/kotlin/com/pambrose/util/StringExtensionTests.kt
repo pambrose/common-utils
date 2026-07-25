@@ -149,20 +149,20 @@ class StringExtensionTests : StringSpec() {
     }
 
     "test paths" {
-      listOf("a", "b", "c").join() shouldBe "a/b/c"
-      listOf("a", "b", "c").toPath() shouldBe "/a/b/c/"
-      listOf("a", "b", "c").toRootPath() shouldBe "/a/b/c"
-      listOf("a", "b", "c").toRootPath(true) shouldBe "/a/b/c/"
-      listOf("a", "b", "c").toPath(addPrefix = false, addTrailing = true) shouldBe "a/b/c/"
-      listOf("a", "b", "c").toPath() shouldBe "/a/b/c/"
-      listOf("/a", "/b", "c").toPath() shouldBe "/a/b/c/"
-      listOf("/a", "/b", "c/").toPath() shouldBe "/a/b/c/"
-      listOf("a", "/b", "c/").toPath() shouldBe "/a/b/c/"
+      ["a", "b", "c"].join() shouldBe "a/b/c"
+      ["a", "b", "c"].toPath() shouldBe "/a/b/c/"
+      ["a", "b", "c"].toRootPath() shouldBe "/a/b/c"
+      ["a", "b", "c"].toRootPath(true) shouldBe "/a/b/c/"
+      ["a", "b", "c"].toPath(addPrefix = false, addTrailing = true) shouldBe "a/b/c/"
+      ["a", "b", "c"].toPath() shouldBe "/a/b/c/"
+      ["/a", "/b", "c"].toPath() shouldBe "/a/b/c/"
+      ["/a", "/b", "c/"].toPath() shouldBe "/a/b/c/"
+      ["a", "/b", "c/"].toPath() shouldBe "/a/b/c/"
 
-      listOf("a", "b", "c").join() shouldBe "a/b/c"
-      listOf("a/", "/b/", "c").join() shouldBe "a/b/c"
-      listOf("/a/", "/b/", "c").join() shouldBe "/a/b/c"
-      listOf("/a/", "/b/", "/c").join() shouldBe "/a/b/c"
+      ["a", "b", "c"].join() shouldBe "a/b/c"
+      ["a/", "/b/", "c"].join() shouldBe "a/b/c"
+      ["/a/", "/b/", "c"].join() shouldBe "/a/b/c"
+      ["/a/", "/b/", "/c"].join() shouldBe "/a/b/c"
     }
 
     "test line indexes" {
@@ -198,9 +198,9 @@ class StringExtensionTests : StringSpec() {
       ccc
       """.trimIndent()
 
-      s.linesBetween(Regex("aaa"), Regex("ccc")) shouldBe listOf("bbb", "ccc", "aaa", "bbb")
-      s.linesBetween(Regex("ccc"), Regex("bbb")) shouldBe listOf("aaa")
-      s.linesBetween(Regex("ccc"), Regex("aaa")) shouldBe listOf()
+      s.linesBetween(Regex("aaa"), Regex("ccc")) shouldBe ["bbb", "ccc", "aaa", "bbb"]
+      s.linesBetween(Regex("ccc"), Regex("bbb")) shouldBe ["aaa"]
+      s.linesBetween(Regex("ccc"), Regex("aaa")) shouldBe []
     }
 
     "bracket test" {
