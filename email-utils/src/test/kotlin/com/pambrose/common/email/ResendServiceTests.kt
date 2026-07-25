@@ -51,18 +51,18 @@ class ResendServiceTests : StringSpec() {
 
       ResendService("test-api-key").sendEmail(
         from = Email("Sender@Example.com"),
-        to = listOf(Email("a@example.com"), Email("b@example.com")),
-        cc = listOf(Email("cc@example.com")),
-        bcc = listOf(Email("bcc@example.com")),
+        to = [Email("a@example.com"), Email("b@example.com")],
+        cc = [Email("cc@example.com")],
+        bcc = [Email("bcc@example.com")],
         subject = "Hello",
         html = "<h1>Hi</h1>",
       )
 
       val req = captured.captured
       req.from shouldBe "Sender@Example.com"
-      req.to shouldBe listOf("a@example.com", "b@example.com")
-      req.cc shouldBe listOf("cc@example.com")
-      req.bcc shouldBe listOf("bcc@example.com")
+      req.to shouldBe ["a@example.com", "b@example.com"]
+      req.cc shouldBe ["cc@example.com"]
+      req.bcc shouldBe ["bcc@example.com"]
       req.subject shouldBe "Hello"
       req.html shouldBe "<h1>Hi</h1>"
     }
@@ -77,13 +77,13 @@ class ResendServiceTests : StringSpec() {
       // cc and bcc omitted -> exercise the emptyList() defaults
       ResendService("test-api-key").sendEmail(
         from = Email("from@example.com"),
-        to = listOf(Email("only@example.com")),
+        to = [Email("only@example.com")],
         subject = "Subj",
         html = "<p>body</p>",
       )
 
       val req = captured.captured
-      req.to shouldBe listOf("only@example.com")
+      req.to shouldBe ["only@example.com"]
       req.cc shouldBe emptyList()
       req.bcc shouldBe emptyList()
     }
@@ -97,7 +97,7 @@ class ResendServiceTests : StringSpec() {
       // Should not throw.
       ResendService("test-api-key").sendEmail(
         from = Email("from@example.com"),
-        to = listOf(Email("to@example.com")),
+        to = [Email("to@example.com")],
         subject = "Subj",
         html = "<p>x</p>",
       )
@@ -114,7 +114,7 @@ class ResendServiceTests : StringSpec() {
         shouldThrow<ResendException> {
           ResendService("test-api-key").sendEmail(
             from = Email("from@example.com"),
-            to = listOf(Email("to@example.com")),
+            to = [Email("to@example.com")],
             subject = "Subj",
             html = "<p>x</p>",
           )

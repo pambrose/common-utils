@@ -90,10 +90,10 @@ class WebhookDataTests : StringSpec() {
     }
 
     "data construction with all fields" {
-      val headers = listOf(
+      val headers = [
         Header(name = "X-Tag", value = "important"),
         Header(name = "X-Priority", value = "high"),
-      )
+      ]
       val bounce = Bounce(message = "mailbox full")
       val click = Click(
         ipAddress = "10.0.0.1",
@@ -106,13 +106,13 @@ class WebhookDataTests : StringSpec() {
         emailId = "email-456",
         from = "sender@example.com",
         subject = "Test Subject",
-        to = listOf("recipient1@example.com", "recipient2@example.com"),
+        to = ["recipient1@example.com", "recipient2@example.com"],
         headers = headers,
         bounce = bounce,
         click = click,
       )
       data.subject shouldBe "Test Subject"
-      data.to shouldBe listOf("recipient1@example.com", "recipient2@example.com")
+      data.to shouldBe ["recipient1@example.com", "recipient2@example.com"]
       data.headers shouldBe headers
       data.bounce shouldBe bounce
       data.click shouldBe click
@@ -124,8 +124,8 @@ class WebhookDataTests : StringSpec() {
         emailId = "email-789",
         from = "sender@example.com",
         subject = "Hello",
-        to = listOf("user@test.com"),
-        headers = listOf(Header(name = "X-Test", value = "abc")),
+        to = ["user@test.com"],
+        headers = [Header(name = "X-Test", value = "abc")],
       )
       val json = Json.encodeToString(data)
       val decoded = Json.decodeFromString<Data>(json)
@@ -154,7 +154,7 @@ class WebhookDataTests : StringSpec() {
         emailId = "email-200",
         from = "sender@test.com",
         subject = "Welcome",
-        to = listOf("new-user@test.com"),
+        to = ["new-user@test.com"],
       )
       val msg = ResendWebhookMsg(
         createdAt = "2026-01-01T00:00:00Z",
@@ -171,11 +171,11 @@ class WebhookDataTests : StringSpec() {
         createdAt = "2026-02-01T00:00:00Z",
         emailId = "email-300",
         from = "admin@example.com",
-        to = listOf("a@test.com", "b@test.com", "c@test.com"),
-        headers = listOf(
+        to = ["a@test.com", "b@test.com", "c@test.com"],
+        headers = [
           Header(name = "X-First", value = "1"),
           Header(name = "X-Second", value = "2"),
-        ),
+        ],
       )
       val json = Json.encodeToString(data)
       val decoded = Json.decodeFromString<Data>(json)
@@ -230,8 +230,8 @@ class WebhookDataTests : StringSpec() {
         emailId = "email-400",
         from = "sender@example.com",
         subject = "Bounced and clicked",
-        to = listOf("user@test.com"),
-        headers = listOf(Header(name = "X-Env", value = "prod")),
+        to = ["user@test.com"],
+        headers = [Header(name = "X-Env", value = "prod")],
         bounce = Bounce(message = "mailbox unavailable"),
         click = Click(
           ipAddress = "10.1.1.1",

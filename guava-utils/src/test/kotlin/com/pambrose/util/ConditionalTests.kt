@@ -60,7 +60,7 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      results shouldBe listOf(3, 1, 2)
+      results shouldBe [3, 1, 2]
     }
 
     "list bools" {

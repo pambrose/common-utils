@@ -149,7 +149,7 @@ class GenericServiceTests : StringSpec() {
     }
 
     "both variants register the same base health checks after init" {
-      val expected = listOf("all_services_healthy", "thread_deadlock")
+      val expected = ["all_services_healthy", "thread_deadlock"]
       TestJettyService().healthCheckNames shouldContainExactlyInAnyOrder expected
       TestKtorService().healthCheckNames shouldContainExactlyInAnyOrder expected
     }
@@ -177,7 +177,7 @@ class GenericServiceTests : StringSpec() {
 
       // The metrics_service check is registered only when metrics are enabled.
       service.healthCheckNames shouldContainExactlyInAnyOrder
-        listOf("all_services_healthy", "metrics_service", "thread_deadlock")
+        ["all_services_healthy", "metrics_service", "thread_deadlock"]
 
       // Before start, the sub-services are not yet running, so the aggregate check is unhealthy.
       service.runHealthChecks()["all_services_healthy"]?.isHealthy shouldBe false

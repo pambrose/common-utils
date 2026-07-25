@@ -72,7 +72,7 @@ class GrpcDslTests : StringSpec() {
         response shouldBe "echo: hello"
         serverBlockCalled shouldBe true
         channelBlockCalled shouldBe true
-        server.services.map { it.serviceDescriptor.name } shouldBe listOf("EchoService")
+        server.services.map { it.serviceDescriptor.name } shouldBe ["EchoService"]
       } finally {
         channel.shutdownNow()
         server.shutdownNow()
@@ -125,7 +125,7 @@ class GrpcDslTests : StringSpec() {
           addService(echoService())
         }
       blockCalled shouldBe true
-      server.services.map { it.serviceDescriptor.name } shouldBe listOf("EchoService")
+      server.services.map { it.serviceDescriptor.name } shouldBe ["EchoService"]
       server.isShutdown shouldBe false
     }
 

@@ -51,14 +51,14 @@ class SamplerGaugeCollectorTests : StringSpec() {
       val collector = SamplerGaugeCollector(
         name = "test_sampler_gauge_with_labels",
         help = "Test sampler gauge with labels",
-        labelNames = listOf("region", "instance"),
-        labelValues = listOf("us-east-1", "i-12345"),
+        labelNames = ["region", "instance"],
+        labelValues = ["us-east-1", "i-12345"],
         data = { 55.5 },
       )
       val samples = collector.collect()
       samples shouldHaveSize 1
-      samples[0].samples[0].labelNames shouldBe listOf("region", "instance")
-      samples[0].samples[0].labelValues shouldBe listOf("us-east-1", "i-12345")
+      samples[0].samples[0].labelNames shouldBe ["region", "instance"]
+      samples[0].samples[0].labelValues shouldBe ["us-east-1", "i-12345"]
       samples[0].samples[0].value shouldBe 55.5
     }
 
@@ -68,8 +68,8 @@ class SamplerGaugeCollectorTests : StringSpec() {
         SamplerGaugeCollector(
           name = "test_sampler_gauge_mismatch",
           help = "mismatched labels",
-          labelNames = listOf("region", "instance"),
-          labelValues = listOf("us-east-1"),
+          labelNames = ["region", "instance"],
+          labelValues = ["us-east-1"],
           data = { 1.0 },
         )
       }

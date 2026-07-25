@@ -58,7 +58,7 @@ class VersionServletTests : StringSpec() {
     }
 
     "different version strings work correctly" {
-      val versions = listOf("2.5.3", "0.0.1-SNAPSHOT", "3.0.0-beta.1")
+      val versions = ["2.5.3", "0.0.1-SNAPSHOT", "3.0.0-beta.1"]
 
       for (version in versions) {
         val request = createGetRequest()
