@@ -74,6 +74,10 @@ val experimentalOptIns = listOf(
 
 val returnValueCheckerArg = "-Xreturn-value-checker=check"
 
+// Experimental in Kotlin 2.4: enables `[a, b]` collection-literal syntax. Applied to
+// every compilation (main and test) since the syntax is used in both.
+val collectionLiteralsArg = "-Xcollection-literals"
+
 fun DokkaExtension.configureHtml() {
     pluginsConfiguration.html {
         homepageLink.set(projectHomepage)
@@ -238,6 +242,12 @@ fun Project.configureKotlinJvm() {
                 freeCompilerArgs.add(returnValueCheckerArg)
             }
         }
+
+        tasks.withType<KotlinCompile>().configureEach {
+            compilerOptions {
+                freeCompilerArgs.add(collectionLiteralsArg)
+            }
+        }
     }
 }
 
@@ -275,6 +285,13 @@ fun Project.configureKotlinMultiplatform() {
                 compileTaskProvider.configure {
                     compilerOptions {
                         freeCompilerArgs.add(returnValueCheckerArg)
+                    }
+                }
+            }
+            compilations.configureEach {
+                compileTaskProvider.configure {
+                    compilerOptions {
+                        freeCompilerArgs.add(collectionLiteralsArg)
                     }
                 }
             }
