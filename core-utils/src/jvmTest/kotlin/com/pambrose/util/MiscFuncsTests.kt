@@ -115,9 +115,9 @@ class MiscFuncsTests : StringSpec() {
     }
 
     "repeatWithSleep invokes the block with each iteration index" {
-      val seen = mutableListOf<Int>()
+      val seen: MutableList<Int> = []
       repeatWithSleep(iterations = 3, sleepTime = 1.milliseconds) { i, _ -> seen += i }
-      seen shouldBe listOf(0, 1, 2)
+      seen shouldBe [0, 1, 2]
     }
 
     "repeatWithSleep with the default sleepTime and zero iterations never invokes the block" {

@@ -81,12 +81,12 @@ class JsonElementUtilsTest : StringSpec() {
       email = "john@example.com",
       active = true,
       score = 95.5,
-      tags = listOf("developer", "kotlin"),
+      tags = ["developer", "kotlin"],
     )
 
     val sampleCompany = TestCompany(
       name = "Tech Corp",
-      users = listOf(sampleUser),
+      users = [sampleUser],
       metadata = mapOf("founded" to "2020", "size" to "startup"),
     )
 

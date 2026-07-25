@@ -84,7 +84,7 @@ class HerokuHttpsRedirect(
      * The list of call predicates for redirect exclusion.
      * Any call matching any of the predicates will not be redirected by this feature.
      */
-    val excludePredicates: MutableList<CallPredicate> = mutableListOf()
+    val excludePredicates: MutableList<CallPredicate> = []
 
     /**
      * Exclude calls with paths matching the [pathPrefix] from being redirected to https by this feature.

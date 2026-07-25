@@ -70,7 +70,7 @@ abstract class AbstractGenericService<T> protected constructor(
   protected val startTime = Monotonic.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
-  protected val services = mutableListOf<Service>()
+  protected val services: MutableList<Service> = []
 
   /** Whether admin endpoints are enabled, based on [AdminConfig.enabled]. */
   val isAdminEnabled = adminConfig.enabled

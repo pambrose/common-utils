@@ -46,10 +46,10 @@ class KtorServletResponseTests : StringSpec() {
 
       response.setHeader("X-Custom", "value2")
       response.getHeader("X-Custom") shouldBe "value2"
-      response.getHeaders("X-Custom").toList() shouldBe listOf("value2")
+      response.getHeaders("X-Custom").toList() shouldBe ["value2"]
 
       response.addHeader("X-Custom", "value3")
-      response.getHeaders("X-Custom").toList() shouldBe listOf("value2", "value3")
+      response.getHeaders("X-Custom").toList() shouldBe ["value2", "value3"]
       response.getHeader("X-Custom") shouldBe "value2"
 
       response.headerNames.toSet() shouldBe setOf("X-Custom")
@@ -64,7 +64,7 @@ class KtorServletResponseTests : StringSpec() {
       response.containsHeader("x-foo") shouldBe true
       response.containsHeader("X-FOO") shouldBe true
       response.getHeader("x-foo") shouldBe "a"
-      response.getHeaders("X-fOo").toList() shouldBe listOf("a")
+      response.getHeaders("X-fOo").toList() shouldBe ["a"]
     }
 
     "setHeader with different casing overwrites rather than duplicating" {
@@ -72,7 +72,7 @@ class KtorServletResponseTests : StringSpec() {
       response.setHeader("X-Foo", "a")
       response.setHeader("x-foo", "b")
 
-      response.getHeaders("X-Foo").toList() shouldBe listOf("b")
+      response.getHeaders("X-Foo").toList() shouldBe ["b"]
       response.getHeader("x-FOO") shouldBe "b"
       // A single logical header, retaining the first-inserted casing.
       response.headerNames.toSet() shouldBe setOf("X-Foo")
@@ -83,7 +83,7 @@ class KtorServletResponseTests : StringSpec() {
       response.addHeader("Set-Cookie", "a")
       response.addHeader("set-cookie", "b")
 
-      response.getHeaders("SET-COOKIE").toList() shouldBe listOf("a", "b")
+      response.getHeaders("SET-COOKIE").toList() shouldBe ["a", "b"]
       response.headerNames.toSet() shouldBe setOf("Set-Cookie")
     }
 

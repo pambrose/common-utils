@@ -59,7 +59,7 @@ class PropertyFunctionsTests : StringSpec() {
           """.trimIndent(),
         )
 
-      readProperties(listOf(file.absolutePath))
+      readProperties([file.absolutePath])
 
       System.getProperty("${KEY_PREFIX}host") shouldBe "localhost"
       System.getProperty("${KEY_PREFIX}port") shouldBe "8080"
@@ -76,7 +76,7 @@ class PropertyFunctionsTests : StringSpec() {
     "readProperties trims whitespace around keys and values" {
       val file = writePropsFile("   ${KEY_PREFIX}name   =    Paul Ambrose   ")
 
-      readProperties(listOf(file.absolutePath))
+      readProperties([file.absolutePath])
 
       System.getProperty("${KEY_PREFIX}name") shouldBe "Paul Ambrose"
     }
@@ -85,7 +85,7 @@ class PropertyFunctionsTests : StringSpec() {
       val url = "jdbc:mysql://host:3306/db?user=admin&ssl=true"
       val file = writePropsFile("${KEY_PREFIX}url=$url")
 
-      readProperties(listOf(file.absolutePath))
+      readProperties([file.absolutePath])
 
       System.getProperty("${KEY_PREFIX}url") shouldBe url
     }
@@ -93,7 +93,7 @@ class PropertyFunctionsTests : StringSpec() {
     "readProperties supports keys with an empty value" {
       val file = writePropsFile("${KEY_PREFIX}empty=")
 
-      readProperties(listOf(file.absolutePath))
+      readProperties([file.absolutePath])
 
       System.getProperty("${KEY_PREFIX}empty") shouldBe ""
     }
@@ -107,7 +107,7 @@ class PropertyFunctionsTests : StringSpec() {
           """.trimIndent(),
         )
 
-      readProperties(listOf(file.absolutePath))
+      readProperties([file.absolutePath])
 
       System.getProperty("${KEY_PREFIX}comment") shouldBe null
       System.getProperty("${KEY_PREFIX}real") shouldBe "value"
@@ -123,7 +123,7 @@ class PropertyFunctionsTests : StringSpec() {
           """.trimIndent(),
         )
 
-      readProperties(listOf(file.absolutePath))
+      readProperties([file.absolutePath])
 
       System.getProperty("${KEY_PREFIX}kept") shouldBe "yes"
     }
@@ -143,7 +143,7 @@ class PropertyFunctionsTests : StringSpec() {
 
       val exception =
         shouldThrow<IllegalStateException> {
-          readProperties(listOf(missing.path))
+          readProperties([missing.path])
         }
       exception.message shouldContain "File not found"
       exception.message shouldContain missing.absolutePath

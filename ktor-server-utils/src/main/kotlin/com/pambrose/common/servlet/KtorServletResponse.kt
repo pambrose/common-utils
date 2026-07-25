@@ -64,14 +64,14 @@ class KtorServletResponse : HttpServletResponse {
     name: String,
     value: String,
   ) {
-    headers[name] = mutableListOf(value)
+    headers[name] = [value]
   }
 
   override fun addHeader(
     name: String,
     value: String,
   ) {
-    headers.getOrPut(name) { mutableListOf() }.add(value)
+    headers.getOrPut(name) { [] }.add(value)
   }
 
   override fun containsHeader(name: String): Boolean = headers.containsKey(name)

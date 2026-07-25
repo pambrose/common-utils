@@ -67,7 +67,7 @@ class StreamObserverHelperTests : StringSpec() {
     }
 
     "all callbacks" {
-      val receivedValues = mutableListOf<String>()
+      val receivedValues: MutableList<String> = []
       var errorReceived: Throwable? = null
       var completedCalled = false
 
@@ -88,7 +88,7 @@ class StreamObserverHelperTests : StringSpec() {
       observer.onNext("second")
       observer.onCompleted()
 
-      receivedValues shouldBe listOf("first", "second")
+      receivedValues shouldBe ["first", "second"]
       errorReceived shouldBe null
       completedCalled shouldBe true
     }

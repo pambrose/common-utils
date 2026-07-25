@@ -81,19 +81,19 @@ class KtorServletRequestTests : StringSpec() {
 
     "getParameterValues returns null for a missing parameter" {
       val request = mockk<ApplicationRequest>()
-      every { request.queryParameters } returns parametersOf("id", listOf("42"))
+      every { request.queryParameters } returns parametersOf("id", ["42"])
       val servletRequest = KtorServletRequest(request)
-      servletRequest.getParameterValues("id")?.toList() shouldBe listOf("42")
+      servletRequest.getParameterValues("id")?.toList() shouldBe ["42"]
       servletRequest.getParameterValues("missing") shouldBe null
     }
 
     "getHeaders returns all values for a header and an empty enumeration when absent" {
       val request = mockk<ApplicationRequest>()
-      every { request.headers } returns headersOf("Accept" to listOf("text/html", "application/json"))
+      every { request.headers } returns headersOf("Accept" to ["text/html", "application/json"])
       val servletRequest = KtorServletRequest(request)
-      servletRequest.getHeaders("Accept").toList() shouldBe listOf("text/html", "application/json")
+      servletRequest.getHeaders("Accept").toList() shouldBe ["text/html", "application/json"]
       servletRequest.getHeaders("X-Missing").toList() shouldBe emptyList()
-      servletRequest.headerNames.toList() shouldBe listOf("Accept")
+      servletRequest.headerNames.toList() shouldBe ["Accept"]
     }
 
     "unsupported request methods throw UnsupportedOperationException" {

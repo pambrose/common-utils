@@ -61,12 +61,12 @@ class RedisUtilsMockTests : StringSpec() {
       val jedis = mockk<UnifiedJedis>()
       val paramsSlot = slot<ScanParams>()
       every { jedis.scan(SCAN_POINTER_START, capture(paramsSlot)) } returns
-        ScanResult("42", listOf("user:1", "user:2"))
-      every { jedis.scan("42", any<ScanParams>()) } returns ScanResult(SCAN_POINTER_START, listOf("user:3"))
+        ScanResult("42", ["user:1", "user:2"])
+      every { jedis.scan("42", any<ScanParams>()) } returns ScanResult(SCAN_POINTER_START, ["user:3"])
 
       val keys = jedis.scanKeys("user:*", count = 25).toList()
 
-      keys shouldBe listOf("user:1", "user:2", "user:3")
+      keys shouldBe ["user:1", "user:2", "user:3"]
       // ScanParams implements equals(), so this checks both the match pattern and the count hint
       paramsSlot.captured shouldBe ScanParams().match("user:*").count(25)
       verify(exactly = 1) { jedis.scan(SCAN_POINTER_START, any<ScanParams>()) }
@@ -87,15 +87,15 @@ class RedisUtilsMockTests : StringSpec() {
 
     "scanKeys is lazy and only fetches pages as the sequence is consumed" {
       val jedis = mockk<UnifiedJedis>()
-      every { jedis.scan(SCAN_POINTER_START, any<ScanParams>()) } returns ScanResult("7", listOf("a", "b"))
-      every { jedis.scan("7", any<ScanParams>()) } returns ScanResult(SCAN_POINTER_START, listOf("c"))
+      every { jedis.scan(SCAN_POINTER_START, any<ScanParams>()) } returns ScanResult("7", ["a", "b"])
+      every { jedis.scan("7", any<ScanParams>()) } returns ScanResult(SCAN_POINTER_START, ["c"])
 
       val seq = jedis.scanKeys("*")
       // Building the sequence issues no SCAN calls
       verify(exactly = 0) { jedis.scan(any<String>(), any<ScanParams>()) }
 
       // Consuming only the first page never requests the second one
-      seq.take(2).toList() shouldBe listOf("a", "b")
+      seq.take(2).toList() shouldBe ["a", "b"]
       verify(exactly = 1) { jedis.scan(any<String>(), any<ScanParams>()) }
     }
 

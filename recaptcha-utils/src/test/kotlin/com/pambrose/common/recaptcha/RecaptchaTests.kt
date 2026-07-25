@@ -117,7 +117,7 @@ class RecaptchaTests : StringSpec() {
       val response = jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(json)
 
       response.success shouldBe false
-      response.errorCodes shouldBe listOf("invalid-input-response", "timeout-or-duplicate")
+      response.errorCodes shouldBe ["invalid-input-response", "timeout-or-duplicate"]
       response.hostname shouldBe null
     }
 
@@ -146,7 +146,7 @@ class RecaptchaTests : StringSpec() {
       val response = jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(json)
 
       response.success shouldBe false
-      response.errorCodes shouldBe listOf("timeout-or-duplicate")
+      response.errorCodes shouldBe ["timeout-or-duplicate"]
       response.hostname shouldBe "example.com"
       response.challengeTs shouldBe "2024-06-01T12:00:00Z"
     }
@@ -157,7 +157,7 @@ class RecaptchaTests : StringSpec() {
       val response = jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(json)
 
       response.success shouldBe false
-      response.errorCodes shouldBe listOf("invalid-input-secret", "bad-request")
+      response.errorCodes shouldBe ["invalid-input-secret", "bad-request"]
       response.hostname shouldBe null
       response.challengeTs shouldBe null
     }
@@ -182,7 +182,7 @@ class RecaptchaTests : StringSpec() {
       val populated =
         RecaptchaService.RecaptchaResponse(
           success = false,
-          errorCodes = listOf("invalid-input-response"),
+          errorCodes = ["invalid-input-response"],
           hostname = "example.com",
           challengeTs = "2024-06-01T12:00:00Z",
         )
@@ -200,13 +200,13 @@ class RecaptchaTests : StringSpec() {
       val response =
         RecaptchaService.RecaptchaResponse(
           success = false,
-          errorCodes = listOf("invalid-input-secret"),
+          errorCodes = ["invalid-input-secret"],
           hostname = "example.com",
           challengeTs = "2024-06-01T12:00:00Z",
         )
 
       response.success shouldBe false
-      response.errorCodes shouldBe listOf("invalid-input-secret")
+      response.errorCodes shouldBe ["invalid-input-secret"]
       response.hostname shouldBe "example.com"
       response.challengeTs shouldBe "2024-06-01T12:00:00Z"
     }
@@ -222,12 +222,12 @@ class RecaptchaTests : StringSpec() {
 
     "recaptcha response value semantics" {
       val original = RecaptchaService.RecaptchaResponse(success = true, hostname = "localhost")
-      val changed = original.copy(success = false, errorCodes = listOf("timeout-or-duplicate"))
+      val changed = original.copy(success = false, errorCodes = ["timeout-or-duplicate"])
 
       changed shouldBe
         RecaptchaService.RecaptchaResponse(
           success = false,
-          errorCodes = listOf("timeout-or-duplicate"),
+          errorCodes = ["timeout-or-duplicate"],
           hostname = "localhost",
         )
       changed shouldNotBe original

@@ -98,7 +98,7 @@ class JavaScriptTests : StringSpec() {
     }
 
     "object with types" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
       val map = mutableMapOf("k1" to 1)
 
       JavaScript().use {
@@ -134,7 +134,7 @@ class JavaScriptTests : StringSpec() {
     }
 
     "object with KType" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
 
       JavaScript().use {
         it.apply {
@@ -158,7 +158,7 @@ class JavaScriptTests : StringSpec() {
     }
 
     "null object" {
-      val list = mutableListOf<Int?>()
+      val list: MutableList<Int?> = []
 
       JavaScript().use {
         it.apply {
@@ -190,7 +190,7 @@ class JavaScriptTests : StringSpec() {
     }
 
     "unmatched params" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
 
       JavaScript().use { script ->
         shouldThrow<ScriptException> { script.add("list", list, typeOf<Int?>(), typeOf<Int>()) }
@@ -198,7 +198,7 @@ class JavaScriptTests : StringSpec() {
     }
 
     "missing collection type" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
       JavaScript().use { script ->
         shouldThrow<ScriptException> { script.add("list", list) }
       }

@@ -43,7 +43,7 @@ import kotlin.reflect.typeOf
 class JavaScript :
   AbstractScript("java", false),
   Closeable {
-  private val imports = mutableListOf<String>()
+  private val imports: MutableList<String> = []
 
   /**
    * Generates Java-style public field declarations for all registered variables.
@@ -52,7 +52,7 @@ class JavaScript :
    */
   val varDecls: String
     get() {
-      val assigns = mutableListOf<String>()
+      val assigns: MutableList<String> = []
 
       valueMap.forEach { (name, value) ->
         val javaClazz = value.javaClass

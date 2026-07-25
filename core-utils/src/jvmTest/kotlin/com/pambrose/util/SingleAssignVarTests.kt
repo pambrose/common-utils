@@ -61,8 +61,8 @@ class SingleAssignVarTests : StringSpec() {
 
       var listValue: List<String>? by SingleAssignVar.singleAssign()
       listValue shouldBe null
-      listValue = listOf("a", "b", "c")
-      listValue shouldBe listOf("a", "b", "c")
+      listValue = ["a", "b", "c"]
+      listValue shouldBe ["a", "b", "c"]
     }
   }
 }

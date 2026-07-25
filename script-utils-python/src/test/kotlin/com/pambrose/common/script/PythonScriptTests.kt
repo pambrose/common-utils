@@ -106,7 +106,7 @@ class PythonScriptTests : StringSpec() {
     }
 
     "object with class" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
       val map = mutableMapOf("k1" to 1)
 
       PythonScript().use {
@@ -144,7 +144,7 @@ class PythonScriptTests : StringSpec() {
     }
 
     "object with type" {
-      val list = mutableListOf(1)
+      val list: MutableList<Int> = [1]
 
       PythonScript().use {
         it.apply {
@@ -166,7 +166,7 @@ class PythonScriptTests : StringSpec() {
     }
 
     "null object" {
-      val list = mutableListOf<Int?>()
+      val list: MutableList<Int?> = []
 
       PythonScript().use {
         it.apply {

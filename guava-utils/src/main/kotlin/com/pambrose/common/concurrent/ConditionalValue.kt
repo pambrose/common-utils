@@ -112,7 +112,7 @@ fun main() =
     }
 
     yield()
-    for (s in listOf(false, false, true)) {
+    for (s in [false, false, true]) {
       println("Setting value to $s")
       waiter.set(s)
       delay(1.seconds)
@@ -144,7 +144,7 @@ fun main2() =
 
 fun main3() =
   runBlocking {
-    val waiter = ConditionalValue(listOf(1))
+    val waiter = ConditionalValue([1])
 
     // Launch a coroutine that waits for the condition to become true
     val job = launch {
@@ -176,7 +176,7 @@ fun main4() =
     }
 
     yield()
-    for (s in listOf("Bill", "Bob", "Paul", "John").map { "$it Ambrose" }) {
+    for (s in ["Bill", "Bob", "Paul", "John"].map { "$it Ambrose" }) {
       println("Setting value to $s  curr: ${waiter.get()}")
       waiter.set(s)
       delay(1.seconds)

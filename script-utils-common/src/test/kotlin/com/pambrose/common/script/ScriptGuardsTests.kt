@@ -30,12 +30,12 @@ class ScriptGuardsTests : StringSpec() {
     // terminate the test JVM even when the input is a real termination call.
 
     "rejects System.exit in its common forms" {
-      listOf(
+      [
         "System.exit(0)",
         "java.lang.System.exit(1)",
         "System . exit ( 0 )",
         "return System.exit(0);",
-      ).forEach { code ->
+      ].forEach { code ->
         shouldThrow<ScriptException> { ScriptGuards.checkNoJvmExit(code) }
       }
     }
@@ -69,14 +69,14 @@ class ScriptGuardsTests : StringSpec() {
     }
 
     "does not reject safe code or unrelated identifiers" {
-      listOf(
+      [
         "val x = 1 + 2",
         "mySystem.exit(0)",
         "obj.exitProcess(args)",
         "return value;",
         "doExit()",
         "println(\"done\")",
-      ).forEach { code ->
+      ].forEach { code ->
         shouldNotThrow<ScriptException> { ScriptGuards.checkNoJvmExit(code) }
       }
     }

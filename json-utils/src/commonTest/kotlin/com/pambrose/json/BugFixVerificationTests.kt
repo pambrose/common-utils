@@ -83,10 +83,10 @@ class BugFixVerificationTests : StringSpec() {
         JsonObject(
           mapOf(
             "matrix" to JsonArray(
-              listOf(
-                JsonArray(listOf(JsonPrimitive(1), JsonPrimitive(2))),
-                JsonArray(listOf(JsonPrimitive(3), JsonPrimitive(4))),
-              ),
+              [
+                JsonArray([JsonPrimitive(1), JsonPrimitive(2)]),
+                JsonArray([JsonPrimitive(3), JsonPrimitive(4)]),
+              ],
             ),
           ),
         )
@@ -96,10 +96,10 @@ class BugFixVerificationTests : StringSpec() {
       matrix.size shouldBe 2
 
       val row1 = matrix[0] as List<*>
-      row1 shouldBe listOf("1", "2")
+      row1 shouldBe ["1", "2"]
 
       val row2 = matrix[1] as List<*>
-      row2 shouldBe listOf("3", "4")
+      row2 shouldBe ["3", "4"]
     }
 
     "to map handles mixed nested arrays" {
@@ -107,12 +107,12 @@ class BugFixVerificationTests : StringSpec() {
         JsonObject(
           mapOf(
             "items" to JsonArray(
-              listOf(
+              [
                 JsonObject(mapOf("name" to JsonPrimitive("a"))),
-                JsonArray(listOf(JsonPrimitive("nested"))),
+                JsonArray([JsonPrimitive("nested")]),
                 JsonPrimitive("plain"),
                 JsonNull,
-              ),
+              ],
             ),
           ),
         )
@@ -121,7 +121,7 @@ class BugFixVerificationTests : StringSpec() {
       val items = map["items"] as List<*>
       items.size shouldBe 4
       (items[0] as Map<*, *>)["name"] shouldBe "a"
-      items[1] shouldBe listOf("nested")
+      items[1] shouldBe ["nested"]
       items[2] shouldBe "plain"
       items[3] shouldBe null
     }
@@ -131,13 +131,13 @@ class BugFixVerificationTests : StringSpec() {
         JsonObject(
           mapOf(
             "deep" to JsonArray(
-              listOf(
+              [
                 JsonArray(
-                  listOf(
-                    JsonArray(listOf(JsonPrimitive("innermost"))),
-                  ),
+                  [
+                    JsonArray([JsonPrimitive("innermost")]),
+                  ],
                 ),
-              ),
+              ],
             ),
           ),
         )
@@ -146,7 +146,7 @@ class BugFixVerificationTests : StringSpec() {
       val deep = map["deep"] as List<*>
       val mid = (deep[0] as List<*>)
       val inner = (mid[0] as List<*>)
-      inner shouldBe listOf("innermost")
+      inner shouldBe ["innermost"]
     }
   }
 }

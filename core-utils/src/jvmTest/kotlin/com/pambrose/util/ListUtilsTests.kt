@@ -27,14 +27,14 @@ class ListUtilsTests : StringSpec() {
   init {
     "list print string test" {
       val output = captureStdout {
-        ListUtils.listPrint(listOf("a", "b", "c"))
+        ListUtils.listPrint(["a", "b", "c"])
       }
       output.trim() shouldBe "[\"a\", \"b\", \"c\"]"
     }
 
     "list print int test" {
       val output = captureStdout {
-        ListUtils.listPrint(listOf(1, 2, 3))
+        ListUtils.listPrint([1, 2, 3])
       }
       output.trim() shouldBe "[1, 2, 3]"
     }
@@ -49,7 +49,7 @@ class ListUtilsTests : StringSpec() {
     "list print mixed types test" {
       // When list contains non-String types, should use toString()
       val output = captureStdout {
-        ListUtils.listPrint(listOf(1.5, 2.5, 3.5))
+        ListUtils.listPrint([1.5, 2.5, 3.5])
       }
       output.trim() shouldBe "[1.5, 2.5, 3.5]"
     }
@@ -59,21 +59,21 @@ class ListUtilsTests : StringSpec() {
     // other types use toString().
     "list print mixed string and non-string types" {
       val output = captureStdout {
-        ListUtils.listPrint(listOf(1, "a", 2.5))
+        ListUtils.listPrint([1, "a", 2.5])
       }
       output.trim() shouldBe "[1, \"a\", 2.5]"
     }
 
     "list print mixed types with a leading string" {
       val output = captureStdout {
-        ListUtils.listPrint(listOf("x", 1, true))
+        ListUtils.listPrint(["x", 1, true])
       }
       output.trim() shouldBe "[\"x\", 1, true]"
     }
 
     "list print quotes strings and stringifies nulls in a mixed list" {
       val output = captureStdout {
-        ListUtils.listPrint(listOf("a", null, 1))
+        ListUtils.listPrint(["a", null, 1])
       }
       output.trim() shouldBe "[\"a\", null, 1]"
     }

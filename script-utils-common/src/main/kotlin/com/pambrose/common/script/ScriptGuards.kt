@@ -32,7 +32,7 @@ import javax.script.ScriptException
  */
 object ScriptGuards {
   private val jvmExitPatterns =
-    listOf(
+    [
       // System.exit(...), including fully-qualified java.lang.System.exit(...); not mySystem.exit(...)
       Regex("""(?<!\w)System\s*\.\s*exit\s*\("""),
       // bare exitProcess(...) (the imported Kotlin idiom); excludes obj.exitProcess(...) on a user object
@@ -43,7 +43,7 @@ object ScriptGuards {
       Regex("""(?<!\w)Runtime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*(?:exit|halt)\s*\("""),
       // statically-imported getRuntime().exit/halt (no `Runtime.` prefix); excludes obj.getRuntime()
       Regex("""(?<![\w.])getRuntime\s*\(\s*\)\s*\.\s*(?:exit|halt)\s*\("""),
-    )
+    ]
 
   /**
    * Throws a [ScriptException] if any of [fragments] contains a recognized literal JVM-termination call.
