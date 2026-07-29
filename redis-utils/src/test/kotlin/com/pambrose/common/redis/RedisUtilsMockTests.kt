@@ -38,7 +38,8 @@ import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
 import java.time.Duration
-import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.incrementAndFetch
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -164,66 +165,66 @@ class RedisUtilsMockTests : StringSpec() {
     // private createRedisClient() factory on the RedisUtils object
 
     "withRedis passes null to block when client creation fails" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       failingCreateRedisClient()
       try {
         val result =
           withRedis(redisUrl = "redis://localhost:6379", printStackTrace = true) { c ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             c shouldBe null
             "created-null-branch"
           }
         result shouldBe "created-null-branch"
-        callCount.get() shouldBe 1
+        callCount.load() shouldBe 1
       } finally {
         unmockkObject(RedisUtils)
       }
     }
 
     "withNonNullRedis returns null without invoking block when client creation fails" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       failingCreateRedisClient()
       try {
         val result =
           withNonNullRedis(redisUrl = "redis://localhost:6379") { _ ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             "should-not-reach"
           }
         result shouldBe null
-        callCount.get() shouldBe 0
+        callCount.load() shouldBe 0
       } finally {
         unmockkObject(RedisUtils)
       }
     }
 
     "withSuspendingRedis passes null to block when client creation fails" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       failingCreateRedisClient()
       try {
         val result =
           withSuspendingRedis(redisUrl = "redis://localhost:6379") { c ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             c shouldBe null
             "suspending-null-branch"
           }
         result shouldBe "suspending-null-branch"
-        callCount.get() shouldBe 1
+        callCount.load() shouldBe 1
       } finally {
         unmockkObject(RedisUtils)
       }
     }
 
     "withSuspendingNonNullRedis returns null without invoking block when client creation fails" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       failingCreateRedisClient()
       try {
         val result =
           withSuspendingNonNullRedis(redisUrl = "redis://localhost:6379") { _ ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             "should-not-reach"
           }
         result shouldBe null
-        callCount.get() shouldBe 0
+        callCount.load() shouldBe 0
       } finally {
         unmockkObject(RedisUtils)
       }

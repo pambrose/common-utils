@@ -21,7 +21,7 @@ package com.pambrose.common.service
 import com.google.common.util.concurrent.AbstractIdleService
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicBoolean
 
 class BugFixVerificationTests : StringSpec() {
   init {
@@ -41,7 +41,7 @@ class BugFixVerificationTests : StringSpec() {
           override fun shutDown() {
             // Simulate some cleanup work
             Thread.sleep(100)
-            shutdownCompleted.set(true)
+            shutdownCompleted.store(true)
           }
         }
 
@@ -54,7 +54,7 @@ class BugFixVerificationTests : StringSpec() {
       thread.join(5000)
 
       // After the hook completes, the service should be fully terminated
-      shutdownCompleted.get() shouldBe true
+      shutdownCompleted.load() shouldBe true
       service.isRunning shouldBe false
     }
   }
