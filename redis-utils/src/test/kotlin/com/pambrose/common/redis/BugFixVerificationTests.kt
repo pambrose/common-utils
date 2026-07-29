@@ -31,7 +31,8 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.incrementAndFetch
 import redis.clients.jedis.exceptions.JedisConnectionException
 
 class BugFixVerificationTests : StringSpec() {
@@ -78,118 +79,118 @@ class BugFixVerificationTests : StringSpec() {
     val unreachableUrl = "redis://localhost:1"
 
     "withRedisPool: connection failure invokes block exactly once with null" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
       try {
         val result =
           client.withRedisPool { c ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             c shouldBe null
             "from-null-branch"
           }
         result shouldBe "from-null-branch"
-        callCount.get() shouldBe 1
+        callCount.load() shouldBe 1
       } finally {
         client.close()
       }
     }
 
     "withNonNullRedisPool: connection failure returns null without invoking block" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
       try {
         val result =
           client.withNonNullRedisPool { _ ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             "should-not-reach"
           }
         result shouldBe null
-        callCount.get() shouldBe 0
+        callCount.load() shouldBe 0
       } finally {
         client.close()
       }
     }
 
     "withSuspendingRedisPool: connection failure invokes block exactly once with null" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
       try {
         val result =
           client.withSuspendingRedisPool { c ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             c shouldBe null
             "from-null-branch"
           }
         result shouldBe "from-null-branch"
-        callCount.get() shouldBe 1
+        callCount.load() shouldBe 1
       } finally {
         client.close()
       }
     }
 
     "withSuspendingNonNullRedisPool: connection failure returns null without invoking block" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
       try {
         val result =
           client.withSuspendingNonNullRedisPool { _ ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             "should-not-reach"
           }
         result shouldBe null
-        callCount.get() shouldBe 0
+        callCount.load() shouldBe 0
       } finally {
         client.close()
       }
     }
 
     "withRedis: block JedisConnectionException propagates and block invoked once" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       shouldThrow<JedisConnectionException> {
         withRedis(redisUrl = unreachableUrl) { _ ->
-          callCount.incrementAndGet()
+          callCount.incrementAndFetch()
           throw JedisConnectionException("simulated mid-block failure")
         }
       }
-      callCount.get() shouldBe 1
+      callCount.load() shouldBe 1
     }
 
     "withNonNullRedis: block JedisConnectionException propagates and block invoked once" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       shouldThrow<JedisConnectionException> {
         withNonNullRedis(redisUrl = unreachableUrl) { _ ->
-          callCount.incrementAndGet()
+          callCount.incrementAndFetch()
           throw JedisConnectionException("simulated mid-block failure")
         }
       }
-      callCount.get() shouldBe 1
+      callCount.load() shouldBe 1
     }
 
     "withRedisPool: block exception from null branch propagates and block invoked once" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
       try {
         shouldThrow<JedisConnectionException> {
           client.withRedisPool { _ ->
-            callCount.incrementAndGet()
+            callCount.incrementAndFetch()
             throw JedisConnectionException("simulated mid-block failure")
           }
         }
-        callCount.get() shouldBe 1
+        callCount.load() shouldBe 1
       } finally {
         client.close()
       }
     }
 
     "withSuspendingRedis: block JedisConnectionException propagates and block invoked once" {
-      val callCount = AtomicInteger(0)
+      val callCount = AtomicInt(0)
       shouldThrow<JedisConnectionException> {
         withSuspendingRedis(redisUrl = unreachableUrl) { _ ->
-          callCount.incrementAndGet()
+          callCount.incrementAndFetch()
           throw JedisConnectionException("simulated mid-block failure")
         }
       }
-      callCount.get() shouldBe 1
+      callCount.load() shouldBe 1
     }
   }
 }

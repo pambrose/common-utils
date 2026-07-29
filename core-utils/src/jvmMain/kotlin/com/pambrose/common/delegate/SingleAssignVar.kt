@@ -17,7 +17,7 @@
 
 package com.pambrose.common.delegate
 
-import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -32,7 +32,7 @@ object SingleAssignVar {
   fun <T> singleAssign(): ReadWriteProperty<Any?, T?> = ThreadSafeSingleAssignVar()
 
   private class ThreadSafeSingleAssignVar<T> : ReadWriteProperty<Any?, T?> {
-    private val atomicValue = AtomicReference<ValueHolder<T>?>()
+    private val atomicValue = AtomicReference<ValueHolder<T>?>(null)
 
     // Wrapper to distinguish between null value and unset value
     private data class ValueHolder<T>(
@@ -42,7 +42,7 @@ object SingleAssignVar {
     override fun getValue(
       thisRef: Any?,
       property: KProperty<*>,
-    ): T? = atomicValue.get()?.value
+    ): T? = atomicValue.load()?.value
 
     override fun setValue(
       thisRef: Any?,
