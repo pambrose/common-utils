@@ -5,6 +5,33 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v3.2.2 — 2026-07-31
+
+### Highlights
+
+- **All-Kotlin atomics**: the last four files still using `java.util.concurrent.atomic` now use
+  `kotlin.concurrent.atomics`, so the whole codebase shares one atomics idiom
+  (`load()`/`store()`/`compareAndSet()`). core-utils' `SingleAssignVar` gives `AtomicReference` an explicit
+  `null` initial value and reads through `load()`; the redis-utils and service-utils tests switch to
+  `AtomicInt`/`AtomicBoolean`. On the JVM these Kotlin types are typealiases to their Java counterparts, so
+  the published API and runtime behavior are unchanged.
+- **Plugin id move**: the ben-manes dependency-updates plugin is applied as `io.github.ben-manes.versions`
+  (was `com.github.ben-manes.versions`), matching where it is published. Build-only.
+
+### Dependency bumps
+
+- `grpc` 1.83.0 → 1.83.1
+- `ktor` 3.5.1 → 3.5.2
+- `gradlePlugins` 1.1.0 → 1.1.1 (build-only)
+- `versions` 0.54.0 → 0.57.0 (build-only)
+- `logback` 1.5.38 → 1.6.1 (test runtime only)
+- `h2` 2.3.232 → 2.4.240 (exposed-utils test scope only)
+- `mockk` 1.14.9 → 1.14.11 (test scope only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/3.2.1...3.2.2
+
+---
+
 ## v3.2.1 — 2026-07-25
 
 ### Highlights

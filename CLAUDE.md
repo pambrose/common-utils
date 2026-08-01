@@ -96,7 +96,7 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 
 The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts` (versions pinned in the catalog to match the convention plugin).
 
-Dependency-update reporting uses the `com.github.ben-manes.versions` plugin, configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates.
+Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0; earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates.
 
 Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
 
@@ -116,6 +116,13 @@ Additionally, the experimental `-Xcollection-literals` compiler flag is enabled 
 (JVM and KMP, main and test) so `[...]` collection-literal syntax can be used in place of `listOf(...)` /
 `mutableListOf(...)`. The flag is experimental in Kotlin 2.4 and may need revisiting on a future Kotlin
 upgrade (if the syntax changes or the feature stabilizes and the flag can be dropped).
+
+Atomics come from `kotlin.concurrent.atomics` (`AtomicInt`, `AtomicLong`, `AtomicBoolean`,
+`AtomicReference`) everywhere — `src` and `test`, JVM-only modules included. Use the
+`load()`/`store()`/`compareAndSet()`/`incrementAndFetch()` idiom rather than the Java
+`get()`/`set()`/`incrementAndGet()` names, and note that `AtomicReference` has no no-arg constructor
+(pass an explicit `null`). Do not reintroduce `java.util.concurrent.atomic` imports; on the JVM the Kotlin
+types are typealiases to the Java ones, so there is nothing to gain from the Java API.
 
 ### Key Technologies
 
@@ -157,6 +164,6 @@ All modules use: `com.pambrose.common.*`
 
 ### Version Management
 
-- Project version: "3.2.1" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
+- Project version: "3.2.2" (set in `gradle.properties`; override at publish time with `-PoverrideVersion=...`, used by Makefile snapshot/publish targets)
 - Group: "com.pambrose.common-utils" (set in `gradle.properties`)
 - All library versions in `gradle/libs.versions.toml`
