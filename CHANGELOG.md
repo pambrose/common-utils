@@ -2,6 +2,31 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [3.2.2] - 2026-07-31
+
+### Build & tooling
+
+- Replace the remaining `java.util.concurrent.atomic` uses with `kotlin.concurrent.atomics`, matching the
+  `load()`/`store()`/`compareAndSet()` idiom already used in `AtomicDelegates`, `AtomicUtils`,
+  `BooleanMonitor`, and `AbstractScript`. In core-utils' `SingleAssignVar`, `AtomicReference` now takes an
+  explicit `null` initial value (the Kotlin API has no no-arg constructor) and reads via `load()`; the
+  redis-utils and service-utils tests move to `AtomicInt`/`AtomicBoolean`. On the JVM these types are
+  typealiases to their Java counterparts, so the published API and runtime behavior are unchanged.
+- Move the ben-manes dependency-updates plugin id from `com.github.ben-manes.versions` to
+  `io.github.ben-manes.versions`, which is where the plugin is now published. Build-only — no effect on
+  consumers.
+
+### Dependency bumps
+
+- `grpc` 1.83.0 → 1.83.1
+- `ktor` 3.5.1 → 3.5.2
+- `gradlePlugins` 1.1.0 → 1.1.1 (build-only)
+- `versions` 0.54.0 → 0.57.0 (build-only)
+- `logback` 1.5.38 → 1.6.1 (test runtime only)
+- `h2` 2.3.232 → 2.4.240 (exposed-utils test scope only)
+- `mockk` 1.14.9 → 1.14.11 (test scope only)
+- Bump project version to 3.2.2
+
 ## [3.2.1] - 2026-07-25
 
 ### Build & tooling
