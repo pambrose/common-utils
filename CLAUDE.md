@@ -89,6 +89,23 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
 
 - `kotlin-js-store/` holds the Node/Yarn lockfiles for the JS and wasmJs toolchains; commit changes to it
   (run `./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock` when JS dependencies change).
+- Vulnerable transitive npm packages are pinned through the `yarnResolutions` map in the root build script,
+  which feeds `YarnRootExtension.resolution(...)`. Gotchas when changing it:
+  - The map is **not** a tracked input to `rootPackageJson`, so that task stays `UP-TO-DATE` and reuses a
+    stale `build/js/package.json`. The upgrade tasks then re-resolve against the *old* resolutions and report
+    `BUILD SUCCESSFUL` while changing nothing. Always `rm -f build/js/package.json build/wasm/package.json`
+    first, then run the two upgrade tasks, then confirm the new pin actually landed — check the `resolutions`
+    block of the regenerated `build/js/package.json` and diff `kotlin-js-store/`. An empty lockfile diff
+    means the pin did not take, not that nothing needed fixing.
+  - A resolution only rewrites the lockfile when it changes the resolved version. yarn v1 will not re-resolve
+    an entry that still satisfies its range, so bumping a package already inside its requested range (the
+    usual shape of a CVE fix) requires the explicit pin — `kotlinUpgradeYarnLock` alone will not do it.
+  - The map is shared by both toolchains, so a pin for a package only one of them uses still adds a bare
+    pin-only entry (plus its transitives) to the other's lockfile. `diff`, `serialize-javascript`, and
+    `brace-expansion` are all pin-only entries in `kotlin-js-store/wasm/yarn.lock` — their presence there
+    does not mean the wasm toolchain actually pulls them in.
+- Verify JS/wasm toolchain changes with `./gradlew jsNodeTest --rerun wasmJsNodeTest --rerun`; without
+  `--rerun` these tasks report `UP-TO-DATE` and verify nothing.
 - `settings.gradle.kts` uses `FAIL_ON_PROJECT_REPOS` repositories mode with ivy repositories for the Node.js,
   Yarn, and Binaryen distributions; the root build script unsets every toolchain env spec's `downloadBaseUrl`
   (root and per-subproject) so the Kotlin plugin never registers project-level repositories.
