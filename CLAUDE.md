@@ -101,9 +101,9 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
     an entry that still satisfies its range, so bumping a package already inside its requested range (the
     usual shape of a CVE fix) requires the explicit pin — `kotlinUpgradeYarnLock` alone will not do it.
   - The map is shared by both toolchains, so a pin for a package only one of them uses still adds a bare
-    pin-only entry (plus its transitives) to the other's lockfile. `diff`, `serialize-javascript`, and
-    `brace-expansion` are all pin-only entries in `kotlin-js-store/wasm/yarn.lock` — their presence there
-    does not mean the wasm toolchain actually pulls them in.
+    pin-only entry (plus its transitives) to the other's lockfile. `diff`, `serialize-javascript`,
+    `brace-expansion`, and `js-yaml` are all pin-only entries in `kotlin-js-store/wasm/yarn.lock` — their
+    presence there does not mean the wasm toolchain actually pulls them in.
 - Verify JS/wasm toolchain changes with `./gradlew jsNodeTest --rerun wasmJsNodeTest --rerun`; without
   `--rerun` these tasks report `UP-TO-DATE` and verify nothing.
 - `settings.gradle.kts` uses `FAIL_ON_PROJECT_REPOS` repositories mode with ivy repositories for the Node.js,
