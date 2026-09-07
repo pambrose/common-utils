@@ -2,6 +2,44 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [3.2.3] - 2026-09-07
+
+### Build & tooling
+
+- Hold the Kotlin scripting artifacts at 2.4.10. Kotlin 2.4.20 regressed the JSR-223 K2 REPL that
+  `script-utils-kotlin` uses: binding a value whose runtime class is a generic Java class (`ArrayList`,
+  `LinkedHashMap`, `HashMap`) via `ScriptEngine.put()` makes every subsequent `eval()` fail to compile —
+  including snippets that never reference the binding — because the declaration generated for the binding
+  drops its type arguments. Non-generic bindings are unaffected, and there is no caller-side workaround
+  since `put()` itself triggers it. Note the pin governs only the `kotlin-scripting-*` artifacts, not the
+  compiler: `pambrose-gradle-plugins` 1.1.4 pulls `kotlin-gradle-plugin` 2.4.20, which wins on the
+  buildscript classpath.
+- Set `maxHeapSize = "2g"` on the `script-utils-kotlin` test task. Those tests run the Kotlin compiler
+  in-process and had been relying on Gradle's 512m default; exceeding it surfaces as a misleading
+  `Could not read file: ...kotlin-stdlib.jar!/...class` with the `OutOfMemoryError` buried several
+  `Caused by` levels down.
+- Bump the Gradle wrapper 9.6.1 → 9.7.1.
+- Pin `brace-expansion` to 2.1.4 and `js-yaml` to 4.3.1 through `yarnResolutions`, closing two Dependabot
+  DoS alerts. Both are requested by the JS/wasm toolchains with ranges yarn will not re-resolve on its own,
+  so the explicit pins are required. Build-only — no effect on consumers.
+- Streamline the build and dependency sections of `CLAUDE.md`.
+
+### Dependency bumps
+
+- `grpc` 1.83.1 → 1.84.0
+- `exposed` 1.3.1 → 1.5.0
+- `jedis` (redis) 7.5.3 → 8.0.1
+- `jetty` 12.1.11 → 12.1.13
+- `resend` 4.13.0 → 4.23.0
+- `dropwizard` 4.2.39 → 4.2.40
+- `logback` 1.6.1 → 1.6.3 (test runtime only)
+- `h2` 2.4.240 → 2.5.250 (exposed-utils test scope only)
+- `kotest` 6.2.3 → 6.2.4 (test scope only)
+- `gradlePlugins` 1.1.1 → 1.1.4 (build-only)
+- `versions` 0.57.0 → 0.60.0 (build-only)
+- `detekt` 2.0.0-alpha.5 → 2.0.0-alpha.6 (build-only)
+- Bump project version to 3.2.3
+
 ## [3.2.2] - 2026-07-31
 
 ### Build & tooling

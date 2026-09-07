@@ -5,6 +5,46 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v3.2.3 — 2026-09-07
+
+### Highlights
+
+- **Kotlin scripting held at 2.4.10**: Kotlin 2.4.20 regressed the JSR-223 K2 REPL that
+  `script-utils-kotlin` uses. Binding a value whose runtime class is a generic Java class (`ArrayList`,
+  `LinkedHashMap`, `HashMap`) via `ScriptEngine.put()` makes *every* subsequent `eval()` fail to compile —
+  including snippets that never reference the binding — with `One type argument expected for 'class
+  ArrayList<E>'`. The declaration the engine generates for the binding drops its type arguments;
+  non-generic bindings (`String`, `Int`, user classes) are unaffected. Bisect: 2.3.10, 2.4.0 and 2.4.10
+  pass, 2.4.20 fails. There is no caller-side workaround, since `put()` itself triggers it. The pin covers
+  the `kotlin-scripting-*` artifacts, where the bug lives; the project is still compiled by 2.4.20, which
+  `pambrose-gradle-plugins` 1.1.4 brings in on the buildscript classpath.
+- **script-utils-kotlin test heap**: those tests run the Kotlin compiler in-process and had been relying on
+  Gradle's default 512m test-worker heap. 2.4.20's compiler exceeds it, and the failure surfaces as a
+  misleading `Could not read file: ...kotlin-stdlib.jar!/...class` rather than a plain `OutOfMemoryError`.
+  Now pinned to `maxHeapSize = "2g"`.
+- **Security pins**: `brace-expansion` 2.1.4 and `js-yaml` 4.3.1 are pinned through `yarnResolutions`,
+  closing two Dependabot DoS alerts against the JS/wasm toolchains. Build-only.
+- **Gradle 9.7.1**: wrapper bumped from 9.6.1.
+
+### Dependency bumps
+
+- `grpc` 1.83.1 → 1.84.0
+- `exposed` 1.3.1 → 1.5.0
+- `jedis` (redis) 7.5.3 → 8.0.1
+- `jetty` 12.1.11 → 12.1.13
+- `resend` 4.13.0 → 4.23.0
+- `dropwizard` 4.2.39 → 4.2.40
+- `logback` 1.6.1 → 1.6.3 (test runtime only)
+- `h2` 2.4.240 → 2.5.250 (exposed-utils test scope only)
+- `kotest` 6.2.3 → 6.2.4 (test scope only)
+- `gradlePlugins` 1.1.1 → 1.1.4 (build-only)
+- `versions` 0.57.0 → 0.60.0 (build-only)
+- `detekt` 2.0.0-alpha.5 → 2.0.0-alpha.6 (build-only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/3.2.2...3.2.3
+
+---
+
 ## v3.2.2 — 2026-07-31
 
 ### Highlights
