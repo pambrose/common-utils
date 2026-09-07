@@ -193,7 +193,7 @@ abstract class AbstractGenericService<T> protected constructor(
       // removeShutdownHook throws IllegalStateException if the JVM is already shutting down (e.g. when
       // shutDown was triggered by the hook itself) and SecurityException under a SecurityManager; in both
       // cases the hook simply remains registered until JVM exit, so swallow rather than fail the shutdown.
-      runCatching { Runtime.getRuntime().removeShutdownHook(hook) }
+      val _ = runCatching { Runtime.getRuntime().removeShutdownHook(hook) }
       shutDownHook = null
     }
 
