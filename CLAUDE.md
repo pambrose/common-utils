@@ -63,6 +63,18 @@ Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 
+The catalog's `kotlin` version is **deliberately held at 2.4.10** (see the comment above it). Kotlin
+2.4.20 regressed the JSR-223 K2 REPL that `script-utils-kotlin` depends on: binding a value whose runtime
+class is a generic Java class (`ArrayList`, `LinkedHashMap`, `HashMap`) via `ScriptEngine.put()` makes
+every subsequent `eval()` fail to compile, including snippets that never reference the binding. Do not
+bump it without re-running `:script-utils-kotlin:test` and confirming that suite still passes.
+
+That entry only governs the `kotlin-scripting-*` artifacts, **not the compiler**: `pambrose-gradle-plugins`
+pulls a `kotlin-gradle-plugin` of its own, which wins on the buildscript classpath, so the project is
+compiled by a newer Kotlin than the catalog names. Run `./gradlew buildEnvironment` to see the version
+actually in use rather than assuming the catalog value — and be aware that a convention-plugin bump can
+therefore change the compiler, and the resolved JS toolchain npm versions, without touching the catalog.
+
 ### Experimental Kotlin Features
 
 These opt-ins are enabled globally:
@@ -128,6 +140,14 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
 - Demo `main()` functions in guava-utils concurrent classes are excluded from coverage via
   `koverExcludeClasses` in the root build script; don't write tests for them.
+- `script-utils-kotlin` runs the Kotlin compiler **in-process** (the JSR-223 engine compiles every
+  snippet), so its test task sets `maxHeapSize = "2g"` in the module's own `build.gradle.kts`; nothing
+  else sets a test heap, so every other module uses Gradle's 512m default. Leave that setting in place.
+  When that worker runs short of heap the failure does not look like an OOM — it surfaces as
+  `IllegalStateException: Could not read file: ...kotlin-stdlib-<ver>.jar!/...class` wrapped in a
+  `FileAnalysisException`, with the `OutOfMemoryError` several `Caused by` levels down. Note also that
+  `maxHeapSize` is not part of Gradle's build-cache key, so a cached result can be served straight
+  across a heap change; use `--rerun-tasks` when verifying anything heap-related.
 
 ### Package Structure
 
