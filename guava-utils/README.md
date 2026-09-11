@@ -1,153 +1,281 @@
 # Guava Utils
 
-Utilities for Google Guava libraries, providing concurrent programming utilities, service abstractions, and DSL
-functions for common Guava patterns.
+Utilities built on Google Guava: monitor-based and coroutine-based waiting primitives, Guava `Service`
+helpers, concurrency extensions, and gzip helpers.
 
 ## Features
 
-### Concurrent Utilities
+### Monitor-based Waiting (blocking)
 
-- **BooleanMonitor**: Thread-safe boolean monitoring with Guava's Monitor
-- **GenericMonitor**: Generic monitoring utilities
-- **ConditionalValue**: Coroutine-friendly conditional value waiting
-- **GenericValueWaiter**: Generic value waiting with timeout support
+- **`GenericMonitor`**: abstract base wrapping Guava's `Monitor` with wait-until-satisfied operations
+- **`BooleanMonitor`**: a `GenericMonitor` over a single boolean value
 
-### Service Abstractions
+### Coroutine-based Waiting (suspending)
 
-- **GenericService**: Base class for Guava services with lifecycle management
-- **GenericServiceListener**: Service state change listeners
-- **GenericExecutionThreadService**: Abstract execution thread service
-- **GenericIdleService**: Abstract idle service implementation
+- **`ConditionalValue<T>` / `ConditionalBoolean`**: `StateFlow`-backed values you can suspend on
+- **`GenericValueWaiter<T>` / `BooleanWaiter`**: continuation-based waiting with timeout support
 
-### Concurrent Extensions
+### Guava Services
 
-- **ConcurrentExtensions**: Extensions for concurrent collections and operations
-- **VerboseCountDownLatch**: Enhanced CountDownLatch with verbose logging
+- **`GenericExecutionThreadService` / `GenericIdleService`**: base classes adding `startSync` / `stopSync`
+- **`genericServiceListener`**: a logging `Service.Listener` extension
+- **`GuavaDsl`**: builders for `ServiceManager`, `Service.Listener` and `ServiceManager.Listener`
 
-### Archive Utilities
+### Concurrency Extensions
 
-- **ZipExtensions**: Utilities for working with ZIP archives
+- **`CountDownLatch` extensions**: `isFinished`, `countDown { }`, `await(Duration)`
+- **`Semaphore.withLock`**: run a block holding a permit
+- **`thread(latch) { }`**: start a thread that counts a latch down when it finishes
+- **`VerboseCountDownLatch`**: a `CountDownLatch` that logs while it waits
 
-### DSL Functions
+### Compression
 
-- **GuavaDsl**: DSL functions for creating Guava services and utilities
+- **`ZipExtensions`**: gzip a `String` or `ByteArray`, detect gzipped data, and unzip it
 
 ## Usage Examples
 
 ### BooleanMonitor
 
+`BooleanMonitor` takes its initial value positionally and exposes `get()` / `set()`. Waiting comes from
+`GenericMonitor`, and blocks the calling thread.
+
 ```kotlin
 import com.pambrose.common.concurrent.BooleanMonitor
+import kotlin.time.Duration.Companion.seconds
 
-val monitor = BooleanMonitor(initialValue = false)
+val monitor = BooleanMonitor(false)
 
-// Set value and notify waiters
-monitor.setValueAndNotify(true)
+monitor.get()        // false
+monitor.set(true)    // sets the value and wakes waiting threads
 
-// Wait for value to become true
-monitor.waitForValue(true)
+// Block until the value is true
+monitor.waitUntilTrue()
 
-// Wait with timeout
-if (monitor.waitForValue(true, 5.seconds)) {
+// Bounded wait: returns true if satisfied before the timeout
+if (monitor.waitUntilTrue(5.seconds))
   println("Value became true within timeout")
-}
+
+// Wait for a specific value
+monitor.waitUntil(false)
 ```
 
-### ConditionalValue
+The `debug` / `info` / `warn` / `error` methods attach a log message that is emitted while the monitor
+waits, which is useful for diagnosing stuck waits.
+
+### ConditionalBoolean and ConditionalValue
+
+These are the suspending counterparts, backed by a `MutableStateFlow`. `set` is a `suspend` function.
 
 ```kotlin
+import com.pambrose.common.concurrent.ConditionalBoolean
 import com.pambrose.common.concurrent.ConditionalValue
+import kotlin.time.Duration.Companion.seconds
 
-val condition = ConditionalValue<String>()
+val ready = ConditionalBoolean(false)
 
-// Wait for value in coroutine
 launch {
-  val value = condition.waitForValue(10.seconds)
-  if (value != null) {
-    println("Received: $value")
-  } else {
-    println("Timeout waiting for value")
-  }
+  // Returns true if satisfied, false if the timeout expired
+  if (ready.waitUntilTrue(10.seconds))
+    println("Ready")
+  else
+    println("Timed out")
 }
 
-// Set value from another coroutine
-condition.setValue("Hello, World!")
+launch { ready.set(true) }
+
+// The generic form waits on an arbitrary predicate
+val status = ConditionalValue("starting")
+launch { status.waitUntil(10.seconds) { it == "running" } }
+launch { status.set("running") }
+
+status.get()  // current value, without waiting
 ```
 
-### Generic Service
+Both `waitUntilTrue` and `waitUntil` default to `Duration.INFINITE` and return `Boolean` — `true` when the
+condition was met, `false` on timeout.
+
+### BooleanWaiter
+
+`BooleanWaiter` is the continuation-based variant; its `setValue` is **not** suspending, so it can be
+called from ordinary code.
 
 ```kotlin
-import com.pambrose.common.concurrent.GenericService
+import com.pambrose.common.concurrent.BooleanWaiter
+import kotlin.time.Duration.Companion.seconds
 
-class MyService : GenericService() {
-  override fun doStart() {
-    // Service startup logic
-    println("Service starting...")
-    notifyStarted()
-  }
+val waiter = BooleanWaiter(false)
 
-  override fun doStop() {
-    // Service shutdown logic
-    println("Service stopping...")
-    notifyStopped()
+launch { waiter.waitUntilTrue(5.seconds) }
+
+waiter.setValue(true)
+```
+
+### Guava Services
+
+There is no `GenericService` type — extend the Guava-shaped base class that matches your service:
+
+```kotlin
+import com.pambrose.common.concurrent.GenericExecutionThreadService
+import kotlin.time.Duration.Companion.seconds
+
+class MyService : GenericExecutionThreadService() {
+  override fun run() {
+    while (isRunning) {
+      // do work
+    }
   }
 }
 
 val service = MyService()
-service.startAsync().awaitRunning()
+
+// startSync/stopSync wrap startAsync().awaitRunning() with a timeout
+service.startSync(30.seconds)
+service.stopSync(30.seconds)
 ```
 
-### Service Listener
+`GenericIdleService` offers the same `startSync` / `stopSync` pair over Guava's `AbstractIdleService`.
+
+### Service Listeners
+
+`genericServiceListener` is an **extension function** on `Service` that registers a listener logging every
+state transition:
 
 ```kotlin
-import com.pambrose.common.concurrent.GenericServiceListener
+import com.pambrose.common.concurrent.genericServiceListener
+import io.github.oshai.kotlinlogging.KotlinLogging
 
-val listener = GenericServiceListener(
-  onStarting = { println("Service starting") },
-  onRunning = { println("Service running") },
-  onStopping = { println("Service stopping") },
-  onTerminated = { println("Service terminated") },
-  onFailed = { state, throwable ->
-    println("Service failed in state $state: ${throwable.message}")
-  }
-)
+private val logger = KotlinLogging.logger {}
 
-service.addListener(listener, MoreExecutors.directExecutor())
+service.genericServiceListener(logger)
 ```
 
-### Zip Utilities
+For custom callbacks, build a listener with the DSL:
+
+```kotlin
+import com.google.common.util.concurrent.MoreExecutors
+import com.pambrose.common.dsl.GuavaDsl.serviceListener
+import com.pambrose.common.dsl.GuavaDsl.serviceManager
+import com.pambrose.common.dsl.GuavaDsl.serviceManagerListener
+
+val listener =
+  serviceListener {
+    starting { println("starting") }
+    running { println("running") }
+    stopping { from -> println("stopping from $from") }
+    terminated { from -> println("terminated from $from") }
+    failed { from, throwable -> println("failed from $from: ${throwable.message}") }
+  }
+
+service.addListener(listener, MoreExecutors.directExecutor())
+
+// ServiceManager and its listener have matching builders
+val manager =
+  serviceManager(listOf(service1, service2)) {
+    addListener(
+      serviceManagerListener {
+        healthy { println("all services healthy") }
+        stopped { println("all services stopped") }
+        failure { svc -> println("service failed: $svc") }
+      },
+      MoreExecutors.directExecutor(),
+    )
+  }
+
+manager.startAsync().awaitHealthy()
+```
+
+### Concurrency Extensions
+
+```kotlin
+import com.pambrose.common.concurrent.await
+import com.pambrose.common.concurrent.countDown
+import com.pambrose.common.concurrent.isFinished
+import com.pambrose.common.concurrent.thread
+import com.pambrose.common.concurrent.withLock
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Semaphore
+import kotlin.time.Duration.Companion.seconds
+
+val latch = CountDownLatch(2)
+
+// Counts the latch down even if the block throws
+latch.countDown { doSomeWork() }
+
+// Starts a thread that counts the latch down when the block finishes
+thread(latch, name = "worker") { doMoreWork() }
+
+latch.await(30.seconds)   // Boolean
+latch.isFinished          // count == 0L
+
+val semaphore = Semaphore(4)
+val result = semaphore.withLock { computeSomething() }
+```
+
+### Compression
+
+These are gzip helpers, not ZIP archive readers.
 
 ```kotlin
 import com.pambrose.common.util.isZipped
+import com.pambrose.common.util.unzip
+import com.pambrose.common.util.zip
 
-val data = byteArrayOf(0x50, 0x4B, 0x03, 0x04) // ZIP magic bytes
-
-if (data.isZipped()) {
-  println("Data is a ZIP archive")
-}
+val compressed = "some long string".zip()   // ByteArray
+compressed.isZipped()                        // true
+val original = compressed.unzip()            // String
 ```
 
-### Guava DSL
+### Platform Checks
 
 ```kotlin
-import com.pambrose.common.dsl.GuavaDsl.stopwatch
-
-val elapsed = stopwatch {
-  // Some operation to time
-  Thread.sleep(1000)
-}
-
-println("Operation took ${elapsed.toMillis()}ms")
+import com.pambrose.common.util.isMac
+import com.pambrose.common.util.isWindows
 ```
+
+## API Reference
+
+### Monitors
+
+- `abstract class GenericMonitor` — `waitUntilTrue()`, `waitUntilTrue(waitTime: Duration): Boolean`,
+  `waitUntilFalse()`, `waitUntilFalse(waitTime: Duration): Boolean`, `waitUntilTrueWithInterruption(...)`,
+  `waitUntil(value: Boolean)`, plus `debug`/`info`/`warn`/`error` message actions
+- `class BooleanMonitor(initValue: Boolean) : GenericMonitor` — `get()`, `set(value: Boolean)`
+
+### Conditional Values
+
+- `open class ConditionalValue<T>(initValue: T)` — `get(): T`, `suspend set(value: T)`,
+  `suspend waitUntil(timeoutDuration: Duration = INFINITE, predicate: (T) -> Boolean): Boolean`
+- `class ConditionalBoolean(initValue: Boolean) : ConditionalValue<Boolean>` — `suspend waitUntilTrue(...)`,
+  `suspend waitUntilFalse(...)`
+- `abstract class GenericValueWaiter<T>(initValue: T)` / `class BooleanWaiter(initValue: Boolean)` —
+  `setValue(value)`, `suspend waitUntilTrue(...)`, `suspend waitUntilFalse(...)`
+
+### Services
+
+- `abstract class GenericExecutionThreadService : AbstractExecutionThreadService` — `startSync(timeout)`, `stopSync(timeout)`
+- `abstract class GenericIdleService : AbstractIdleService` — `startSync(maxWait)`, `stopSync(maxWait)`
+- `fun Service.genericServiceListener(logger: KLogger)`
+- `GuavaDsl.serviceManager(services: List<Service>, block: ServiceManager.() -> Unit): ServiceManager`
+- `GuavaDsl.serviceListener(init: ServiceListenerHelper.() -> Unit)`
+- `GuavaDsl.serviceManagerListener(init: ServiceManagerListenerHelper.() -> Unit)`
+- `GuavaDsl.toStringElements(block: MoreObjects.ToStringHelper.() -> Unit)`
+
+### Concurrency & Compression
+
+- `val CountDownLatch.isFinished: Boolean`, `CountDownLatch.countDown(block: () -> Unit)`,
+  `CountDownLatch.await(duration: Duration): Boolean`
+- `fun <T> Semaphore.withLock(block: () -> T): T`
+- `fun thread(latch: CountDownLatch, start: Boolean = true, isDaemon: Boolean = false, contextClassLoader: ClassLoader? = null, name: String? = null, priority: Int = -1, block: () -> Unit): Thread`
+- `class VerboseCountDownLatch(count: Int) : CountDownLatch`
+- `String.zip(): ByteArray`, `ByteArray.zip(): ByteArray`, `ByteArray.isZipped(): Boolean`, `ByteArray.unzip(): String`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
+- core-utils
 - Google Guava
-- Kotlinx Coroutines
-- Kotlinx Coroutines Guava
 
 ## Installation
 
@@ -157,78 +285,33 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:guava-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:guava-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
 ```xml
-
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
   <artifactId>guava-utils</artifactId>
-  <version><latest-version></version>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
+## Choosing a Waiting Primitive
+
+| Need | Use |
+|------|-----|
+| Blocking wait on a thread | `BooleanMonitor` / `GenericMonitor` |
+| Suspending wait, value observed as a flow | `ConditionalBoolean` / `ConditionalValue` |
+| Suspending wait, value set from non-suspending code | `BooleanWaiter` / `GenericValueWaiter` |
+
 ## Thread Safety
 
-- **BooleanMonitor**: Thread-safe using Guava's Monitor
-- **ConditionalValue**: Thread-safe using coroutine synchronization primitives
-- **GenericService**: Thread-safe following Guava's service contract
-- **ConcurrentExtensions**: Thread-safe for concurrent collections
-
-## Performance Notes
-
-- Monitor-based utilities have low overhead for synchronization
-- ConditionalValue uses StateFlow which may have higher overhead for simple boolean conditions
-- Service abstractions follow Guava's efficient service lifecycle patterns
-
-## Best Practices
-
-1. **Service Lifecycle**: Always use `startAsync()` and `stopAsync()` for service management
-2. **Monitoring**: Use appropriate timeout values for waiting operations
-3. **Error Handling**: Implement proper error handling in service implementations
-4. **Resource Management**: Ensure proper cleanup in service shutdown methods
-
-## Error Handling
-
-- Service failures are propagated through the service listener mechanism
-- Timeout operations return null or false to indicate timeout
-- Monitor operations may throw InterruptedException
-
-## Common Patterns
-
-### Service with Health Checks
-
-```kotlin
-class HealthyService : GenericService() {
-  private val healthCheck = object : HealthCheck() {
-    override fun check(): Result {
-      return if (isRunning) {
-        Result.healthy("Service is running")
-      } else {
-        Result.unhealthy("Service is not running")
-      }
-    }
-  }
-
-  fun getHealthCheck() = healthCheck
-}
-```
-
-### Coordinated Service Shutdown
-
-```kotlin
-val services = listOf(service1, service2, service3)
-
-// Stop all services
-services.forEach { it.stopAsync() }
-
-// Wait for all to stop
-services.forEach { it.awaitTerminated() }
-```
+- `BooleanMonitor` guards its value with Guava's `Monitor` and an atomic boolean
+- `ConditionalValue` is backed by a `MutableStateFlow`
+- The service base classes follow Guava's own service contract
 
 ## License
 

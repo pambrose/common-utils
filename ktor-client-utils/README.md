@@ -1,191 +1,144 @@
 # Ktor Client Utils
 
-Utilities for Ktor HTTP client, providing DSL functions and extensions for HTTP operations, including both suspending
-and blocking variants.
+A small DSL around Ktor's `HttpClient` that handles client creation and lifecycle, plus a blocking GET
+helper on the JVM.
+
+**Multiplatform** — the DSL targets JVM, JS, wasmJs and Native. `blockingGet` is JVM-only.
+
+This module deliberately contains only these helpers; everything else is ordinary Ktor client API.
 
 ## Features
 
-### HTTP Client DSL
-
-- **Client Configuration**: DSL for creating and configuring Ktor HTTP clients
-- **Request Builders**: Simplified request building with common patterns
-- **Response Handling**: Utilities for processing HTTP responses
-
-### Client Operations
-
-- **Suspending Functions**: Coroutine-friendly HTTP operations
-- **Blocking Operations**: Traditional blocking HTTP calls for compatibility
-- **Resource Management**: Automatic client lifecycle management
+- **`newHttpClient`**: creates an `HttpClient` with `HttpTimeout` installed
+- **`withHttpClient`**: runs a block with the client as **receiver**, closing it if it created one
+- **`httpClient`**: same, but passes the client as a **parameter**
+- **`HttpClient.get`**: GET that hands the `HttpResponse` to a block
+- **`blockingGet`** (JVM): the same GET, run with `runBlocking`
 
 ## Usage Examples
 
-### Basic HTTP Requests
+### Creating a Client
+
+```kotlin
+import com.pambrose.common.dsl.KtorDsl
+
+// expectSuccess = false by default, so non-2xx responses do not throw
+val client = KtorDsl.newHttpClient()
+
+// Throw on non-2xx instead
+val strictClient = KtorDsl.newHttpClient(expectSuccess = true)
+```
+
+`HttpTimeout` is installed for you; configure it per request with the `setUp` block or on the client.
+
+### withHttpClient and httpClient
+
+Both take an optional existing client. When it is `null`, a new client is created **and closed** after the
+block; when you pass one in, it is reused and left open for you to manage.
 
 ```kotlin
 import com.pambrose.common.dsl.KtorDsl.httpClient
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import com.pambrose.common.dsl.KtorDsl.withHttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 
-// Create a configured client
-val client = httpClient {
-  timeout {
-    requestTimeoutMillis = 30000
-    connectTimeoutMillis = 10000
+// Receiver form — `this` is the HttpClient
+val body =
+  withHttpClient {
+    get("https://example.com/api").bodyAsText()
   }
 
-  defaultRequest {
-    header("User-Agent", "MyApp/1.0")
+// Parameter form — useful when the receiver would be ambiguous
+val body2 =
+  httpClient { client ->
+    client.get("https://example.com/api").bodyAsText()
   }
-}
 
-// Make a GET request
-val response: HttpResponse = client.get("https://api.example.com/users")
-val content = response.bodyAsText()
-println(content)
-
-// Clean up
-client.close()
+// Reuse a long-lived client; it is NOT closed for you
+val existing = KtorDsl.newHttpClient()
+val body3 = withHttpClient(httpClient = existing) { get("https://example.com").bodyAsText() }
+existing.close()
 ```
 
-### Using with Resource Management
+`expectSuccess` applies only when the helper creates the client; it is ignored when you supply one.
+
+### The `get` Helper
+
+`get` is declared as a **member extension** of `KtorDsl`, so it cannot be imported on its own — bring
+`KtorDsl` into scope with `with(KtorDsl) { }`:
 
 ```kotlin
-import com.pambrose.common.dsl.KtorDsl.httpClient
+import com.pambrose.common.dsl.KtorDsl
+import com.pambrose.common.dsl.KtorDsl.withHttpClient
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 
-// Automatically closes client
-httpClient().use { client ->
-  val response = client.get("https://api.example.com/data")
-  println("Status: ${response.status}")
-  println("Content: ${response.bodyAsText()}")
-}
-```
-
-### Blocking Operations
-
-```kotlin
-import com.pambrose.common.dsl.KtorDsl.blockingGet
-
-// Blocking GET request (for non-coroutine contexts)
-val content = blockingGet("https://api.example.com/data")
-println(content)
-```
-
-### JSON API Client
-
-```kotlin
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class User(
-  val id: Int,
-  val name: String,
-  val email: String
-)
-
-val jsonClient = httpClient {
-  install(ContentNegotiation) {
-    json()
-  }
-}
-
-// GET JSON data
-val users: List<User> = jsonClient.get("https://api.example.com/users").body()
-
-// POST JSON data
-val newUser = User(0, "John Doe", "john@example.com")
-val response = jsonClient.post("https://api.example.com/users") {
-  contentType(ContentType.Application.Json)
-  setBody(newUser)
-}
-```
-
-### File Download
-
-```kotlin
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.utils.io.*
-import java.io.File
-
-suspend fun downloadFile(
-  url: String,
-  outputFile: File
-) {
-  httpClient().use { client ->
-    val response: HttpResponse = client.get(url)
-    val channel: ByteReadChannel = response.bodyAsChannel()
-
-    outputFile.writeBytes(channel.toByteArray())
-  }
-}
-
-// Usage
-downloadFile("https://example.com/file.pdf", File("downloaded.pdf"))
-```
-
-### Authentication
-
-```kotlin
-import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
-
-val authenticatedClient = httpClient {
-  install(Auth) {
-    bearer {
-      loadTokens {
-        BearerTokens("your-access-token", "your-refresh-token")
+val result =
+  withHttpClient {
+    with(KtorDsl) {
+      this@withHttpClient.get("https://example.com/api") { response ->
+        if (response.status == HttpStatusCode.OK) response.bodyAsText() else "failed"
       }
     }
   }
-}
-
-// Requests will automatically include authentication
-val response = authenticatedClient.get("https://api.example.com/protected")
 ```
 
-### Error Handling
+Add request configuration through `setUp`:
 
 ```kotlin
-import io.ktor.client.plugins.*
-import io.ktor.client.statement.*
-
-try {
-  val response = client.get("https://api.example.com/data")
-
-  when (response.status.value) {
-    in 200..299 -> {
-      val content = response.bodyAsText()
-      println("Success: $content")
-    }
-    404 -> {
-      println("Resource not found")
-    }
-    in 500..599 -> {
-      println("Server error: ${response.status}")
-    }
-    else -> {
-      println("Unexpected status: ${response.status}")
-    }
+with(KtorDsl) {
+  client.get(
+    url = "https://example.com/api",
+    setUp = {
+      headers.append("Authorization", "Bearer $token")
+    },
+  ) { response ->
+    response.bodyAsText()
   }
-} catch (e: HttpRequestTimeoutException) {
-  println("Request timed out")
-} catch (e: ClientRequestException) {
-  println("Client error: ${e.message}")
-} catch (e: ServerResponseException) {
-  println("Server error: ${e.message}")
 }
 ```
+
+For most code, Ktor's own `client.get(url)` is simpler; this helper exists for the response-block style.
+
+### blockingGet (JVM only)
+
+`blockingGet` is an extension on `KtorDsl` that wraps the whole exchange in `runBlocking`, creating and
+closing a client for you. Use it only from non-suspending JVM code — never inside a coroutine.
+
+```kotlin
+import com.pambrose.common.dsl.KtorDsl
+import com.pambrose.common.dsl.blockingGet
+import io.ktor.client.statement.bodyAsText
+
+val body =
+  KtorDsl.blockingGet("https://example.com/api") { response ->
+    response.bodyAsText()
+  }
+```
+
+## API Reference
+
+### `KtorDsl` (commonMain)
+
+- `newHttpClient(expectSuccess: Boolean = false): HttpClient`
+- `suspend fun <T> withHttpClient(httpClient: HttpClient? = null, expectSuccess: Boolean = false, block: suspend HttpClient.() -> T): T`
+- `suspend fun <T> httpClient(httpClient: HttpClient? = null, expectSuccess: Boolean = false, block: suspend (HttpClient) -> T): T`
+- `suspend fun <T> HttpClient.get(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> T): T` — member extension; requires `with(KtorDsl)`
+
+### jvmMain
+
+- `fun <T> KtorDsl.blockingGet(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> T): T`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
+- core-utils
 - Ktor Client Core
-- Ktor Client CIO (default engine)
-- Kotlinx Coroutines
+
+No engine is included. Add the one you need — for example `ktor-client-cio` on the JVM, or
+`ktor-client-js` for the browser.
 
 ## Installation
 
@@ -195,126 +148,28 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:ktor-client-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:ktor-client-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
-```xml
+Maven consumers must depend on the `-jvm` artifact, since this is a multiplatform module:
 
+```xml
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
-  <artifactId>ktor-client-utils</artifactId>
-  <version><latest-version></version>
+  <artifactId>ktor-client-utils-jvm</artifactId>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
-## Configuration Options
+## Notes
 
-### Timeout Configuration
-
-```kotlin
-val client = httpClient {
-  timeout {
-    requestTimeoutMillis = 30000   // Total request timeout
-    connectTimeoutMillis = 10000   // Connection timeout
-    socketTimeoutMillis = 15000    // Socket read timeout
-  }
-}
-```
-
-### Retry Configuration
-
-```kotlin
-val client = httpClient {
-  install(HttpRequestRetry) {
-    retryOnServerErrors(maxRetries = 3)
-    exponentialDelay()
-  }
-}
-```
-
-### Logging
-
-```kotlin
-val client = httpClient {
-  install(Logging) {
-    level = LogLevel.INFO
-  }
-}
-```
-
-## Performance Notes
-
-- **Connection Pooling**: Ktor automatically manages connection pooling
-- **Blocking Operations**: `blockingGet()` uses `runBlocking` which blocks threads - use sparingly
-- **Client Reuse**: Reuse HTTP clients when possible to benefit from connection pooling
-- **Resource Management**: Always close clients when done or use `use` blocks
-
-## Thread Safety
-
-- HTTP clients are thread-safe and can be used from multiple coroutines
-- Client configuration should be done once during initialization
-- Sharing clients across multiple operations is recommended
-
-## Error Handling Best Practices
-
-1. **Timeout Handling**: Set appropriate timeouts for your use case
-2. **Retry Logic**: Implement retry logic for transient failures
-3. **Status Code Handling**: Check HTTP status codes and handle errors appropriately
-4. **Network Errors**: Handle network connectivity issues gracefully
-5. **Resource Cleanup**: Ensure clients are properly closed
-
-## Common Patterns
-
-### API Client Wrapper
-
-```kotlin
-class ApiClient(
-  private val baseUrl: String,
-  private val apiKey: String
-) {
-  private val client = httpClient {
-    defaultRequest {
-      url(baseUrl)
-      header("Authorization", "Bearer $apiKey")
-      header("Content-Type", "application/json")
-    }
-  }
-
-  suspend fun getUser(id: Int): User? {
-    return try {
-      client.get("/users/$id").body<User>()
-    } catch (e: ClientRequestException) {
-      if (e.response.status.value == 404) null else throw e
-    }
-  }
-
-  fun close() = client.close()
-}
-```
-
-### Batch Requests
-
-```kotlin
-suspend fun fetchMultipleUrls(urls: List<String>): List<String> {
-  return httpClient().use { client ->
-    urls.map { url ->
-      async {
-        client.get(url).bodyAsText()
-      }
-    }.awaitAll()
-  }
-}
-```
-
-## Security Considerations
-
-- **HTTPS**: Always use HTTPS for sensitive data
-- **Certificate Validation**: Ensure proper certificate validation in production
-- **API Keys**: Never hardcode API keys - use environment variables or secure storage
-- **Input Validation**: Validate all user inputs before making requests
+- Creating an `HttpClient` is expensive — prefer one long-lived client over per-request creation, and pass
+  it to `withHttpClient`/`httpClient` rather than letting them create one each time
+- `expectSuccess` defaults to `false`, so check `response.status` yourself unless you opt in
+- `blockingGet` blocks the calling thread; in suspending code call `withHttpClient` directly
 
 ## License
 

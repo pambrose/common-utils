@@ -1,118 +1,223 @@
 # JSON Utils
 
-Utilities for JSON processing using kotlinx.serialization, providing extensions for JSON manipulation, content loading,
-and element utilities.
+Extensions for working with `kotlinx.serialization`'s `JsonElement`: typed value access, key and path
+navigation, conversion helpers, and a set of pre-configured `Json` formats.
+
+**Multiplatform** — this module targets JVM, JS, wasmJs and Native.
+
+Type checks (`isObject`, `isArray`, `isString`, …) and simple accessors (`stringValue`, `intValue`, …) are
+**properties**, so they are used without parentheses. The `vararg keys` forms are functions.
 
 ## Features
 
-### JSON Content Loading
+### Typed Value Access
 
-- **JsonContentUtils**: Load and parse JSON from various sources (files, URLs, resources)
-- **Content Source Integration**: Work with different content sources seamlessly
+- `stringValue`, `intValue`, `doubleValue`, `booleanValue`, `jsonObjectValue` as properties
+- Matching `xxxValue(vararg keys)` / `xxxValueOrNull(vararg keys)` functions for nested lookups
 
-### JSON Element Utilities
+### Navigation
 
-- **JsonElement Extensions**: Type checking, conversion, and manipulation utilities
-- **Path-based Access**: Navigate JSON structures using dot notation
-- **Type Safety**: Safe conversion between JSON types
+- `get(vararg keys)` (the `[]` operator) — throws when a key is missing
+- `getOrNull(vararg keys)` — returns `null` instead
+- `getByPath("a/b/c")` — **slash-separated** path navigation
+
+### Inspection & Conversion
+
+- `keys`, `size`, `isEmpty()`, `isNotEmpty()`, `containsKeys(...)`
+- `isObject`, `isArray`, `isPrimitive`, `isString`, `isNumber`
+- `deepCopy()`, `toMap()`, `toJsonElementList()`, `forEachJsonObject { }`
+- `toJsonString()`, `toJsonElement()`, `toFormattedString(indent)`
+
+### Json Formats
+
+- `JsonContentUtils.prettyFormat`, `rawFormat`, `lenientFormat`, `strictFormat`
 
 ## Usage Examples
 
-### Loading JSON Content
+### Type Checking and Simple Access
 
 ```kotlin
+import com.pambrose.common.json.booleanValue
+import com.pambrose.common.json.intValue
+import com.pambrose.common.json.isArray
+import com.pambrose.common.json.isObject
+import com.pambrose.common.json.keys
+import com.pambrose.common.json.stringValue
+import kotlinx.serialization.json.Json
+
+val jsonElement = Json.parseToJsonElement("""{"name": "Alice", "age": 30, "active": true}""")
+
+if (jsonElement.isObject) {
+  println(jsonElement.keys)  // [name, age, active]
+
+  // Properties, not functions — no parentheses
+  val name = jsonElement["name"].stringValue
+  val age = jsonElement["age"].intValue
+  val active = jsonElement["active"].booleanValue
+}
+```
+
+There is no `isBoolean` property; use `isPrimitive` or read the value with `booleanValue`.
+
+### Nested Access
+
+The `vararg` forms walk several keys at once. The plain forms throw `IllegalArgumentException` when a key
+is missing; the `OrNull` forms return `null`.
+
+```kotlin
+import com.pambrose.common.json.get
+import com.pambrose.common.json.getOrNull
+import com.pambrose.common.json.stringValue
+import com.pambrose.common.json.stringValueOrNull
+
+val json = Json.parseToJsonElement("""{"user": {"profile": {"email": "a@example.com"}}}""")
+
+// Throws if any key is absent
+val email = json.stringValue("user", "profile", "email")
+
+// Returns null if any key is absent
+val missing = json.stringValueOrNull("user", "profile", "phone")
+
+// The [] operator is the same lookup, returning a JsonElement
+val profile = json["user", "profile"]
+val maybeProfile = json.getOrNull("user", "settings")
+```
+
+### Path Navigation
+
+`getByPath` splits on `/`, not `.`:
+
+```kotlin
+import com.pambrose.common.json.getByPath
+
+val email = json.getByPath("user/profile/email")   // JsonElement?
+```
+
+Leading and repeated slashes are ignored, and the result is `null` if the path does not resolve.
+
+### Arrays
+
+```kotlin
+import com.pambrose.common.json.forEachJsonObject
+import com.pambrose.common.json.isArray
+import com.pambrose.common.json.jsonElementList
+import com.pambrose.common.json.size
+import com.pambrose.common.json.stringValue
+import com.pambrose.common.json.toJsonElementList
+
+val fruits = Json.parseToJsonElement("""["apple", "banana", "orange"]""")
+
+if (fruits.isArray) {
+  println(fruits.size)
+  fruits.toJsonElementList().forEach { println(it.stringValue) }
+}
+
+val payload = Json.parseToJsonElement("""{"users": [{"name": "Alice"}, {"name": "Bob"}]}""")
+
+// Pull a nested array out by key
+payload.jsonElementList("users").forEach { println(it.stringValue("name")) }
+
+// Or iterate the objects directly
+payload["users"].forEachJsonObject { obj -> println(obj["name"]) }
+```
+
+### Checking Keys
+
+```kotlin
+import com.pambrose.common.json.containsKeys
+
+// True only if the whole nested chain exists
+if (json.containsKeys("user", "profile", "email"))
+  println("email present")
+```
+
+### Conversion
+
+```kotlin
+import com.pambrose.common.json.deepCopy
+import com.pambrose.common.json.toFormattedString
 import com.pambrose.common.json.toJsonElement
-import com.pambrose.common.json.toJsonObject
+import com.pambrose.common.json.toJsonString
+import com.pambrose.common.json.toMap
 
-// Load from file
-val jsonFromFile = FileContentSource("config.json").toJsonElement()
+// String -> JsonElement -> pretty String
+val pretty = """{"a":1}""".toJsonString()
 
-// Load from URL
-val jsonFromUrl = UrlContentSource("https://api.example.com/data.json").toJsonObject()
+// Any serializable value -> JSON
+val asJson = myDataClass.toJsonString(prettyPrint = true)
+val asElement = myDataClass.toJsonElement()
 
-// Load from classpath resource
-val jsonFromResource = ClasspathContentSource("default-config.json").toJsonElement()
+// JsonObject -> Map<String, Any?>; throws if the element is not an object
+val map = json.toMap()
+
+// Independent copy
+val copy = json.deepCopy()
+
+// Custom indent
+println(json.toFormattedString(indent = "    "))
 ```
 
-### JSON Element Utilities
+### Json Formats
 
 ```kotlin
-import com.pambrose.common.json.*
+import com.pambrose.common.json.JsonContentUtils
 
-val jsonString = """
-{
-    "name": "John Doe",
-    "age": 30,
-    "email": "john@example.com",
-    "address": {
-        "street": "123 Main St",
-        "city": "New York"
-    },
-    "hobbies": ["reading", "coding", "hiking"]
-}
-"""
+JsonContentUtils.prettyFormat   // pretty-printed, 2-space indent, encodeDefaults
+JsonContentUtils.rawFormat      // compact, encodeDefaults
+JsonContentUtils.lenientFormat  // pretty, isLenient, ignoreUnknownKeys
+JsonContentUtils.strictFormat   // pretty, strict parsing, rejects unknown keys
 
-val jsonElement = Json.parseToJsonElement(jsonString)
-
-// Type checking
-if (jsonElement.isJsonObject()) {
-    val jsonObject = jsonElement.jsonObject
-
-    // Safe property access
-    val name = jsonObject["name"]?.contentOrNull() // "John Doe"
-    val age = jsonObject["age"]?.intOrNull() // 30
-
-    // Check property types
-    if (jsonObject["email"]?.isString == true) {
-        println("Email is a string")
-    }
-}
-
-// Path-based access
-val city = jsonElement.getByPath("address.city")?.contentOrNull() // "New York"
-val firstHobby = jsonElement.getByPath("hobbies.0")?.contentOrNull() // "reading"
+val text = JsonContentUtils.rawFormat.encodeToString(myValue)
 ```
 
-### JSON Manipulation
+`defaultJsonConfig()` is available as a `JsonBuilder` extension if you want the same pretty-print defaults
+in your own `Json { }` block.
 
-```kotlin
-import com.pambrose.common.json.*
+## API Reference
 
-// Convert to Map
-val jsonMap = jsonElement.toMap()
-println(jsonMap["name"]) // "John Doe"
+### Properties
 
-// Deep copy
-val copy = jsonElement.deepCopy()
+- `keys`, `size`, `stringValue`, `intValue`, `doubleValue`, `booleanValue`, `jsonObjectValue`
+- `isObject`, `isArray`, `isPrimitive`, `isString`, `isNumber`
 
-// Check if element is a specific type
-val isNumber = jsonElement.isNumber
-val isString = jsonElement.isString
-val isBoolean = jsonElement.isBoolean
-```
+### Navigation
 
-### Working with Arrays
+- `operator fun JsonElement.get(vararg keys: String): JsonElement` — throws `IllegalArgumentException` when a key is missing
+- `fun JsonElement.getOrNull(vararg keys: String): JsonElement?`
+- `fun JsonElement.getByPath(path: String): JsonElement?` — `/`-separated
+- `fun JsonElement.containsKeys(vararg keys: String): Boolean`
 
-```kotlin
-val jsonArray = Json.parseToJsonElement("""["apple", "banana", "orange"]""")
+### Nested Accessors
 
-if (jsonArray.isJsonArray()) {
-    val fruits = jsonArray.jsonArray
-    fruits.forEach { fruit ->
-        if (fruit.isString) {
-            println("Fruit: ${fruit.contentOrNull()}")
-        }
-    }
-}
-```
+`stringValue`, `stringValueOrNull`, `intValue`, `intValueOrNull`, `doubleValue`, `doubleValueOrNull`,
+`booleanValue`, `booleanValueOrNull`, `jsonObjectValue`, `jsonObjectValueOrNull`, `jsonElementList`,
+`jsonElementListOrNull` — each taking `vararg keys: String`.
+
+### Conversion & Iteration
+
+- `fun JsonElement.toMap(): Map<String, Any?>`
+- `fun JsonElement.toJsonElementList(): List<JsonElement>`
+- `fun JsonElement.deepCopy(): JsonElement`
+- `fun JsonElement.forEachJsonObject(action: (JsonObject) -> Unit)`
+- `fun JsonElement.isEmpty(): Boolean` / `isNotEmpty(): Boolean`
+- `fun JsonElement.toFormattedString(indent: String = "  "): String`
+- `fun String.toJsonString(): String`
+- `inline fun <reified T> T.toJsonString(prettyPrint: Boolean = true): String`
+- `inline fun <reified T> T.toJsonElement(): JsonElement`
+- `fun String.toJsonElement(verbose: Boolean = false): JsonElement`
+
+### Formats
+
+- `JsonContentUtils.prettyFormat` / `rawFormat` / `lenientFormat` / `strictFormat`
+- `fun JsonBuilder.defaultJsonConfig()`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
+- core-utils
 - Kotlinx Serialization JSON
-- Core Utils (for content sources)
 
 ## Installation
 
@@ -122,92 +227,28 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:json-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:json-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
+Maven consumers must depend on the `-jvm` artifact, since this is a multiplatform module:
+
 ```xml
 <dependency>
-    <groupId>com.pambrose.common-utils</groupId>
-    <artifactId>json-utils</artifactId>
-    <version><latest-version></version>
+  <groupId>com.pambrose.common-utils</groupId>
+  <artifactId>json-utils-jvm</artifactId>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
-## API Reference
-
-### JsonContentUtils
-
-- `ContentSource.toJsonElement()`: Parse content source as JsonElement
-- `ContentSource.toJsonObject()`: Parse content source as JsonObject
-- `ContentSource.toJsonArray()`: Parse content source as JsonArray
-
-### JsonElement Extensions
-
-- `isJsonObject()`, `isJsonArray()`, `isJsonPrimitive()`: Type checking
-- `isString`, `isNumber`, `isBoolean`: Primitive type checking
-- `contentOrNull()`: Safe content extraction
-- `intOrNull()`, `doubleOrNull()`, `booleanOrNull()`: Type-safe conversions
-- `getByPath(path: String)`: Navigate JSON structure using dot notation
-- `toMap()`: Convert JsonElement to Map
-- `deepCopy()`: Create deep copy of JsonElement
-
 ## Error Handling
 
-- All conversion functions return null on failure rather than throwing exceptions
-- Type checking functions return false for invalid types
-- Path-based access returns null for non-existent paths
-- Content loading may throw exceptions for network or file system errors
-
-## Performance Notes
-
-- `deepCopy()` creates a string representation and re-parses it, which is inefficient for large objects
-- `toMap()` performs recursive type checking and conversion
-- Path-based access splits strings and traverses the JSON structure
-
-## Thread Safety
-
-- All utility functions are thread-safe
-- JsonElement instances are immutable
-- Content loading operations are thread-safe
-
-## Best Practices
-
-1. **Error Handling**: Always check for null returns from conversion functions
-2. **Type Safety**: Use type checking functions before casting
-3. **Path Access**: Use dot notation for nested property access
-4. **Performance**: Cache frequently accessed JSON elements
-5. **Memory**: Be aware that `deepCopy()` is expensive for large objects
-
-## Common Patterns
-
-### Safe JSON Navigation
-
-```kotlin
-fun getNestedValue(json: JsonElement, path: String): String? {
-    return json.getByPath(path)?.takeIf { it.isString }?.contentOrNull()
-}
-
-val email = getNestedValue(jsonElement, "user.contact.email")
-```
-
-### JSON Validation
-
-```kotlin
-fun validateUser(json: JsonElement): Boolean {
-    return json.isJsonObject() &&
-           json.getByPath("name")?.isString == true &&
-           json.getByPath("age")?.isNumber == true &&
-           json.getByPath("email")?.isString == true
-}
-```
-
-## Known Issues
-
-⚠️ **Note**: There are inverted boolean logic issues in the current implementation of `isString` and `isNumber`
-properties. These will be fixed in a future version.
+- `get(...)` and the non-`OrNull` accessors throw `IllegalArgumentException` when a key is missing
+- `toMap()` throws `IllegalArgumentException` unless the element is a `JsonObject`
+- The typed properties throw if the underlying value is not of that type — prefer the `OrNull` variants for
+  untrusted input
 
 ## License
 

@@ -1,23 +1,36 @@
 # Exposed Utils
 
-Utilities for JetBrains Exposed SQL framework, providing custom expressions, transaction utilities, and
-PostgreSQL-specific upsert operations.
+Utilities for the JetBrains Exposed SQL framework: raw-SQL expressions, transaction helpers with timing,
+`ResultRow` extensions, a Kotlin-logging `SqlLogger`, and an index-based `upsert` overload.
+
+All of the transaction helpers are **top-level functions**, not extensions on `Database`. Pass the database
+with the `db` argument, or omit it to use Exposed's default.
 
 ## Features
 
 ### Custom SQL Expressions
 
-- **Custom Expressions**: Create custom SQL expressions with type safety
-- **DateTime Constants**: Helper functions for date/time expressions
+- **`CustomExpr<T>`**: embeds raw SQL text as a typed Exposed expression
+- **DateTime Constants**: `customDateTimeConstant` and `dateTimeExpr` for Joda `DateTime` expressions
 
 ### Transaction Utilities
 
-- **Enhanced Transactions**: Extended transaction functions with timing and logging
-- **ResultRow Extensions**: Additional utilities for working with query results
+- **`readonlyTx`**: read-only transaction
+- **`timedTransaction` / `timedReadOnlyTx`**: transactions that return a `TimedValue` with the elapsed duration
 
-### PostgreSQL Operations
+### ResultRow Extensions
 
-- **Upsert Support**: PostgreSQL-specific upsert (INSERT ... ON CONFLICT) operations
+- **`get(index)`**: access a column by zero-based position
+- **`toRowString()`**: render a row for logging and debugging
+
+### Logging
+
+- **`KotlinSqlLogger`**: an Exposed `SqlLogger` that writes expanded SQL through a `KLogger`
+
+### Upsert
+
+- **`Table.upsert(conflictIndex)`**: convenience overload of Exposed's native `upsert` taking a unique `Index`
+  as the conflict target
 
 ## Usage Examples
 
@@ -27,87 +40,159 @@ PostgreSQL-specific upsert operations.
 import com.pambrose.common.exposed.customDateTimeConstant
 import com.pambrose.common.exposed.dateTimeExpr
 
-// Create custom datetime expressions
+// Nullable DateTime expression
 val nowExpr = customDateTimeConstant("NOW()")
-val dateExpr = dateTimeExpr("CURRENT_DATE")
 
-// Use in queries
-val query = MyTable.select { MyTable.createdAt.greater(nowExpr) }
+// Non-null DateTime expression
+val currentTimestamp = dateTimeExpr("CURRENT_TIMESTAMP")
+
+// Each renders as its raw SQL text
+println(currentTimestamp.text)  // CURRENT_TIMESTAMP
 ```
+
+`CustomExpr` is an Exposed `Function<T>`, so it can be used anywhere an expression is accepted.
 
 ### Transaction Utilities
 
 ```kotlin
-import com.pambrose.common.exposed.readOnlyTransaction
-import com.pambrose.common.exposed.transactionWithTimer
+import com.pambrose.common.exposed.readonlyTx
+import com.pambrose.common.exposed.timedReadOnlyTx
+import com.pambrose.common.exposed.timedTransaction
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 val database = Database.connect("jdbc:postgresql://localhost/mydb")
 
-// Read-only transaction with timing
-val results = database.readOnlyTransaction {
-  MyTable.selectAll().toList()
-}
+// Read-only transaction against an explicit database
+val count = readonlyTx(db = database) { MyTable.selectAll().count() }
 
-// Transaction with timing and logging
-val (result, duration) = database.transactionWithTimer {
-  MyTable.insert {
-    it[name] = "John Doe"
-    it[email] = "john@example.com"
+// Omit `db` to use Exposed's default database
+val defaultCount = readonlyTx { MyTable.selectAll().count() }
+
+// Timed transaction: returns a kotlin.time.TimedValue
+val timed =
+  timedTransaction(db = database) {
+    MyTable.insert {
+      it[name] = "John Doe"
+      it[email] = "john@example.com"
+    }
   }
-}
-println("Transaction completed in ${duration.inWholeMilliseconds}ms")
+println("Completed in ${timed.duration.inWholeMilliseconds}ms")
+
+// Timed read-only variant
+val timedRead = timedReadOnlyTx(db = database) { MyTable.selectAll().count() }
+println("${timedRead.value} rows in ${timedRead.duration}")
 ```
+
+Each helper also accepts `transactionIsolation`, defaulting to the database's configured isolation level.
 
 ### ResultRow Extensions
 
 ```kotlin
 import com.pambrose.common.exposed.get
+import com.pambrose.common.exposed.readonlyTx
 import com.pambrose.common.exposed.toRowString
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
 
-// Access columns by index
-val row = MyTable.select { MyTable.id eq 1 }.single()
-val firstColumn = row.get(0)
-val secondColumn = row.get(1)
+readonlyTx(db = database) {
+  val row =
+    MyTable
+      .select(MyTable.id, MyTable.email, MyTable.name)
+      .where { MyTable.id eq 1 }
+      .single()
 
-// Debug row contents
-println("Row data: ${row.toRowString()}")
+  // Index access follows the order of the selected columns
+  val id = row[0]
+  val email = row[1]
+
+  // "1 - alice@example.com - Alice"
+  println(row.toRowString())
+}
 ```
 
-### PostgreSQL Upsert
+`row[index]` throws `IllegalArgumentException("No value at index N")` when no column occupies that position.
+`toRowString()` joins each column's `toString()` with `" - "` and drops empty strings; a `null` column
+renders as the literal text `"null"` rather than being skipped.
+
+### SQL Logging
+
+```kotlin
+import com.pambrose.common.exposed.KotlinSqlLogger
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+
+transaction(database) {
+  addLogger(KotlinSqlLogger())
+  MyTable.selectAll().count()
+}
+```
+
+`KotlinSqlLogger` logs each statement at info level with its arguments expanded. Pass your own `KLogger` to
+route the output elsewhere.
+
+### Upsert
 
 ```kotlin
 import com.pambrose.common.exposed.upsert
+import org.jetbrains.exposed.v1.core.Table
 
 object MyTable : Table("my_table") {
+  val id = integer("id")
+  val email = varchar("email", 255).uniqueIndex()
   val name = varchar("name", 255)
-  val email = varchar("email", 255)
-  val updatedAt = long("updated_at")
-
-  // Declare the unique index used as the conflict target
-  val uniqueEmail = uniqueIndex("unique_email_idx", email)
 }
 
-// Upsert with the unique index as the conflict target.
-// `conflictIndex` forwards the index's columns as the `ON CONFLICT (...)` keys,
-// delegating to Exposed's native upsert.
-MyTable.upsert(conflictIndex = MyTable.uniqueEmail) {
-  it[name] = "John Doe"
-  it[email] = "john@example.com"
-  it[updatedAt] = System.currentTimeMillis()
+transaction(database) {
+  val conflictIndex = MyTable.indices.single { it.unique }
+
+  MyTable.upsert(conflictIndex) {
+    it[id] = 1
+    it[email] = "john@example.com"
+    it[name] = "John Doe"
+  }
 }
 ```
 
-> **Note**: As of 2.9.1, `upsert` is a thin convenience overload of Exposed's native `upsert` and accepts only a unique `Index` as the conflict target. To conflict on a single column, declare a single-column `uniqueIndex` and pass it.
+The overload forwards the index's columns as the `keys` of the underlying `ON CONFLICT (...)` clause, so the
+named index definition stays the single source of truth for the conflict columns. It accepts only a unique
+`Index`; to conflict on a single column, declare a single-column `uniqueIndex` and pass that.
+
+## API Reference
+
+### Expressions
+
+- `customDateTimeConstant(text: String): CustomExpr<DateTime?>`
+- `dateTimeExpr(str: String): CustomExpr<DateTime>`
+- `open class CustomExpr<T>(text: String, columnType: IColumnType<T & Any>) : Function<T>`
+
+### Transactions
+
+- `readonlyTx(db: Database? = null, transactionIsolation: Int? = ..., statement: JdbcTransaction.() -> T): T`
+- `timedTransaction(db: Database? = null, transactionIsolation: Int? = ..., statement: JdbcTransaction.() -> T): TimedValue<T>`
+- `timedReadOnlyTx(db: Database? = null, transactionIsolation: Int? = ..., statement: JdbcTransaction.() -> T): TimedValue<T>`
+
+### ResultRow
+
+- `operator fun ResultRow.get(index: Int): Any?`
+- `fun ResultRow.toRowString(): String`
+
+### Logging & Upsert
+
+- `class KotlinSqlLogger(logger: KLogger = ...) : SqlLogger`
+- `fun <T : Table> T.upsert(conflictIndex: Index, body: T.(UpsertStatement<Long>) -> Unit): UpsertStatement<Long>`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
+- core-utils
 - JetBrains Exposed Core
 - JetBrains Exposed JDBC
-- PostgreSQL JDBC Driver (for upsert functionality)
+- JetBrains Exposed Joda-Time (used by the `DateTime` expression helpers)
+
+No JDBC driver is bundled — add the driver for your database yourself.
 
 ## Installation
 
@@ -117,52 +202,43 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:exposed-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:exposed-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
 ```xml
-
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
   <artifactId>exposed-utils</artifactId>
-  <version><latest-version></version>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
 ## Database Compatibility
 
-⚠️ **Important**: The upsert functionality is PostgreSQL-specific and uses `ON CONFLICT` syntax. It will not work with
-other databases.
+`upsert` delegates to Exposed's native `upsert`, so it works on every database Exposed supports that
+statement for — this module's own tests exercise it against H2. It is not PostgreSQL-specific.
 
 ## Security Considerations
 
-⚠️ **Security Warning**:
+⚠️ **`CustomExpr` embeds its text directly into the generated SQL.**
 
-- Custom expressions use direct SQL string interpolation which may be vulnerable to SQL injection
-- Always validate and sanitize input when using custom expressions
-- Consider using parameterized queries for user-provided data
+- Never build a `CustomExpr` from user-supplied input
+- Reserve it for fixed SQL fragments such as `NOW()` or `CURRENT_DATE`
+- Use Exposed's parameterized expressions for anything derived from request data
 
 ## Performance Notes
 
-- `ResultRow.get(index: Int)` has O(n) complexity - use sparingly or cache results
-- Transaction timing utilities have minimal overhead
-- Upsert operations are generally more efficient than separate INSERT/UPDATE logic
+- `ResultRow.get(index: Int)` scans the row's field index, so it is O(n) in the number of columns — prefer
+  column-typed access (`row[MyTable.email]`) in hot paths
+- The timing helpers wrap the transaction in `measureTimedValue` and add negligible overhead
 
 ## Thread Safety
 
-- All utilities are thread-safe when used within Exposed's transaction blocks
-- Custom expressions are immutable and thread-safe
-- Transaction utilities properly delegate to Exposed's thread-safe mechanisms
-
-## Best Practices
-
-1. **Input Validation**: Always validate input for custom expressions
-2. **Error Handling**: Wrap database operations in try-catch blocks
-3. **Connection Management**: Use connection pooling for production applications
-4. **Monitoring**: Use transaction timing utilities to monitor database performance
+- `CustomExpr` is immutable
+- The transaction helpers delegate to Exposed's own transaction management and inherit its threading rules
 
 ## License
 

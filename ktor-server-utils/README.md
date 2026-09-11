@@ -1,245 +1,162 @@
 # Ktor Server Utils
 
-Utilities for Ktor HTTP server, providing plugins, response utilities, and common server-side patterns including
-Heroku-specific features.
+Utilities for Ktor servers: response and redirect helpers, a Heroku HTTPS-redirect plugin, and a bridge
+for mounting Jakarta servlets inside Ktor routes.
 
 ## Features
 
-### Server Plugins
-
-- **HerokuHttpsRedirect**: Automatic HTTPS redirect for Heroku deployments
-- **Plugin Configuration**: Easy installation and configuration of custom plugins
-
 ### Response Utilities
 
-- **Response Helpers**: Utilities for common response patterns
-- **Content Types**: Helper functions for setting appropriate content types
-- **Status Codes**: Utilities for handling HTTP status codes
+- **`respondWith`**: respond with text produced by a (possibly suspending) lambda
+- **`redirectTo`**: redirect to a URL produced by a lambda
+- **`uriPrefix`**: the `scheme://host:port` prefix of a request connection point
+
+Each helper exists on both `ApplicationCall` and `RoutingContext`, so it works with or without `call.`.
 
 ### Heroku Integration
 
-- **HTTPS Redirect**: Handle `x-forwarded-proto` header for Heroku SSL termination
-- **Environment Configuration**: Utilities for Heroku-specific configuration
+- **`HerokuHttpsRedirect`**: redirects plain-HTTP requests to HTTPS based on the `x-forwarded-proto`
+  header that Heroku's router sets
+
+### Servlet Bridge
+
+- **`Route.servlet(path, servlet)`**: mounts a Jakarta `HttpServlet` inside a Ktor route
+- **`KtorServletRequest` / `KtorServletResponse`**: the adapters used by that bridge
 
 ## Usage Examples
 
-### Heroku HTTPS Redirect Plugin
+### Response Utilities
+
+`respondWith` defaults to `ContentType.Text.Html`. The block may be suspending.
+
+```kotlin
+import com.pambrose.common.response.redirectTo
+import com.pambrose.common.response.respondWith
+import io.ktor.http.ContentType
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+
+routing {
+  get("/page") {
+    call.respondWith { "<h1>Hello</h1>" }
+  }
+
+  get("/plain") {
+    call.respondWith(ContentType.Text.Plain) { "hello" }
+  }
+
+  get("/data") {
+    // The block can suspend
+    call.respondWith(ContentType.Application.Json) { fetchJsonFromDatabase() }
+  }
+
+  get("/old-path") {
+    call.redirectTo { "/new-path" }                      // 302
+  }
+
+  get("/moved") {
+    call.redirectTo(permanent = true) { "/new-home" }    // 301
+  }
+}
+```
+
+The `RoutingContext` overloads let you drop the `call.` prefix inside a route handler:
+
+```kotlin
+get("/page") {
+  respondWith { "<h1>Hello</h1>" }
+}
+```
+
+### Request URI Prefix
+
+```kotlin
+import com.pambrose.common.response.uriPrefix
+
+get("/whoami") {
+  // e.g. "https://example.com:443"
+  call.respondWith { call.request.origin.uriPrefix }
+}
+```
+
+### Heroku HTTPS Redirect
+
+The plugin inspects the `x-forwarded-proto` header. When it is `http`, the request is redirected to the
+configured HTTPS host unless an exclusion predicate matches.
 
 ```kotlin
 import com.pambrose.common.features.HerokuHttpsRedirect
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
+import io.ktor.server.application.install
 
-fun main() {
-  embeddedServer(Netty, port = 8080) {
-    // Install Heroku HTTPS redirect plugin
-    install(HerokuHttpsRedirect) {
-      // Exclude specific paths from redirect
-      excludePaths = setOf("/health", "/metrics")
+install(HerokuHttpsRedirect) {
+  host = "myapp.herokuapp.com"
+  sslPort = 443              // defaults to the HTTPS default port
+  permanentRedirect = true   // 301 instead of 302
 
-      // Exclude paths matching patterns
-      excludePathPatterns = setOf("/api/v1/public/.*".toRegex())
-    }
-
-    // Your application routes
-    routing {
-      get("/") {
-        call.respondText("Hello, HTTPS World!")
-      }
-
-      get("/health") {
-        call.respondText("OK") // This won't be redirected
-      }
-    }
-  }.start(wait = true)
+  // Exclusions — use these rather than raw path lists
+  excludePrefix("/health")
+  excludeSuffix(".well-known")
+  exclude { call -> call.request.headers.contains("X-Skip-Redirect") }
 }
 ```
+
+Configuration properties are `host`, `sslPort`, `permanentRedirect` and `excludePredicates`; the three
+`exclude*` helpers append to that predicate list.
+
+### Mounting a Servlet
+
+`Route.servlet` initializes the servlet once, then translates each Ktor request into a
+`KtorServletRequest`/`KtorServletResponse` pair. Servlet processing runs on `Dispatchers.IO`, and the
+servlet's status, headers and body are forwarded back through the Ktor pipeline.
+
+```kotlin
+import com.pambrose.common.servlet.servlet
+import io.ktor.server.routing.routing
+
+routing {
+  servlet("/metrics", MetricsServlet())
+}
+```
+
+The Jakarta Servlet API is a `compileOnlyApi` dependency, so add it yourself when you use this bridge:
+
+```kotlin
+dependencies {
+  implementation("jakarta.servlet:jakarta.servlet-api:6.1.0")
+}
+```
+
+## API Reference
 
 ### Response Utilities
 
-```kotlin
-import com.pambrose.common.response.ResponseUtils
-import io.ktor.server.application.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+- `suspend fun ApplicationCall.respondWith(contentType: ContentType = ContentType.Text.Html, block: suspend () -> String)`
+- `suspend fun ApplicationCall.redirectTo(permanent: Boolean = false, block: suspend () -> String)`
+- `suspend fun RoutingContext.respondWith(contentType: ContentType = ContentType.Text.Html, block: suspend () -> String)`
+- `suspend fun RoutingContext.redirectTo(permanent: Boolean = false, block: suspend () -> String)`
+- `val RequestConnectionPoint.uriPrefix: String`
 
-fun Application.configureRouting() {
-  routing {
-    get("/api/users") {
-      val users = getUsersFromDatabase()
+### Heroku
 
-      // Use response utilities
-      call.respondJson(users)
-    }
+- `class HerokuHttpsRedirect` — properties `host`, `redirectPort`, `permanent`, `excludePredicates`
+- `HerokuHttpsRedirect.Configuration` — `host`, `sslPort`, `permanentRedirect`, `excludePredicates`,
+  `excludePrefix(pathPrefix)`, `excludeSuffix(pathSuffix)`, `exclude(predicate)`
+- `typealias CallPredicate = (ApplicationCall) -> Boolean`
 
-    get("/download/{filename}") {
-      val filename = call.parameters["filename"]!!
-      val file = getFileFromStorage(filename)
+### Servlet Bridge
 
-      if (file.exists()) {
-        call.respondFile(file)
-      } else {
-        call.respondNotFound("File not found")
-      }
-    }
-
-    post("/api/users") {
-      try {
-        val user = call.receive<User>()
-        val savedUser = saveUser(user)
-        call.respondCreated(savedUser)
-      } catch (e: ValidationException) {
-        call.respondBadRequest(e.message)
-      }
-    }
-  }
-}
-```
-
-### Custom Plugin Example
-
-```kotlin
-import io.ktor.server.application.*
-import io.ktor.server.application.hooks.*
-import io.ktor.server.request.*
-
-val RequestLoggingPlugin = createApplicationPlugin(
-  name = "RequestLogging"
-) {
-  on(CallLogging) { call ->
-    val method = call.request.httpMethod.value
-    val uri = call.request.uri
-    val userAgent = call.request.headers["User-Agent"]
-
-    println("$method $uri - User-Agent: $userAgent")
-  }
-}
-
-// Install the plugin
-fun Application.configurePlugins() {
-  install(RequestLoggingPlugin)
-}
-```
-
-### Environment-Aware Configuration
-
-```kotlin
-import io.ktor.server.application.*
-
-fun Application.configureForHeroku() {
-  val port = environment.config.propertyOrNull("ktor.deployment.port")?.getString()?.toInt()
-    ?: System.getenv("PORT")?.toInt()
-    ?: 8080
-
-  // Configure based on environment
-  if (isHerokuEnvironment()) {
-    install(HerokuHttpsRedirect)
-
-    // Enable compression for Heroku
-    install(Compression) {
-      gzip {
-        priority = 1.0
-      }
-      deflate {
-        priority = 10.0
-        minimumSize(1024)
-      }
-    }
-  }
-}
-
-fun isHerokuEnvironment(): Boolean {
-  return System.getenv("DYNO") != null
-}
-```
-
-### API Response Patterns
-
-```kotlin
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class ApiResponse<T>(
-  val success: Boolean,
-  val data: T? = null,
-  val error: String? = null,
-  val timestamp: Long = System.currentTimeMillis()
-)
-
-fun Application.configureApiRouting() {
-  routing {
-    route("/api/v1") {
-      get("/users/{id}") {
-        val id = call.parameters["id"]?.toIntOrNull()
-
-        if (id == null) {
-          call.respond(
-            HttpStatusCode.BadRequest,
-            ApiResponse<Nothing>(
-              success = false,
-              error = "Invalid user ID"
-            )
-          )
-          return@get
-        }
-
-        val user = getUserById(id)
-        if (user != null) {
-          call.respond(
-            ApiResponse(
-              success = true,
-              data = user
-            )
-          )
-        } else {
-          call.respond(
-            HttpStatusCode.NotFound,
-            ApiResponse<Nothing>(
-              success = false,
-              error = "User not found"
-            )
-          )
-        }
-      }
-    }
-  }
-}
-```
-
-### CORS Configuration
-
-```kotlin
-import io.ktor.server.plugins.cors.routing.*
-
-fun Application.configureCORS() {
-  install(CORS) {
-    allowMethod(HttpMethod.Options)
-    allowMethod(HttpMethod.Put)
-    allowMethod(HttpMethod.Delete)
-    allowMethod(HttpMethod.Patch)
-    allowHeader(HttpHeaders.Authorization)
-    allowHeader(HttpHeaders.ContentType)
-
-    // Configure based on environment
-    if (isDevelopment()) {
-      anyHost() // Allow all hosts in development
-    } else {
-      allowHost("myapp.com", schemes = listOf("https"))
-      allowHost("www.myapp.com", schemes = listOf("https"))
-    }
-  }
-}
-```
+- `fun Route.servlet(path: String, servlet: HttpServlet)`
+- `class KtorServletRequest`, `class KtorServletResponse`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
+- core-utils
 - Ktor Server Core
-- Ktor Server Host Common
-- Kotlinx Serialization JSON
+- Kotlin Reflect
+- Jakarta Servlet API (`compileOnlyApi` — supply it yourself if you use `Route.servlet`)
 
 ## Installation
 
@@ -249,110 +166,26 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:ktor-server-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:ktor-server-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
 ```xml
-
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
   <artifactId>ktor-server-utils</artifactId>
-  <version><latest-version></version>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
-## Plugin Configuration
+## Notes
 
-### HerokuHttpsRedirect Options
-
-- `excludePaths`: Set of exact paths to exclude from redirect
-- `excludePathPatterns`: Set of regex patterns for paths to exclude
-- `httpsPort`: HTTPS port to redirect to (default: 443)
-- `permanentRedirect`: Use 301 instead of 302 redirect (default: false)
-
-## Security Considerations
-
-⚠️ **Security Notes**:
-
-- The `HerokuHttpsRedirect` plugin trusts the `x-forwarded-proto` header, which can be spoofed
-- Always validate that you're running behind a trusted proxy (like Heroku's load balancer)
-- Consider implementing additional security headers for production deployments
-- Validate all user inputs in route handlers
-
-## Performance Notes
-
-- HTTPS redirects add a small overhead to HTTP requests
-- Exclude health check and monitoring endpoints from redirects to reduce overhead
-- Use appropriate caching headers for static content
-- Consider using compression for API responses
-
-## Best Practices
-
-1. **Environment Detection**: Use environment variables to detect deployment context
-2. **Graceful Degradation**: Handle missing environment variables gracefully
-3. **Security Headers**: Implement security headers like HSTS in production
-4. **Health Checks**: Exclude health check endpoints from redirects
-5. **Monitoring**: Exclude monitoring endpoints from redirects and logging
-
-## Common Patterns
-
-### Health Check Endpoint
-
-```kotlin
-routing {
-  get("/health") {
-    call.respondText("OK", ContentType.Text.Plain)
-  }
-
-  get("/health/detailed") {
-    val health = checkApplicationHealth()
-    call.respond(health)
-  }
-}
-```
-
-### Metrics Endpoint
-
-```kotlin
-routing {
-  get("/metrics") {
-    val metrics = collectApplicationMetrics()
-    call.respondText(metrics, ContentType.Text.Plain)
-  }
-}
-```
-
-### Error Handling
-
-```kotlin
-install(StatusPages) {
-  exception<Throwable> { call, cause ->
-    call.respond(
-      HttpStatusCode.InternalServerError,
-      ApiResponse<Nothing>(
-        success = false,
-        error = "Internal server error"
-      )
-    )
-
-    // Log the error
-    logger.error("Unhandled exception", cause)
-  }
-}
-```
-
-## Heroku Deployment
-
-When deploying to Heroku, the plugin automatically detects the Heroku environment and configures HTTPS redirects
-appropriately. Make sure to:
-
-1. Configure your Heroku app to use SSL
-2. Set up proper domain routing
-3. Exclude health check endpoints used by Heroku
-4. Use environment variables for configuration
+- `HerokuHttpsRedirect` relies on `x-forwarded-proto`; behind a proxy that does not set it, no redirect
+  occurs
+- Exclude health and metrics endpoints from the redirect so probes are not bounced
+- No server engine is pulled in — add the Ktor engine you want (CIO, Netty, …) yourself
 
 ## License
 

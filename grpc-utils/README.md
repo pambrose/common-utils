@@ -1,152 +1,205 @@
 # gRPC Utils
 
-Utilities for gRPC applications, providing DSL functions for creating gRPC channels and servers, TLS configuration, and
-server lifecycle management.
+Utilities for gRPC applications: builder functions for channels and servers (Netty or in-process), TLS
+context construction from certificate files, a `StreamObserver` DSL, and graceful shutdown extensions.
+
+`GrpcDsl.channel` and `GrpcDsl.server` take their settings as **named arguments**. The trailing lambda is
+applied to the underlying gRPC builder (`ManagedChannelBuilder` / `ServerBuilder`), so inside it you call
+real gRPC builder methods such as `addService(...)` or `directExecutor()`.
 
 ## Features
 
 ### gRPC DSL
 
-- **Channel Builder**: DSL for creating gRPC channels with various configurations
-- **Server Builder**: DSL for creating gRPC servers with TLS and plaintext support
-- **StreamObserver Helper**: Utilities for working with gRPC streaming responses
+- **`GrpcDsl.channel`**: builds a `ManagedChannel` over Netty or the in-process transport
+- **`GrpcDsl.server`**: builds a `Server` over Netty or the in-process transport
+- **`GrpcDsl.streamObserver`**: builds a `StreamObserver<T>` from `onNext` / `onError` / `onCompleted` blocks
+- **`GrpcDsl.attributes`**: builds a gRPC `Attributes` instance
 
 ### TLS Configuration
 
-- **TLS Context Builder**: Comprehensive TLS configuration for client and server
-- **Certificate Management**: Support for client certificates, server certificates, and mutual authentication
-- **SSL Context Creation**: Utilities for creating SSL contexts from certificate files
+- **`TlsUtils`**: builds client and server `TlsContext`s from certificate files
+- **Mutual authentication**: supplying a trust collection enables mutual auth
+- **`TlsContext.PLAINTEXT_CONTEXT`**: the non-TLS context
 
 ### Server Management
 
-- **Graceful Shutdown**: Extensions for graceful server shutdown with timeout
-- **Server Lifecycle**: Utilities for managing server startup and shutdown
+- **`shutdownWithJvm`**: registers a JVM shutdown hook for graceful shutdown
+- **`shutdownGracefully`**: shuts down, awaits termination, then forces shutdown
 
 ## Usage Examples
-
-### Creating gRPC Channels
-
-```kotlin
-import com.pambrose.common.dsl.GrpcDsl.grpcChannel
-
-// Create a plaintext channel
-val plaintextChannel = grpcChannel {
-  hostName = "localhost"
-  port = 8080
-}
-
-// Create a TLS channel
-val tlsChannel = grpcChannel {
-  hostName = "api.example.com"
-  port = 443
-  tlsContext = tlsContext {
-    certChainFile = "client.crt"
-    privateKeyFile = "client.key"
-    trustCertCollectionFile = "ca.crt"
-  }
-}
-
-// Create an in-process channel
-val inProcessChannel = grpcChannel {
-  inProcessServerName = "test-server"
-}
-```
 
 ### Creating gRPC Servers
 
 ```kotlin
-import com.pambrose.common.dsl.GrpcDsl.grpcServer
+import com.pambrose.common.dsl.GrpcDsl
+import com.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
+import com.pambrose.common.utils.TlsUtils
 
-// Create a plaintext server
-val plaintextServer = grpcServer {
-  port = 8080
-  addService(MyServiceImpl())
-}
-
-// Create a TLS server
-val tlsServer = grpcServer {
-  port = 8443
-  tlsContext = tlsContext {
-    certChainFile = "server.crt"
-    privateKeyFile = "server.key"
-    trustCertCollectionFile = "ca.crt"
-    clientAuth = true  // Enable mutual authentication
+// Plaintext server (tlsContext defaults to PLAINTEXT_CONTEXT)
+val plaintextServer =
+  GrpcDsl.server(port = 8080) {
+    addService(MyServiceImpl())
   }
-  addService(MyServiceImpl())
-}
+
+// TLS server
+val tlsServer =
+  GrpcDsl.server(
+    port = 8443,
+    tlsContext = TlsUtils.buildServerTlsContext(
+      certChainFilePath = "server.crt",
+      privateKeyFilePath = "server.key",
+      trustCertCollectionFilePath = "ca.crt",  // supplying this enables mutual auth
+    ),
+  ) {
+    addService(MyServiceImpl())
+  }
+
+// In-process server, ignoring port and TLS
+val inProcessServer =
+  GrpcDsl.server(inProcessServerName = "test-server") {
+    addService(MyServiceImpl())
+    directExecutor()
+  }
+
+plaintextServer.start()
 ```
 
-### TLS Configuration
+### Creating gRPC Channels
+
+`channel` requires `tlsContext` — pass `PLAINTEXT_CONTEXT` for a non-TLS channel.
 
 ```kotlin
-import com.pambrose.common.utils.TlsUtils.tlsContext
+import com.pambrose.common.dsl.GrpcDsl
+import com.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
+import com.pambrose.common.utils.TlsUtils
 
-// Client TLS context
-val clientTlsContext = tlsContext {
-  certChainFile = "client.crt"
-  privateKeyFile = "client.key"
-  trustCertCollectionFile = "ca.crt"
-}
+// Plaintext channel
+val plaintextChannel =
+  GrpcDsl.channel(
+    hostName = "localhost",
+    port = 8080,
+    tlsContext = PLAINTEXT_CONTEXT,
+  ) {
+    // configure the ManagedChannelBuilder here
+  }
 
-// Server TLS context with mutual authentication
-val serverTlsContext = tlsContext {
-  certChainFile = "server.crt"
-  privateKeyFile = "server.key"
-  trustCertCollectionFile = "ca.crt"
-  clientAuth = true
-}
+// TLS channel with retry enabled
+val tlsChannel =
+  GrpcDsl.channel(
+    hostName = "api.example.com",
+    port = 443,
+    enableRetry = true,
+    maxRetryAttempts = 5,
+    tlsContext = TlsUtils.buildClientTlsContext(
+      certChainFilePath = "client.crt",
+      privateKeyFilePath = "client.key",
+      trustCertCollectionFilePath = "ca.crt",
+    ),
+  ) {
+  }
+
+// In-process channel, ignoring host, port and TLS
+val inProcessChannel =
+  GrpcDsl.channel(inProcessServerName = "test-server", tlsContext = PLAINTEXT_CONTEXT) {
+    directExecutor()
+  }
 ```
 
-### Server Lifecycle Management
+`overrideAuthority` overrides the authority used for TLS hostname verification, which is useful when the
+certificate's name does not match the host you are dialing.
+
+### StreamObserver DSL
+
+Every block is optional; omitted callbacks do nothing.
+
+```kotlin
+import com.pambrose.common.dsl.GrpcDsl
+
+val observer =
+  GrpcDsl.streamObserver<String> {
+    onNext { value -> println("Received: $value") }
+    onError { error -> println("Failed: ${error.message}") }
+    onCompleted { println("Done") }
+  }
+```
+
+### TLS Contexts
+
+```kotlin
+import com.pambrose.common.utils.TlsUtils
+
+// Client context; all three paths are optional
+val clientContext =
+  TlsUtils.buildClientTlsContext(
+    certChainFilePath = "client.crt",
+    privateKeyFilePath = "client.key",
+    trustCertCollectionFilePath = "ca.crt",
+  )
+
+// Server context; cert chain and private key are required
+val serverContext =
+  TlsUtils.buildServerTlsContext(
+    certChainFilePath = "server.crt",
+    privateKeyFilePath = "server.key",
+  )
+
+// "plaintext", "TLS with mutual auth", or "TLS (no mutual auth)"
+println(serverContext.desc())
+```
+
+### Graceful Shutdown
 
 ```kotlin
 import com.pambrose.common.utils.shutdownGracefully
+import com.pambrose.common.utils.shutdownWithJvm
 import kotlin.time.Duration.Companion.seconds
 
-// Start server
-val server = grpcServer {
-  port = 8080
-  addService(MyServiceImpl())
-}.start()
+// Register a JVM shutdown hook
+server.shutdownWithJvm(maxWaitTime = 30.seconds)
 
-// Graceful shutdown with timeout
-server.shutdownGracefully(30.seconds)
+// Or shut down explicitly
+server.shutdownGracefully(maxWaitTime = 10.seconds)
 ```
 
-### StreamObserver Helper
+`shutdownGracefully` calls `shutdown()`, waits up to the timeout via `awaitTermination`, and then calls
+`shutdownNow()` in a `finally` block so the server always stops. It throws `InterruptedException` if the
+waiting thread is interrupted.
 
-```kotlin
-import com.pambrose.common.dsl.GrpcDsl.StreamObserverHelper
+## API Reference
 
-val helper = StreamObserverHelper<MyResponse>()
+### `GrpcDsl`
 
-// Set up response observer
-helper.responseObserver = object : StreamObserver<MyResponse> {
-  override fun onNext(value: MyResponse) {
-    println("Received: $value")
-  }
+- `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = false, maxRetryAttempts: Int = 5, tlsContext: TlsContext, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
+- `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", block: ServerBuilder<*>.() -> Unit): Server`
+- `attributes(block: Attributes.Builder.() -> Unit): Attributes`
+- `streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserverHelper<T>`
 
-  override fun onError(t: Throwable) {
-    println("Error: ${t.message}")
-  }
+### `TlsUtils`
 
-  override fun onCompleted() {
-    println("Stream completed")
-  }
-}
-```
+- `buildClientTlsContext(certChainFilePath: String = "", privateKeyFilePath: String = "", trustCertCollectionFilePath: String = ""): TlsContext`
+- `buildServerTlsContext(certChainFilePath: String, privateKeyFilePath: String, trustCertCollectionFilePath: String = ""): TlsContext`
+
+### `TlsContext`
+
+- `data class TlsContext(sslContext: SslContext?, mutualAuth: Boolean)`
+- `desc(): String`
+- `TlsContext.PLAINTEXT_CONTEXT`
+
+### Server Extensions
+
+- `Server.shutdownWithJvm(maxWaitTime: Duration)`
+- `Server.shutdownGracefully(maxWaitTime: Duration)`
+- `Server.shutdownGracefully(timeout: Long, unit: TimeUnit)`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
-- gRPC Core
-- gRPC Netty
-- gRPC Protobuf
-- gRPC Services
-- gRPC Stub
-- Netty SSL/TLS
+- core-utils
+- gRPC Netty, In-Process, Protobuf and Services
+- Netty tcnative (BoringSSL) for TLS
 
 ## Installation
 
@@ -156,64 +209,25 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:grpc-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:grpc-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
 ```xml
-
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
   <artifactId>grpc-utils</artifactId>
-  <version><latest-version></version>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
-## TLS Security
+## Testing
 
-### Certificate Files
-
-- **Server Certificate**: `server.crt` - Server's public certificate
-- **Server Private Key**: `server.key` - Server's private key
-- **Client Certificate**: `client.crt` - Client's public certificate (for mutual auth)
-- **Client Private Key**: `client.key` - Client's private key (for mutual auth)
-- **CA Certificate**: `ca.crt` - Certificate Authority's public certificate
-
-### Best Practices
-
-1. **Key Management**: Store private keys securely and never commit them to version control
-2. **Certificate Validation**: Always validate certificate chains and expiration dates
-3. **Mutual Authentication**: Use client certificates for enhanced security
-4. **Cipher Suites**: Use strong cipher suites and disable weak ones
-
-## Security Considerations
-
-⚠️ **Security Notes**:
-
-- Certificate paths are not validated against path traversal attacks
-- No automatic certificate expiration checking
-- Private keys should be stored securely and encrypted when possible
-- Consider using certificate management systems for production deployments
-
-## Performance Notes
-
-- Connection pooling is handled by the underlying gRPC implementation
-- TLS handshake adds latency to connection establishment
-- Keep-alive settings can be configured for long-lived connections
-
-## Thread Safety
-
-- All DSL builders are thread-safe
-- gRPC channels and servers are thread-safe
-- TLS contexts are immutable and thread-safe
-
-## Error Handling
-
-- TLS configuration errors are thrown during context creation
-- Server startup errors are propagated immediately
-- Channel connection errors are handled asynchronously
+The in-process transport makes gRPC tests hermetic — no ports are bound. Pass the same
+`inProcessServerName` to `server` and `channel`, and use `directExecutor()` to keep calls on the test
+thread.
 
 ## License
 

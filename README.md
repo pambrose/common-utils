@@ -43,9 +43,8 @@ Fundamental utility functions and extensions for common programming tasks.
 
 Utilities for Dropwizard Metrics integration.
 
-- Metrics DSL for cleaner configuration
-- Health check utilities
-- JMX integration helpers
+- Health check DSL for building Dropwizard `HealthCheck`s from a lambda
+- Ready-made backlog-size and map-size health checks
 
 #### [**exposed-utils**](exposed-utils/README.md)
 
@@ -70,7 +69,7 @@ Google Guava integration and extensions.
 - Concurrent programming utilities
 - Service lifecycle management
 - Thread-safe monitoring and waiting mechanisms
-- Archive (ZIP) processing utilities
+- Gzip compression helpers
 
 #### [**jetty-utils**](jetty-utils/README.md)
 
@@ -91,9 +90,9 @@ Ktor HTTP client enhancements.
 
 Ktor server-side utilities.
 
-- Heroku HTTPS redirect feature
-- Response handling utilities
-- Server configuration helpers
+- Heroku HTTPS redirect plugin
+- Response and redirect helpers
+- Bridge for mounting Jakarta servlets in Ktor routes
 
 ### Data & Serialization
 
@@ -102,7 +101,7 @@ Ktor server-side utilities.
 JSON processing utilities with Kotlinx.serialization.
 
 - JsonElement extension functions for easy data access
-- Nested path navigation with dot notation
+- Nested path navigation via slash-separated paths (`getByPath("a/b/c")`)
 - Multiple JSON format configurations (pretty, raw, lenient, strict)
 - Type-safe value extraction with null safety
 
@@ -117,7 +116,7 @@ Prometheus metrics integration.
 - Instrumented thread factories
 - Custom gauge collectors
 
-#### [**zipkin-utils**](zipkin-utils/README.md)
+#### **zipkin-utils**
 
 Zipkin distributed tracing utilities.
 
@@ -126,7 +125,7 @@ Zipkin distributed tracing utilities.
 
 ### Persistence & Caching
 
-#### [**redis-utils**](redis-utils/README.md)
+#### **redis-utils**
 
 Redis client utilities and extensions.
 
@@ -146,9 +145,11 @@ Common base classes and interfaces for scripting engines.
 
 #### **script-utils-java**
 
-JavaScript engine integration.
+Java scripting engine integration (compiles and evaluates Java source at runtime via
+[java-scriptengine](https://github.com/eobermuhlner/java-scriptengine)).
 
-- JavaScript execution utilities
+- Java source execution utilities
+- Configurable isolation levels
 - Script pooling for performance
 
 #### [**script-utils-kotlin**](script-utils-kotlin/README.md)
@@ -231,7 +232,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
 ## Technology Stack
 
 - **Languages**: Kotlin 2.4.10, Java
-- **Build System**: Gradle 9.6.1 with Kotlin DSL
+- **Build System**: Gradle 9.7.1 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava
@@ -255,11 +256,16 @@ make help
 # Build without tests
 make build
 
-# Run tests
+# Run tests (JVM modules)
 ./gradlew test
 
-# Run tests for a specific module
-./gradlew :core-utils:test
+# Run tests for a specific JVM module
+./gradlew :redis-utils:test
+
+# The multiplatform modules (core-utils, json-utils, ktor-client-utils) have no
+# `test` task; use jvmTest for the JVM target or allTests for every host target
+./gradlew :core-utils:jvmTest
+./gradlew :core-utils:allTests
 
 # Lint check (Kotlinter + Detekt)
 make lint

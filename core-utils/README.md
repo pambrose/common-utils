@@ -1,150 +1,319 @@
 # Core Utils
 
-Core utilities module providing fundamental Kotlin and Java utility functions, extensions, and helpers for common
-programming tasks.
+Foundational Kotlin extensions and utilities used by every other module in this repository: string,
+number, collection and date helpers, atomics and delegates, plus JVM-only I/O, hashing, reflection and
+content-source support.
+
+**Multiplatform** — portable APIs live in `commonMain` and target JVM, JS, wasmJs and Native. JVM-bound
+APIs (hashing, URL codecs, serialization, classpath resources, reflection) live in `jvmMain` and remain
+available to JVM consumers unchanged.
 
 ## Features
 
-### Atomic Operations
+### commonMain
 
-- **Atomic Operations with Coroutines**: Thread-safe atomic operations with mutex support
-- **Atomic Property Delegates**: Single-assignment and atomic property delegates
-- **Critical Section Utilities**: Utilities for managing critical sections with atomic flags
+- **Strings**: quoting, bracketing, padding, path building, line search, masking and obfuscation
+- **Numbers**: `random()`, `length`
+- **Collections**: `toCsv()`, `listPrint`, `ArrayUtils`
+- **Dates**: parsing, formatting and age helpers built on `kotlinx-datetime`
+- **Atomics**: `Atomic<T>`, `AtomicDelegates`, `AtomicBoolean.criticalSection`
+- **Exceptions**: cancellation-aware `runCatching` variants
+- **Scope functions**: a two-receiver `with`
 
-### Time & Duration
+### jvmMain
 
-- **Duration Extensions**: Convert between `TimeUnit` and Kotlin `Duration`
-- **Time Formatting**: Format durations with customizable output
-
-### Collections & Arrays
-
-- **Array Utilities**: String representations and printing utilities for all array types
-- **List Utilities**: String conversion and utility functions for lists
-
-### String Processing
-
-- **String Extensions**: Comprehensive string manipulation utilities including:
-  - Encoding/decoding (Base64, URL, HTML)
-  - Validation (email, phone numbers)
-  - Formatting (bracketing, masking, capitalization)
-  - Hashing (MD5, SHA-256, bcrypt)
-  - Random string generation
-- **Banner Utilities**: Display ASCII art banners from resources
-
-### Content Sources
-
-- **Content Loading**: Load content from various sources (files, URLs, resources)
-- **HTTP Content**: Fetch content from HTTP/HTTPS URLs
-- **Resource Management**: Handle classpath resources and file system content
-
-### Serialization & I/O
-
-- **Serialization Extensions**: Convert objects to/from byte arrays
-- **I/O Utilities**: Stream and byte array manipulation
-
-### Reflection & Metadata
-
-- **Reflection Extensions**: Type checking and reflection utilities
-- **Version Management**: Annotation-based version tracking with build metadata
-
-### Numeric Extensions
-
-- **Number Extensions**: Mathematical operations and formatting for numbers
-- **Random Utilities**: Secure random number generation
-
-### Scope & Property Functions
-
-- **Two-receiver `with`**: A `with(a, b) { ... }` overload that runs a block with both `a` and `b` in scope as context parameters, each keeping its distinct type
-- **Property Loading**: `readProperties(...)` loads `key=value` files into JVM system properties
+- **Hashing**: MD5 and SHA-256 with salts, plus secure salt generation
+- **I/O**: `Serializable` ↔ `ByteArray` with a hardened, allow-listed variant and checksums
+- **Content sources**: read files from the local filesystem, GitHub, GitLab or a URL
+- **Reflection**: `typeParameterCount`
+- **Version metadata**: the `@Version` annotation and accessors
+- **Misc**: host info, banners, properties loading, stdout capture, port waiting
 
 ## Usage Examples
-
-### Atomic Operations
-
-```kotlin
-import com.pambrose.common.concurrent.Atomic
-
-val atomicValue = Atomic(0)
-atomicValue.setWithLock { currentValue ->
-  currentValue + 1
-}
-```
 
 ### String Extensions
 
 ```kotlin
 import com.pambrose.common.util.*
 
-// Email validation
-val email = "user@example.com"
-if (email.isValidEmail()) {
-  println("Valid email")
-}
+"hello".toDoubleQuoted()          // "\"hello\""
+"\"hello\"".isDoubleQuoted()      // true
+"[a]".isBracketed()               // true, defaults are '[' and ']'
+"a".asBracketed('(', ')')         // "(a)"
 
-// String hashing
-val password = "mypassword"
-val hashed = password.hashWithBcrypt()
+"item".pluralize(3)               // "items"
+"  ".nullIfBlank()                // null
+"path".ensurePrefix("/")          // "/path"
+"hello world".capitalizeFirstChar()
 
-// URL masking
-val url = "https://user:pass@example.com/path"
-val masked = url.maskUrlCredentials() // "https://***:***@example.com/path"
+"42".isInt()                      // true
+"3.14".isDouble()                 // true
+
+pathOf("a", "b", "c")             // "a/b/c"
+listOf("a", "b").toPath()
+
+// Redacts credentials in a URL before logging
+"https://user:secret@host/db".maskUrlCredentials()
+
+"sensitive".obfuscate()           // partially masked
+"a very long string".maxLength(10)
 ```
 
-### Duration Utilities
+Line helpers work on both `String` and `List<String>`:
 
 ```kotlin
-import com.pambrose.common.time.*
+val text = "alpha\nbeta\ngamma"
+text.firstLineNumberOf("beta".asRegex())
+text.linesBetween("alpha".asRegex(), "gamma".asRegex())
+text.withLineNumbers()
+```
+
+### Number Extensions
+
+```kotlin
+import com.pambrose.common.util.length
+import com.pambrose.common.util.random
+
+100.random()      // random Int in 0 until 100
+1000L.random()
+12345.length      // 5 — digit count
+```
+
+### Collections
+
+```kotlin
+import com.pambrose.common.util.ListUtils.listPrint
+import com.pambrose.common.util.toCsv
+
+listOf("a", "b", "c").toCsv()   // "a, b, c"
+listPrint(listOf(1, 2, 3))
+```
+
+### Date Utilities
+
+Built on `kotlinx-datetime`. Note that core-utils bundles **no IANA time-zone database**: only
+`TimeZone.currentSystemDefault()` and UTC resolve everywhere. Named zones need the `@js-joda/timezone`
+package on JS/wasm, so they are left to consumers.
+
+```kotlin
+import com.pambrose.common.util.DateUtils.*
+import kotlinx.datetime.TimeZone
+
+val now = localDateTimeNow()
+val today = localDateNow()
+val instant = instantNow()
+
+"2026-09-07".parseToLocalDate()
+"2026-09-07T14:30:00".parseToLocalDateTime()
+
+now.toFullDateString()      // "Mon 09/07/26 14:30:00"
+now.toISO8601()
+now.toLogString()
+today.toMMDDYY()
+today.toDashedYYYYMMDD()
+
+instant.age                 // Duration since that instant
+now.age(TimeZone.UTC)
+```
+
+### Atomics and Delegates
+
+Atomics come from `kotlin.concurrent.atomics`, so use `load()` / `store()` rather than the Java
+`get()` / `set()` names.
+
+```kotlin
+import com.pambrose.common.concurrent.Atomic
+import com.pambrose.common.delegate.AtomicDelegates
+import com.pambrose.common.util.AtomicUtils.criticalSection
+import kotlin.concurrent.atomics.AtomicBoolean
+
+// Property delegates
+var counter: Int by AtomicDelegates.atomicInteger(0)
+var flag: Boolean by AtomicDelegates.atomicBoolean(false)
+var name: String by AtomicDelegates.nonNullableReference("initial")
+var once: String? by AtomicDelegates.singleSetReference()
+
+// Mutex-guarded value
+val shared = Atomic("initial")
+val current = shared.value
+shared.setWithLock { "updated" }
+val result = shared.withLock { it.length }
+
+// Run a block only if the flag flips false -> true
+val started = AtomicBoolean(false)
+started.criticalSection { println("runs once") }
+```
+
+On the JVM, `singleAssign()` provides a write-once property:
+
+```kotlin
+import com.pambrose.common.delegate.SingleAssignVar.singleAssign
+
+var config: String? by singleAssign()
+```
+
+### Exception Utilities
+
+These preserve coroutine cancellation, which plain `runCatching` swallows.
+
+```kotlin
+import com.pambrose.common.util.onFailureOrRethrow
+import com.pambrose.common.util.onFailureRethrowCancellation
+import com.pambrose.common.util.runCatchingCancellable
+
+runCatchingCancellable { riskyCall() }
+  .onFailureRethrowCancellation { e -> logger.warn { "failed: ${e.message}" } }
+
+// Handle one exception type, rethrow everything else
+runCatchingCancellable { parse() }
+  .onFailureOrRethrow<NumberFormatException, _> { e -> logger.warn { "bad number" } }
+```
+
+### Hashing (JVM)
+
+MD5 and SHA-256 with optional salts. These are **not** password-hashing functions — use a dedicated
+password hash for credentials.
+
+```kotlin
+import com.pambrose.common.util.md5
+import com.pambrose.common.util.newByteArraySalt
+import com.pambrose.common.util.newStringSalt
+import com.pambrose.common.util.sha256
+
+val salt = newStringSalt()            // 16 chars by default
+val byteSalt = newByteArraySalt(32)   // SecureRandom bytes
+
+"password".sha256(salt)
+"password".md5(byteSalt)
+```
+
+### URL Encoding (JVM)
+
+```kotlin
+import com.pambrose.common.util.decode
+import com.pambrose.common.util.encode
+
+"hello world".encode()   // "hello+world"
+"hello+world".decode()   // "hello world"
+```
+
+### Serialization and Checksums (JVM)
+
+`toObjectSecure` deserializes only classes you allow-list, which avoids the deserialization gadget risk
+that plain `toObject` carries.
+
+```kotlin
+import com.pambrose.common.util.*
+
+val bytes = myValue.toByteArray()
+val back = bytes.toObject()
+
+// Hardened round-trip
+val secureBytes = myValue.toByteArraySecure()
+val restored = secureBytes.toObjectSecure<MyType>(setOf(MyType::class.java.name))
+
+// Tamper detection
+val withSum = bytes.withChecksum()
+val verified = withSum.verifyChecksum()
+```
+
+### Content Sources (JVM)
+
+A `ContentRoot` resolves paths to a `ContentSource`, which exposes `content`:
+
+```kotlin
+import com.pambrose.common.util.FileSource
+import com.pambrose.common.util.FileSystemSource
+import com.pambrose.common.util.GitHubFile
+import com.pambrose.common.util.GitHubRepo
+import com.pambrose.common.util.OwnerType
+import com.pambrose.common.util.UrlSource
+
+// Local filesystem
+val local = FileSystemSource("/var/data")
+val text = local.file("config.json").content
+
+// Direct sources
+FileSource("/etc/hosts").content
+UrlSource("https://example.com/data.json").content
+
+// GitHub
+val repo = GitHubRepo(OwnerType.Organization, "pambrose", "common-utils")
+val readme = GitHubFile(repo, branchName = "master", srcPath = "", fileName = "README.md")
+println(readme.content)
+```
+
+`GitLabRepo` / `GitLabFile` mirror the GitHub pair. Every `ContentSource` reports `remote`, and repo
+sources rewrite their prefix to the raw-content host.
+
+### Version Metadata (JVM)
+
+The annotation is named `Version`:
+
+```kotlin
+import com.pambrose.common.util.Version
+import com.pambrose.common.util.Version.Companion.buildString
+import com.pambrose.common.util.Version.Companion.version
+import com.pambrose.common.util.Version.Companion.versionDesc
+
+@Version(version = "3.2.3", releaseDate = "2026-09-07", buildTime = 1757260800000L)
+object MyApp
+
+MyApp::class.version()          // "3.2.3", or "Unknown" if unannotated
+MyApp::class.buildString()      // formatted build timestamp
+MyApp::class.versionDesc()      // plain-text summary
+MyApp::class.versionDesc(true)  // JSON summary
+```
+
+### Misc JVM Helpers
+
+```kotlin
+import com.pambrose.common.util.*
 import kotlin.time.Duration.Companion.seconds
 
-val duration = 90.seconds
-println(duration.format()) // "1 min 30 secs"
+hostInfo.hostName
+hostInfo.ipAddress
+
+sleep(2.seconds)
+randomId()
+captureStdout { println("captured") }
+waitForPortAvailable(port = 8080)
+
+readProperties("app.properties", "override.properties")
+ReadResources.readResourceFile("banner.txt")
+println(getBanner("banner.txt"))
+
+throwable.stackTraceAsString
+myList.typeParameterCount
 ```
 
-### Content Sources
+## API Reference
 
-```kotlin
-import com.pambrose.common.util.*
+Grouped by file; see the KDoc for full signatures.
 
-// Load from various sources
-val fileContent = FileContentSource("config.txt").readContent()
-val urlContent = UrlContentSource("https://api.example.com/data").readContent()
-val resourceContent = ClasspathContentSource("banner.txt").readContent()
-```
+### commonMain
 
-### Version Management
+| Area | Entry points |
+|------|--------------|
+| Strings | `StringExtensions.kt` — quoting, bracketing, paths, line search, masking |
+| Numbers | `NumberExtensions.kt` — `random()`, `length` |
+| Collections | `ListUtils`, `ArrayUtils`, `Iterable.toCsv()` |
+| Dates | `DateUtils` |
+| Atomics | `Atomic<T>`, `AtomicDelegates`, `AtomicUtils.criticalSection` |
+| Exceptions | `runCatchingCancellable`, `onFailureRethrowCancellation`, `onFailureOrRethrow` |
+| Misc | `simpleClassName`, `isNull()`, `isNotNull()`, `lpad`, `rpad`, `capitalizeFirstChar` |
 
-```kotlin
-import com.pambrose.common.util.*
+### jvmMain
 
-@VersionAnnotation("1.0.0")
-class MyApp
-
-val version = Version.versionOf<MyApp>()
-println(version.json()) // {"version": "1.0.0", "build_time": "..."}
-```
-
-### Scope Functions
-
-```kotlin
-import com.pambrose.common.util.with
-
-// Two-receiver `with`: both arguments are available as context parameters
-// inside the block, each keeping its own type (unlike a `vararg`).
-with(logger, config) {
-  // context(Logger, Config) is in scope here
-}
-```
-
-### Property Files
-
-```kotlin
-import com.pambrose.common.util.readProperties
-
-// Load `key=value` lines from one or more files into JVM system properties.
-// `#`-comment and non-`key=value` lines are skipped; a missing file fails fast.
-readProperties("app.properties", "secrets.properties")
-val token = System.getProperty("api.token")
-```
+| Area | Entry points |
+|------|--------------|
+| Hashing | `md5`, `sha256`, `newStringSalt`, `newByteArraySalt`, `md5Of` |
+| Encoding | `encode()`, `decode()` |
+| I/O | `toByteArray`, `toObject`, `toByteArraySecure`, `toObjectSecure`, `withChecksum`, `verifyChecksum` |
+| Content | `ContentRoot`, `ContentSource`, `FileSystemSource`, `GitHubRepo`, `GitLabRepo`, `GitHubFile`, `GitLabFile`, `UrlSource`, `FileSource`, `OwnerType` |
+| Version | `@Version`, `version()`, `buildString()`, `buildDateTime()`, `versionDesc()` |
+| Durations | `timeUnitToDuration`, `Duration.format` |
+| Misc | `hostInfo`, `sleep`, `randomId`, `captureStdout`, `waitForPortAvailable`, `readProperties`, `ReadResources`, `getBanner`, `stackTraceAsString`, `typeParameterCount`, `singleAssign` |
 
 ## Dependencies
 
@@ -152,7 +321,9 @@ This module depends on:
 
 - Kotlin Standard Library
 - Kotlinx Coroutines
-- Kotlinx Serialization (for object serialization)
+- Kotlinx DateTime
+- Kotlinx Serialization JSON
+- kotlin-logging
 
 ## Installation
 
@@ -162,41 +333,28 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:core-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:core-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
+Maven consumers must depend on the `-jvm` artifact, since this is a multiplatform module:
+
 ```xml
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
-  <artifactId>core-utils</artifactId>
-  <version><latest-version></version>
+  <artifactId>core-utils-jvm</artifactId>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
 ## Security Notes
 
-⚠️ **Important Security Considerations:**
-
-- The `toObject()` deserialization functions should be used with trusted data only
-- Email validation is basic - use dedicated libraries for production email validation
-- Random string generation uses `SecureRandom` for cryptographically secure randomness
-- Password hashing uses bcrypt with secure salt generation
-
-## Thread Safety
-
-- **Atomic utilities**: Thread-safe using kotlinx.coroutines.sync.Mutex
-- **String extensions**: Thread-safe (immutable operations)
-- **Content sources**: Thread-safe for read operations
-- **SingleAssignVar**: ⚠️ Not thread-safe - use with caution in concurrent environments
-
-## Performance Notes
-
-- Array utilities have significant code duplication and should be refactored
-- Reflection operations are expensive and should be cached when used frequently
-- String operations create intermediate objects - consider StringBuilder for intensive operations
+- `md5` and `sha256` are general-purpose digests, not password hashes
+- Prefer `toObjectSecure` over `toObject` for any data you did not produce yourself — Java
+  deserialization of untrusted bytes is a known remote-code-execution vector
+- `maskUrlCredentials()` exists so connection strings can be logged without leaking passwords
 
 ## License
 

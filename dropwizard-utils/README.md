@@ -1,76 +1,113 @@
 # Dropwizard Utils
 
-Utilities for Dropwizard Metrics, providing DSL functions for creating health checks and common health check patterns.
+Utilities for Dropwizard Metrics, providing a small DSL for creating health checks plus two ready-made
+health check factories.
 
 ## Features
 
 ### Health Check DSL
 
-- **Health Check Builder**: DSL for creating Dropwizard health checks with clean syntax
-- **Common Health Checks**: Pre-built health checks for common scenarios (backlog size, map size)
+- **`MetricsDsl.healthCheck`**: build a Dropwizard `HealthCheck` from a lambda instead of subclassing
+- **`MetricsUtils`**: ready-made checks for two common "is this collection too big?" patterns
 
 ## Usage Examples
 
 ### Health Check DSL
 
+`healthCheck` takes a single lambda with `HealthCheck` as its receiver, and returns a `HealthCheck` whose
+`check()` runs that lambda. It does not take a name — names are assigned when you register the check.
+
 ```kotlin
+import com.codahale.metrics.health.HealthCheck
 import com.pambrose.common.dsl.MetricsDsl.healthCheck
+
+val databaseHealthCheck =
+  healthCheck {
+    if (database.isConnected)
+      HealthCheck.Result.healthy("Database is connected")
+    else
+      HealthCheck.Result.unhealthy("Database connection failed")
+  }
+```
+
+The lambda may throw; `check()` is declared `@Throws(Exception::class)`, and Dropwizard converts a thrown
+exception into an unhealthy result.
+
+### Ready-made Health Checks
+
+Both factories report **healthy while the observed size is strictly below `size`**, and unhealthy at or
+above it, with a `"Large size: N"` message.
+
+```kotlin
 import com.pambrose.common.util.MetricsUtils.newBacklogHealthCheck
 import com.pambrose.common.util.MetricsUtils.newMapHealthCheck
 
-// Create a custom health check
-val customHealthCheck = healthCheck("Database Connection") {
-  try {
-    // Check database connectivity
-    database.isConnected()
-    healthy("Database is connected")
-  } catch (e: Exception) {
-    unhealthy("Database connection failed: ${e.message}")
+// Unhealthy once the cache reaches 1000 entries
+val cacheHealthCheck = newMapHealthCheck(map = cache, size = 1000)
+
+// Unhealthy once the backlog reaches 100
+val backlogHealthCheck = newBacklogHealthCheck(backlogSize = queue.size, size = 100)
+```
+
+Note the difference between the two, which matters in practice:
+
+- `newMapHealthCheck` captures the **map reference**, so each `check()` re-reads `map.size` and the result
+  tracks the live map.
+- `newBacklogHealthCheck` captures an **`Int` by value**. The size is sampled once, when the check is
+  created, so the returned check reports the same result forever. To monitor a changing backlog, build the
+  check with `healthCheck { ... }` and read the current size inside the lambda:
+
+```kotlin
+val liveBacklogCheck =
+  healthCheck {
+    val current = queue.size
+    if (current < 100)
+      HealthCheck.Result.healthy()
+    else
+      HealthCheck.Result.unhealthy("Large size: $current")
   }
-}
-
-// Create a backlog size health check
-val backlogHealthCheck = newBacklogHealthCheck(
-  name = "Queue Backlog",
-  queue = myQueue,
-  maxSize = 100
-)
-
-// Create a map size health check
-val mapHealthCheck = newMapHealthCheck(
-  name = "Cache Size",
-  map = myCache,
-  maxSize = 1000
-)
 ```
 
 ### Registering Health Checks
+
+Registration and execution use Dropwizard's own `HealthCheckRegistry`; this module only builds the checks.
 
 ```kotlin
 import com.codahale.metrics.health.HealthCheckRegistry
 
 val healthCheckRegistry = HealthCheckRegistry()
 
-// Register health checks
-healthCheckRegistry.register("database", customHealthCheck)
-healthCheckRegistry.register("queue-backlog", backlogHealthCheck)
-healthCheckRegistry.register("cache-size", mapHealthCheck)
+healthCheckRegistry.register("database", databaseHealthCheck)
+healthCheckRegistry.register("queue-backlog", liveBacklogCheck)
+healthCheckRegistry.register("cache-size", cacheHealthCheck)
 
-// Check health status
-val results = healthCheckRegistry.runHealthChecks()
-results.forEach { (name, result) ->
+healthCheckRegistry.runHealthChecks().forEach { (name, result) ->
   println("$name: ${if (result.isHealthy) "HEALTHY" else "UNHEALTHY"}")
-  if (!result.isHealthy) {
+  if (!result.isHealthy)
     println("  Error: ${result.message}")
-  }
 }
 ```
+
+## API Reference
+
+### `MetricsDsl`
+
+- `healthCheck(block: HealthCheck.() -> HealthCheck.Result): HealthCheck` — creates a `HealthCheck` whose
+  `check()` is the given lambda
+
+### `MetricsUtils`
+
+- `newBacklogHealthCheck(backlogSize: Int, size: Int): HealthCheck` — healthy while `backlogSize < size`;
+  `backlogSize` is captured by value (see above)
+- `newMapHealthCheck(map: Map<*, *>, size: Int): HealthCheck` — healthy while `map.size < size`, re-read on
+  every check
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
+- core-utils
 - Dropwizard Metrics Core
 - Dropwizard Metrics Health Checks
 
@@ -82,45 +119,26 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:dropwizard-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:dropwizard-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
 ```xml
-
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
   <artifactId>dropwizard-utils</artifactId>
-  <version><latest-version></version>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
-## API Reference
-
-### MetricsDsl
-
-- `healthCheck(name: String, block: () -> HealthCheck.Result)`: Creates a health check with the given name and logic
-
-### MetricsUtils
-
-- `newBacklogHealthCheck(name: String, queue: Collection<*>, maxSize: Int)`: Creates a health check for queue backlog
-  size
-- `newMapHealthCheck(name: String, map: Map<*, *>, maxSize: Int)`: Creates a health check for map size
-
 ## Best Practices
 
-1. **Health Check Names**: Use descriptive names that clearly identify what is being checked
-2. **Error Messages**: Provide clear, actionable error messages in unhealthy results
-3. **Timeout Handling**: Keep health check logic fast to avoid blocking the health check endpoint
-4. **Resource Cleanup**: Ensure health checks don't hold resources or connections open
-
-## Thread Safety
-
-- All health check utilities are thread-safe
-- The DSL functions create immutable health check instances
-- Collection size checks are performed atomically
+1. **Health Check Names**: names live at the registry, so pick descriptive ones when calling `register`
+2. **Error Messages**: include the offending value in unhealthy results, as both factories do
+3. **Keep Checks Fast**: health check logic runs on the health check endpoint's thread
+4. **Read State Inside the Lambda**: capture the source of truth, not a snapshot of it
 
 ## License
 
