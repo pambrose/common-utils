@@ -1,171 +1,126 @@
 # Jetty Utils
 
-Utilities for Eclipse Jetty web server, providing DSL functions for server configuration, servlet helpers, and common
-web application patterns.
+A small set of helpers for embedded Jetty 12 (EE11): two DSL builders and two ready-made servlets.
+
+This module is deliberately thin — `JettyDsl.server` and `JettyDsl.servletContextHandler` construct a real
+Jetty `Server` / `ServletContextHandler` and hand it to your lambda as the receiver, so everything inside
+the block is ordinary Jetty API.
 
 ## Features
 
 ### Server DSL
 
-- **Jetty Server DSL**: Fluent API for creating and configuring Jetty servers
-- **Handler Configuration**: Easy setup of handlers, contexts, and servlets
-- **SSL/TLS Support**: Simple TLS configuration for HTTPS
+- **`JettyDsl.server(port) { }`**: creates a `Server` bound to a port and applies the configuration block
+- **`JettyDsl.servletContextHandler { }`**: creates a `ServletContextHandler` and applies the block
 
-### Servlet Utilities
+### Servlets
 
-- **Lambda Servlet**: Create servlets using lambda functions
-- **Version Servlet**: Built-in servlet for exposing application version information
+- **`LambdaServlet`**: serves the result of a lambda as the GET response body
+- **`VersionServlet`**: serves a fixed version string as plain text
 
-### Common Patterns
-
-- **Static Content**: Serve static files and resources
-- **REST APIs**: Simple setup for REST endpoints
+Both servlets handle **GET only** and send `Cache-Control: must-revalidate,no-cache,no-store`.
 
 ## Usage Examples
 
-### Basic Server Setup
+### Building a Server
 
 ```kotlin
-import com.pambrose.common.dsl.JettyDsl.jettyServer
+import com.pambrose.common.dsl.JettyDsl
 
-val server = jettyServer {
-  port = 8080
-
-  // Add context handler
-  contextHandler("/api") {
-    addServlet<MyApiServlet>("/users/*")
+val handler =
+  JettyDsl.servletContextHandler {
+    contextPath = "/api"
   }
 
-  // Add static content
-  staticContent("/static", "web/static")
-}
+val server =
+  JettyDsl.server(8080) {
+    this.handler = handler
+  }
 
 server.start()
 server.join()
 ```
 
-### Lambda Servlet
+Pass port `0` to bind an ephemeral port, which is what the module's own tests do.
+
+### LambdaServlet
+
+`LambdaServlet` takes a lambda producing the response body. The single-argument constructor defaults the
+content type to `"text/plain"`.
 
 ```kotlin
+import com.pambrose.common.dsl.JettyDsl
 import com.pambrose.common.servlet.LambdaServlet
+import org.eclipse.jetty.ee11.servlet.ServletHolder
 
-val echoServlet = LambdaServlet { request, response ->
-  response.contentType = "text/plain"
-  response.writer.use { writer ->
-    writer.println("Echo: ${request.getParameter("message")}")
+val handler =
+  JettyDsl.servletContextHandler {
+    contextPath = "/"
+
+    // Defaults to text/plain
+    addServlet(ServletHolder(LambdaServlet { "OK" }), "/health")
+
+    // Explicit content type
+    addServlet(
+      ServletHolder(LambdaServlet("application/json") { """{"status":"up"}""" }),
+      "/status",
+    )
   }
-}
-
-// Add to server
-server.addServlet(echoServlet, "/echo")
 ```
 
-### Version Servlet
+The lambda runs on every request, so it sees fresh state each time — useful for counters, uptime, and
+health snapshots.
+
+### VersionServlet
 
 ```kotlin
 import com.pambrose.common.servlet.VersionServlet
+import org.eclipse.jetty.ee11.servlet.ServletHolder
 
-@VersionAnnotation("1.0.0")
-class MyApp
-
-val versionServlet = VersionServlet(MyApp::class.java)
-
-// Add to server - exposes version info at /version
-server.addServlet(versionServlet, "/version")
+addServlet(ServletHolder(VersionServlet("3.2.3")), "/version")
 ```
 
-### SSL/TLS Configuration
+`VersionServlet` captures the string at construction time. To report a value that can change, use
+`LambdaServlet` instead.
+
+### Combining with core-utils Version Metadata
+
+core-utils' `Version` annotation pairs naturally with `VersionServlet`:
 
 ```kotlin
-val httpsServer = jettyServer {
-  port = 8443
+import com.pambrose.common.servlet.VersionServlet
+import com.pambrose.common.util.Version
+import com.pambrose.common.util.Version.Companion.versionDesc
 
-  // Configure SSL
-  sslConnector {
-    keystorePath = "keystore.p12"
-    keystorePassword = "password"
-    keyManagerPassword = "password"
-  }
+@Version(version = "3.2.3", releaseDate = "2026-09-07", buildTime = 0L)
+object MyApp
 
-  contextHandler("/secure") {
-    addServlet<SecureServlet>("/data/*")
-  }
-}
+addServlet(ServletHolder(VersionServlet(MyApp::class.versionDesc())), "/version")
 ```
 
-### REST API Example
+## API Reference
 
-```kotlin
-import com.pambrose.common.servlet.LambdaServlet
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
+### `JettyDsl`
 
-data class User(
-  val id: Int,
-  val name: String,
-  val email: String
-)
+- `server(port: Int, block: Server.() -> Unit): Server`
+- `servletContextHandler(block: ServletContextHandler.() -> Unit): ServletContextHandler`
 
-val usersServlet = LambdaServlet { request, response ->
-  response.contentType = "application/json"
+### Servlets
 
-  when (request.method) {
-    "GET" -> {
-      val users = listOf(
-        User(1, "John Doe", "john@example.com"),
-        User(2, "Jane Smith", "jane@example.com")
-      )
-      response.writer.use { writer ->
-        writer.write(Json.encodeToString(users))
-      }
-    }
-    "POST" -> {
-      // Handle POST request
-      response.status = 201
-      response.writer.use { writer ->
-        writer.write("""{"message": "User created"}""")
-      }
-    }
-    else -> {
-      response.status = 405
-      response.writer.use { writer ->
-        writer.write("""{"error": "Method not allowed"}""")
-      }
-    }
-  }
-}
-```
-
-### Static Content and Resources
-
-```kotlin
-val server = jettyServer {
-  port = 8080
-
-  // Serve static files from filesystem
-  staticContent("/static", "/var/www/static")
-
-  // Serve resources from classpath
-  resourceHandler("/resources", "web/resources")
-
-  // Default handler for SPA
-  defaultHandler { request, response ->
-    response.contentType = "text/html"
-    response.writer.use { writer ->
-      writer.write(this::class.java.getResourceAsStream("/index.html")!!.readBytes().toString(Charsets.UTF_8))
-    }
-  }
-}
-```
+- `class LambdaServlet(contentType: String, block: () -> String) : HttpServlet`
+- `class LambdaServlet(block: () -> String) : HttpServlet` — content type `"text/plain"`
+- `class VersionServlet(version: String) : HttpServlet`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
-- Eclipse Jetty Server
-- Eclipse Jetty Servlet
-- Core Utils (for version management)
+- core-utils
+- Jetty EE11 Servlet (`org.eclipse.jetty.ee11:jetty-ee11-servlet`)
+
+Jetty 12 EE11 implements Jakarta Servlet 6.1, so servlets use the `jakarta.servlet` packages rather than
+`javax.servlet`.
 
 ## Installation
 
@@ -175,106 +130,27 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:jetty-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:jetty-utils:LATEST_VERSION")
 }
 ```
 
 ### Maven
 
 ```xml
-
 <dependency>
   <groupId>com.pambrose.common-utils</groupId>
   <artifactId>jetty-utils</artifactId>
-  <version><latest-version></version>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
-## Configuration Options
+## Notes
 
-### Server Configuration
-
-- `port`: HTTP port (default: 8080)
-- `host`: Bind address (default: all interfaces)
-- `maxThreads`: Maximum thread pool size
-- `minThreads`: Minimum thread pool size
-- `idleTimeout`: Connection idle timeout
-
-### SSL Configuration
-
-- `keystorePath`: Path to keystore file
-- `keystorePassword`: Keystore password
-- `keyManagerPassword`: Key manager password
-- `trustStorePath`: Path to trust store (optional)
-- `trustStorePassword`: Trust store password (optional)
-
-## Security Considerations
-
-⚠️ **Security Notes**:
-
-- Always validate and sanitize user input in servlet handlers
-- Use HTTPS in production environments
-- Implement proper authentication and authorization
-- Be cautious with file serving to prevent directory traversal attacks
-- Set appropriate cache headers for static content
-
-## Performance Notes
-
-- Configure appropriate thread pool sizes based on expected load
-- Use connection pooling for database connections
-- Implement proper caching for static content
-- Consider using NIO connectors for high-concurrency scenarios
-
-## Error Handling
-
-```kotlin
-val errorHandlingServlet = LambdaServlet { request, response ->
-  try {
-    // Your logic here
-    response.writer.use { writer ->
-      writer.write("Success")
-    }
-  } catch (e: Exception) {
-    response.status = 500
-    response.writer.use { writer ->
-      writer.write("""{"error": "${e.message}"}""")
-    }
-  }
-}
-```
-
-## Best Practices
-
-1. **Resource Management**: Always use `use` blocks for writers and streams
-2. **Content Type**: Set appropriate content types for responses
-3. **Status Codes**: Use proper HTTP status codes
-4. **Error Handling**: Implement comprehensive error handling
-5. **Security Headers**: Set security headers for production deployments
-6. **Logging**: Implement request/response logging for debugging
-
-## Common Patterns
-
-### CORS Support
-
-```kotlin
-val corsServlet = LambdaServlet { request, response ->
-  response.setHeader("Access-Control-Allow-Origin", "*")
-  response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-  response.setHeader("Access-Control-Allow-Headers", "Content-Type")
-
-  // Your API logic here
-}
-```
-
-### Request Logging
-
-```kotlin
-val loggingServlet = LambdaServlet { request, response ->
-  println("${request.method} ${request.requestURL} from ${request.remoteAddr}")
-
-  // Your logic here
-}
-```
+- Both servlets override only `doGet`; other methods fall through to `HttpServlet`'s defaults, which
+  return 405
+- The no-cache headers make these endpoints safe to poll from load balancers and health checks
+- Anything beyond these helpers — static content, filters, security — is plain Jetty configuration inside
+  the DSL blocks
 
 ## License
 

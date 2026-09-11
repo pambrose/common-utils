@@ -1,207 +1,175 @@
 # Prometheus Utils
 
-Utilities for Prometheus metrics collection, providing DSL functions for creating metrics, system monitoring, and thread
-instrumentation.
+Helpers for the Prometheus Java client (simpleclient): a builder DSL for the four metric types, a
+sampling gauge collector, an instrumented `ThreadFactory`, and a one-call JVM metrics registration.
 
 ## Features
 
 ### Metrics DSL
 
-- **Prometheus DSL**: Fluent API for creating Prometheus metrics (counters, gauges, histograms)
-- **Metric Registration**: Simplified metric registration and management
-- **Collector Utilities**: Custom collectors for specialized metrics
+- **`PrometheusDsl`**: `counter`, `gauge`, `summary` and `histogram` builders that register the metric
 
-### System Metrics
+### Collectors
 
-- **SystemMetrics**: Automatic collection of JVM and system metrics
-- **JVM Monitoring**: Memory, GC, thread, and class loading metrics
-- **Custom Collectors**: Extensible metric collection framework
+- **`SamplerGaugeCollector`**: a gauge whose value is sampled by a lambda on each scrape
+- **`InstrumentedThreadFactory`**: wraps a `ThreadFactory` and exports thread lifecycle counters
 
-### Thread Instrumentation
+### JVM Metrics
 
-- **InstrumentedThreadFactory**: Thread factory with Prometheus instrumentation
-- **Thread Monitoring**: Track thread creation, execution, and lifecycle
-
-### Specialized Collectors
-
-- **SamplerGaugeCollector**: Custom gauge collector with sampling capabilities
+- **`SystemMetrics.initialize(...)`**: registers the hotspot JVM exporters you opt into
 
 ## Usage Examples
 
-### Basic Metrics Creation
+### Metrics DSL
+
+Each builder takes the corresponding Prometheus `Builder` as receiver, so you set `name`, `help`,
+`labelNames`, and so on exactly as with the Java client. The metric is registered for you.
 
 ```kotlin
-import com.pambrose.common.dsl.PrometheusDsl.*
-import io.prometheus.client.CollectorRegistry
+import com.pambrose.common.dsl.PrometheusDsl
 
-// Create metrics using DSL
-val requestCounter = counter {
-    name = "http_requests_total"
-    help = "Total number of HTTP requests"
-    labelNames = arrayOf("method", "status")
-}
+val requestCounter =
+  PrometheusDsl.counter {
+    name("http_requests_total")
+    help("Total HTTP requests")
+    labelNames("method", "endpoint", "status")
+  }
 
-val responseTime = histogram {
-    name = "http_request_duration_seconds"
-    help = "HTTP request duration in seconds"
-    labelNames = arrayOf("method")
-    buckets = arrayOf(0.1, 0.5, 1.0, 2.0, 5.0)
-}
+val activeConnections =
+  PrometheusDsl.gauge {
+    name("active_connections")
+    help("Currently active connections")
+  }
 
-val activeConnections = gauge {
-    name = "active_connections"
-    help = "Number of active connections"
-}
+val requestDuration =
+  PrometheusDsl.histogram {
+    name("http_request_duration_seconds")
+    help("HTTP request duration")
+    buckets(0.1, 0.5, 1.0, 2.5, 5.0)
+  }
 
-// Register metrics
-val registry = CollectorRegistry.defaultRegistry
-requestCounter.register(registry)
-responseTime.register(registry)
-activeConnections.register(registry)
+val responseSize =
+  PrometheusDsl.summary {
+    name("http_response_size_bytes")
+    help("HTTP response size")
+  }
 ```
 
-### Recording Metrics
+Use them through the normal client API:
 
 ```kotlin
-// Increment counter
-requestCounter.labels("GET", "200").inc()
-requestCounter.labels("POST", "404").inc()
+requestCounter.labels("GET", "/api/users", "200").inc()
+activeConnections.inc()
+activeConnections.dec()
 
-// Record histogram observation
-responseTime.labels("GET").observe(0.75)
-
-// Set gauge value
-activeConnections.set(42.0)
+val timer = requestDuration.startTimer()
+try {
+  handleRequest()
+} finally {
+  timer.observeDuration()
+}
 ```
 
-### System Metrics Collection
+### SamplerGaugeCollector
+
+A gauge backed by a lambda, sampled on every scrape rather than set imperatively. It **registers itself
+with the default registry when constructed**, so simply creating it is enough.
 
 ```kotlin
-import com.pambrose.common.metrics.SystemMetrics
+import com.pambrose.common.metrics.SamplerGaugeCollector
 
-// Enable automatic system metrics collection
-SystemMetrics.enableJvmMetrics()
+SamplerGaugeCollector(
+  name = "jvm_free_memory_bytes",
+  help = "Free JVM memory in bytes",
+) {
+  Runtime.getRuntime().freeMemory().toDouble()
+}
 
-// Or enable specific metric groups
-SystemMetrics.enableMemoryMetrics()
-SystemMetrics.enableGarbageCollectorMetrics()
-SystemMetrics.enableThreadMetrics()
-SystemMetrics.enableClassLoadingMetrics()
+// With labels: labelNames and labelValues must be the same length
+SamplerGaugeCollector(
+  name = "queue_depth",
+  help = "Pending items in the queue",
+  labelNames = listOf("queue"),
+  labelValues = listOf("outbound"),
+) {
+  outboundQueue.size.toDouble()
+}
 ```
 
-### Instrumented Thread Factory
+Mismatched `labelNames` / `labelValues` sizes throw `IllegalArgumentException`.
+
+### InstrumentedThreadFactory
+
+Wraps an existing `ThreadFactory` and exports counters for threads created, running and terminated.
 
 ```kotlin
 import com.pambrose.common.concurrent.InstrumentedThreadFactory
 import java.util.concurrent.Executors
 
-// Create thread factory with metrics
-val threadFactory = InstrumentedThreadFactory("worker-pool")
+val factory =
+  InstrumentedThreadFactory(
+    delegate = Executors.defaultThreadFactory(),
+    name = "worker_pool",
+    help = "Worker pool threads",
+  )
 
-// Use with executor service
-val executor = Executors.newFixedThreadPool(10, threadFactory)
-
-// Submit tasks - thread metrics will be automatically collected
-executor.submit {
-    // Your task here
-    performWork()
-}
+val executor = Executors.newFixedThreadPool(4, factory)
 ```
 
-### Custom Sampler Gauge
+### JVM Metrics
+
+Every exporter is **off by default** — opt into the ones you want. Repeat calls after the first are
+ignored.
 
 ```kotlin
-import com.pambrose.common.metrics.SamplerGaugeCollector
+import com.pambrose.common.metrics.SystemMetrics
 
-// Create a gauge that samples a value periodically
-val memoryUsageGauge = SamplerGaugeCollector.Builder()
-    .name("memory_usage_bytes")
-    .help("Current memory usage in bytes")
-    .supplier { Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() }
-    .build()
-
-memoryUsageGauge.register()
+SystemMetrics.initialize(
+  enableStandardExports = true,
+  enableMemoryPoolsExports = true,
+  enableGarbageCollectorExports = true,
+  enableThreadExports = true,
+  enableClassLoadingExports = true,
+  enableVersionInfoExports = true,
+)
 ```
 
-### Web Application Example
+### Exposing Metrics
+
+Serving the metrics endpoint is the Prometheus client's job, not this module's:
 
 ```kotlin
 import io.prometheus.client.exporter.HTTPServer
-import io.prometheus.client.hotspot.DefaultExports
 
-fun main() {
-    // Enable default JVM metrics
-    DefaultExports.initialize()
-
-    // Enable custom system metrics
-    SystemMetrics.enableJvmMetrics()
-
-    // Create application metrics
-    val requestCounter = counter {
-        name = "app_requests_total"
-        help = "Total application requests"
-        labelNames = arrayOf("endpoint")
-    }
-
-    val requestDuration = histogram {
-        name = "app_request_duration_seconds"
-        help = "Application request duration"
-        labelNames = arrayOf("endpoint")
-    }
-
-    // Start Prometheus HTTP server
-    val server = HTTPServer(9090)
-    println("Prometheus metrics available at http://localhost:9090/metrics")
-
-    // Simulate application activity
-    while (true) {
-        val timer = requestDuration.labels("/api/users").startTimer()
-        try {
-            // Simulate request processing
-            Thread.sleep((Math.random() * 1000).toLong())
-            requestCounter.labels("/api/users").inc()
-        } finally {
-            timer.observeDuration()
-        }
-    }
-}
+val server = HTTPServer(8080)
 ```
 
-### Custom Metric Collector
+## API Reference
 
-```kotlin
-import io.prometheus.client.Collector
-import io.prometheus.client.GaugeMetricFamily
+### `PrometheusDsl`
 
-class DatabaseConnectionPoolCollector : Collector() {
-    override fun collect(): List<MetricFamilySamples> {
-        val connections = GaugeMetricFamily(
-            "db_connection_pool_size",
-            "Database connection pool metrics",
-            listOf("state")
-        )
+- `counter(block: Counter.Builder.() -> Unit): Counter`
+- `gauge(block: Gauge.Builder.() -> Unit): Gauge`
+- `summary(block: Summary.Builder.() -> Unit): Summary`
+- `histogram(block: Histogram.Builder.() -> Unit): Histogram`
 
-        val pool = getConnectionPool()
-        connections.addMetric(listOf("active"), pool.activeConnections.toDouble())
-        connections.addMetric(listOf("idle"), pool.idleConnections.toDouble())
-        connections.addMetric(listOf("total"), pool.totalConnections.toDouble())
+### Collectors
 
-        return listOf(connections)
-    }
-}
+- `class SamplerGaugeCollector(name: String, help: String, labelNames: List<String> = emptyList(), labelValues: List<String> = emptyList(), data: () -> Double) : Collector`
+- `class InstrumentedThreadFactory(delegate: ThreadFactory, name: String, help: String) : ThreadFactory`
 
-// Register custom collector
-DatabaseConnectionPoolCollector().register()
-```
+### `SystemMetrics`
+
+- `initialize(enableStandardExports: Boolean = false, enableMemoryPoolsExports: Boolean = false, enableGarbageCollectorExports: Boolean = false, enableThreadExports: Boolean = false, enableClassLoadingExports: Boolean = false, enableVersionInfoExports: Boolean = false)`
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
-- Prometheus Java Client
-- Prometheus Hotspot (for JVM metrics)
-- Prometheus Servlet (for HTTP exposure)
+- core-utils
+- Prometheus simpleclient
+- Prometheus simpleclient_hotspot
 
 ## Installation
 
@@ -211,7 +179,7 @@ This module depends on:
 
 ```kotlin
 dependencies {
-  implementation("com.pambrose.common-utils:prometheus-utils:<latest-version>")
+  implementation("com.pambrose.common-utils:prometheus-utils:LATEST_VERSION")
 }
 ```
 
@@ -219,123 +187,18 @@ dependencies {
 
 ```xml
 <dependency>
-    <groupId>com.pambrose.common-utils</groupId>
-    <artifactId>prometheus-utils</artifactId>
-  <version><latest-version></version>
+  <groupId>com.pambrose.common-utils</groupId>
+  <artifactId>prometheus-utils</artifactId>
+  <version>LATEST_VERSION</version>
 </dependency>
 ```
 
-## Metric Types
+## Notes
 
-### Counter
-
-- Monotonically increasing values
-- Use for: request counts, error counts, processed items
-- Methods: `inc()`, `inc(amount)`
-
-### Gauge
-
-- Values that can go up or down
-- Use for: memory usage, active connections, queue size
-- Methods: `set(value)`, `inc()`, `dec()`, `inc(amount)`, `dec(amount)`
-
-### Histogram
-
-- Observations of events (usually request durations or response sizes)
-- Automatically provides `_count`, `_sum`, and `_bucket` metrics
-- Use for: request durations, response sizes
-- Methods: `observe(value)`, `startTimer()`
-
-### Summary
-
-- Similar to histogram but provides quantiles
-- Use for: request durations with percentiles
-- Methods: `observe(value)`, `startTimer()`
-
-## Best Practices
-
-1. **Metric Naming**: Use descriptive names following Prometheus conventions
-2. **Label Management**: Keep label cardinality low to avoid performance issues
-3. **Registration**: Register metrics once during application startup
-4. **Cleanup**: Properly clean up metrics when removing labels
-5. **Documentation**: Always provide helpful descriptions for metrics
-
-## Performance Considerations
-
-- Metrics collection has minimal overhead but avoid excessive label cardinality
-- System metrics are collected periodically - configure appropriate intervals
-- Thread instrumentation adds small overhead to thread creation
-- Use sampling for high-frequency events when appropriate
-
-## Common Patterns
-
-### Request Tracking
-
-```kotlin
-val requestCounter = counter {
-    name = "http_requests_total"
-    labelNames = arrayOf("method", "status", "endpoint")
-}
-
-val requestDuration = histogram {
-    name = "http_request_duration_seconds"
-    labelNames = arrayOf("method", "endpoint")
-}
-
-fun handleRequest(method: String, endpoint: String) {
-    val timer = requestDuration.labels(method, endpoint).startTimer()
-    try {
-        // Process request
-        val status = processRequest()
-        requestCounter.labels(method, status.toString(), endpoint).inc()
-    } finally {
-        timer.observeDuration()
-    }
-}
-```
-
-### Error Tracking
-
-```kotlin
-val errorCounter = counter {
-    name = "application_errors_total"
-    labelNames = arrayOf("type", "component")
-}
-
-fun trackError(error: Exception, component: String) {
-    errorCounter.labels(error.javaClass.simpleName, component).inc()
-}
-```
-
-## Integration with Monitoring Systems
-
-### Grafana Dashboard
-
-```json
-{
-  "targets": [
-    {
-      "expr": "rate(http_requests_total[5m])",
-      "legendFormat": "{{method}} {{status}}"
-    }
-  ]
-}
-```
-
-### Alert Rules
-
-```yaml
-groups:
-  - name: application.rules
-    rules:
-      - alert: HighErrorRate
-        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
-        for: 2m
-        labels:
-          severity: warning
-        annotations:
-          summary: High error rate detected
-```
+- Metric names should follow Prometheus conventions: `snake_case`, with a base-unit suffix such as
+  `_seconds`, `_bytes` or `_total`
+- Keep label cardinality low — never label with user ids, request ids, or timestamps
+- `SamplerGaugeCollector` runs its lambda on the scrape thread, so keep it cheap and non-blocking
 
 ## License
 
