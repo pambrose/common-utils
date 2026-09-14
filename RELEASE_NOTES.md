@@ -5,6 +5,41 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## Unreleased
+
+### Highlights
+
+- **Deserialization hardening (core-utils)**: `toObjectSecure` no longer allows every class by default.
+  Before this change, omitting `allowedClasses` switched the allow-list off, leaving only a short blocklist
+  against gadget chains. The README nonetheless recommended the function for untrusted data. The
+  allow-list is now required and must be non-empty. A JEP 290 filter also caps object nesting at 32 levels
+  and array lengths at the 10 MB payload cap, rejecting oversized arrays before they are allocated. The
+  filter merges with any JVM-wide `jdk.serialFilter` rather than replacing it.
+- **Ktor health check endpoint fixed (ktor-server-utils, service-utils)**: `GenericKtorService`'s admin
+  `/healthcheck` endpoint returned 500 on every request. `Route.servlet` called the servlet's no-arg
+  `init()`, so Dropwizard's `HealthCheckServlet`, which does its setup in `init(ServletConfig)`, never
+  initialized. Servlets mounted with `Route.servlet` are now initialized through `init(ServletConfig)`,
+  as a container does. They receive a minimal config and a `ServletContext` that supports attributes and
+  logging.
+- **service-utils compile classpath fixed**: `GenericService` and `GenericKtorService` expose types from
+  their sibling modules. For example, `AbstractGenericService` extends `GenericExecutionThreadService`,
+  and the API also exposes `HealthCheckRegistry`, `MetricRegistry`, `JmxReporter`, `Tracing`, and Ktor
+  `Application`. Those modules were published with `runtime` scope, so a consumer's subclass failed to
+  compile with "Cannot access class". `guava-utils`, `dropwizard-utils`, `zipkin-utils`, `jetty-utils`,
+  `ktor-server-utils`, and `metrics-jmx` now have `compile` scope.
+
+### Breaking changes
+
+- `ByteArray.toObjectSecure` requires a non-empty `allowedClasses`, which now has no default.
+  - **Calls that omitted the argument:** they no longer compile, and code built against 3.2.3 must be
+    recompiled.
+  - **An explicit empty set:** it now throws `IllegalArgumentException`.
+  - **Java callers:** they always passed both arguments and are unaffected.
+- `toObjectSecure` rejects streams that exceed the new depth and array-length limits with
+  `InvalidClassException`.
+
+---
+
 ## v3.2.3 — 2026-09-07
 
 ### Highlights

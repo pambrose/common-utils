@@ -26,6 +26,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
+import jakarta.servlet.ServletConfig
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -147,9 +148,41 @@ class ServletRouteTests : StringSpec() {
         }
       }
     }
+
+    "servlet is initialized through init(ServletConfig) with a usable ServletContext" {
+      testApplication {
+        routing {
+          servlet("/configured", ConfiguredServlet())
+        }
+        client.get("/configured").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "name=${ConfiguredServlet::class.java.name};attr=null;param=null"
+        }
+      }
+    }
   }
 
   // Test servlets
+
+  // Mirrors Dropwizard's HealthCheckServlet, which does its setup in init(ServletConfig) by reading
+  // ServletContext attributes, rather than in the no-arg init().
+  private class ConfiguredServlet : HttpServlet() {
+    private var contextAttr: Any? = "init(ServletConfig) not called"
+
+    override fun init(config: ServletConfig) {
+      super.init(config)
+      contextAttr = config.servletContext.getAttribute("missing")
+    }
+
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      log("handling ${req.requestURI}")
+      resp.contentType = "text/plain"
+      resp.writer.print("name=$servletName;attr=$contextAttr;param=${getInitParameter("missing")}")
+    }
+  }
 
   private class HelloServlet : HttpServlet() {
     override fun doGet(
