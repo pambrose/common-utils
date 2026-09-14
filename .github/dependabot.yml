@@ -1,0 +1,40 @@
+# Dependabot version updates. Security updates are enabled separately in the repository settings.
+# https://docs.github.com/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+
+updates:
+  # Libraries and plugins in gradle/libs.versions.toml, plus the Gradle wrapper
+  # (gradle-wrapper.properties, gradle-wrapper.jar, gradlew, gradlew.bat).
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      # Kotlin is deliberately held at 2.4.10 (see the comment above `kotlin` in the catalog). Its updates
+      # get their own PR so an expected :script-utils-kotlin:test failure doesn't block the rest of the
+      # batch, and a green Kotlin PR shows that suite passes on the new version. A dependency joins the
+      # first group it matches, so this group must stay ahead of the catch-all below.
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin:*"
+          - "org.jetbrains.kotlin.jvm"
+          - "org.jetbrains.kotlin.multiplatform"
+          - "org.jetbrains.kotlin.plugin.serialization"
+      # All other minor and patch updates in one weekly PR; major updates still arrive individually.
+      gradle-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns:
+          - "*"
