@@ -35,6 +35,11 @@ updates:
       interval: weekly
       day: monday
     groups:
+      # Minor and patch updates in one PR; major updates arrive individually, so a breaking or licensing
+      # change (e.g. gradle/actions v6 moving caching under proprietary terms) is reviewed on its own.
       github-actions:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch
