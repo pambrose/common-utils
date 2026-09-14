@@ -91,5 +91,12 @@ class VersionTests : StringSpec() {
 
       Bare::class.versionDesc() shouldContain "Version: Unknown"
     }
+
+    "versionDesc reports an Unknown build date for a bare class" {
+      // Formatting epoch 0 used to print a nonsense build date such as "Wed 12/31/-31 16:00:00".
+      Bare::class.versionDesc() shouldBe "Version: Unknown Release Date: Unknown Build Date: Unknown"
+      Bare::class.versionDesc(asJson = true) shouldBe
+        """{"version":"Unknown","release_date":"Unknown","build_time":"Unknown"}"""
+    }
   }
 }

@@ -31,6 +31,8 @@ import io.kotest.matchers.string.shouldContain
 import java.io.InvalidClassException
 import java.io.Serializable
 import java.nio.ByteBuffer
+import java.security.BasicPermission
+import java.security.Permission
 import javax.management.ObjectName
 
 class IOExtensionsTests : StringSpec() {
@@ -169,6 +171,40 @@ class IOExtensionsTests : StringSpec() {
         bytes.toObjectSecure(Serializable::class.java, setOf(ObjectName::class.java))
       }
       ex.message shouldContain "Blocked dangerous class"
+    }
+
+    "secure deserialization round-trips an allow-listed RuntimeException subclass" {
+      // The java.lang.Runtime blocklist entry used to prefix-match java.lang.RuntimeException, the
+      // superclass of every unchecked exception, so no exception payload could be deserialized.
+      val original = IllegalStateException("boom").apply { stackTrace = emptyArray() }
+      val bytes = (original as Serializable).toByteArraySecure()
+
+      val restored =
+        bytes.toObjectSecure(
+          IllegalStateException::class.java,
+          setOf(
+            IllegalStateException::class.java,
+            RuntimeException::class.java,
+            Exception::class.java,
+            Throwable::class.java,
+            Array<StackTraceElement>::class.java,
+            Class.forName("java.util.Collections\$EmptyList"),
+          ),
+        )
+      restored.message shouldBe "boom"
+    }
+
+    "secure deserialization round-trips an allow-listed RuntimePermission" {
+      // RuntimePermission also shares the java.lang.Runtime prefix.
+      val original = RuntimePermission("exitVM")
+      val bytes = original.toByteArraySecure()
+
+      val restored =
+        bytes.toObjectSecure(
+          RuntimePermission::class.java,
+          setOf(RuntimePermission::class.java, BasicPermission::class.java, Permission::class.java),
+        )
+      restored shouldBe original
     }
   }
 

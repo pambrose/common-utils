@@ -110,5 +110,46 @@ class AtomicDelegatesTests : StringSpec() {
       }
       value shouldBe "updated"
     }
+
+    "single set reference compares values by equality, not identity" {
+      // On the JVM, 1000 is outside the boxed Integer cache, so these are two distinct instances.
+      var boxed: Int? by AtomicDelegates.singleSetReference(initValue = 1000, compareValue = 1000)
+      boxed = 5
+      boxed shouldBe 5
+
+      val init = buildString { append("init") }
+      var built: String? by AtomicDelegates.singleSetReference(
+        initValue = init,
+        compareValue = buildString {
+        append(init)
+      },
+      )
+      built = "updated"
+      built shouldBe "updated"
+    }
+
+    "single set reference defaults compareValue to initValue" {
+      var value: String? by AtomicDelegates.singleSetReference(initValue = "initial")
+      value = "updated"
+      value shouldBe "updated"
+      shouldThrow<IllegalStateException> {
+        value = "again"
+      }
+    }
+
+    "single set reference counts a null assignment as its one set" {
+      var value: String? by AtomicDelegates.singleSetReference()
+      value = null
+      shouldThrow<IllegalStateException> {
+        value = "later"
+      }
+      value shouldBe null
+    }
+
+    "single set reference rejects an initValue that differs from compareValue" {
+      shouldThrow<IllegalArgumentException> {
+        AtomicDelegates.singleSetReference(initValue = "a", compareValue = "b")
+      }
+    }
   }
 }

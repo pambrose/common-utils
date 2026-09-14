@@ -48,16 +48,21 @@ val Int.length
     }
 
 /**
- * The number of decimal digits in this [Long].
+ * The number of decimal digits in this [Long], ignoring any minus sign.
  *
- * Extension property on [Long]. Returns 1 for the value 0.
+ * Extension property on [Long]. Returns 1 for the value 0. Digits are counted with integer division,
+ * because `log10` of a large [Long] converted to [Double] rounds up near powers of ten.
  */
-val Long.length
-  get() =
-    when (this) {
-      0L -> 1
-      else -> log10(abs(toDouble())).toInt() + 1
+val Long.length: Int
+  get() {
+    var remaining = this
+    var digits = 1
+    while (remaining >= 10 || remaining <= -10) {
+      remaining /= 10
+      digits++
     }
+    return digits
+  }
 
 /**
  * Executes [action] for each value from 0 until this [Short] value.

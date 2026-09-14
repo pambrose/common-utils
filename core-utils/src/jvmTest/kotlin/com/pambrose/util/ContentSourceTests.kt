@@ -49,11 +49,30 @@ class ContentSourceTests : StringSpec() {
       fs.toString() shouldContain "/tmp/data"
     }
 
-    "FileSystemSource.file returns a FileSource with the given path" {
+    "FileSystemSource.file resolves a relative path against pathPrefix" {
       val source = FileSystemSource("/tmp").file("notes.txt")
       source.shouldBeInstanceOf<FileSource>()
-      source.source shouldBe "notes.txt"
+      source.source shouldBe "/tmp/notes.txt"
       source.remote shouldBe false
+    }
+
+    "FileSystemSource.file reads content from the file under the root" {
+      val dir = Files.createTempDirectory("content-root-test").toFile()
+      dir.deleteOnExit()
+      dir.resolve("notes.txt").apply {
+        writeText("under the root")
+        deleteOnExit()
+      }
+
+      FileSystemSource(dir.absolutePath).file("notes.txt").content shouldBe "under the root"
+    }
+
+    "FileSystemSource.file leaves an absolute path unchanged" {
+      FileSystemSource("/tmp").file("/etc/hosts").source shouldBe "/etc/hosts"
+    }
+
+    "FileSystemSource.file keeps a relative ./ root usable" {
+      FileSystemSource("./").file("src/Main.kt").source shouldBe "./src/Main.kt"
     }
 
     "FileSource reads content from disk" {
@@ -94,18 +113,32 @@ class ContentSourceTests : StringSpec() {
       repo.toString() shouldContain "anthropic"
     }
 
-    "GitHubRepo.file returns a UrlSource with the given path" {
+    "GitHubRepo.file resolves a relative path against rawSourcePrefix" {
       val repo = GitHubRepo(OwnerType.User, "pambrose", "common-utils")
-      val source = repo.file("README.md")
+      val source = repo.file("master/README.md")
       source.shouldBeInstanceOf<UrlSource>()
-      source.source shouldBe "README.md"
+      source.source shouldBe "https://raw.githubusercontent.com/pambrose/common-utils/master/README.md"
       source.remote shouldBe true
+      // A leading slash is still relative to the repository, not the host.
+      repo.file("/master/README.md").source shouldBe
+        "https://raw.githubusercontent.com/pambrose/common-utils/master/README.md"
     }
 
-    "GitLabRepo builds sourcePrefix and uses same scheme for raw" {
+    "GitLabRepo.file resolves a relative path against the raw-content prefix" {
+      val repo = GitLabRepo(OwnerType.User, "alice", "demo")
+      repo.file("main/src/App.kt").source shouldBe "https://gitlab.com/alice/demo/-/raw/main/src/App.kt"
+    }
+
+    "repository file leaves a full URL unchanged" {
+      val repo = GitHubRepo(OwnerType.User, "pambrose", "common-utils")
+      repo.file("https://example.com/file.txt").source shouldBe "https://example.com/file.txt"
+    }
+
+    "GitLabRepo builds sourcePrefix and a raw-content rawSourcePrefix" {
       val repo = GitLabRepo(OwnerType.User, "alice", "demo")
       repo.sourcePrefix shouldBe "https://gitlab.com/alice/demo"
-      repo.rawSourcePrefix shouldBe "https://gitlab.com/alice/demo"
+      // GitLab serves raw file content under /-/raw/; /-/blob/ is the HTML viewer page.
+      repo.rawSourcePrefix shouldBe "https://gitlab.com/alice/demo/-/raw"
       repo.remote shouldBe true
       repo.toString() shouldContain "alice"
     }
@@ -118,10 +151,10 @@ class ContentSourceTests : StringSpec() {
       file.toString() shouldContain "branchName='master'"
     }
 
-    "GitLabFile builds blob URL" {
+    "GitLabFile builds raw URL" {
       val repo = GitLabRepo(OwnerType.Organization, "anthropic", "demo")
       val file = GitLabFile(repo, branchName = "main", srcPath = "src", fileName = "App.kt")
-      file.source shouldBe "https://gitlab.com/anthropic/demo/-/blob/main/src/App.kt"
+      file.source shouldBe "https://gitlab.com/anthropic/demo/-/raw/main/src/App.kt"
       file.remote shouldBe true
       file.toString() shouldContain "fileName='App.kt'"
     }
@@ -131,13 +164,14 @@ class ContentSourceTests : StringSpec() {
     "GitLabFile uses the repo domain for self-hosted GitLab" {
       val repo = GitLabRepo(OwnerType.User, "alice", "demo", domainName = "gitlab.example.com")
       val file = GitLabFile(repo, branchName = "main", srcPath = "src", fileName = "App.kt")
-      file.source shouldBe "https://gitlab.example.com/alice/demo/-/blob/main/src/App.kt"
+      repo.rawSourcePrefix shouldBe "https://gitlab.example.com/alice/demo/-/raw"
+      file.source shouldBe "https://gitlab.example.com/alice/demo/-/raw/main/src/App.kt"
     }
 
     "GitLabFile honors a custom scheme and domain with a port" {
       val repo = GitLabRepo(OwnerType.User, "alice", "demo", scheme = "http://", domainName = "git.internal:8080")
       val file = GitLabFile(repo, branchName = "dev", srcPath = "a/b", fileName = "x.kt")
-      file.source shouldBe "http://git.internal:8080/alice/demo/-/blob/dev/a/b/x.kt"
+      file.source shouldBe "http://git.internal:8080/alice/demo/-/raw/dev/a/b/x.kt"
     }
   }
 }

@@ -18,10 +18,12 @@
 
 package com.pambrose.common.script
 
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.util.Properties
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 
@@ -88,6 +90,21 @@ class AbstractScriptAddMessageTests : StringSpec() {
       KotlinScript().use { script ->
         val e = shouldThrow<IllegalStateException> { script.params("never") }
         e.message shouldBe "No type parameters registered for never"
+      }
+    }
+
+    "add requires type parameters for a generic class whose superclass is not generic" {
+      KotlinScript().use { script ->
+        // Pair extends Object, so its own two type parameters used to go uncounted.
+        val e = shouldThrow<ScriptException> { script.add("pair", 1 to "a") }
+        e.message shouldContain "Expected 2 type parameters to be specified for"
+      }
+    }
+
+    "add accepts a non-generic subclass of a generic class without type parameters" {
+      KotlinScript().use { script ->
+        // Properties extends Hashtable<Object, Object> but declares no type parameters of its own.
+        shouldNotThrowAny { script.add("props", Properties()) }
       }
     }
   }

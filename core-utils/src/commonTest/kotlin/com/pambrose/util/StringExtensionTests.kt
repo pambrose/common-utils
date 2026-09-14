@@ -280,5 +280,27 @@ class StringExtensionTests : StringSpec() {
       "Test.java".contains("t?s?.*a".asRegex()) shouldBe false
       "Test.java".contains("t?s?.*a".asRegex(true)) shouldBe true
     }
+
+    "pattern match treats regex metacharacters in the glob literally" {
+      "file(1).txt".asRegex().matches("file(1).txt") shouldBe true
+      "file(1).txt".asRegex().matches("file1.txt") shouldBe false
+      "a+b".asRegex().matches("a+b") shouldBe true
+      "a+b".asRegex().matches("aab") shouldBe false
+      "[abc".asRegex().matches("[abc") shouldBe true
+      "a\$b^c{1}|d\\e".asRegex().matches("a\$b^c{1}|d\\e") shouldBe true
+      "a__SINGLE__DOT__b".toPattern shouldBe "^a__SINGLE__DOT__b$"
+    }
+
+    "Long length is exact at every power-of-ten boundary" {
+      var power = 1L
+      for (digits in 1..18) {
+        power *= 10
+        (power - 1).length shouldBe digits
+        power.length shouldBe digits + 1
+        (-(power - 1)).length shouldBe digits
+      }
+      Long.MAX_VALUE.length shouldBe 19
+      Long.MIN_VALUE.length shouldBe 19
+    }
   }
 }

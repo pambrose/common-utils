@@ -42,18 +42,21 @@ object AtomicDelegates {
 //    NullableAtomicReferenceDelegate(initValue)
 
   /**
-   * Creates a thread-safe delegate that can only be set once via compare-and-set.
+   * Creates a thread-safe delegate that can only be set once.
    *
-   * Attempting to set the property a second time throws [IllegalStateException].
+   * The property starts at [initValue]. The first assignment, including an assignment of `null`, sets it;
+   * any later assignment throws [IllegalStateException].
    *
    * @param T the property type
    * @param initValue optional initial value (default `null`)
-   * @param compareValue the expected value for the compare-and-set operation (default `null`)
+   * @param compareValue the value the property holds before its one assignment; defaults to [initValue] and
+   *   must equal it (compared with `==`)
    * @return a [ReadWriteProperty] delegate
+   * @throws IllegalArgumentException if [compareValue] is not equal to [initValue]
    */
   fun <T> singleSetReference(
     initValue: T? = null,
-    compareValue: T? = null,
+    compareValue: T? = initValue,
   ): ReadWriteProperty<Any?, T?> = SingleSetAtomicReferenceDelegate(initValue, compareValue)
 
   /**
@@ -117,9 +120,16 @@ private class NonNullableAtomicReferenceDelegate<T : Any>(
 
 private class SingleSetAtomicReferenceDelegate<T>(
   initValue: T?,
-  private val compareValue: T?,
+  compareValue: T?,
 ) : ReadWriteProperty<Any?, T?> {
   private val atomicVal = AtomicReference(initValue)
+  private val assigned = AtomicBoolean(false)
+
+  init {
+    // The value only changes through the one assignment, so a compareValue that differs from initValue
+    // could never match and would leave the property permanently unsettable.
+    require(initValue == compareValue) { "compareValue ($compareValue) must equal initValue ($initValue)" }
+  }
 
   override operator fun getValue(
     thisRef: Any?,
@@ -131,9 +141,9 @@ private class SingleSetAtomicReferenceDelegate<T>(
     property: KProperty<*>,
     value: T?,
   ) {
-    if (!atomicVal.compareAndSet(compareValue, value)) {
-      error("Property ${property.name} has already been set")
-    }
+    // Claim the one assignment atomically, so a null assignment counts and concurrent setters cannot both win.
+    check(assigned.compareAndSet(false, true)) { "Property ${property.name} has already been set" }
+    atomicVal.store(value)
   }
 }
 

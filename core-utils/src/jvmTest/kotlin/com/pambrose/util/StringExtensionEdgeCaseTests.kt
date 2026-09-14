@@ -194,6 +194,16 @@ class StringExtensionEdgeCaseTests : StringSpec() {
       "not a url".maskUrlCredentials() shouldBe "not a url"
     }
 
+    "mask url credentials only treats an @ inside the authority as a credential separator" {
+      // An @ in the path, query, or fragment must not be mistaken for userinfo.
+      "https://api.example.com/users?email=bob@corp.com".maskUrlCredentials() shouldBe
+        "https://api.example.com/users?email=bob@corp.com"
+      "https://example.com/a@b".maskUrlCredentials() shouldBe "https://example.com/a@b"
+      "https://example.com#section@2".maskUrlCredentials() shouldBe "https://example.com#section@2"
+      "https://u:p@host.com/a@b".maskUrlCredentials() shouldBe "https://*****:*****@host.com/a@b"
+      "https://u:p@host.com?next=me@x.com".maskUrlCredentials() shouldBe "https://*****:*****@host.com?next=me@x.com"
+    }
+
     "obfuscate test" {
       // obfuscate replaces characters at positions where index % freq == 0
       "hello".obfuscate() shouldBe "*e*l*" // freq=2: positions 0,2,4 replaced

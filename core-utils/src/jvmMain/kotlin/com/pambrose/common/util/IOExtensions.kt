@@ -148,7 +148,10 @@ private class SecureObjectInputStream(
     return clazz
   }
 
-  private fun isDangerousClass(className: String) = DANGEROUS_CLASSES.any { className.startsWith(it) }
+  // Entries ending in "." block a whole package; the others name a single class exactly, so that
+  // "java.lang.Runtime" does not also block java.lang.RuntimeException and java.lang.RuntimePermission.
+  private fun isDangerousClass(className: String) =
+    DANGEROUS_CLASSES.any { if (it.endsWith(".")) className.startsWith(it) else className == it }
 
   companion object {
     private val DANGEROUS_CLASSES = setOf(
