@@ -7,10 +7,10 @@ jvmTarget = "17"
 detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
 gradlePlugins = "1.1.4"
-kotlinter = "5.5.0"
+kotlinter = "5.7.0"
 kover = "0.9.9"
 mavenPublish = "0.37.0"
-versions = "0.60.0"
+versions = "0.61.0"
 
 # Kotlin & kotlinx
 # Held at 2.4.10: 2.4.20 regressed the JSR-223 K2 REPL used by script-utils-kotlin. Binding a value
@@ -24,7 +24,7 @@ versions = "0.60.0"
 # so the project is *compiled* by 2.4.20. Check `gradlew buildEnvironment` before assuming otherwise.
 kotlin = "2.4.10"
 coroutines = "1.11.0"
-datetime = "0.7.1-0.6.x-compat"
+datetime = "0.8.0-0.6.x-compat"
 kotlinxHtml = "0.12.0"
 serialization = "1.11.0"
 
@@ -39,7 +39,7 @@ jakartaServlet = "6.1.0"
 jetty = "12.1.13"
 ktor = "3.5.2"
 # Keep in sync with grpc
-tcnative = "2.0.75.Final"
+tcnative = "2.0.84.Final"
 
 # Data
 exposed = "1.5.0"
@@ -57,15 +57,15 @@ zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
 
 # Services
-guava = "33.0.0-jre"
+guava = "33.7.1-jre"
 
 # Other
-resend = "4.23.0"
+resend = "4.24.0"
 
 # Testing
-kotest = "6.2.4"
+kotest = "6.2.5"
 # KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
-ksp = "2.3.9"
+ksp = "2.3.12"
 mockk = "1.14.11"
 
 [libraries]
