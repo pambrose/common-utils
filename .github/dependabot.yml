@@ -34,6 +34,22 @@ updates:
       # Ignore rules also apply to security updates: a tcnative advisory still raises an alert but gets
       # no automatic PR.
       - dependency-name: "io.netty:netty-tcnative-boringssl-static"
+      # Kotlin 2.4.20 is the release that regressed the JSR-223 REPL (see the `kotlin` comment in the
+      # catalog). Skip exactly that version so Dependabot stops re-proposing it, while later releases
+      # (2.4.21, 2.4.30, ...) still arrive in the kotlin group as the retry. A bare version is an exact
+      # match. Remove these entries once the Kotlin hold is lifted.
+      - dependency-name: "org.jetbrains.kotlin:*"
+        versions:
+          - "2.4.20"
+      - dependency-name: "org.jetbrains.kotlin.jvm"
+        versions:
+          - "2.4.20"
+      - dependency-name: "org.jetbrains.kotlin.multiplatform"
+        versions:
+          - "2.4.20"
+      - dependency-name: "org.jetbrains.kotlin.plugin.serialization"
+        versions:
+          - "2.4.20"
 
   - package-ecosystem: github-actions
     directory: "/"
