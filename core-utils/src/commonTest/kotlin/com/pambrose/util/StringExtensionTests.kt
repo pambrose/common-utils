@@ -55,12 +55,17 @@ import io.kotest.matchers.string.shouldNotMatch
 
 class StringExtensionTests : StringSpec() {
   init {
-    "length tests" {
-      repeat(10_000_000) { i -> i.length shouldBe i.toString().length }
-      for (i in Int.MAX_VALUE - 10000000..Int.MAX_VALUE) i.length shouldBe i.toString().length
-
-      for (i in 0L..10000000L) i.length shouldBe i.toString().length
-      for (i in Long.MAX_VALUE - 10000000L..Long.MAX_VALUE) i.length shouldBe i.toString().length
+    "Int length is exact at every power-of-ten boundary" {
+      0.length shouldBe 1
+      var power = 1
+      for (digits in 1..9) {
+        power *= 10
+        (power - 1).length shouldBe digits
+        power.length shouldBe digits + 1
+        (-(power - 1)).length shouldBe digits
+      }
+      Int.MAX_VALUE.length shouldBe 10
+      Int.MIN_VALUE.length shouldBe 10
     }
 
     "quote tests" {
@@ -303,6 +308,14 @@ class StringExtensionTests : StringSpec() {
       }
       Long.MAX_VALUE.length shouldBe 19
       Long.MIN_VALUE.length shouldBe 19
+    }
+
+    "join and toPath strip a whole multi-character separator and skip empty elements" {
+      ["a", "::b"].join("::") shouldBe "a::b"
+      ["a::", "::b"].join("::") shouldBe "a::b"
+      ["a", "", "b"].join() shouldBe "a/b"
+      ["", "a", "", "b"].toRootPath() shouldBe "/a/b"
+      ["a", "", "b"].toPath() shouldBe "/a/b/"
     }
   }
 }

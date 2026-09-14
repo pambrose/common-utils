@@ -20,7 +20,6 @@ import com.pambrose.common.util.DateUtils.toUTCDateTime
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldEndWith
 import io.kotest.matchers.string.shouldHaveLength
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.datetime.IllegalTimeZoneException
@@ -181,7 +180,7 @@ class DateUtilsTest : StringSpec() {
 
     "toAdjustedString - truncates duration to specified unit" {
       val d = 1.hours + 30.minutes + 45.seconds + 250.milliseconds
-      d.toAdjustedString(DurationUnit.SECONDS) shouldEndWith "s"
+      d.toAdjustedString(DurationUnit.SECONDS) shouldBe (1.hours + 30.minutes + 45.seconds).toString()
       d.toAdjustedString(DurationUnit.MINUTES) shouldBe (1.hours + 30.minutes).toString()
       d.toAdjustedString(DurationUnit.HOURS) shouldBe 1.hours.toString()
       d.toAdjustedString(DurationUnit.MILLISECONDS) shouldBe d.inWholeMilliseconds.milliseconds.toString()

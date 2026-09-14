@@ -41,6 +41,18 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **`ContentRoot.file`:** it resolves relative paths against the root.
   - **GitLab sources:** they read raw content instead of the HTML viewer page.
 
+- **More core-utils fixes**: fourteen lower-severity review findings are fixed.
+  - **`UrlSource`:** it has connect and read timeouts and no longer uses the deprecated `URL(String)`.
+  - **Resource lookup:** `getBanner` and `readResourceFile` use the thread context classloader, so they work
+    in servlet containers and plugin hosts.
+  - **`readProperties`:** it documents its format, skips `!` and indented comments and empty keys, and
+    applies nothing when a file is missing.
+  - **`waitForPortAvailable`:** it reports whether the port freed up.
+  - **`repeatWithSleep`:** it skips the trailing sleep.
+  - **`toByteArray`:** it is no longer deprecated.
+  - **`captureStdout`:** it uses UTF-8.
+  - **Tests:** the core-utils suite drops about 40 million brute-force assertions.
+
 ### Breaking changes
 
 - `ByteArray.toObjectSecure` requires a non-empty `allowedClasses`, which now has no default.
@@ -60,6 +72,12 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - `toPattern`/`asRegex` treat regex metacharacters in a glob literally. Only `*` and `?` are wildcards.
 - `singleSetReference` counts a `null` assignment as its one set. It also rejects a `compareValue` that
   differs from `initValue`, and `compareValue` now defaults to `initValue`.
+- `atomicInteger()`/`atomicLong()` default to `0` instead of `-1`.
+- `MiscFuncs.waitForPortAvailable` returns `Boolean` (a changed JVM signature, so compiled callers must be
+  rebuilt).
+- `toPath`/`join`/`toRootPath` skip empty elements and strip multi-character separators.
+- `GitHubRepo.rawSourcePrefix`/`GitHubFile` for non-`github.com` domains use GitHub Enterprise's
+  `HOSTNAME/raw/` path, and a repository name containing `github.com` is no longer rewritten.
 
 ---
 

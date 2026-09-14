@@ -79,20 +79,20 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-009** `MEDIUM` · bug — `typeParameterCount` counts the superclass's type args (breaks script-utils `add()`) ([details](#cr-009)) — fixed in #175
 - [x] **CR-010** `MEDIUM` · bug — `ContentRoot.file(path)` ignores the root ([details](#cr-010)) — fixed in #175
 - [x] **CR-011** `MEDIUM` · bug — `GitLabFile` targets the HTML `/-/blob/` page instead of `/-/raw/` ([details](#cr-011)) — fixed in #175
-- [ ] **CR-012** `LOW` · docs — core-utils README snippets don't compile or misdescribe behavior ([details](#cr-012))
-- [ ] **CR-013** `LOW` · robustness — `UrlSource.content`: no timeouts, refetch on every access, deprecated `URL(String)` ([details](#cr-013))
-- [ ] **CR-014** `LOW` · bug — `join`/`toPath`: multi-char separators and empty elements ([details](#cr-014))
-- [ ] **CR-015** `LOW` · bug — `GitHubRepo.rawSourcePrefix` replace-all and custom-domain inconsistency ([details](#cr-015))
-- [ ] **CR-016** `LOW` · security/docs — Unkeyed SHA-256 checksum billed as tamper detection; magic `32` ([details](#cr-016))
-- [ ] **CR-017** `LOW` · API — `toByteArraySecure` duplicates `toByteArray`; `ReplaceWith` hints don't compile ([details](#cr-017))
-- [ ] **CR-018** `LOW` · bug — `getBanner`/`ReadResources` use the library's classloader ([details](#cr-018))
-- [ ] **CR-019** `LOW` · bug — `readProperties` isn't `.properties`-compatible and applies files partially ([details](#cr-019))
-- [ ] **CR-020** `LOW` · API — `waitForPortAvailable` gives up silently; `repeatWithSleep` sleeps after last iteration ([details](#cr-020))
-- [ ] **CR-021** `LOW` · cleanup — `hostInfo` double lookup, `!!`, commented-out code (carried over) ([details](#cr-021))
-- [ ] **CR-022** `LOW` · docs — `captureStdout` swaps global `System.out`, default charset (carried over) ([details](#cr-022))
-- [ ] **CR-023** `LOW` · docs — `toCsv` performs no escaping, undocumented (carried over) ([details](#cr-023))
-- [ ] **CR-024** `LOW` · API — `atomicInteger`/`atomicLong` default to -1; dead commented-out delegate (carried over) ([details](#cr-024))
-- [ ] **CR-025** `LOW` · tests — Boundary tests missing, weak assertions, 10M-iteration sweep in `commonTest` ([details](#cr-025))
+- [x] **CR-012** `LOW` · docs — core-utils README snippets don't compile or misdescribe behavior ([details](#cr-012)) — fixed in #176
+- [x] **CR-013** `LOW` · robustness — `UrlSource.content`: no timeouts, refetch on every access, deprecated `URL(String)` ([details](#cr-013)) — fixed in #176
+- [x] **CR-014** `LOW` · bug — `join`/`toPath`: multi-char separators and empty elements ([details](#cr-014)) — fixed in #176
+- [x] **CR-015** `LOW` · bug — `GitHubRepo.rawSourcePrefix` replace-all and custom-domain inconsistency ([details](#cr-015)) — fixed in #176
+- [x] **CR-016** `LOW` · security/docs — Unkeyed SHA-256 checksum billed as tamper detection; magic `32` ([details](#cr-016)) — fixed in #176
+- [x] **CR-017** `LOW` · API — `toByteArraySecure` duplicates `toByteArray`; `ReplaceWith` hints don't compile ([details](#cr-017)) — fixed in #176
+- [x] **CR-018** `LOW` · bug — `getBanner`/`ReadResources` use the library's classloader ([details](#cr-018)) — fixed in #176
+- [x] **CR-019** `LOW` · bug — `readProperties` isn't `.properties`-compatible and applies files partially ([details](#cr-019)) — fixed in #176
+- [x] **CR-020** `LOW` · API — `waitForPortAvailable` gives up silently; `repeatWithSleep` sleeps after last iteration ([details](#cr-020)) — fixed in #176
+- [x] **CR-021** `LOW` · cleanup — `hostInfo` double lookup, `!!`, commented-out code (carried over) ([details](#cr-021)) — fixed in #176
+- [x] **CR-022** `LOW` · docs — `captureStdout` swaps global `System.out`, default charset (carried over) ([details](#cr-022)) — fixed in #176
+- [x] **CR-023** `LOW` · docs — `toCsv` performs no escaping, undocumented (carried over) ([details](#cr-023)) — fixed in #176
+- [x] **CR-024** `LOW` · API — `atomicInteger`/`atomicLong` default to -1; dead commented-out delegate (carried over) ([details](#cr-024)) — fixed in #176
+- [x] **CR-025** `LOW` · tests — Boundary tests missing, weak assertions, 10M-iteration sweep in `commonTest` ([details](#cr-025)) — fixed in #176
 
 ### json-utils
 - [ ] **CR-026** `MEDIUM` · API — `s.toJsonString()` and `s.toJsonString(prettyPrint = true)` do different things ([details](#cr-026))

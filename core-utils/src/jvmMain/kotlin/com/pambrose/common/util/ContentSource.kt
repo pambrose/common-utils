@@ -17,7 +17,9 @@
 package com.pambrose.common.util
 
 import java.io.File
-import java.net.URL
+import java.net.URI
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Root abstraction for a content location, either a local directory or a remote repository.
@@ -99,12 +101,17 @@ abstract class AbstractRepo(
 }
 
 private const val GITHUB = "github.com"
+private val DEFAULT_CONNECT_TIMEOUT = 10.seconds
+private val DEFAULT_READ_TIMEOUT = 30.seconds
 private const val GITHUB_USER_CONTENT = "raw.githubusercontent.com"
 
 /**
  * A [ContentRoot] representing a GitHub repository.
  *
- * Raw content is fetched via `raw.githubusercontent.com`.
+ * Raw content for `github.com` is fetched from `raw.githubusercontent.com`. For any other domain (GitHub
+ * Enterprise Server) it is fetched from the `HOSTNAME/raw/` path, the form used when subdomain isolation is
+ * disabled; a server with subdomain isolation enabled serves raw content from `raw.HOSTNAME` instead, which this
+ * class does not detect.
  *
  * @param ownerType whether the owner is a user or organization
  * @param ownerName the GitHub username or organization name
@@ -119,7 +126,11 @@ class GitHubRepo(
   scheme: String = "https://",
   domainName: String = GITHUB,
 ) : AbstractRepo(scheme, domainName, ownerType, ownerName, repoName) {
-  override val rawSourcePrefix = sourcePrefix.replace(GITHUB, GITHUB_USER_CONTENT)
+  override val rawSourcePrefix =
+    if (domainName == GITHUB)
+      scheme + [GITHUB_USER_CONTENT, ownerName, repoName].join()
+    else
+      scheme + [domainName, "raw", ownerName, repoName].join()
 
   override fun toString() =
     "GitHubRepo(scheme='$scheme', domainName='$domainName', ownerName='$ownerName', repoName='$repoName', " +
@@ -168,7 +179,7 @@ interface ContentSource {
 /**
  * A [ContentSource] pointing to a specific file in a GitHub repository.
  *
- * Constructs the raw content URL from the repository, branch, path, and file name.
+ * Resolves [branchName], [srcPath], and [fileName] against the repository's [GitHubRepo.rawSourcePrefix].
  *
  * @param repo the GitHub repository
  * @param branchName the branch or tag name
@@ -180,16 +191,7 @@ open class GitHubFile(
   val branchName: String,
   val srcPath: String,
   val fileName: String,
-) : UrlSource(
-  repo.scheme + [
-    GITHUB_USER_CONTENT,
-    repo.ownerName,
-    repo.repoName,
-    branchName,
-    srcPath,
-    fileName,
-  ].join(),
-) {
+) : UrlSource([repo.rawSourcePrefix, branchName, srcPath, fileName].join()) {
   override fun toString() = "GitHubFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 
@@ -215,13 +217,27 @@ open class GitLabFile(
 /**
  * A [ContentSource] that reads content from a URL.
  *
+ * [content] is fetched from [source] on every access; it is not cached.
+ *
  * @param source the URL to read content from
+ * @param connectTimeout the maximum time to wait for a connection (default 10 seconds)
+ * @param readTimeout the maximum time to wait for data once connected (default 30 seconds)
  */
 open class UrlSource(
   override val source: String,
+  private val connectTimeout: Duration = DEFAULT_CONNECT_TIMEOUT,
+  private val readTimeout: Duration = DEFAULT_READ_TIMEOUT,
 ) : ContentSource {
+  /** Creates a [UrlSource] with the default timeouts. */
+  constructor(source: String) : this(source, DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT)
+
   override val content: String
-    get() = URL(source).readText()
+    get() =
+      URI(source).toURL().openConnection().let { connection ->
+        connection.connectTimeout = connectTimeout.inWholeMilliseconds.toInt()
+        connection.readTimeout = readTimeout.inWholeMilliseconds.toInt()
+        connection.getInputStream().use { it.readBytes().decodeToString() }
+      }
 
   override val remote = true
 }

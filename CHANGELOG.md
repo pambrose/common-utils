@@ -39,9 +39,51 @@ All notable changes to Common Utils are documented in this file.
 - `AtomicDelegates.singleSetReference` (core-utils) now allows exactly one assignment, and a `null`
   assignment counts as that assignment. `compareValue` defaults to `initValue`, and a `compareValue` that
   differs from `initValue` throws `IllegalArgumentException`, since such a delegate could never be set.
+- `AtomicDelegates.atomicInteger()` and `atomicLong()` (core-utils) now default to `0`, not `-1`, so a
+  counter declared as `var hits by atomicInteger()` starts at zero.
+- `MiscFuncs.waitForPortAvailable` (core-utils) returns `Boolean`: `true` once the port is free, `false` if it
+  was still in use after `maxAttempts`. Before, it returned `Unit` and only logged a warning. Call sites that
+  ignore the result still compile, but compiled callers must be rebuilt because the JVM signature changed.
+- `List<String>.toPath` / `join` / `toRootPath` (core-utils) skip empty elements and strip a whole
+  multi-character separator. `["a", "", "b"].join()` is now `a/b` (was `a//b`), and `["a", "::b"].join("::")`
+  is `a::b` (was `a:::b`).
+- `GitHubRepo.rawSourcePrefix` and `GitHubFile` (core-utils) now build raw-content URLs from their parts.
+  - **`github.com`:** a repository name that contains `github.com` is no longer rewritten.
+  - **Other domains (GitHub Enterprise Server):** URLs use the `HOSTNAME/raw/OWNER/REPO` path. Before,
+    `GitHubFile` always pointed at `raw.githubusercontent.com`, and `rawSourcePrefix` was the repository
+    page. Servers with subdomain isolation enabled, which serve raw content from `raw.HOSTNAME`, are not
+    detected.
 
 ### Bug fixes
 
+- `UrlSource` (core-utils) now applies connect and read timeouts, 10 and 30 seconds by default and
+  configurable through new constructor parameters. Before, an unresponsive server blocked the reading thread
+  forever. The URL is parsed with `URI(source).toURL()` instead of the deprecated `URL(String)` constructor.
+  `content` is still fetched on every access, which the KDoc now documents.
+- `getBanner` and `ReadResources.readResourceFile` (core-utils) find resources through the thread context
+  classloader.
+  - **Why:** before, they used kotlin-logging's and core-utils' own classloaders, so an application's
+    resources were not found in servlet containers or plugin hosts.
+  - **API:** there is a new `getBanner(filename, classLoader)` overload, and `readResourceFile` takes an
+    optional `classLoader` argument.
+  - **Compatibility:** `getBanner(filename, logger)` still compiles, and it falls back to the logger's
+    classloader.
+- `readProperties` (core-utils) handles the malformed lines it used to mishandle.
+  - **Comments:** comment lines indented with whitespace or starting with `!` are skipped, instead of being
+    set as properties.
+  - **Empty keys:** a line with an empty key is skipped instead of throwing.
+  - **Missing files:** a missing file now leaves the system properties unchanged. Before, the files ahead of
+    it had already been applied.
+  - **Docs:** the accepted `key=value` format is now documented.
+- `repeatWithSleep` (core-utils) no longer sleeps after the last iteration.
+- `toByteArray` (core-utils) is no longer deprecated. It is byte-for-byte identical to `toByteArraySecure`,
+  which is now an alias, and serializing was never the unsafe side. The deprecations no longer carry
+  `ReplaceWith` hints that produced code that would not compile.
+- `captureStdout` (core-utils) encodes and decodes captured output as UTF-8 instead of the platform default
+  charset. Its KDoc now warns that it swaps the process-wide `System.out`.
+- `hostInfo` (core-utils) resolves the local host once instead of twice.
+- Clarify in the KDoc that `withChecksum`/`verifyChecksum` detect accidental corruption only (an unkeyed
+  SHA-256 is not tamper-proof), and that `toCsv` does not quote or escape elements.
 - `toObjectSecure` no longer rejects every exception payload. The `java.lang.Runtime` blocklist entry
   prefix-matched `java.lang.RuntimeException`, the superclass of all unchecked exceptions, and
   `java.lang.RuntimePermission`. Package entries still match by prefix; single classes now match exactly.
@@ -72,8 +114,19 @@ All notable changes to Common Utils are documented in this file.
   subclass of `GenericService` or `GenericKtorService` without declaring those modules themselves.
   `prometheus-utils` and the embedded-server internals stay `runtime`.
 
+### Tests
+
+- Replace the core-utils `length` brute-force sweeps, about 40 million assertions that ran on every KMP
+  target, with power-of-ten boundary checks. Tighten the weak `withLineNumbers` and `toAdjustedString`
+  assertions to exact output.
+
 ### Documentation
 
+- Fix core-utils README snippets that did not compile or misdescribed behavior.
+  - **`Atomic.withLock`:** the lambda now uses its receiver instead of `it`.
+  - **`criticalSection`:** it only sets a flag while the block runs; it does not exclude other callers.
+  - **Checksums:** they are described as a corruption check.
+  - **`waitForPortAvailable`:** it is called as `MiscFuncs.waitForPortAvailable`.
 - Correct the core-utils README's `toObjectSecure` example, which did not compile, and document the
   required allow-list and stream limits.
 - Add `docs/CODE_REVIEW_2026-09-14.md`, a full-repo code review with 139 enumerated, trackable action items.

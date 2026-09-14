@@ -46,11 +46,8 @@ data class HostInfo(
  */
 val hostInfo by lazy {
   try {
-    val hostname = InetAddress.getLocalHost().hostName!!
-    val address = InetAddress.getLocalHost().hostAddress!!
-    // logger.debug { "Hostname: $hostname Address: $address" }
-    HostInfo(hostname, address)
-  } catch (e: UnknownHostException) {
+    InetAddress.getLocalHost().let { HostInfo(it.hostName, it.hostAddress) }
+  } catch (_: UnknownHostException) {
     HostInfo("Unknown", "Unknown")
   }
 }
@@ -96,12 +93,16 @@ fun repeatWithSleep(
   val startMillis = System.currentTimeMillis()
   iterations repeat { i ->
     block(i, startMillis)
-    sleep(sleepTime)
+    if (i < iterations - 1)
+      sleep(sleepTime)
   }
 }
 
 /**
  * Captures everything printed to [System.out] during execution of [block] and returns it as a [String].
+ *
+ * Not thread-safe: this replaces the process-wide [System.out] while [block] runs, so output from other threads
+ * is captured too, and concurrent calls interfere with each other. Output is encoded and decoded as UTF-8.
  *
  * @param block the code to execute while capturing stdout
  * @return the captured stdout output
@@ -109,13 +110,13 @@ fun repeatWithSleep(
 fun captureStdout(block: () -> Unit): String {
   val originalOut = System.out
   val baos = ByteArrayOutputStream()
-  System.setOut(PrintStream(baos))
+  System.setOut(PrintStream(baos, false, Charsets.UTF_8))
   try {
     block()
   } finally {
     System.setOut(originalOut)
   }
-  return baos.toString()
+  return baos.toString(Charsets.UTF_8)
 }
 
 /** Miscellaneous utility functions. */
@@ -123,25 +124,27 @@ object MiscFuncs {
   private val logger = logger {}
 
   /**
-   * Blocks until the specified TCP [port] becomes available, polling with a delay between attempts.
+   * Waits until the specified TCP [port] can be bound, polling with a delay between attempts.
    *
    * @param port the TCP port to wait for
    * @param maxAttempts the maximum number of attempts (default 50)
    * @param delayMs the delay in milliseconds between attempts (default 200)
+   * @return `true` once the port is available, or `false` if it was still in use after [maxAttempts] attempts
    */
   fun waitForPortAvailable(
     port: Int,
     maxAttempts: Int = 50,
     delayMs: Long = 200,
-  ) {
+  ): Boolean {
     repeat(maxAttempts) {
       try {
-        ServerSocket(port).use { return }
+        ServerSocket(port).use { return true }
       } catch (_: Exception) {
         Thread.sleep(delayMs)
       }
     }
-    logger.warn { "Port $port may not be available after ${maxAttempts * delayMs}ms" }
+    logger.warn { "Port $port was still in use after ${maxAttempts * delayMs}ms" }
+    return false
   }
 }
 
@@ -151,12 +154,22 @@ object ReadResources {
    * Reads the entire content of a classpath resource file as a [String].
    *
    * @param filename the resource file name
+   * @param classLoader the classloader used to find [filename]; defaults to the thread context classloader
    * @return the file content
    * @throws IllegalArgumentException if the resource is not found
    */
-  fun readResourceFile(filename: String): String {
-    val classLoader = this::class.java.classLoader
-    return classLoader.getResource(filename)?.readText()
+  @JvmOverloads
+  fun readResourceFile(
+    filename: String,
+    classLoader: ClassLoader = defaultResourceClassLoader(),
+  ): String =
+    classLoader.getResource(filename)?.readText()
       ?: throw IllegalArgumentException("Invalid file name: $filename")
-  }
 }
+
+/**
+ * The classloader used to find resources by default: the thread context classloader, which in servlet
+ * containers and plugin hosts can see application resources, falling back to core-utils' own classloader.
+ */
+internal fun defaultResourceClassLoader(): ClassLoader =
+  Thread.currentThread().contextClassLoader ?: ReadResources::class.java.classLoader

@@ -206,6 +206,23 @@ class IOExtensionsTests : StringSpec() {
         )
       restored shouldBe original
     }
+
+    "toByteArray and toByteArraySecure produce identical bytes" {
+      val original: Serializable = arrayListOf("a", 1)
+      original.toByteArray() shouldBe original.toByteArraySecure()
+    }
+
+    "checksum detects accidental corruption but is not tamper-proof" {
+      val corrupted = "payload".toByteArray().withChecksum().also {
+        it[it.size - 1] =
+        (it[it.size - 1].toInt() xor 1).toByte()
+      }
+      shouldThrow<SecurityException> { corrupted.verifyChecksum() }
+
+      // The checksum is unkeyed, so anyone who can change the data can simply recompute it.
+      val forged = "forged".toByteArray().withChecksum()
+      forged.verifyChecksum() shouldBe "forged".toByteArray()
+    }
   }
 
   private fun nestedLists(depth: Int): ArrayList<Any> =

@@ -133,15 +133,15 @@ var flag: Boolean by AtomicDelegates.atomicBoolean(false)
 var name: String by AtomicDelegates.nonNullableReference("initial")
 var once: String? by AtomicDelegates.singleSetReference()
 
-// Mutex-guarded value
+// Mutex-guarded value (setWithLock and withLock suspend, so call them from a coroutine)
 val shared = Atomic("initial")
 val current = shared.value
 shared.setWithLock { "updated" }
-val result = shared.withLock { it.length }
+val result = shared.withLock { length }   // the current value is the receiver
 
-// Run a block only if the flag flips false -> true
+// Sets the flag to true while the block runs and back to false afterward; it does not exclude other callers
 val started = AtomicBoolean(false)
-started.criticalSection { println("runs once") }
+started.criticalSection { println("started is true while this runs") }
 ```
 
 On the JVM, `singleAssign()` provides a write-once property:
@@ -215,7 +215,7 @@ val back = bytes.toObject()
 val secureBytes = myValue.toByteArraySecure()
 val restored = secureBytes.toObjectSecure(MyType::class.java, setOf(MyType::class.java))
 
-// Tamper detection
+// Corruption check: an unkeyed SHA-256 detects accidental damage, not tampering
 val withSum = bytes.withChecksum()
 val verified = withSum.verifyChecksum()
 ```
@@ -239,7 +239,8 @@ val text = local.file("config.json").content
 
 // Direct sources
 FileSource("/etc/hosts").content
-UrlSource("https://example.com/data.json").content
+UrlSource("https://example.com/data.json").content                     // fetched on every access
+UrlSource("https://example.com/data.json", readTimeout = 5.seconds).content
 
 // GitHub
 val repo = GitHubRepo(OwnerType.Organization, "pambrose", "common-utils")
@@ -285,11 +286,11 @@ hostInfo.ipAddress
 sleep(2.seconds)
 randomId()
 captureStdout { println("captured") }
-waitForPortAvailable(port = 8080)
+MiscFuncs.waitForPortAvailable(port = 8080)   // true once the port is free
 
 readProperties("app.properties", "override.properties")
 ReadResources.readResourceFile("banner.txt")
-println(getBanner("banner.txt"))
+println(getBanner("banner.txt"))              // found through the thread context classloader
 
 throwable.stackTraceAsString
 myList.typeParameterCount

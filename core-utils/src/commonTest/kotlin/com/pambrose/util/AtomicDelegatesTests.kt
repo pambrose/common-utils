@@ -148,5 +148,16 @@ class AtomicDelegatesTests : StringSpec() {
         AtomicDelegates.singleSetReference(initValue = "a", compareValue = "b")
       }
     }
+
+    "atomic integer and long delegates start at zero by default" {
+      var hits by AtomicDelegates.atomicInteger()
+      var bytes by AtomicDelegates.atomicLong()
+      hits shouldBe 0
+      bytes shouldBe 0L
+      hits++
+      bytes += 10
+      hits shouldBe 1
+      bytes shouldBe 10L
+    }
   }
 }

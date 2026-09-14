@@ -18,27 +18,43 @@ package com.pambrose.common.util
 
 import java.io.File
 
+/**
+ * Reads `key=value` lines from each of [fileNames] and sets them as JVM system properties.
+ *
+ * See the [List] overload for the accepted format.
+ *
+ * @throws IllegalStateException if a file does not exist
+ */
 fun readProperties(vararg fileNames: String) {
   readProperties(fileNames.toList())
 }
 
+/**
+ * Reads `key=value` lines from each of [fileNames] and sets them as JVM system properties.
+ *
+ * The format is a simple subset of `.properties`: one `key=value` per line, split on the first `=`, with the
+ * key and value trimmed. Blank lines, comment lines starting with `#` or `!` (after any leading whitespace),
+ * lines without `=`, and lines with an empty key are skipped. Escapes, line continuations, and `:` or whitespace
+ * separators are not supported.
+ *
+ * Every file is checked and parsed before any property is set, so a missing file leaves the system properties
+ * unchanged. Properties from later files override earlier ones.
+ *
+ * @throws IllegalStateException if a file does not exist
+ */
 fun readProperties(fileNames: List<String>) {
-  fileNames
-    .map { File(it) }
-    .forEach {
-      if (it.exists())
-        readPropertiesFromFile(it.absolutePath)
-      else
-        error("File not found: ${it.absolutePath}")
-    }
+  val files = fileNames.map { File(it) }
+  files.firstOrNull { !it.exists() }?.let { error("File not found: ${it.absolutePath}") }
+  files
+    .flatMap { parsePropertyLines(it.readLines()) }
+    .forEach { (key, value) -> System.setProperty(key, value) }
 }
 
-private fun readPropertiesFromFile(fileName: String) {
-  File(fileName)
-    .readLines()
-    .filter { it.contains("=") && !it.startsWith("#") }
-    .forEach { line ->
-      val (key, value) = line.split("=", limit = 2)
-      System.setProperty(key.trim(), value.trim())
+private fun parsePropertyLines(lines: List<String>): List<Pair<String, String>> =
+  lines
+    .map { it.trim() }
+    .filterNot { it.startsWith("#") || it.startsWith("!") }
+    .mapNotNull { line ->
+      val key = line.substringBefore("=", missingDelimiterValue = "").trim()
+      if (key.isEmpty()) null else key to line.substringAfter("=").trim()
     }
-}

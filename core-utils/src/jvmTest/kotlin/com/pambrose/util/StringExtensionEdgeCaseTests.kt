@@ -75,14 +75,13 @@ class StringExtensionEdgeCaseTests : StringSpec() {
     }
 
     "with line numbers test" {
-      val input = "line1\nline2\nline3"
-      val numbered = input.withLineNumbers()
-      numbered shouldContain "1"
-      numbered shouldContain "2"
-      numbered shouldContain "3"
-      numbered shouldContain "line1"
-      numbered shouldContain "line2"
-      numbered shouldContain "line3"
+      "line1\nline2\nline3".withLineNumbers() shouldBe "1 : line1\n2 : line2\n3 : line3"
+
+      // Numbers are left-aligned and padded to the width of the largest line number.
+      val numbered = (1..10).joinToString("\n") { "l$it" }.withLineNumbers().lines()
+      numbered.first() shouldBe "1  : l1"
+      numbered.last() shouldBe "10 : l10"
+      "a\nb".withLineNumbers(separator = '|') shouldBe "1 | a\n2 | b"
     }
 
     "md5 test" {

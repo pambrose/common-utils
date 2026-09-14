@@ -31,13 +31,10 @@ import java.io.Serializable
 import java.security.MessageDigest
 
 /**
- * Legacy serialization method - DEPRECATED due to security vulnerabilities.
- * Use toByteArraySecure() instead.
+ * Serializes this object with Java serialization.
+ *
+ * Serializing is safe; deserializing untrusted bytes is not, so read the result back with [toObjectSecure].
  */
-@Deprecated(
-  "Unsafe serialization method. Use toByteArraySecure() instead.",
-  ReplaceWith("toByteArraySecure()"),
-)
 @Throws(IOException::class)
 fun Serializable.toByteArray(): ByteArray =
   ByteArrayOutputStream()
@@ -48,13 +45,10 @@ fun Serializable.toByteArray(): ByteArray =
     }
 
 /**
- * Legacy deserialization method - DEPRECATED due to security vulnerabilities.
- * Use toObjectSecure() instead.
+ * Legacy deserialization method - DEPRECATED because deserializing untrusted bytes can execute arbitrary code.
+ * Use [toObjectSecure] instead.
  */
-@Deprecated(
-  "Unsafe deserialization method. Use toObjectSecure() instead.",
-  ReplaceWith("toObjectSecure(expectedClass, allowedClasses)"),
-)
+@Deprecated("Unsafe deserialization of untrusted data. Use toObjectSecure(expectedClass, allowedClasses) instead.")
 @Throws(IOException::class, ClassNotFoundException::class)
 fun ByteArray.toObject(): Serializable =
   ByteArrayInputStream(this)
@@ -64,16 +58,10 @@ fun ByteArray.toObject(): Serializable =
     }
 
 /**
- * Secure serialization using Java serialization.
+ * Serializes this object with Java serialization; identical to [toByteArray], kept for source compatibility.
  */
 @Throws(IOException::class)
-fun Serializable.toByteArraySecure(): ByteArray =
-  ByteArrayOutputStream().use { baos ->
-    ObjectOutputStream(baos).use { oos ->
-      oos.writeObject(this)
-    }
-    baos.toByteArray()
-  }
+fun Serializable.toByteArraySecure(): ByteArray = toByteArray()
 
 /**
  * Deserialize with type validation and security checks.
@@ -169,22 +157,25 @@ private class SecureObjectInputStream(
 }
 
 /**
- * Add SHA-256 checksum to data for integrity verification.
+ * Prepends a SHA-256 checksum of this data, for detecting accidental corruption.
+ *
+ * The checksum is unkeyed, so it is not tamper-proof: anyone who can modify the data can recompute it. Use a
+ * keyed MAC such as HMAC-SHA256 when the data must be authenticated.
  */
-fun ByteArray.withChecksum(): ByteArray {
-  val checksum = MessageDigest.getInstance("SHA-256").digest(this)
-  return checksum + this
-}
+fun ByteArray.withChecksum(): ByteArray = MessageDigest.getInstance("SHA-256").digest(this) + this
 
 /**
- * Verify SHA-256 checksum and return data without checksum.
- * @throws SecurityException if checksum verification fails
+ * Verifies the SHA-256 checksum prepended by [withChecksum] and returns the data without it.
+ *
+ * This detects accidental corruption only; see [withChecksum].
+ *
+ * @throws SecurityException if the data is too short to hold a checksum or the checksum does not match
  */
 fun ByteArray.verifyChecksum(): ByteArray {
-  if (size < 32) throw SecurityException("Invalid data: too short for checksum")
+  if (size < SHA256_LENGTH) throw SecurityException("Invalid data: too short for checksum")
 
-  val checksum = sliceArray(0..31)
-  val data = sliceArray(32 until size)
+  val checksum = sliceArray(0 until SHA256_LENGTH)
+  val data = sliceArray(SHA256_LENGTH until size)
   val computedChecksum = MessageDigest.getInstance("SHA-256").digest(data)
 
   if (!checksum.contentEquals(computedChecksum)) {
@@ -197,3 +188,5 @@ fun ByteArray.verifyChecksum(): ByteArray {
 private const val MAX_SERIALIZED_SIZE = 10 * 1024 * 1024 // 10MB limit
 
 private const val MAX_DEPTH = 32
+
+private const val SHA256_LENGTH = 32

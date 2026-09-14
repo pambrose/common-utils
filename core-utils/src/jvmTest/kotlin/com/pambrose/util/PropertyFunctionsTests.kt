@@ -22,6 +22,7 @@ import com.pambrose.common.util.readProperties
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.io.File
@@ -154,6 +155,41 @@ class PropertyFunctionsTests : StringSpec() {
         readProperties()
         readProperties(emptyList())
       }
+    }
+
+    "readProperties skips indented and '!' comment lines" {
+      val file =
+        writePropsFile(
+          [
+            "   # ${KEY_PREFIX}indented=should-not-be-set",
+            "!${KEY_PREFIX}bang=should-not-be-set",
+            "${KEY_PREFIX}kept=yes",
+          ].joinToString("\n"),
+        )
+
+      readProperties([file.absolutePath])
+
+      System.getProperty("${KEY_PREFIX}kept") shouldBe "yes"
+      System.getProperties().values.filter { it == "should-not-be-set" }.shouldBeEmpty()
+    }
+
+    "readProperties skips a line with an empty key instead of throwing" {
+      val file = writePropsFile(["=orphan-value", "${KEY_PREFIX}afterEmptyKey=yes"].joinToString("\n"))
+
+      shouldNotThrowAny { readProperties([file.absolutePath]) }
+
+      System.getProperty("${KEY_PREFIX}afterEmptyKey") shouldBe "yes"
+    }
+
+    "readProperties applies nothing when any file is missing" {
+      val present = writePropsFile("${KEY_PREFIX}beforeMissing=set")
+      val missing = File("does-not-exist-${KEY_PREFIX}second.properties")
+
+      shouldThrow<IllegalStateException> {
+        readProperties(present.absolutePath, missing.path)
+      }
+
+      System.getProperty("${KEY_PREFIX}beforeMissing") shouldBe null
     }
   }
 }

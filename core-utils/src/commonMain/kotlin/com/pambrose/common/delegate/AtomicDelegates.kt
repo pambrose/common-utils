@@ -38,9 +38,6 @@ object AtomicDelegates {
   fun <T : Any> nonNullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
     NonNullableAtomicReferenceDelegate(initValue)
 
-//  fun <T : Any?> nullableReference(initValue: T? = null): ReadWriteProperty<Any?, T> =
-//    NullableAtomicReferenceDelegate(initValue)
-
   /**
    * Creates a thread-safe delegate that can only be set once.
    *
@@ -75,18 +72,18 @@ object AtomicDelegates {
   /**
    * Creates a thread-safe [Int] property delegate backed by [AtomicInt].
    *
-   * @param initValue the initial value (default `-1`)
+   * @param initValue the initial value (default `0`)
    * @return a [ReadWriteProperty] delegate
    */
-  fun atomicInteger(initValue: Int = -1): ReadWriteProperty<Any?, Int> = AtomicIntegerDelegate(initValue)
+  fun atomicInteger(initValue: Int = 0): ReadWriteProperty<Any?, Int> = AtomicIntegerDelegate(initValue)
 
   /**
    * Creates a thread-safe [Long] property delegate backed by [AtomicLong].
    *
-   * @param initValue the initial value (default `-1L`)
+   * @param initValue the initial value (default `0L`)
    * @return a [ReadWriteProperty] delegate
    */
-  fun atomicLong(initValue: Long = -1L): ReadWriteProperty<Any?, Long> = AtomicLongDelegate(initValue)
+  fun atomicLong(initValue: Long = 0L): ReadWriteProperty<Any?, Long> = AtomicLongDelegate(initValue)
 }
 
 private class NonNullableAtomicReferenceDelegate<T : Any>(
@@ -105,23 +102,6 @@ private class NonNullableAtomicReferenceDelegate<T : Any>(
     value: T,
   ) = atomicVal.store(value)
 }
-
-// private class NullableAtomicReferenceDelegate<T : Any?>(
-//   initValue: T? = null,
-// ) : ReadWriteProperty<Any?, T> {
-//   private val atomicVal = AtomicReference(initValue)
-//
-//   override operator fun getValue(
-//     thisRef: Any?,
-//     property: KProperty<*>,
-//   ): T = atomicVal.load()
-//
-//   override operator fun setValue(
-//     thisRef: Any?,
-//     property: KProperty<*>,
-//     value: T,
-//   ) = atomicVal.store(value)
-// }
 
 private class SingleSetAtomicReferenceDelegate<T>(
   private val initValue: T?,
