@@ -115,7 +115,8 @@ fun List<String>.toRootPath(
 /**
  * Joins this list of strings into a path with configurable leading and trailing separators.
  *
- * Extension function on [List]<[String]>.
+ * Extension function on [List]<[String]>. Empty elements are skipped, and a leading [separator] on any
+ * element after the first is removed, so elements never produce doubled separators.
  *
  * @param addPrefix whether to prepend [separator] to the first element if it lacks one (default `true`)
  * @param addTrailing whether to append [separator] to the last element (default `true`)
@@ -126,10 +127,13 @@ fun List<String>.toPath(
   addPrefix: Boolean = true,
   addTrailing: Boolean = true,
   separator: CharSequence = "/",
-) = mapIndexed { i, s -> if (i == 0 && addPrefix && !s.startsWith(separator)) "$separator$s" else s }
-  .mapIndexed { i, s -> if (i != 0 && s.startsWith(separator)) s.substring(1) else s }
-  .mapIndexed { i, s -> if (i < size - 1 || addTrailing) s.ensureSuffix(separator) else s }
-  .joinToString("")
+): String {
+  val elems = filter { it.isNotEmpty() }
+  return elems
+    .mapIndexed { i, s -> if (i == 0) (if (addPrefix) s.ensurePrefix(separator) else s) else s.removePrefix(separator) }
+    .mapIndexed { i, s -> if (i < elems.size - 1 || addTrailing) s.ensureSuffix(separator) else s }
+    .joinToString("")
+}
 
 /**
  * Returns the 0-based line number of the first line matching [regex], or -1 if not found.

@@ -22,10 +22,12 @@ import com.pambrose.common.util.getBanner
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.engine.spec.tempdir
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotEndWith
 import io.kotest.matchers.string.shouldNotStartWith
+import java.net.URLClassLoader
 
 private val logger = KotlinLogging.logger {}
 
@@ -57,6 +59,30 @@ class BannerTests : StringSpec() {
       shouldThrow<IllegalArgumentException> {
         getBanner("nonexistent-banner.txt", logger)
       }
+    }
+
+    "banner is found through the thread context classloader" {
+      // In a servlet container or plugin host the application's resources are visible only to the context
+      // classloader, not to the loader that holds kotlin-logging.
+      val dir = tempdir("banner-loader")
+      dir.resolve("context-only-banner.txt").writeText("\ncontext banner\n")
+
+      withIsolatedContextClassLoader(dir) {
+        getBanner("context-only-banner.txt", logger) shouldContain "     context banner"
+      }
+    }
+
+    "banner can be loaded through an explicit classloader" {
+      val dir = tempdir("banner-explicit")
+      dir.resolve("explicit-banner.txt").writeText("explicit banner")
+
+      URLClassLoader(arrayOf(dir.toURI().toURL()), null).use { loader ->
+        getBanner("explicit-banner.txt", loader) shouldContain "     explicit banner"
+      }
+    }
+
+    "banner without a logger defaults to the thread context classloader" {
+      getBanner("test-banner.txt") shouldContain "     first"
     }
   }
 }

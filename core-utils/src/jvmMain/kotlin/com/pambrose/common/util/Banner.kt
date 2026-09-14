@@ -26,7 +26,22 @@ import io.github.oshai.kotlinlogging.KLogger
  * Banner text can be generated at: http://patorjk.com/software/taag/
  *
  * @param filename the classpath resource file containing the banner text
- * @param logger a [KLogger] whose classloader is used to locate the resource
+ * @param classLoader the classloader used to find [filename]; defaults to the thread context classloader
+ * @return the formatted banner string with surrounding newlines
+ * @throws IllegalArgumentException if the banner resource file is not found
+ */
+@JvmOverloads
+fun getBanner(
+  filename: String,
+  classLoader: ClassLoader = defaultResourceClassLoader(),
+): String = formatBanner(filename, classLoader.getResource(filename)?.readText())
+
+/**
+ * Loads a banner like [getBanner], finding [filename] through the thread context classloader and falling back
+ * to [logger]'s classloader.
+ *
+ * @param filename the classpath resource file containing the banner text
+ * @param logger a [KLogger] whose classloader is searched if the context classloader cannot find [filename]
  * @return the formatted banner string with surrounding newlines
  * @throws IllegalArgumentException if the banner resource file is not found
  */
@@ -34,8 +49,16 @@ fun getBanner(
   filename: String,
   logger: KLogger,
 ): String {
-  val banner = logger.javaClass.classLoader.getResource(filename)?.readText()
-    ?: throw IllegalArgumentException("Banner not found: \"$filename\"")
+  val resource =
+    defaultResourceClassLoader().getResource(filename) ?: logger.javaClass.classLoader.getResource(filename)
+  return formatBanner(filename, resource?.readText())
+}
+
+private fun formatBanner(
+  filename: String,
+  banner: String?,
+): String {
+  requireNotNull(banner) { "Banner not found: \"$filename\"" }
 
   val lines = banner.lines()
 

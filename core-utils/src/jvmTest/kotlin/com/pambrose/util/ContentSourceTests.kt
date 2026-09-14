@@ -26,12 +26,16 @@ import com.pambrose.common.util.GitLabFile
 import com.pambrose.common.util.GitLabRepo
 import com.pambrose.common.util.OwnerType
 import com.pambrose.common.util.UrlSource
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.engine.spec.tempdir
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import java.net.ServerSocket
+import java.net.SocketTimeoutException
 import java.nio.file.Files
+import kotlin.time.Duration.Companion.milliseconds
 
 class ContentSourceTests : StringSpec() {
   init {
@@ -169,6 +173,34 @@ class ContentSourceTests : StringSpec() {
       val repo = GitLabRepo(OwnerType.User, "alice", "demo", scheme = "http://", domainName = "git.internal:8080")
       val file = GitLabFile(repo, branchName = "dev", srcPath = "a/b", fileName = "x.kt")
       file.source shouldBe "http://git.internal:8080/alice/demo/-/raw/dev/a/b/x.kt"
+    }
+
+    "GitHubFile with an empty srcPath does not produce a double slash" {
+      val repo = GitHubRepo(OwnerType.User, "pambrose", "common-utils")
+      GitHubFile(repo, branchName = "master", srcPath = "", fileName = "README.md").source shouldBe
+        "https://raw.githubusercontent.com/pambrose/common-utils/master/README.md"
+    }
+
+    "GitHubRepo.rawSourcePrefix only rewrites the host, not a repository name containing github.com" {
+      GitHubRepo(OwnerType.User, "bob", "bob.github.com").rawSourcePrefix shouldBe
+        "https://raw.githubusercontent.com/bob/bob.github.com"
+    }
+
+    "GitHubRepo on a GitHub Enterprise domain serves raw content from the /raw/ path" {
+      val repo = GitHubRepo(OwnerType.Organization, "team", "app", domainName = "github.corp.net")
+      repo.rawSourcePrefix shouldBe "https://github.corp.net/raw/team/app"
+      GitHubFile(repo, branchName = "main", srcPath = "src", fileName = "App.kt").source shouldBe
+        "https://github.corp.net/raw/team/app/main/src/App.kt"
+      repo.file("main/src/App.kt").source shouldBe "https://github.corp.net/raw/team/app/main/src/App.kt"
+    }
+
+    "UrlSource times out instead of blocking forever on an unresponsive server" {
+      // The OS completes the TCP handshake from the listen backlog, but nothing ever reads the request or replies.
+      ServerSocket(0).use { server ->
+        shouldThrow<SocketTimeoutException> {
+          UrlSource("http://127.0.0.1:${server.localPort}/slow", readTimeout = 200.milliseconds).content
+        }
+      }
     }
   }
 }

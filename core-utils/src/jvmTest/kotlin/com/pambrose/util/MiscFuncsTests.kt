@@ -18,6 +18,7 @@
 
 package com.pambrose.util
 
+import com.pambrose.common.util.HostInfo
 import com.pambrose.common.util.capitalizeFirstChar
 import com.pambrose.common.util.captureStdout
 import com.pambrose.common.util.hostInfo
@@ -31,11 +32,13 @@ import com.pambrose.common.util.sleep
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
+import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldHaveLength
 import io.kotest.matchers.string.shouldMatch
+import java.net.InetAddress
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.datetime.LocalDateTime
 
@@ -148,6 +151,24 @@ class MiscFuncsTests : StringSpec() {
         captureStdout { error("boom") }
       }
       System.out shouldBe originalOut
+    }
+
+    "repeatWithSleep does not sleep after the last iteration" {
+      val start = System.currentTimeMillis()
+      repeatWithSleep(iterations = 3, sleepTime = 300.milliseconds) { _, _ -> }
+      val elapsed = System.currentTimeMillis() - start
+      // Two sleeps separate three iterations (600ms); a third sleep after the last one would take 900ms.
+      elapsed shouldBeGreaterThanOrEqual 590L
+      elapsed shouldBeLessThan 850L
+    }
+
+    "hostInfo reports the local host's name and address from a single lookup" {
+      val localHost = InetAddress.getLocalHost()
+      hostInfo shouldBe HostInfo(localHost.hostName, localHost.hostAddress)
+    }
+
+    "captureStdout decodes captured output as UTF-8" {
+      captureStdout { print("h\u00e9llo \u2713") } shouldBe "h\u00e9llo \u2713"
     }
   }
 }

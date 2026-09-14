@@ -22,9 +22,11 @@ import com.pambrose.common.util.MiscFuncs
 import com.pambrose.common.util.ReadResources.readResourceFile
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.engine.spec.tempdir
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeEmpty
 import java.net.ServerSocket
+import java.net.URLClassLoader
 
 class ReadResourcesTests : StringSpec() {
   init {
@@ -38,12 +40,12 @@ class ReadResourcesTests : StringSpec() {
       }
     }
 
-    "MiscFuncs.waitForPortAvailable returns immediately for a free port" {
+    "MiscFuncs.waitForPortAvailable returns true immediately for a free port" {
       // Bind to find a free port, then close it so the port is unbound,
       // then verify waitForPortAvailable returns without retrying.
       val freePort = ServerSocket(0).use { it.localPort }
       val start = System.currentTimeMillis()
-      MiscFuncs.waitForPortAvailable(port = freePort, maxAttempts = 3, delayMs = 1000)
+      MiscFuncs.waitForPortAvailable(port = freePort, maxAttempts = 3, delayMs = 1000) shouldBe true
       val elapsed = System.currentTimeMillis() - start
       // Should be far below maxAttempts * delayMs (3000ms) since the port is already free.
       (elapsed < 1000) shouldBe true
@@ -53,18 +55,36 @@ class ReadResourcesTests : StringSpec() {
       // Bind to find a free port, then close it so the port is unbound. With the port
       // already free, the first attempt succeeds and the defaults never trigger a retry.
       val freePort = ServerSocket(0).use { it.localPort }
-      MiscFuncs.waitForPortAvailable(freePort)
+      MiscFuncs.waitForPortAvailable(freePort) shouldBe true
       // The port is still bindable after the call returns
       ServerSocket(freePort).use { it.localPort shouldBe freePort }
     }
 
-    "MiscFuncs.waitForPortAvailable gives up after maxAttempts when port stays bound" {
+    "MiscFuncs.waitForPortAvailable returns false after maxAttempts when the port stays bound" {
       ServerSocket(0).use { occupied ->
         val start = System.currentTimeMillis()
-        MiscFuncs.waitForPortAvailable(port = occupied.localPort, maxAttempts = 2, delayMs = 10)
+        MiscFuncs.waitForPortAvailable(port = occupied.localPort, maxAttempts = 2, delayMs = 10) shouldBe false
         val elapsed = System.currentTimeMillis() - start
-        // Should at least sleep maxAttempts * delayMs and then return (logging a warning).
+        // Should at least sleep maxAttempts * delayMs before reporting that the port never freed up.
         (elapsed >= 20) shouldBe true
+      }
+    }
+
+    "readResourceFile finds a resource through the thread context classloader" {
+      val dir = tempdir("resource-loader")
+      dir.resolve("context-only.txt").writeText("from the context loader")
+
+      withIsolatedContextClassLoader(dir) {
+        readResourceFile("context-only.txt") shouldBe "from the context loader"
+      }
+    }
+
+    "readResourceFile accepts an explicit classloader" {
+      val dir = tempdir("resource-explicit")
+      dir.resolve("explicit.txt").writeText("explicit")
+
+      URLClassLoader(arrayOf(dir.toURI().toURL()), null).use { loader ->
+        readResourceFile("explicit.txt", loader) shouldBe "explicit"
       }
     }
   }

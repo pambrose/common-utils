@@ -33,7 +33,8 @@ val <T : Any> T.simpleClassName: String
 /**
  * Joins the elements of this [Iterable] into a comma-separated string.
  *
- * Extension function on [Iterable].
+ * Extension function on [Iterable]. This is a display helper, not a CSV encoder: elements are not quoted or
+ * escaped, so an element containing a comma, quote, or newline is split differently by a CSV parser.
  *
  * @return a string with elements separated by `", "`
  */

@@ -50,5 +50,10 @@ class MiscExtensionsTests : StringSpec() {
       ["a", "b", "c"].toCsv() shouldBe "a, b, c"
       [1, 2, 3].toCsv() shouldBe "1, 2, 3"
     }
+
+    "toCsv does not quote or escape elements" {
+      // toCsv is a display helper, not a CSV encoder.
+      ["a,b", "c"].toCsv() shouldBe "a,b, c"
+    }
   }
 }
