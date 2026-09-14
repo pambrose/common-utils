@@ -100,11 +100,11 @@ class AtomicDelegatesTests : StringSpec() {
       var value: String? by AtomicDelegates.singleSetReference(initValue = "init", compareValue = "init")
       value shouldBe "init"
 
-      // Should update when current value matches compareValue
+      // The first assignment succeeds
       value = "updated"
       value shouldBe "updated"
 
-      // Should throw since current value no longer matches compareValue
+      // Any later assignment throws
       shouldThrow<IllegalStateException> {
         value = "third"
       }
@@ -117,13 +117,10 @@ class AtomicDelegatesTests : StringSpec() {
       boxed = 5
       boxed shouldBe 5
 
+      // Equal strings built at runtime are distinct instances too.
       val init = buildString { append("init") }
-      var built: String? by AtomicDelegates.singleSetReference(
-        initValue = init,
-        compareValue = buildString {
-        append(init)
-      },
-      )
+      val sameText = buildString { append("init") }
+      var built: String? by AtomicDelegates.singleSetReference(initValue = init, compareValue = sameText)
       built = "updated"
       built shouldBe "updated"
     }

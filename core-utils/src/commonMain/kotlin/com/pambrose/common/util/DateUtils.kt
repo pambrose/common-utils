@@ -148,8 +148,7 @@ object DateUtils {
    * @return the formatted date/time string
    */
   fun LocalDateTime.toFullDateString(): String =
-    "${abbrevDayOfWeek()} ${month.number.lpad(2)}/${day.lpad(2)}/${year.mod(100).lpad(2)} " +
-      "${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)}"
+    "${abbrevDayOfWeek()} ${date.toMMDDYY()} ${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)}"
 
   /**
    * Formats this [LocalDateTime] as a full date string suffixed with the UTC offset for [timeZone],
@@ -179,9 +178,7 @@ object DateUtils {
    * @return the formatted timestamp string
    */
   fun LocalDateTime.toLogString(): String =
-    "${month.number.lpad(2)}/${day.lpad(2)}/${year.mod(100).lpad(2)} ${hour.lpad(2)}:${
-      minute.lpad(2)
-    }:${second.lpad(2)}.${(nanosecond / 1000000).lpad(3)}"
+    "${date.toMMDDYY()} ${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)}.${(nanosecond / 1000000).lpad(3)}"
 
   /**
    * Formats this [LocalDate] as `MM/DD/YYYY`, e.g. `"04/10/2026"`.

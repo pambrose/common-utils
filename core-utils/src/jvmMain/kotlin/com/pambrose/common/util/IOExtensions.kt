@@ -148,20 +148,22 @@ private class SecureObjectInputStream(
     return clazz
   }
 
-  // Entries ending in "." block a whole package; the others name a single class exactly, so that
-  // "java.lang.Runtime" does not also block java.lang.RuntimeException and java.lang.RuntimePermission.
   private fun isDangerousClass(className: String) =
-    DANGEROUS_CLASSES.any { if (it.endsWith(".")) className.startsWith(it) else className == it }
+    className in DANGEROUS_CLASSES || DANGEROUS_PACKAGES.any { className.startsWith(it) }
 
   companion object {
-    private val DANGEROUS_CLASSES = setOf(
+    private val DANGEROUS_PACKAGES = setOf(
       "java.rmi.",
       "javax.management.",
+      "org.apache.commons.collections.functors.",
+      "org.apache.commons.collections4.functors.",
+    )
+
+    // Matched exactly, so "java.lang.Runtime" does not also block java.lang.RuntimeException.
+    private val DANGEROUS_CLASSES = setOf(
       "java.lang.Runtime",
       "java.lang.Process",
       "java.lang.ProcessBuilder",
-      "org.apache.commons.collections.functors.",
-      "org.apache.commons.collections4.functors.",
     )
   }
 }

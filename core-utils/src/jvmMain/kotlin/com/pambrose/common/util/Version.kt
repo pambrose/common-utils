@@ -106,14 +106,12 @@ annotation class Version(
      * @param asJson if `true`, returns JSON format; otherwise returns plain text
      * @return the version description string, or a default "Unknown" description if not annotated
      */
-    fun KClass<*>.versionDesc(asJson: Boolean = false): String =
-      findAnnotation<Version>()
-        ?.run {
-          if (asJson)
-            jsonStr(version, releaseDate, buildTime)
-          else
-            plainStr(version, releaseDate, buildTime)
-        }
-        ?: if (asJson) json(UNKNOWN, UNKNOWN, UNKNOWN) else plain(UNKNOWN, UNKNOWN, UNKNOWN)
+    fun KClass<*>.versionDesc(asJson: Boolean = false): String {
+      val annotation = findAnnotation<Version>()
+      val version = annotation?.version ?: UNKNOWN
+      val releaseDate = annotation?.releaseDate ?: UNKNOWN
+      val buildDateTime = annotation?.run { buildDateTimeStr(buildTime) } ?: UNKNOWN
+      return if (asJson) json(version, releaseDate, buildDateTime) else plain(version, releaseDate, buildDateTime)
+    }
   }
 }

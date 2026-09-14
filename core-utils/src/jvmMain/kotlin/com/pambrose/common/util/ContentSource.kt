@@ -18,7 +18,6 @@ package com.pambrose.common.util
 
 import java.io.File
 import java.net.URL
-import java.nio.file.Path
 
 /**
  * Root abstraction for a content location, either a local directory or a remote repository.
@@ -54,7 +53,7 @@ class FileSystemSource(
   override val sourcePrefix = pathPrefix
   override val remote = false
 
-  override fun file(path: String) = FileSource(Path.of(pathPrefix).resolve(path).toString())
+  override fun file(path: String) = FileSource(File(pathPrefix).resolve(path).path)
 
   override fun toString() = "FileSystemSource(pathPrefix='$pathPrefix', sourcePrefix='$sourcePrefix')"
 }
@@ -197,7 +196,7 @@ open class GitHubFile(
 /**
  * A [ContentSource] pointing to a specific file in a GitLab repository.
  *
- * Constructs the raw content URL from the repository, branch, path, and file name.
+ * Resolves [branchName], [srcPath], and [fileName] against the repository's [GitLabRepo.rawSourcePrefix].
  *
  * @param repo the GitLab repository
  * @param branchName the branch or tag name
@@ -209,17 +208,7 @@ open class GitLabFile(
   val branchName: String,
   val srcPath: String,
   val fileName: String,
-) : UrlSource(
-  repo.scheme + [
-    repo.domainName,
-    repo.ownerName,
-    repo.repoName,
-    "-/raw",
-    branchName,
-    srcPath,
-    fileName,
-  ].join(),
-) {
+) : UrlSource([repo.rawSourcePrefix, branchName, srcPath, fileName].join()) {
   override fun toString() = "GitLabFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 

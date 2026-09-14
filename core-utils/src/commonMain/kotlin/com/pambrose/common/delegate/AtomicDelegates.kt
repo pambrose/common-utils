@@ -57,7 +57,12 @@ object AtomicDelegates {
   fun <T> singleSetReference(
     initValue: T? = null,
     compareValue: T? = initValue,
-  ): ReadWriteProperty<Any?, T?> = SingleSetAtomicReferenceDelegate(initValue, compareValue)
+  ): ReadWriteProperty<Any?, T?> {
+    // The value only changes through the one assignment, so a compareValue that differs from initValue
+    // could never match and would leave the property permanently unsettable.
+    require(initValue == compareValue) { "compareValue ($compareValue) must equal initValue ($initValue)" }
+    return SingleSetAtomicReferenceDelegate(initValue)
+  }
 
   /**
    * Creates a thread-safe [Boolean] property delegate backed by [AtomicBoolean].
@@ -119,32 +124,26 @@ private class NonNullableAtomicReferenceDelegate<T : Any>(
 // }
 
 private class SingleSetAtomicReferenceDelegate<T>(
-  initValue: T?,
-  compareValue: T?,
+  private val initValue: T?,
 ) : ReadWriteProperty<Any?, T?> {
-  private val atomicVal = AtomicReference(initValue)
-  private val assigned = AtomicBoolean(false)
-
-  init {
-    // The value only changes through the one assignment, so a compareValue that differs from initValue
-    // could never match and would leave the property permanently unsettable.
-    require(initValue == compareValue) { "compareValue ($compareValue) must equal initValue ($initValue)" }
-  }
+  // Null until the one assignment. Wrapping the value lets an assigned null count as set, and a single
+  // compare-and-set both claims the assignment and publishes the value.
+  private val assigned = AtomicReference<Assigned<T>?>(null)
 
   override operator fun getValue(
     thisRef: Any?,
     property: KProperty<*>,
-  ): T? = atomicVal.load()
+  ): T? = assigned.load().let { if (it == null) initValue else it.value }
 
   override operator fun setValue(
     thisRef: Any?,
     property: KProperty<*>,
     value: T?,
-  ) {
-    // Claim the one assignment atomically, so a null assignment counts and concurrent setters cannot both win.
-    check(assigned.compareAndSet(false, true)) { "Property ${property.name} has already been set" }
-    atomicVal.store(value)
-  }
+  ) = check(assigned.compareAndSet(null, Assigned(value))) { "Property ${property.name} has already been set" }
+
+  private class Assigned<T>(
+    val value: T?,
+  )
 }
 
 private class AtomicBooleanDelegate(

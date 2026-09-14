@@ -27,6 +27,7 @@ import com.pambrose.common.util.GitLabRepo
 import com.pambrose.common.util.OwnerType
 import com.pambrose.common.util.UrlSource
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.engine.spec.tempdir
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -57,12 +58,8 @@ class ContentSourceTests : StringSpec() {
     }
 
     "FileSystemSource.file reads content from the file under the root" {
-      val dir = Files.createTempDirectory("content-root-test").toFile()
-      dir.deleteOnExit()
-      dir.resolve("notes.txt").apply {
-        writeText("under the root")
-        deleteOnExit()
-      }
+      val dir = tempdir("content-root-test")
+      dir.resolve("notes.txt").writeText("under the root")
 
       FileSystemSource(dir.absolutePath).file("notes.txt").content shouldBe "under the root"
     }

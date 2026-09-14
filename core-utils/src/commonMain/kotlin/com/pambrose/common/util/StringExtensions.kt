@@ -331,6 +331,8 @@ fun String.asRegex(ignoreCase: Boolean = false) =
  */
 fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.filter { it.isNotEmpty() }.join("/")
 
+private val AUTHORITY_TERMINATORS = charArrayOf('/', '?', '#')
+
 /**
  * Masks username and password in a URL string, replacing them with `*****`.
  *
@@ -346,9 +348,9 @@ fun String.maskUrlCredentials(): String {
   if (schemeEnd == -1) return this
 
   val authorityStart = schemeEnd + 3
-  val authorityEnd = indexOfAny(charArrayOf('/', '?', '#'), authorityStart).let { if (it == -1) length else it }
+  val authorityEnd = indexOfAny(AUTHORITY_TERMINATORS, authorityStart).takeIf { it >= 0 } ?: length
   val at = lastIndexOf('@', authorityEnd - 1)
-  return if (at >= authorityStart) "${substring(0, schemeEnd)}://*****:*****@${substring(at + 1)}" else this
+  return if (at >= authorityStart) replaceRange(authorityStart, at, "*****:*****") else this
 }
 
 /**

@@ -50,6 +50,8 @@ import com.pambrose.common.util.toSingleQuoted
 import com.pambrose.common.util.trimEnds
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldMatch
+import io.kotest.matchers.string.shouldNotMatch
 
 class StringExtensionTests : StringSpec() {
   init {
@@ -282,12 +284,12 @@ class StringExtensionTests : StringSpec() {
     }
 
     "pattern match treats regex metacharacters in the glob literally" {
-      "file(1).txt".asRegex().matches("file(1).txt") shouldBe true
-      "file(1).txt".asRegex().matches("file1.txt") shouldBe false
-      "a+b".asRegex().matches("a+b") shouldBe true
-      "a+b".asRegex().matches("aab") shouldBe false
-      "[abc".asRegex().matches("[abc") shouldBe true
-      "a\$b^c{1}|d\\e".asRegex().matches("a\$b^c{1}|d\\e") shouldBe true
+      "file(1).txt" shouldMatch "file(1).txt".asRegex()
+      "file1.txt" shouldNotMatch "file(1).txt".asRegex()
+      "a+b" shouldMatch "a+b".asRegex()
+      "aab" shouldNotMatch "a+b".asRegex()
+      "[abc" shouldMatch "[abc".asRegex()
+      "a\$b^c{1}|d\\e" shouldMatch "a\$b^c{1}|d\\e".asRegex()
       "a__SINGLE__DOT__b".toPattern shouldBe "^a__SINGLE__DOT__b$"
     }
 

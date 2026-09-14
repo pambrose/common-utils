@@ -66,9 +66,8 @@ class VersionTests : StringSpec() {
     }
 
     "versionDesc plain text falls back to Unknown for bare class" {
-      val desc = Bare::class.versionDesc(asJson = false)
-      desc shouldContain "Version: Unknown"
-      desc shouldContain "Release Date: Unknown"
+      // Formatting epoch 0 used to print a nonsense build date such as "Wed 12/31/-31 16:00:00".
+      Bare::class.versionDesc(asJson = false) shouldBe "Version: Unknown Release Date: Unknown Build Date: Unknown"
     }
 
     "versionDesc JSON contains version and release_date keys" {
@@ -79,9 +78,8 @@ class VersionTests : StringSpec() {
     }
 
     "versionDesc JSON falls back for bare class" {
-      val json = Bare::class.versionDesc(asJson = true)
-      json shouldContain "\"version\":\"Unknown\""
-      json shouldContain "\"release_date\":\"Unknown\""
+      Bare::class.versionDesc(asJson = true) shouldBe
+        """{"version":"Unknown","release_date":"Unknown","build_time":"Unknown"}"""
     }
 
     "versionDesc defaults to plain text output" {
@@ -90,13 +88,6 @@ class VersionTests : StringSpec() {
       desc shouldContain "Version: 9.9.9"
 
       Bare::class.versionDesc() shouldContain "Version: Unknown"
-    }
-
-    "versionDesc reports an Unknown build date for a bare class" {
-      // Formatting epoch 0 used to print a nonsense build date such as "Wed 12/31/-31 16:00:00".
-      Bare::class.versionDesc() shouldBe "Version: Unknown Release Date: Unknown Build Date: Unknown"
-      Bare::class.versionDesc(asJson = true) shouldBe
-        """{"version":"Unknown","release_date":"Unknown","build_time":"Unknown"}"""
     }
   }
 }
