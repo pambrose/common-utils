@@ -222,7 +222,8 @@ val verified = withSum.verifyChecksum()
 
 ### Content Sources (JVM)
 
-A `ContentRoot` resolves paths to a `ContentSource`, which exposes `content`:
+A `ContentRoot` resolves a relative path against its location and returns a `ContentSource`, which exposes
+`content`. Absolute file paths and full URLs are used unchanged:
 
 ```kotlin
 import com.pambrose.common.util.FileSource
@@ -244,10 +245,14 @@ UrlSource("https://example.com/data.json").content
 val repo = GitHubRepo(OwnerType.Organization, "pambrose", "common-utils")
 val readme = GitHubFile(repo, branchName = "master", srcPath = "", fileName = "README.md")
 println(readme.content)
+
+// Repository paths are relative to the raw-content prefix and start with the branch name
+val sameReadme = repo.file("master/README.md")
 ```
 
-`GitLabRepo` / `GitLabFile` mirror the GitHub pair. Every `ContentSource` reports `remote`, and repo
-sources rewrite their prefix to the raw-content host.
+`GitLabRepo` / `GitLabFile` mirror the GitHub pair and read raw content from GitLab's `/-/raw/` path.
+Every `ContentSource` reports `remote`, and repository sources resolve paths against the raw-content prefix
+(`rawSourcePrefix`).
 
 ### Version Metadata (JVM)
 

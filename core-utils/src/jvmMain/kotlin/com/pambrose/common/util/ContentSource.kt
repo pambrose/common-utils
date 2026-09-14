@@ -30,9 +30,13 @@ interface ContentRoot {
   val remote: Boolean
 
   /**
-   * Creates a [ContentSource] for the given relative [path] within this root.
+   * Creates a [ContentSource] for [path] within this root.
    *
-   * @param path the relative path to the file
+   * A relative [path] is resolved against the root: against [FileSystemSource.pathPrefix] on the local file
+   * system, and against [AbstractRepo.rawSourcePrefix] for repositories, where the path begins with the
+   * branch name (e.g. `"main/src/App.kt"`). An absolute file path or a full URL is used unchanged.
+   *
+   * @param path the path to the file, relative to this root
    * @return a [ContentSource] that can be used to read the file's content
    */
   fun file(path: String): ContentSource
@@ -49,7 +53,7 @@ class FileSystemSource(
   override val sourcePrefix = pathPrefix
   override val remote = false
 
-  override fun file(path: String) = FileSource(path)
+  override fun file(path: String) = FileSource(File(pathPrefix).resolve(path).path)
 
   override fun toString() = "FileSystemSource(pathPrefix='$pathPrefix', sourcePrefix='$sourcePrefix')"
 }
@@ -91,7 +95,7 @@ abstract class AbstractRepo(
   /** The URL prefix used to access raw file content from this repository. */
   abstract val rawSourcePrefix: String
 
-  override fun file(path: String) = UrlSource(path)
+  override fun file(path: String) = UrlSource(if ("://" in path) path else [rawSourcePrefix, path].join())
 }
 
 private const val GITHUB = "github.com"
@@ -125,6 +129,8 @@ class GitHubRepo(
 /**
  * A [ContentRoot] representing a GitLab repository.
  *
+ * Raw content is fetched from the repository's `/-/raw/` path; `/-/blob/` is GitLab's HTML viewer page.
+ *
  * @param ownerType whether the owner is a user or organization
  * @param ownerName the GitLab username or group name
  * @param repoName the repository name
@@ -138,7 +144,7 @@ class GitLabRepo(
   scheme: String = "https://",
   domainName: String = "gitlab.com",
 ) : AbstractRepo(scheme, domainName, ownerType, ownerName, repoName) {
-  override val rawSourcePrefix = sourcePrefix
+  override val rawSourcePrefix = [sourcePrefix, "-/raw"].join()
 
   override fun toString() =
     "GitLabRepo(scheme='$scheme', domainName='$domainName', ownerName='$ownerName', repoName='$repoName', " +
@@ -190,7 +196,7 @@ open class GitHubFile(
 /**
  * A [ContentSource] pointing to a specific file in a GitLab repository.
  *
- * Constructs the blob URL from the repository, branch, path, and file name.
+ * Resolves [branchName], [srcPath], and [fileName] against the repository's [GitLabRepo.rawSourcePrefix].
  *
  * @param repo the GitLab repository
  * @param branchName the branch or tag name
@@ -202,17 +208,7 @@ open class GitLabFile(
   val branchName: String,
   val srcPath: String,
   val fileName: String,
-) : UrlSource(
-  repo.scheme + [
-    repo.domainName,
-    repo.ownerName,
-    repo.repoName,
-    "-/blob",
-    branchName,
-    srcPath,
-    fileName,
-  ].join(),
-) {
+) : UrlSource([repo.rawSourcePrefix, branchName, srcPath, fileName].join()) {
   override fun toString() = "GitLabFile(repo=$repo, branchName='$branchName', srcPath='$srcPath', fileName='$fileName')"
 }
 

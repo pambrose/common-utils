@@ -148,17 +148,22 @@ private class SecureObjectInputStream(
     return clazz
   }
 
-  private fun isDangerousClass(className: String) = DANGEROUS_CLASSES.any { className.startsWith(it) }
+  private fun isDangerousClass(className: String) =
+    className in DANGEROUS_CLASSES || DANGEROUS_PACKAGES.any { className.startsWith(it) }
 
   companion object {
-    private val DANGEROUS_CLASSES = setOf(
+    private val DANGEROUS_PACKAGES = setOf(
       "java.rmi.",
       "javax.management.",
+      "org.apache.commons.collections.functors.",
+      "org.apache.commons.collections4.functors.",
+    )
+
+    // Matched exactly, so "java.lang.Runtime" does not also block java.lang.RuntimeException.
+    private val DANGEROUS_CLASSES = setOf(
       "java.lang.Runtime",
       "java.lang.Process",
       "java.lang.ProcessBuilder",
-      "org.apache.commons.collections.functors.",
-      "org.apache.commons.collections4.functors.",
     )
   }
 }

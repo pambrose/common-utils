@@ -28,6 +28,19 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   compile with "Cannot access class". `guava-utils`, `dropwizard-utils`, `zipkin-utils`, `jetty-utils`,
   `ktor-server-utils`, and `metrics-jmx` now have `compile` scope.
 
+- **core-utils correctness fixes**: ten review findings are fixed.
+  - **Exception payloads:** `toObjectSecure` can deserialize them again. A `java.lang.Runtime` blocklist
+    prefix had blocked every `RuntimeException`.
+  - **URL masking:** `maskUrlCredentials` no longer invents credentials when the path or query contains an `@`.
+  - **Globs:** they escape regex metacharacters.
+  - **`Long.length`:** it is exact near powers of ten.
+  - **`toISO8601`:** it keeps the seconds on a round minute.
+  - **Two-digit years:** they wrap correctly, and `versionDesc` no longer prints `12/31/-31`.
+  - **`singleSetReference`:** it compares values rather than references.
+  - **`typeParameterCount`:** it reads the object's own class.
+  - **`ContentRoot.file`:** it resolves relative paths against the root.
+  - **GitLab sources:** they read raw content instead of the HTML viewer page.
+
 ### Breaking changes
 
 - `ByteArray.toObjectSecure` requires a non-empty `allowedClasses`, which now has no default.
@@ -37,6 +50,16 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **Java callers:** they always passed both arguments and are unaffected.
 - `toObjectSecure` rejects streams that exceed the new depth and array-length limits with
   `InvalidClassException`.
+- `ContentRoot.file(path)` resolves a relative path against the root instead of using it as given.
+  Absolute paths and full URLs are unchanged. Callers that pre-prefix a relative root must drop the prefix.
+- `GitLabRepo.rawSourcePrefix` and `GitLabFile` URLs use GitLab's `/-/raw/` path instead of the `/-/blob/`
+  HTML page.
+- `typeParameterCount` counts the object's own class's type parameters rather than its superclass's type
+  arguments. This affects the script engines' `add()` validation: `Pair` needs type parameters, while
+  `Properties` needs none.
+- `toPattern`/`asRegex` treat regex metacharacters in a glob literally. Only `*` and `?` are wildcards.
+- `singleSetReference` counts a `null` assignment as its one set. It also rejects a `compareValue` that
+  differs from `initValue`, and `compareValue` now defaults to `initValue`.
 
 ---
 

@@ -69,16 +69,16 @@ These follow the per-area batching used for #118–#136. The order within the li
 
 ### core-utils
 - [x] **CR-001** `HIGH` · security — `toObjectSecure` disables its allow-list by default; no `ObjectInputFilter` ([details](#cr-001)) — fixed in #174
-- [ ] **CR-002** `MEDIUM` · bug — Blocklist prefix `java.lang.Runtime` rejects every `RuntimeException` subclass ([details](#cr-002))
-- [ ] **CR-003** `MEDIUM` · bug — `maskUrlCredentials` fabricates credentials/host when `@` is in path or query ([details](#cr-003))
-- [ ] **CR-004** `MEDIUM` · bug — Glob→regex (`toPattern`/`asRegex`) escapes only `.` ([details](#cr-004))
-- [ ] **CR-005** `MEDIUM` · bug — `Long.length` off by one for values near 10^16–10^18 ([details](#cr-005))
-- [ ] **CR-006** `MEDIUM` · bug — `toISO8601` drops seconds on round minutes ([details](#cr-006))
-- [ ] **CR-007** `MEDIUM` · bug — Two-digit years computed as `year - 2000`; `versionDesc` fallback prints `12/31/-31` ([details](#cr-007))
-- [ ] **CR-008** `MEDIUM` · bug — `singleSetReference` compares by reference; non-null `initValue` makes it unsettable ([details](#cr-008))
-- [ ] **CR-009** `MEDIUM` · bug — `typeParameterCount` counts the superclass's type args (breaks script-utils `add()`) ([details](#cr-009))
-- [ ] **CR-010** `MEDIUM` · bug — `ContentRoot.file(path)` ignores the root ([details](#cr-010))
-- [ ] **CR-011** `MEDIUM` · bug — `GitLabFile` targets the HTML `/-/blob/` page instead of `/-/raw/` ([details](#cr-011))
+- [x] **CR-002** `MEDIUM` · bug — Blocklist prefix `java.lang.Runtime` rejects every `RuntimeException` subclass ([details](#cr-002)) — fixed in #175
+- [x] **CR-003** `MEDIUM` · bug — `maskUrlCredentials` fabricates credentials/host when `@` is in path or query ([details](#cr-003)) — fixed in #175
+- [x] **CR-004** `MEDIUM` · bug — Glob→regex (`toPattern`/`asRegex`) escapes only `.` ([details](#cr-004)) — fixed in #175
+- [x] **CR-005** `MEDIUM` · bug — `Long.length` off by one for values near 10^16–10^18 ([details](#cr-005)) — fixed in #175
+- [x] **CR-006** `MEDIUM` · bug — `toISO8601` drops seconds on round minutes ([details](#cr-006)) — fixed in #175
+- [x] **CR-007** `MEDIUM` · bug — Two-digit years computed as `year - 2000`; `versionDesc` fallback prints `12/31/-31` ([details](#cr-007)) — fixed in #175
+- [x] **CR-008** `MEDIUM` · bug — `singleSetReference` compares by reference; non-null `initValue` makes it unsettable ([details](#cr-008)) — fixed in #175
+- [x] **CR-009** `MEDIUM` · bug — `typeParameterCount` counts the superclass's type args (breaks script-utils `add()`) ([details](#cr-009)) — fixed in #175
+- [x] **CR-010** `MEDIUM` · bug — `ContentRoot.file(path)` ignores the root ([details](#cr-010)) — fixed in #175
+- [x] **CR-011** `MEDIUM` · bug — `GitLabFile` targets the HTML `/-/blob/` page instead of `/-/raw/` ([details](#cr-011)) — fixed in #175
 - [ ] **CR-012** `LOW` · docs — core-utils README snippets don't compile or misdescribe behavior ([details](#cr-012))
 - [ ] **CR-013** `LOW` · robustness — `UrlSource.content`: no timeouts, refetch on every access, deprecated `URL(String)` ([details](#cr-013))
 - [ ] **CR-014** `LOW` · bug — `join`/`toPath`: multi-char separators and empty elements ([details](#cr-014))

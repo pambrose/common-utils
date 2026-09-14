@@ -7,6 +7,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.TimeZone.Companion.UTC
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.format.char
 import kotlinx.datetime.number
 import kotlinx.datetime.offsetIn
 import kotlinx.datetime.toInstant
@@ -99,19 +100,29 @@ object DateUtils {
       .plus(1.milliseconds)
       .toLocalDateTime(UTC)
 
+  private val iso8601Format =
+    LocalDateTime.Format {
+      date(LocalDate.Formats.ISO)
+      char('T')
+      hour()
+      char(':')
+      minute()
+      char(':')
+      second()
+      char('Z')
+    }
+
   /**
-   * Formats this [LocalDateTime] as an ISO-8601 string with a trailing `Z`, dropping any
-   * fractional-seconds component (e.g. `2024-03-15T08:30:45.123` becomes `"2024-03-15T08:30:45Z"`).
+   * Formats this [LocalDateTime] as an ISO-8601 string with a trailing `Z`, always including seconds and
+   * dropping any fractional-seconds component (e.g. `2024-03-15T08:30:45.123` becomes
+   * `"2024-03-15T08:30:45Z"`, and `2024-03-15T08:30` becomes `"2024-03-15T08:30:00Z"`).
    *
    * The `Z` labels the value as UTC; no zone conversion is performed. Extension function on
    * [LocalDateTime].
    *
    * @return the ISO-8601 string
    */
-  fun LocalDateTime.toISO8601(): String =
-    toString().let { str ->
-      (if (str.contains(".")) str.substringBefore(".") else str) + "Z"
-    }
+  fun LocalDateTime.toISO8601(): String = iso8601Format.format(this)
 
   private fun DayOfWeek.abbrev(): String = name.lowercase().capitalizeFirstChar().substring(0, 3)
 
@@ -137,8 +148,7 @@ object DateUtils {
    * @return the formatted date/time string
    */
   fun LocalDateTime.toFullDateString(): String =
-    "${abbrevDayOfWeek()} ${month.number.lpad(2)}/${day.lpad(2)}/${(year - 2000).lpad(2)} " +
-      "${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)}"
+    "${abbrevDayOfWeek()} ${date.toMMDDYY()} ${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)}"
 
   /**
    * Formats this [LocalDateTime] as a full date string suffixed with the UTC offset for [timeZone],
@@ -168,9 +178,7 @@ object DateUtils {
    * @return the formatted timestamp string
    */
   fun LocalDateTime.toLogString(): String =
-    "${month.number.lpad(2)}/${day.lpad(2)}/${(year - 2000).lpad(2)} ${hour.lpad(2)}:${
-      minute.lpad(2)
-    }:${second.lpad(2)}.${(nanosecond / 1000000).lpad(3)}"
+    "${date.toMMDDYY()} ${hour.lpad(2)}:${minute.lpad(2)}:${second.lpad(2)}.${(nanosecond / 1000000).lpad(3)}"
 
   /**
    * Formats this [LocalDate] as `MM/DD/YYYY`, e.g. `"04/10/2026"`.
@@ -188,7 +196,7 @@ object DateUtils {
    *
    * @return the formatted date string
    */
-  fun LocalDate.toMMDDYY(): String = "${month.number.lpad(2)}/${day.lpad(2)}/${(year - 2000).lpad(2)}"
+  fun LocalDate.toMMDDYY(): String = "${month.number.lpad(2)}/${day.lpad(2)}/${year.mod(100).lpad(2)}"
 
   /**
    * Formats this [LocalDate] as `MM/DD`, e.g. `"04/10"`.

@@ -21,6 +21,11 @@ package com.pambrose.util
 import com.pambrose.common.util.typeParameterCount
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import java.util.Properties
+
+private class Box<T>
+
+private class IntList : ArrayList<Int>()
 
 @Suppress("ArrayPrimitive")
 class ReflectExtensionTests : StringSpec() {
@@ -39,6 +44,16 @@ class ReflectExtensionTests : StringSpec() {
     // java.lang.Object (and interfaces/primitives/void), throwing an NPE. It now returns 0 instead.
     "type param count handles a null generic superclass" {
       Any().typeParameterCount shouldBe 0
+    }
+
+    "type param count reflects the object's own class, not its superclass" {
+      // Generic classes that extend Object used to report 0.
+      Box<Int>().typeParameterCount shouldBe 1
+      Pair(1, "a").typeParameterCount shouldBe 2
+      Triple(1, "a", 2.0).typeParameterCount shouldBe 3
+      // Non-generic subclasses of generic classes used to report their superclass's count.
+      Properties().typeParameterCount shouldBe 0
+      IntList().typeParameterCount shouldBe 0
     }
   }
 }

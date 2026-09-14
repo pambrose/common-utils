@@ -54,18 +54,30 @@ annotation class Version(
 
     private fun buildDateTimeStr(buildTime: Long) = buildDateTime(buildTime).toFullDateString()
 
+    private fun json(
+      version: String,
+      releaseDate: String,
+      buildDateTime: String,
+    ) = buildJsonObject {
+      put("version", version)
+      put("release_date", releaseDate)
+      put("build_time", buildDateTime)
+    }.toString()
+
+    private fun plain(
+      version: String,
+      releaseDate: String,
+      buildDateTime: String,
+    ) = "Version: $version Release Date: $releaseDate Build Date: $buildDateTime"
+
     /** Lambda that produces a JSON string containing version, release date, and build time. */
     val jsonStr = { version: String, buildDate: String, buildTime: Long ->
-      buildJsonObject {
-        put("version", version)
-        put("release_date", buildDate)
-        put("build_time", buildDateTimeStr(buildTime))
-      }.toString()
+      json(version, buildDate, buildDateTimeStr(buildTime))
     }
 
     /** Lambda that produces a plain-text string containing version, release date, and build time. */
     val plainStr = { version: String, buildDate: String, buildTime: Long ->
-      "Version: $version Release Date: $buildDate Build Date: ${buildDateTimeStr(buildTime)}"
+      plain(version, buildDate, buildDateTimeStr(buildTime))
     }
 
     /**
@@ -94,14 +106,12 @@ annotation class Version(
      * @param asJson if `true`, returns JSON format; otherwise returns plain text
      * @return the version description string, or a default "Unknown" description if not annotated
      */
-    fun KClass<*>.versionDesc(asJson: Boolean = false): String =
-      findAnnotation<Version>()
-        ?.run {
-          if (asJson)
-            jsonStr(version, releaseDate, buildTime)
-          else
-            plainStr(version, releaseDate, buildTime)
-        }
-        ?: if (asJson) jsonStr(UNKNOWN, UNKNOWN, 0) else plainStr(UNKNOWN, UNKNOWN, 0)
+    fun KClass<*>.versionDesc(asJson: Boolean = false): String {
+      val annotation = findAnnotation<Version>()
+      val version = annotation?.version ?: UNKNOWN
+      val releaseDate = annotation?.releaseDate ?: UNKNOWN
+      val buildDateTime = annotation?.run { buildDateTimeStr(buildTime) } ?: UNKNOWN
+      return if (asJson) json(version, releaseDate, buildDateTime) else plain(version, releaseDate, buildDateTime)
+    }
   }
 }

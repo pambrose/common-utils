@@ -69,6 +69,12 @@ class DateUtilsTest : StringSpec() {
       LocalDateTime(2024, 3, 15, 8, 30, 45, 123_000_000).toISO8601() shouldBe "2024-03-15T08:30:45Z"
     }
 
+    "toISO8601 - always includes seconds, even on a round minute" {
+      LocalDateTime(2024, 3, 15, 8, 30, 0).toISO8601() shouldBe "2024-03-15T08:30:00Z"
+      LocalDateTime(2024, 1, 1, 0, 0).toISO8601() shouldBe "2024-01-01T00:00:00Z"
+      LocalDateTime(2024, 3, 15, 8, 30, 0, 500_000_000).toISO8601() shouldBe "2024-03-15T08:30:00Z"
+    }
+
     "abbrevDayOfWeek - LocalDate produces 3-letter capitalized day" {
       // 2024-01-08 is a Monday
       LocalDate(2024, 1, 8).abbrevDayOfWeek() shouldBe "Mon"
@@ -126,6 +132,14 @@ class DateUtilsTest : StringSpec() {
 
     "toMMDDYY - formats year as 2 digits" {
       LocalDate(2024, 12, 31).toMMDDYY() shouldBe "12/31/24"
+    }
+
+    "two-digit years wrap modulo 100 outside 2000-2099" {
+      LocalDate(1999, 12, 31).toMMDDYY() shouldBe "12/31/99"
+      LocalDate(2100, 1, 1).toMMDDYY() shouldBe "01/01/00"
+      LocalDate(2005, 6, 7).toMMDDYY() shouldBe "06/07/05"
+      LocalDateTime(1999, 12, 31, 23, 59, 58).toFullDateString() shouldBe "Fri 12/31/99 23:59:58"
+      LocalDateTime(1999, 12, 31, 23, 59, 58, 7_000_000).toLogString() shouldBe "12/31/99 23:59:58.007"
     }
 
     "toMMDD - omits year" {

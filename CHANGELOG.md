@@ -17,9 +17,44 @@ All notable changes to Common Utils are documented in this file.
   levels deep, or that declare an array longer than the 10 MB payload cap, are rejected with
   `InvalidClassException` before the oversized allocation happens. The filter is merged with any JVM-wide
   `jdk.serialFilter` instead of replacing it.
+- `ContentRoot.file(path)` (core-utils) now resolves a relative `path` against the root, as its KDoc and the
+  README always described. Before, it ignored the root and used `path` as given.
+  - **`FileSystemSource`:** the path resolves against `pathPrefix`, so
+    `FileSystemSource("/var/data").file("config.json")` reads `/var/data/config.json`.
+  - **Repositories:** the path resolves against `rawSourcePrefix` and begins with the branch name.
+  - **Unchanged:** absolute file paths and full URLs pass through as-is. Callers that pass a path already
+    prefixed with a *relative* root (for example `FileSystemSource("content").file("content/x")`) must drop
+    the prefix. A `"./"` root and absolute roots keep working.
+- `GitLabRepo.rawSourcePrefix` and `GitLabFile` URLs now use GitLab's raw-content path
+  (`.../-/raw/<branch>/...`). Before, `GitLabFile` pointed at the `/-/blob/` HTML viewer page, so `content`
+  returned HTML, and `rawSourcePrefix` was the repository home page.
+- `typeParameterCount` (core-utils) now counts the type parameters declared by the object's own class,
+  instead of its superclass's type arguments. Generic classes that extend `Object`, such as `Pair`,
+  `Triple`, or a user `Box<T>`, report their parameters. Non-generic subclasses of generic classes, such
+  as `java.util.Properties`, report 0. The script engines' `add()` validation uses this count: `Pair`
+  values now require their type parameters, and `Properties` can be bound without any.
+- `String.toPattern` and `asRegex` (core-utils) now escape every regex metacharacter in the glob, not just
+  `.`, so only `*` and `?` act as wildcards. Patterns that relied on regex syntax passing through (for
+  example a `[abc]` character class) now match those characters literally.
+- `AtomicDelegates.singleSetReference` (core-utils) now allows exactly one assignment, and a `null`
+  assignment counts as that assignment. `compareValue` defaults to `initValue`, and a `compareValue` that
+  differs from `initValue` throws `IllegalArgumentException`, since such a delegate could never be set.
 
 ### Bug fixes
 
+- `toObjectSecure` no longer rejects every exception payload. The `java.lang.Runtime` blocklist entry
+  prefix-matched `java.lang.RuntimeException`, the superclass of all unchecked exceptions, and
+  `java.lang.RuntimePermission`. Package entries still match by prefix; single classes now match exactly.
+- `maskUrlCredentials` only treats an `@` inside the URL authority as the credential separator.
+  `https://api.example.com/users?email=bob@corp.com` used to be logged as `https://*****:*****@corp.com`,
+  showing the wrong host and credentials that never existed.
+- `Long.length` counts digits with integer arithmetic. The `log10` of a converted `Double` rounded up near
+  powers of ten, so values such as `999_999_999_999_999` reported one digit too many.
+- `DateUtils.toISO8601` always includes seconds. It used to drop them on a round minute (`08:30Z` instead of
+  `08:30:00Z`).
+- Two-digit years in `toMMDDYY`, `toFullDateString`, and `toLogString` wrap modulo 100 (`1999` → `99`,
+  `2100` → `00`) instead of printing `-1` or `100`. `versionDesc` for a class without `@Version` now reports
+  `Build Date: Unknown` instead of formatting epoch 0 as `Wed 12/31/-31 16:00:00`.
 - `Route.servlet` (ktor-server-utils) now initializes servlets through `init(ServletConfig)`, as a servlet
   container does, instead of the no-arg `init()`.
   - **Why:** servlets that do their setup in `init(ServletConfig)` never got it. Their

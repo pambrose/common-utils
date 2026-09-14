@@ -288,23 +288,28 @@ fun String.withLineNumbers(separator: Char = ':'): String {
     .joinToString("\n")
 }
 
-private const val DOT = "__SINGLE__DOT__"
+private const val REGEX_METACHARACTERS = """\^$.|+()[]{}"""
 
 /**
  * Converts a glob-style pattern (using `*` and `?` wildcards) to a regex pattern string.
  *
- * Extension property on [String]. Dots are escaped, `*` becomes `.*`, and `?` becomes `.`.
+ * Extension property on [String]. `*` becomes `.*` and `?` becomes `.`. Every other character matches
+ * itself, with the regex metacharacters `\ ^ $ . | + ( ) [ ] { }` escaped.
  */
 val String.toPattern: String
-  get() {
-    // First protect the period and then convert back at end
-    val pattern =
-      replace(".", DOT)
-        .replace("*", ".*")
-        .replace("?", ".")
-        .replace(DOT, """\.""")
-    return """^$pattern$"""
-  }
+  get() =
+    buildString {
+      append('^')
+      this@toPattern.forEach { ch ->
+        when (ch) {
+          '*' -> append(".*")
+          '?' -> append('.')
+          in REGEX_METACHARACTERS -> append('\\').append(ch)
+          else -> append(ch)
+        }
+      }
+      append('$')
+    }
 
 /**
  * Converts this glob-style pattern string to a [Regex].
@@ -326,21 +331,27 @@ fun String.asRegex(ignoreCase: Boolean = false) =
  */
 fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.filter { it.isNotEmpty() }.join("/")
 
+private val AUTHORITY_TERMINATORS = charArrayOf('/', '?', '#')
+
 /**
  * Masks username and password in a URL string, replacing them with `*****`.
  *
- * For example, `"https://user:pass@host.com"` becomes `"https://xxxxx:xxxxx@host.com"`.
+ * For example, the credentials in `"https://user:pass@host.com"` become `*****:*****`. Only an `@`
+ * inside the authority (between `://` and the first `/`, `?`, or `#`) separates credentials, so an `@` in
+ * the path, query, or fragment is left alone. Credentials must be percent-encoded as RFC 3986 requires: an
+ * unencoded `/`, `?`, or `#` in a password ends the authority early.
  *
  * @return the URL with masked credentials, or the original string if no credentials are present
  */
-fun String.maskUrlCredentials() =
-  if ("://" in this && "@" in this) {
-    val scheme = substringBefore("://")
-    val host = substringAfterLast("@")
-    "$scheme://*****:*****@$host"
-  } else {
-    this
-  }
+fun String.maskUrlCredentials(): String {
+  val schemeEnd = indexOf("://")
+  if (schemeEnd == -1) return this
+
+  val authorityStart = schemeEnd + 3
+  val authorityEnd = indexOfAny(AUTHORITY_TERMINATORS, authorityStart).takeIf { it >= 0 } ?: length
+  val at = lastIndexOf('@', authorityEnd - 1)
+  return if (at >= authorityStart) replaceRange(authorityStart, at, "*****:*****") else this
+}
 
 /**
  * Obfuscates this [String] by replacing characters at every [freq]-th position with `'*'`.

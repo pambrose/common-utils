@@ -16,25 +16,16 @@
 
 package com.pambrose.common.util
 
-import java.lang.reflect.ParameterizedType
-
 /**
- * Returns the number of generic type parameters of this object's class.
+ * Returns the number of generic type parameters declared by this object's class.
  *
- * For arrays, always returns 1. For non-parameterized types, returns 0.
+ * Object arrays (`Array<T>`) return 1; primitive arrays such as [IntArray] and non-generic classes return 0.
+ * Only the runtime class's own type parameters count: a generic class that extends `Object`, such as [Pair],
+ * reports its parameters, while a non-generic subclass of a generic class, such as `java.util.Properties`
+ * (which extends `Hashtable<Object, Object>`), reports 0.
  *
  * Extension property on [Any].
  */
 val Any.typeParameterCount: Int
-  get() {
-    // Arrays must be handled first; they always report a single type parameter.
-    if (this is Array<*>)
-      return 1
-
-    // genericSuperclass is null for Object, interfaces, primitives and void, so guard against it.
-    val genericSuperclass = javaClass.genericSuperclass
-    return if (genericSuperclass is ParameterizedType)
-      genericSuperclass.actualTypeArguments.size
-    else
-      0
-  }
+  // Array classes declare no type parameters of their own, so Array<T> is special-cased.
+  get() = if (this is Array<*>) 1 else javaClass.typeParameters.size
