@@ -95,20 +95,20 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-025** `LOW` · tests — Boundary tests missing, weak assertions, 10M-iteration sweep in `commonTest` ([details](#cr-025)) — fixed in #176
 
 ### json-utils
-- [ ] **CR-026** `MEDIUM` · API — `s.toJsonString()` and `s.toJsonString(prettyPrint = true)` do different things ([details](#cr-026)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-027** `MEDIUM` · bug — Non-`OrNull` accessors turn JSON `null` into `"null"` / `false` ([details](#cr-027)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-028** `MEDIUM` · bug/docs — `*OrNull` accessors throw on type mismatch, contrary to README ([details](#cr-028)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-029** `LOW` · bug — `booleanValue` treats any non-`"true"` as `false` (carried over) ([details](#cr-029)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-030** `LOW` · API — `isNumber` true for quoted numeric strings (carried over) ([details](#cr-030)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-031** `LOW` · API — Internal `JsonElementUtils` logger holder is public (carried over) ([details](#cr-031)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-032** `LOW` · API — Path navigation: inconsistent empty segments; dotted keys unreachable (carried over) ([details](#cr-032)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-033** `LOW` · docs — README examples missing `get` import; `size` on an array throws ([details](#cr-033)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-034** `LOW` · docs — `isEmpty()` KDoc says "blank"; `JsonNull` counts as non-empty ([details](#cr-034)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-035** `LOW` · bug — `deepCopy()` string round-trip throws on NaN/Infinity ([details](#cr-035)) — in progress (branch `fix-json-client-review-items`)
-- [ ] **CR-036** `LOW` · tests — json-utils tests that cannot fail or are unfinished ([details](#cr-036)) — in progress (branch `fix-json-client-review-items`)
+- [ ] **CR-026** `MEDIUM` · API — `s.toJsonString()` and `s.toJsonString(prettyPrint = true)` do different things ([details](#cr-026)) — in progress (#177)
+- [ ] **CR-027** `MEDIUM` · bug — Non-`OrNull` accessors turn JSON `null` into `"null"` / `false` ([details](#cr-027)) — in progress (#177)
+- [ ] **CR-028** `MEDIUM` · bug/docs — `*OrNull` accessors throw on type mismatch, contrary to README ([details](#cr-028)) — in progress (#177)
+- [ ] **CR-029** `LOW` · bug — `booleanValue` treats any non-`"true"` as `false` (carried over) ([details](#cr-029)) — in progress (#177)
+- [ ] **CR-030** `LOW` · API — `isNumber` true for quoted numeric strings (carried over) ([details](#cr-030)) — in progress (#177)
+- [ ] **CR-031** `LOW` · API — Internal `JsonElementUtils` logger holder is public (carried over) ([details](#cr-031)) — in progress (#177)
+- [ ] **CR-032** `LOW` · API — Path navigation: inconsistent empty segments; dotted keys unreachable (carried over) ([details](#cr-032)) — in progress (#177)
+- [ ] **CR-033** `LOW` · docs — README examples missing `get` import; `size` on an array throws ([details](#cr-033)) — in progress (#177)
+- [ ] **CR-034** `LOW` · docs — `isEmpty()` KDoc says "blank"; `JsonNull` counts as non-empty ([details](#cr-034)) — in progress (#177)
+- [ ] **CR-035** `LOW` · bug — `deepCopy()` string round-trip throws on NaN/Infinity ([details](#cr-035)) — in progress (#177)
+- [ ] **CR-036** `LOW` · tests — json-utils tests that cannot fail or are unfinished ([details](#cr-036)) — in progress (#177)
 
 ### ktor-client-utils
-- [ ] **CR-037** `LOW` · API/tests — `blockingGet` lacks `httpClient`/`expectSuccess`; tests don't verify `setUp`/closing (carried over) ([details](#cr-037)) — in progress (branch `fix-json-client-review-items`)
+- [ ] **CR-037** `LOW` · API/tests — `blockingGet` lacks `httpClient`/`expectSuccess`; tests don't verify `setUp`/closing (carried over) ([details](#cr-037)) — in progress (#177)
 
 ### ktor-server-utils
 - [x] **CR-038** `HIGH` · bug — `Route.servlet` calls no-arg `init()`; Ktor `/healthcheck` NPEs on every request ([details](#cr-038)) — fixed in #174
