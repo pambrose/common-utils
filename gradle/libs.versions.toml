@@ -22,7 +22,7 @@ versions = "0.60.0"
 # Note this pin only governs the kotlin-scripting-* artifacts (where the bug lives), not the compiler:
 # pambrose-gradle-plugins pulls kotlin-gradle-plugin 2.4.20, which wins on the buildscript classpath,
 # so the project is *compiled* by 2.4.20. Check `gradlew buildEnvironment` before assuming otherwise.
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 coroutines = "1.11.0"
 datetime = "0.8.0-0.6.x-compat"
 kotlinxHtml = "0.12.0"
