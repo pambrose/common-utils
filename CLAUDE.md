@@ -75,6 +75,15 @@ compiled by a newer Kotlin than the catalog names. Run `./gradlew buildEnvironme
 actually in use rather than assuming the catalog value — and be aware that a convention-plugin bump can
 therefore change the compiler, and the resolved JS toolchain npm versions, without touching the catalog.
 
+Dependabot (`.github/dependabot.yml`) opens weekly version-update PRs for the Gradle ecosystem (catalog
+libraries and plugins, plus the Gradle wrapper) and for GitHub Actions. Because of the Kotlin hold, Kotlin
+updates get their own group: expect that PR to fail `:script-utils-kotlin:test` in CI until the regression
+is fixed, and don't merge it red. The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
+Dependabot only proposes candidates carrying the same suffix — and it must be kept, since
+`exposed-kotlin-datetime` links against the deprecated `kotlinx.datetime.Instant` that only the compat
+artifacts ship. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
+`make upgrade-wrapper` reads, so that entry goes stale after a Dependabot wrapper bump.
+
 ### Experimental Kotlin Features
 
 These opt-ins are enabled globally:
