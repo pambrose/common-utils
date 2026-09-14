@@ -68,7 +68,7 @@ These follow the per-area batching used for #118–#136. The order within the li
 ## Tracker
 
 ### core-utils
-- [ ] **CR-001** `HIGH` · security — `toObjectSecure` disables its allow-list by default; no `ObjectInputFilter` ([details](#cr-001)) — in progress (branch `fix-review-high-items`)
+- [x] **CR-001** `HIGH` · security — `toObjectSecure` disables its allow-list by default; no `ObjectInputFilter` ([details](#cr-001)) — fixed in #174
 - [ ] **CR-002** `MEDIUM` · bug — Blocklist prefix `java.lang.Runtime` rejects every `RuntimeException` subclass ([details](#cr-002))
 - [ ] **CR-003** `MEDIUM` · bug — `maskUrlCredentials` fabricates credentials/host when `@` is in path or query ([details](#cr-003))
 - [ ] **CR-004** `MEDIUM` · bug — Glob→regex (`toPattern`/`asRegex`) escapes only `.` ([details](#cr-004))
@@ -111,7 +111,7 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [ ] **CR-037** `LOW` · API/tests — `blockingGet` lacks `httpClient`/`expectSuccess`; tests don't verify `setUp`/closing (carried over) ([details](#cr-037))
 
 ### ktor-server-utils
-- [ ] **CR-038** `HIGH` · bug — `Route.servlet` calls no-arg `init()`; Ktor `/healthcheck` NPEs on every request ([details](#cr-038)) — in progress (branch `fix-review-high-items`)
+- [x] **CR-038** `HIGH` · bug — `Route.servlet` calls no-arg `init()`; Ktor `/healthcheck` NPEs on every request ([details](#cr-038)) — fixed in #174
 - [ ] **CR-039** `MEDIUM` · bug — `sendError` throws, so unsupported methods return 500 instead of 405/501 ([details](#cr-039))
 - [ ] **CR-040** `MEDIUM` · bug — `HerokuHttpsRedirect` defaults `host` to `localhost` ([details](#cr-040))
 - [ ] **CR-041** `LOW` · lifecycle — Servlet `destroy()` never called (carried over) ([details](#cr-041))
@@ -225,7 +225,7 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [ ] **CR-123** `LOW` · tests — grpc TLS/retry tests assert only `authority()` / `isServer` ([details](#cr-123))
 
 ### Build & publishing
-- [ ] **CR-124** `HIGH` · publishing — service-utils exposes `implementation` dependency types in its public API ([details](#cr-124)) — in progress (branch `fix-review-high-items`)
+- [x] **CR-124** `HIGH` · publishing — service-utils exposes `implementation` dependency types in its public API ([details](#cr-124)) — fixed in #174
 - [ ] **CR-125** `MEDIUM` · publishing — grpc-utils (Netty `SslContext`) and script-utils-java (`Isolation`) leak `implementation` types ([details](#cr-125))
 - [ ] **CR-126** `LOW` · deps — Catalog `kotlin` entry also pins `kotlin-reflect`; POMs mix 2.4.10 / 2.4.20 ([details](#cr-126))
 - [ ] **CR-127** `LOW` · deps — Redundant/unused dependency declarations ([details](#cr-127))
