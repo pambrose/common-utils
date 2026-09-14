@@ -2,6 +2,48 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Breaking changes
+
+- `ByteArray.toObjectSecure` (core-utils) requires an explicit, non-empty `allowedClasses`. The parameter
+  used to default to `emptySet()`, which switched the allow-list off entirely and left only a 7-entry
+  blocklist between untrusted bytes and known deserialization gadget chains.
+  - **Calls that omitted the argument:** they no longer compile. Code compiled against 3.2.3 must be
+    recompiled, because the `toObjectSecure$default` synthetic is gone.
+  - **An explicit empty set:** it now throws `IllegalArgumentException`.
+  - **Java callers:** they always passed both arguments and are unaffected.
+- `toObjectSecure` also installs a JEP 290 `ObjectInputFilter`. Streams that nest objects more than 32
+  levels deep, or that declare an array longer than the 10 MB payload cap, are rejected with
+  `InvalidClassException` before the oversized allocation happens. The filter is merged with any JVM-wide
+  `jdk.serialFilter` instead of replacing it.
+
+### Bug fixes
+
+- `Route.servlet` (ktor-server-utils) now initializes servlets through `init(ServletConfig)`, as a servlet
+  container does, instead of the no-arg `init()`.
+  - **Why:** servlets that do their setup in `init(ServletConfig)` never got it. Their
+    `getServletConfig()` stayed `null`, and `getServletName()`, `getInitParameter()`, and `log()` threw.
+    Dropwizard's `HealthCheckServlet` is one such servlet, so `GenericKtorService`'s admin
+    `/healthcheck` endpoint returned 500 on every request.
+  - **What the servlet gets:** the config is named after the servlet's class and has no init parameters.
+    Its internal `ServletContext` supports attributes and logging, and throws
+    `UnsupportedOperationException` for container features such as dynamic registration.
+- service-utils now publishes `guava-utils`, `dropwizard-utils`, `zipkin-utils`, `jetty-utils`,
+  `ktor-server-utils`, and `metrics-jmx` as `api` (POM scope `compile`) instead of `implementation`
+  (`runtime`). Their types appear in service-utils' public API: `AbstractGenericService` extends
+  `GenericExecutionThreadService`, and the API also exposes `HealthCheckRegistry`, `MetricRegistry`,
+  `JmxReporter`, Brave `Tracing`, Ktor `Application`, and Jakarta servlets. Consumers could not compile a
+  subclass of `GenericService` or `GenericKtorService` without declaring those modules themselves.
+  `prometheus-utils` and the embedded-server internals stay `runtime`.
+
+### Documentation
+
+- Correct the core-utils README's `toObjectSecure` example, which did not compile, and document the
+  required allow-list and stream limits.
+- Add `docs/CODE_REVIEW_2026-09-14.md`, a full-repo code review with 139 enumerated, trackable action items.
+  CR-001, CR-038, and CR-124 are the three fixes above.
+
 ## [3.2.3] - 2026-09-07
 
 ### Build & tooling

@@ -29,10 +29,13 @@ import kotlinx.coroutines.withContext
 /**
  * Mounts a Jakarta [HttpServlet] at the given [path] within a Ktor [Route].
  *
- * The servlet is initialized once via [HttpServlet.init], and each incoming request is translated
- * into a [KtorServletRequest]/[KtorServletResponse] pair. The servlet's response headers, status
- * code, and body are then forwarded back through the Ktor response pipeline. Servlet processing
- * runs on [kotlinx.coroutines.Dispatchers.IO].
+ * The servlet is initialized once via `init(ServletConfig)`, as a servlet container would. The config
+ * is named after the servlet's class and has no init parameters. Its `ServletContext` supports
+ * attributes and logging, and throws [UnsupportedOperationException] for container features such as
+ * dynamic registration. Each incoming request is translated into a
+ * [KtorServletRequest]/[KtorServletResponse] pair. The servlet's response headers, status code, and
+ * body are then forwarded back through the Ktor response pipeline. Servlet processing runs on
+ * [kotlinx.coroutines.Dispatchers.IO].
  *
  * @param path the URL path at which the servlet should be mounted
  * @param servlet the Jakarta servlet instance to handle requests
@@ -41,7 +44,9 @@ fun Route.servlet(
   path: String,
   servlet: HttpServlet,
 ) {
-  servlet.init()
+  // init(ServletConfig) stores the config and then calls the no-arg init(); servlets such as
+  // Dropwizard's HealthCheckServlet do their setup only in the former.
+  servlet.init(KtorServletConfig(servlet.javaClass.name, KtorServletContext()))
   route(path) {
     handle {
       val request = KtorServletRequest(call.request)

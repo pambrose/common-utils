@@ -200,7 +200,10 @@ import com.pambrose.common.util.encode
 ### Serialization and Checksums (JVM)
 
 `toObjectSecure` deserializes only classes you allow-list, which avoids the deserialization gadget risk
-that plain `toObject` carries.
+that plain `toObject` carries. The allow-list is required and must name every class in the stream,
+including superclasses (an `Integer` also needs `Number`). A blocklist of known gadget packages applies
+even to allow-listed classes. The stream is also limited to a nesting depth of 32, and to array lengths
+within the 10 MB payload cap.
 
 ```kotlin
 import com.pambrose.common.util.*
@@ -210,7 +213,7 @@ val back = bytes.toObject()
 
 // Hardened round-trip
 val secureBytes = myValue.toByteArraySecure()
-val restored = secureBytes.toObjectSecure<MyType>(setOf(MyType::class.java.name))
+val restored = secureBytes.toObjectSecure(MyType::class.java, setOf(MyType::class.java))
 
 // Tamper detection
 val withSum = bytes.withChecksum()
@@ -352,8 +355,9 @@ Maven consumers must depend on the `-jvm` artifact, since this is a multiplatfor
 ## Security Notes
 
 - `md5` and `sha256` are general-purpose digests, not password hashes
-- Prefer `toObjectSecure` over `toObject` for any data you did not produce yourself — Java
-  deserialization of untrusted bytes is a known remote-code-execution vector
+- Prefer `toObjectSecure` over `toObject` for any data you did not produce yourself, and keep its
+  allow-list to exactly the classes you expect. Java deserialization of untrusted bytes is a known
+  remote-code-execution vector.
 - `maskUrlCredentials()` exists so connection strings can be logged without leaking passwords
 
 ## License

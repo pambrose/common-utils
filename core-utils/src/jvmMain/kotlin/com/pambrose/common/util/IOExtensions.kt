@@ -22,6 +22,8 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.InvalidClassException
+import java.io.ObjectInputFilter
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.ObjectStreamClass
@@ -76,16 +78,26 @@ fun Serializable.toByteArraySecure(): ByteArray =
 /**
  * Deserialize with type validation and security checks.
  *
+ * Every class in the stream, including superclasses (e.g. [Number] for an [Integer]), must be in
+ * [allowedClasses]. Classes matching a small blocklist of known deserialization gadgets are rejected even
+ * when allow-listed. The stream is also bounded by a JEP 290 [ObjectInputFilter]: object graphs may nest
+ * at most [MAX_DEPTH] levels, and arrays may declare at most [MAX_SERIALIZED_SIZE] elements.
+ *
  * @param expectedClass The expected class type for validation
- * @param allowedClasses Set of classes allowed for deserialization (security whitelist)
- * @throws SecurityException if the deserialized object is not in the allowed classes
+ * @param allowedClasses Classes allowed for deserialization (security whitelist); must not be empty
+ * @throws IllegalArgumentException if [allowedClasses] is empty
+ * @throws SecurityException if the payload is too large, or a class is blocklisted or not in [allowedClasses]
+ * @throws InvalidClassException if the stream exceeds the depth or array-length limits
  * @throws ClassCastException if the object cannot be cast to the expected type
  */
 @Throws(IOException::class, ClassNotFoundException::class, SecurityException::class)
 fun <T : Serializable> ByteArray.toObjectSecure(
   expectedClass: Class<T>,
-  allowedClasses: Set<Class<*>> = emptySet(),
+  allowedClasses: Set<Class<*>>,
 ): T {
+  // An empty whitelist would admit every class not on the blocklist
+  require(allowedClasses.isNotEmpty()) { "allowedClasses must not be empty" }
+
   // Validate input size to prevent DoS attacks
   if (size > MAX_SERIALIZED_SIZE) {
     throw SecurityException("Serialized data too large: $size bytes")
@@ -112,6 +124,12 @@ private class SecureObjectInputStream(
   inputStream: InputStream,
   private val allowedClasses: Set<Class<*>>,
 ) : ObjectInputStream(inputStream) {
+  init {
+    // Merge with any JVM-wide filter (jdk.serialFilter) rather than replacing it
+    val limits = ObjectInputFilter.Config.createFilter("maxdepth=$MAX_DEPTH;maxarray=$MAX_SERIALIZED_SIZE")
+    objectInputFilter = objectInputFilter?.let { ObjectInputFilter.merge(limits, it) } ?: limits
+  }
+
   override fun resolveClass(desc: ObjectStreamClass): Class<*> {
     val className = desc.name
 
@@ -122,8 +140,8 @@ private class SecureObjectInputStream(
 
     val clazz = super.resolveClass(desc)
 
-    // If whitelist is provided, only allow whitelisted classes
-    if (allowedClasses.isNotEmpty() && !allowedClasses.contains(clazz)) {
+    // Only allow whitelisted classes
+    if (!allowedClasses.contains(clazz)) {
       throw SecurityException("Class not in whitelist: $className")
     }
 
@@ -172,3 +190,5 @@ fun ByteArray.verifyChecksum(): ByteArray {
 }
 
 private const val MAX_SERIALIZED_SIZE = 10 * 1024 * 1024 // 10MB limit
+
+private const val MAX_DEPTH = 32

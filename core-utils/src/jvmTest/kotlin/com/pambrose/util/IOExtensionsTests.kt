@@ -28,7 +28,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.io.InvalidClassException
 import java.io.Serializable
+import java.nio.ByteBuffer
 import javax.management.ObjectName
 
 class IOExtensionsTests : StringSpec() {
@@ -120,24 +122,56 @@ class IOExtensionsTests : StringSpec() {
       }
     }
 
-    "secure deserialization with the default empty whitelist allows non-dangerous classes" {
-      val original = "no whitelist"
-      val bytes = original.toByteArraySecure()
+    "secure deserialization rejects an empty allow-list" {
+      val bytes = "no whitelist".toByteArraySecure()
 
-      // Omitting allowedClasses disables the whitelist check but keeps the dangerous-class block
-      bytes.toObjectSecure(String::class.java) shouldBe original
+      // An empty allow-list would admit every non-blocklisted class, so it is refused outright.
+      shouldThrow<IllegalArgumentException> {
+        bytes.toObjectSecure(String::class.java, emptySet())
+      }
+    }
+
+    "secure deserialization accepts moderately nested object graphs" {
+      val nested = nestedLists(10)
+      val bytes = (nested as Serializable).toByteArraySecure()
+
+      bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java)) shouldBe nested
+    }
+
+    "secure deserialization rejects object graphs nested beyond the depth limit" {
+      // Every class in the graph is allow-listed, so only the stream depth limit can stop it.
+      val bytes = (nestedLists(100) as Serializable).toByteArraySecure()
+
+      shouldThrow<InvalidClassException> {
+        bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java))
+      }
+    }
+
+    "secure deserialization rejects arrays declaring a length beyond the size cap" {
+      // A tiny payload can declare a huge array length and force a large allocation before any
+      // element is read. The length is the 4 bytes preceding the 4 * 4 bytes of int[4] data.
+      val bytes = (IntArray(4) as Any as Serializable).toByteArraySecure()
+      ByteBuffer.wrap(bytes).putInt(bytes.size - 4 * 4 - 4, 16 * 1024 * 1024)
+
+      shouldThrow<InvalidClassException> {
+        bytes.toObjectSecure(Serializable::class.java, setOf(IntArray::class.java))
+      }
     }
 
     "secure deserialization blocks dangerous classes" {
       // javax.management.* is on the SecureObjectInputStream blocklist, and ObjectName is
-      // Serializable, so its class descriptor trips the block during resolveClass.
+      // Serializable, so its class descriptor trips the block during resolveClass, even when
+      // the class is allow-listed.
       val dangerous: Serializable = ObjectName("example:type=Test")
       val bytes = dangerous.toByteArraySecure()
 
       val ex = shouldThrow<SecurityException> {
-        bytes.toObjectSecure(Serializable::class.java)
+        bytes.toObjectSecure(Serializable::class.java, setOf(ObjectName::class.java))
       }
       ex.message shouldContain "Blocked dangerous class"
     }
   }
+
+  private fun nestedLists(depth: Int): ArrayList<Any> =
+    if (depth == 0) arrayListOf() else arrayListOf(nestedLists(depth - 1))
 }

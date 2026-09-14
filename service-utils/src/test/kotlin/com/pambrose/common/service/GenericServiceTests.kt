@@ -24,7 +24,12 @@ import com.google.common.util.concurrent.Service
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import java.net.ServerSocket
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import java.util.SortedMap
 import java.util.concurrent.CountDownLatch
 import kotlin.time.Duration
@@ -199,6 +204,25 @@ class GenericServiceTests : StringSpec() {
 
       service.close()
       service.isRunning shouldBe false
+    }
+
+    "Ktor service admin health check endpoint reports the registered checks" {
+      val port = freePort()
+      val service = TestKtorService(admin = disabledAdmin.copy(enabled = true, port = port))
+      service.startSync()
+      try {
+        val request =
+          HttpRequest.newBuilder(URI("http://127.0.0.1:$port/healthcheck"))
+            .timeout(java.time.Duration.ofSeconds(10))
+            .build()
+        val response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+
+        response.statusCode() shouldBe 200
+        response.body() shouldContain "thread_deadlock"
+        response.body() shouldContain "all_services_healthy"
+      } finally {
+        service.close()
+      }
     }
 
     "shutdown hook is registered on start and removed on stop" {
