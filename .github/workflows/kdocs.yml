@@ -11,8 +11,11 @@ permissions:
   pages: write
   id-token: write
 
+# A concurrency group holds at most one running and one pending run; a newly queued run cancels
+# the pending one. Grouping by ref keeps PR builds (refs/pull/<n>/merge) from replacing a pending
+# master Pages deploy, while master runs still serialize so an in-progress deploy always finishes.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
 env:
