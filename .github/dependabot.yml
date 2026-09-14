@@ -28,6 +28,12 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # netty-tcnative must match the version grpc-java pins for the grpc release in use (the catalog's
+      # "Keep in sync with grpc" note), which Dependabot can't know, so bump it by hand alongside grpc.
+      # Ignore rules also apply to security updates: a tcnative advisory still raises an alert but gets
+      # no automatic PR.
+      - dependency-name: "io.netty:netty-tcnative-boringssl-static"
 
   - package-ecosystem: github-actions
     directory: "/"
