@@ -53,9 +53,32 @@ All notable changes to Common Utils are documented in this file.
     `GitHubFile` always pointed at `raw.githubusercontent.com`, and `rawSourcePrefix` was the repository
     page. Servers with subdomain isolation enabled, which serve raw content from `raw.HOSTNAME`, are not
     detected.
+- json-utils accessors reject bad values consistently.
+  - **Plain accessors:** `stringValue`, `intValue`, `doubleValue`, and `booleanValue` throw
+    `IllegalArgumentException` for a JSON `null`. Before, `stringValue` returned the string `"null"` and
+    `booleanValue` returned `false`.
+  - **Booleans:** `booleanValue` accepts only `true` and `false` and throws for anything else. It used to
+    read `"yes"` or `1` as `false`.
+  - **`OrNull` accessors:** they return `null` for a type mismatch (`intValueOrNull` on `"test"`,
+    `stringValueOrNull` on an object) instead of throwing.
+- json-utils `isNumber` is `false` for a quoted numeric string such as `"42"`, and `isEmpty()` is `true` for
+  JSON `null`.
+- json-utils `get`, `getOrNull`, and `containsKeys` ignore empty path segments, as `getByPath` already did.
+  `get("a..b")` is now the same as `get("a.b")`, and an empty path returns the element itself. Before, the
+  lookup was for the key `""`, and it threw.
 
 ### Bug fixes
 
+- `String.toJsonString()` (json-utils) is deprecated in favor of the new `String.reformatJson(prettyPrint)`.
+  On a `String`, passing any argument, as in `toJsonString(prettyPrint = true)`, selects the generic overload,
+  which serializes the string as a quoted JSON string literal instead of reformatting it.
+- json-utils `size` counts array elements as well as object entries; it used to throw for an array.
+  `deepCopy()` copies structurally, so it no longer throws on `NaN` or infinite numbers and no longer
+  re-parses the whole tree.
+- The public `JsonElementUtils.logger` holder (json-utils) is deprecated; the utilities use a private logger.
+- `KtorDsl.blockingGet` (ktor-client-utils) accepts `httpClient` and `expectSuccess`, like `withHttpClient`.
+  The previous signature is kept as a hidden deprecation, so compiled callers keep linking and calls like
+  `blockingGet(url) { … }` still compile.
 - `UrlSource` (core-utils) now applies connect and read timeouts, 10 and 30 seconds by default and
   configurable through new constructor parameters. Before, an unresponsive server blocked the reading thread
   forever. The URL is parsed with `URI(source).toURL()` instead of the deprecated `URL(String)` constructor.
@@ -116,6 +139,14 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Make the json-utils and ktor-client-utils tests able to fail.
+  - **Lenient/strict formats:** the lenient-parsing test decodes into a class, so it sees
+    `ignoreUnknownKeys`.
+  - **Null handling:** a TODO is replaced with real JSON-null assertions.
+  - **Error tests:** use `shouldThrow` instead of try/catch.
+  - **Deep copy:** it asserts equality instead of identity.
+  - **HTTP helpers:** the `blockingGet` setUp test echoes the header back, `newHttpClient` performs a
+    request, and `withHttpClient` is verified to close the client it created.
 - Replace the core-utils `length` brute-force sweeps, about 40 million assertions that ran on every KMP
   target, with power-of-ten boundary checks. Tighten the weak `withLineNumbers` and `toAdjustedString`
   assertions to exact output.

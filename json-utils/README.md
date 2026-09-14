@@ -26,7 +26,7 @@ Type checks (`isObject`, `isArray`, `isString`, …) and simple accessors (`stri
 - `keys`, `size`, `isEmpty()`, `isNotEmpty()`, `containsKeys(...)`
 - `isObject`, `isArray`, `isPrimitive`, `isString`, `isNumber`
 - `deepCopy()`, `toMap()`, `toJsonElementList()`, `forEachJsonObject { }`
-- `toJsonString()`, `toJsonElement()`, `toFormattedString(indent)`
+- `toJsonString()` (objects), `reformatJson(prettyPrint)` (JSON strings), `toJsonElement()`, `toFormattedString(indent)`
 
 ### Json Formats
 
@@ -38,6 +38,7 @@ Type checks (`isObject`, `isArray`, `isString`, …) and simple accessors (`stri
 
 ```kotlin
 import com.pambrose.common.json.booleanValue
+import com.pambrose.common.json.get
 import com.pambrose.common.json.intValue
 import com.pambrose.common.json.isArray
 import com.pambrose.common.json.isObject
@@ -62,7 +63,8 @@ There is no `isBoolean` property; use `isPrimitive` or read the value with `bool
 ### Nested Access
 
 The `vararg` forms walk several keys at once. The plain forms throw `IllegalArgumentException` when a key
-is missing; the `OrNull` forms return `null`.
+is missing, the value is JSON `null`, or the value has the wrong type. The `OrNull` forms return `null` in all
+three cases. Keys are split on `.`, and empty segments are ignored, so `get("a..b")` is the same as `get("a.b")`.
 
 ```kotlin
 import com.pambrose.common.json.get
@@ -85,7 +87,7 @@ val maybeProfile = json.getOrNull("user", "settings")
 
 ### Path Navigation
 
-`getByPath` splits on `/`, not `.`:
+`getByPath` splits on `/`, not `.`, so it can also reach a key that contains a dot:
 
 ```kotlin
 import com.pambrose.common.json.getByPath
@@ -99,6 +101,7 @@ Leading and repeated slashes are ignored, and the result is `null` if the path d
 
 ```kotlin
 import com.pambrose.common.json.forEachJsonObject
+import com.pambrose.common.json.get
 import com.pambrose.common.json.isArray
 import com.pambrose.common.json.jsonElementList
 import com.pambrose.common.json.size
@@ -245,10 +248,16 @@ Maven consumers must depend on the `-jvm` artifact, since this is a multiplatfor
 
 ## Error Handling
 
-- `get(...)` and the non-`OrNull` accessors throw `IllegalArgumentException` when a key is missing
-- `toMap()` throws `IllegalArgumentException` unless the element is a `JsonObject`
-- The typed properties throw if the underlying value is not of that type — prefer the `OrNull` variants for
-  untrusted input
+- `get(...)` throws `IllegalArgumentException` when a key is missing.
+- The typed accessors (`stringValue`, `intValue`, `doubleValue`, `booleanValue`) throw
+  `IllegalArgumentException` when the value is JSON `null` or has the wrong type. `booleanValue` accepts only
+  `true` and `false`.
+- The `OrNull` accessors never throw for a missing key, JSON `null`, or a type mismatch; they return `null`.
+  Prefer them for untrusted input.
+- `size` works on objects and arrays and throws for primitives. `isEmpty()` is `true` for JSON `null`.
+- `toMap()` throws `IllegalArgumentException` unless the element is a `JsonObject`.
+- To reformat a JSON **string**, call `reformatJson()`. On a `String`, `toJsonString(prettyPrint = …)` serializes
+  the string itself as a JSON string literal.
 
 ## License
 
