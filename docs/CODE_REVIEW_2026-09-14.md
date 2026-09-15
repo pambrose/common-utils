@@ -132,19 +132,19 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-054** `LOW` · cleanup — `runBlocking` around non-suspend `start`; single-use `servletGroup` lateinits ([details](#cr-054)) — fixed in #179
 
 ### prometheus-utils
-- [ ] **CR-055** `MEDIUM` · API — Factories hard-wired to the default `CollectorRegistry` (carried over) ([details](#cr-055)) — in progress (branch `fix-review-items-cr055-cr063`)
-- [ ] **CR-056** `LOW` · robustness — `SystemMetrics.initialize` unrecoverable after partial registration ([details](#cr-056)) — in progress (branch `fix-review-items-cr055-cr063`)
-- [ ] **CR-057** `LOW` · bug — `SamplerGaugeCollector` runs the sampler during construction ([details](#cr-057)) — in progress (branch `fix-review-items-cr055-cr063`)
-- [ ] **CR-058** `LOW` · bug — `InstrumentedThreadFactory` counts before null check; misleading comment (carried over) ([details](#cr-058)) — in progress (branch `fix-review-items-cr055-cr063`)
-- [ ] **CR-059** `LOW` · docs/tests — README `HTTPServer` example needs an unlisted artifact; weak metric tests ([details](#cr-059)) — in progress (branch `fix-review-items-cr055-cr063`)
+- [ ] **CR-055** `MEDIUM` · API — Factories hard-wired to the default `CollectorRegistry` (carried over) ([details](#cr-055)) — in progress (#180)
+- [ ] **CR-056** `LOW` · robustness — `SystemMetrics.initialize` unrecoverable after partial registration ([details](#cr-056)) — in progress (#180)
+- [ ] **CR-057** `LOW` · bug — `SamplerGaugeCollector` runs the sampler during construction ([details](#cr-057)) — in progress (#180)
+- [ ] **CR-058** `LOW` · bug — `InstrumentedThreadFactory` counts before null check; misleading comment (carried over) ([details](#cr-058)) — in progress (#180)
+- [ ] **CR-059** `LOW` · docs/tests — README `HTTPServer` example needs an unlisted artifact; weak metric tests ([details](#cr-059)) — in progress (#180)
 
 ### dropwizard-utils
-- [ ] **CR-060** `LOW` · API — `newBacklogHealthCheck` captures a snapshot; message omits threshold; no `@JvmStatic` (carried over) ([details](#cr-060)) — in progress (branch `fix-review-items-cr055-cr063`)
+- [ ] **CR-060** `LOW` · API — `newBacklogHealthCheck` captures a snapshot; message omits threshold; no `@JvmStatic` (carried over) ([details](#cr-060)) — in progress (#180)
 
 ### jetty-utils
-- [ ] **CR-061** `LOW` · bug — `LambdaServlet` returns 200/empty when the lambda throws (carried over) ([details](#cr-061)) — in progress (branch `fix-review-items-cr055-cr063`)
-- [ ] **CR-062** `LOW` · bug — `text/plain` without charset is encoded ISO-8859-1 on Jetty ([details](#cr-062)) — in progress (branch `fix-review-items-cr055-cr063`)
-- [ ] **CR-063** `LOW` · cleanup — `VersionServlet` duplicates `LambdaServlet`; DSL builders lack default block; `HttpServletGroup` untested (carried over) ([details](#cr-063)) — in progress (branch `fix-review-items-cr055-cr063`)
+- [ ] **CR-061** `LOW` · bug — `LambdaServlet` returns 200/empty when the lambda throws (carried over) ([details](#cr-061)) — in progress (#180)
+- [ ] **CR-062** `LOW` · bug — `text/plain` without charset is encoded ISO-8859-1 on Jetty ([details](#cr-062)) — in progress (#180)
+- [ ] **CR-063** `LOW` · cleanup — `VersionServlet` duplicates `LambdaServlet`; DSL builders lack default block; `HttpServletGroup` untested (carried over) ([details](#cr-063)) — in progress (#180)
 
 ### guava-utils
 - [ ] **CR-064** `MEDIUM` · bug — `ConditionalValue.waitUntil` returns `false` for zero/sub-ms timeout even when already satisfied ([details](#cr-064))
