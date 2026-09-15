@@ -168,24 +168,24 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-080** `LOW` · docs — zipkin-utils and redis-utils have no README (linked from llms.txt) ([details](#cr-080)) — fixed in #181
 
 ### script-utils (common / java / kotlin / python)
-- [ ] **CR-081** `MEDIUM` · concurrency — Pooled engines lost forever when a waiting borrower is cancelled ([details](#cr-081)) — in progress (#182)
-- [ ] **CR-082** `MEDIUM` · security — Expression evaluators and their pools have no JVM-exit guard ([details](#cr-082)) — in progress (#182)
-- [ ] **CR-083** `MEDIUM` · bug — Auto-imported `System` shadow breaks all other `System.*` calls in Kotlin scripts ([details](#cr-083)) — in progress (#182)
-- [ ] **CR-084** `MEDIUM` · bug — `KotlinScript` generates uncompilable casts (`Regex`, `listOf`, nested generics) ([details](#cr-084)) — in progress (#182)
-- [ ] **CR-085** `MEDIUM` · leak — `JavaScript` imports/isolation leak across pool borrowers and grow unbounded ([details](#cr-085)) — in progress (#182)
-- [ ] **CR-086** `MEDIUM` · leak — Kotlin expression evaluator pools never reset; REPL history grows forever ([details](#cr-086)) — in progress (#182)
-- [ ] **CR-087** `MEDIUM` · bug — Variables added after first `eval` never bound (Java silently returns default); `add()` unsynchronized (carried over, extended) ([details](#cr-087)) — in progress (#182)
-- [ ] **CR-088** `LOW` · security — Python guard blocks harmless `sys.exit` but misses `java.lang.System.exit` ([details](#cr-088)) — in progress (#182)
-- [ ] **CR-089** `LOW` · docs — Python guard KDoc inverted about string literals; `def exit(self)` rejected ([details](#cr-089)) — in progress (#182)
-- [ ] **CR-090** `LOW` · robustness — Pools accept `size <= 0` and hang; `AbstractExprEvaluatorPool<T>` ignores `T` ([details](#cr-090)) — in progress (#182)
-- [ ] **CR-091** `LOW` · leak — Pools never close their instances ([details](#cr-091)) — in progress (#182)
-- [ ] **CR-092** `LOW` · concurrency — Expression evaluators share the manager's global `Bindings` ([details](#cr-092)) — in progress (#182)
-- [ ] **CR-093** `LOW` · security — Binding names unvalidated and spliced raw into generated source ([details](#cr-093)) — in progress (#182)
-- [ ] **CR-094** `LOW` · bug — `javaEquiv` emits invalid Java for `Char`, `Any`, nested generics (carried over) ([details](#cr-094)) — in progress (#182)
-- [ ] **CR-095** `LOW` · bug — `JavaScript.varDecls` uses runtime `simpleName`; raw `IllegalArgumentException` escapes (carried over) ([details](#cr-095)) — in progress (#182)
-- [ ] **CR-096** `LOW` · docs — No-op `close()`, undocumented `eval()`, undocumented `evalScript` field contract (carried over) ([details](#cr-096)) — in progress (#182)
-- [ ] **CR-097** `LOW` · cleanup — Public `engine`, `toTempName`, dead `error()`, duplicated binding flush (carried over) ([details](#cr-097)) — in progress (#182)
-- [ ] **CR-098** `LOW` · tests — Misleading guard tests; missing coverage for the defects above ([details](#cr-098)) — in progress (#182)
+- [x] **CR-081** `MEDIUM` · concurrency — Pooled engines lost forever when a waiting borrower is cancelled ([details](#cr-081)) — fixed in #182
+- [x] **CR-082** `MEDIUM` · security — Expression evaluators and their pools have no JVM-exit guard ([details](#cr-082)) — fixed in #182
+- [x] **CR-083** `MEDIUM` · bug — Auto-imported `System` shadow breaks all other `System.*` calls in Kotlin scripts ([details](#cr-083)) — fixed in #182
+- [x] **CR-084** `MEDIUM` · bug — `KotlinScript` generates uncompilable casts (`Regex`, `listOf`, nested generics) ([details](#cr-084)) — fixed in #182
+- [x] **CR-085** `MEDIUM` · leak — `JavaScript` imports/isolation leak across pool borrowers and grow unbounded ([details](#cr-085)) — fixed in #182
+- [x] **CR-086** `MEDIUM` · leak — Kotlin expression evaluator pools never reset; REPL history grows forever ([details](#cr-086)) — fixed in #182
+- [x] **CR-087** `MEDIUM` · bug — Variables added after first `eval` never bound (Java silently returns default); `add()` unsynchronized (carried over, extended) ([details](#cr-087)) — fixed in #182
+- [x] **CR-088** `LOW` · security — Python guard blocks harmless `sys.exit` but misses `java.lang.System.exit` ([details](#cr-088)) — fixed in #182
+- [x] **CR-089** `LOW` · docs — Python guard KDoc inverted about string literals; `def exit(self)` rejected ([details](#cr-089)) — fixed in #182
+- [x] **CR-090** `LOW` · robustness — Pools accept `size <= 0` and hang; `AbstractExprEvaluatorPool<T>` ignores `T` ([details](#cr-090)) — fixed in #182
+- [x] **CR-091** `LOW` · leak — Pools never close their instances ([details](#cr-091)) — fixed in #182
+- [x] **CR-092** `LOW` · concurrency — Expression evaluators share the manager's global `Bindings` ([details](#cr-092)) — fixed in #182
+- [x] **CR-093** `LOW` · security — Binding names unvalidated and spliced raw into generated source ([details](#cr-093)) — fixed in #182
+- [x] **CR-094** `LOW` · bug — `javaEquiv` emits invalid Java for `Char`, `Any`, nested generics (carried over) ([details](#cr-094)) — fixed in #182
+- [x] **CR-095** `LOW` · bug — `JavaScript.varDecls` uses runtime `simpleName`; raw `IllegalArgumentException` escapes (carried over) ([details](#cr-095)) — fixed in #182
+- [x] **CR-096** `LOW` · docs — No-op `close()`, undocumented `eval()`, undocumented `evalScript` field contract (carried over) ([details](#cr-096)) — fixed in #182
+- [x] **CR-097** `LOW` · cleanup — Public `engine`, `toTempName`, dead `error()`, duplicated binding flush (carried over) ([details](#cr-097)) — fixed in #182
+- [x] **CR-098** `LOW` · tests — Misleading guard tests; missing coverage for the defects above ([details](#cr-098)) — fixed in #182
 
 ### email-utils
 - [ ] **CR-099** `MEDIUM` · bug — Webhook models can't decode real Resend payloads with a default `Json` ([details](#cr-099))
