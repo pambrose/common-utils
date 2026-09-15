@@ -115,7 +115,7 @@ is called when the application stops.
 - **Supported:** `sendError` and `sendRedirect`, so an unsupported HTTP method gets `405` from `HttpServlet`'s
   defaults. Also request attributes, and `getPathInfo()`, which is always `null`.
 - **Character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is used for the
-  body, and it labels a text response that has no explicit charset.
+  body and included in the `Content-Type`, as a servlet container reports it. It can't change after `getWriter()`.
 - **Parameters:** parameter names are case-insensitive, which is Ktor's behavior, unlike a servlet container.
 
 ```kotlin

@@ -17,23 +17,28 @@
 package com.pambrose.common.servlet
 
 import io.kotest.core.spec.style.StringSpec
-import kotlin.concurrent.atomics.AtomicBoolean
-import io.ktor.http.charset
-import io.ktor.http.HttpHeaders
-import io.ktor.client.statement.bodyAsBytes
 import io.kotest.matchers.shouldBe
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.charset
 import io.ktor.http.contentType
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.routing.application
 import io.ktor.server.testing.testApplication
+import io.mockk.mockk
 import jakarta.servlet.ServletConfig
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.incrementAndFetch
 
 class ServletRouteTests : StringSpec() {
   init {
@@ -186,39 +191,47 @@ class ServletRouteTests : StringSpec() {
       }
     }
 
-    "servlet output honors the charset given in setContentType" {
-      testApplication {
-        routing {
-          servlet("/latin1", Latin1ContentTypeServlet())
-        }
-        client.get("/latin1").apply {
-          bodyAsBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
-          contentType()?.charset() shouldBe Charsets.ISO_8859_1
+    // listOf rather than a [...] literal: detekt's analyzer crashes on a collection literal holding lambdas.
+    val encodingSetups =
+      listOf<Pair<String, HttpServletResponse.() -> Unit>>(
+        "setContentType" to { contentType = "text/plain; charset=ISO-8859-1" },
+        "setCharacterEncoding" to {
+          contentType = "text/plain"
+          characterEncoding = "ISO-8859-1"
+        },
+      )
+    encodingSetups.forEach { (method, setEncoding) ->
+      "servlet output honors the charset given through $method and labels the Content-Type with it" {
+        testApplication {
+          routing {
+            servlet("/latin1", Latin1Servlet(setEncoding))
+          }
+          client.get("/latin1").apply {
+            bodyAsBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
+            contentType()?.charset() shouldBe Charsets.ISO_8859_1
+          }
         }
       }
     }
 
-    "servlet output honors setCharacterEncoding and labels the Content-Type with it" {
-      testApplication {
-        routing {
-          servlet("/latin1-encoding", Latin1EncodingServlet())
+    "servlet is destroyed once, when its own application stops" {
+      val destroyCount = AtomicInt(0)
+      val tracked =
+        object : HttpServlet() {
+          override fun destroy() {
+            destroyCount.incrementAndFetch()
+          }
         }
-        client.get("/latin1-encoding").apply {
-          bodyAsBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
-          contentType()?.charset() shouldBe Charsets.ISO_8859_1
-        }
-      }
-    }
-
-    "servlet is destroyed when the application stops" {
-      val tracked = DestroyTrackingServlet()
       testApplication {
         routing {
           servlet("/tracked", tracked)
+          // Another application stopping on the same event bus, as in a development-mode reload, is ignored.
+          application.monitor.raise(ApplicationStopped, mockk<Application>(relaxed = true))
         }
-        client.get("/tracked").status shouldBe HttpStatusCode.OK
+        startApplication()
+        destroyCount.load() shouldBe 0
       }
-      tracked.destroyed.load() shouldBe true
+      destroyCount.load() shouldBe 1
     }
   }
 
@@ -351,40 +364,15 @@ class ServletRouteTests : StringSpec() {
     }
   }
 
-  private class Latin1ContentTypeServlet : HttpServlet() {
+  private class Latin1Servlet(
+    private val setEncoding: HttpServletResponse.() -> Unit,
+  ) : HttpServlet() {
     override fun doGet(
       req: HttpServletRequest,
       resp: HttpServletResponse,
     ) {
-      resp.contentType = "text/plain; charset=ISO-8859-1"
+      resp.setEncoding()
       resp.writer.print("caf\u00e9")
-    }
-  }
-
-  private class Latin1EncodingServlet : HttpServlet() {
-    override fun doGet(
-      req: HttpServletRequest,
-      resp: HttpServletResponse,
-    ) {
-      resp.contentType = "text/plain"
-      resp.characterEncoding = "ISO-8859-1"
-      resp.writer.print("caf\u00e9")
-    }
-  }
-
-  private class DestroyTrackingServlet : HttpServlet() {
-    val destroyed = AtomicBoolean(false)
-
-    override fun doGet(
-      req: HttpServletRequest,
-      resp: HttpServletResponse,
-    ) {
-      resp.contentType = "text/plain"
-      resp.writer.print("ok")
-    }
-
-    override fun destroy() {
-      destroyed.store(true)
     }
   }
 }

@@ -57,9 +57,7 @@ import java.util.*
 class KtorServletRequest(
   private val request: ApplicationRequest,
 ) : HttpServletRequest {
-  // Ktor query parameters are case-insensitive, and names that differ only in case are merged
-  // (?id=1&ID=2 gives getParameterValues("id") == [1, 2]). All four parameter accessors, including
-  // getParameterMap, share that behavior, unlike a servlet container.
+  // Case-insensitive, and names that differ only in case are merged: ?id=1&ID=2 gives getParameterValues("id") == [1, 2].
   private val params: Parameters by lazy { request.queryParameters }
   private val attributes = mutableMapOf<String, Any>()
 
@@ -76,8 +74,8 @@ class KtorServletRequest(
   override fun getParameterValues(name: String): Array<String>? = params.getAll(name)?.toTypedArray()
 
   override fun getParameterMap(): Map<String, Array<String>> =
-    TreeMap<String, Array<String>>(String.CASE_INSENSITIVE_ORDER).apply {
-      params.entries().forEach { (key, values) -> put(key, values.toTypedArray()) }
+    params.entries().associateTo(TreeMap(String.CASE_INSENSITIVE_ORDER)) { (key, values) ->
+      key to values.toTypedArray()
     }
 
   override fun getHeader(name: String): String? = request.headers[name]

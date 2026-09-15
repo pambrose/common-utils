@@ -19,8 +19,6 @@ package com.pambrose.common.servlet
 
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.charset
-import io.ktor.http.withCharset
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.Route
@@ -28,8 +26,8 @@ import io.ktor.server.routing.application
 import io.ktor.server.routing.route
 import jakarta.servlet.http.HttpServlet
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.withContext
-import java.nio.charset.Charset
 
 /**
  * Mounts a Jakarta [HttpServlet] at the given [path] within a Ktor [Route].
@@ -39,8 +37,8 @@ import java.nio.charset.Charset
  * attributes and logging, and throws [UnsupportedOperationException] for container features such as
  * dynamic registration. Each incoming request is translated into a
  * [KtorServletRequest]/[KtorServletResponse] pair. The servlet's response headers, status code, and
- * body are then forwarded back through the Ktor response pipeline; a text response without an explicit
- * charset is labeled with the character encoding the servlet used. Servlet processing runs on
+ * body are then forwarded back through the Ktor response pipeline, with the character encoding the servlet
+ * used included in the `Content-Type`. Servlet processing runs on
  * [kotlinx.coroutines.Dispatchers.IO]. The servlet's `destroy()` is called when the application stops.
  *
  * @param path the URL path at which the servlet should be mounted
@@ -53,8 +51,17 @@ fun Route.servlet(
   // init(ServletConfig) stores the config and then calls the no-arg init(); servlets such as
   // Dropwizard's HealthCheckServlet do their setup only in the former.
   servlet.init(KtorServletConfig(servlet.javaClass.name, KtorServletContext()))
-  // Mirror a container's lifecycle: let the servlet release its resources when the application stops.
-  application.monitor.subscribe(ApplicationStopped) { servlet.destroy() }
+  // Mirror a container's lifecycle: destroy the servlet when this application stops. The event bus can outlive
+  // the application (development-mode reloads), so ignore other applications and unsubscribe once done.
+  val app = application
+  lateinit var subscription: DisposableHandle
+  subscription =
+    app.monitor.subscribe(ApplicationStopped) { stopped ->
+      if (stopped === app) {
+        subscription.dispose()
+        servlet.destroy()
+      }
+    }
   route(path) {
     handle {
       val request = KtorServletRequest(call.request)
@@ -67,17 +74,9 @@ fun Route.servlet(
         }
       }
       val contentType =
-        response.getContentType()?.let { ContentType.parse(it).withServletCharset(response) }
-          ?: ContentType.Application.OctetStream
+        response.getContentType()?.let { ContentType.parse(it) } ?: ContentType.Application.OctetStream
       call.response.status(HttpStatusCode.fromValue(response.status))
       call.respondBytes(response.getBodyBytes(), contentType)
     }
   }
 }
-
-// A text type without an explicit charset is labeled with the character encoding the servlet's writer used.
-private fun ContentType.withServletCharset(response: KtorServletResponse): ContentType =
-  if (charset() == null && match(ContentType.Text.Any))
-    withCharset(Charset.forName(response.characterEncoding))
-  else
-    this

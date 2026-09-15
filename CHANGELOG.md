@@ -78,9 +78,10 @@ All notable changes to Common Utils are documented in this file.
     they threw `UnsupportedOperationException`, so a request with an unsupported HTTP method returned `500`
     instead of `HttpServlet`'s `405`.
   - **Requests:** `KtorServletRequest.getPathInfo()` returns `null`, and request attributes work.
-  - **Lifecycle:** `Route.servlet` calls the servlet's `destroy()` when the application stops.
+  - **Lifecycle:** `Route.servlet` calls the servlet's `destroy()` once, when its own application stops.
   - **Character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is used by the
-    writer and labels text responses. Before, output used the platform default charset.
+    writer and included in `getContentType()` and the response's `Content-Type`, and it can't change after
+    `getWriter()`. Before, the writer ignored it.
 - `KtorServletRequest.getParameterMap()` (ktor-server-utils) is case-insensitive, like the other parameter
   accessors, and the documentation states that parameter names are case-insensitive, unlike in a servlet
   container.

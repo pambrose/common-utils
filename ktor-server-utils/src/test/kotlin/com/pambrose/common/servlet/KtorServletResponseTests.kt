@@ -169,6 +169,7 @@ class KtorServletResponseTests : StringSpec() {
       response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "not allowed")
       response.status shouldBe HttpServletResponse.SC_METHOD_NOT_ALLOWED
       response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "not allowed"
+      response.contentType shouldBe "text/plain; charset=UTF-8"
       response.isCommitted shouldBe true
     }
 
@@ -198,6 +199,30 @@ class KtorServletResponseTests : StringSpec() {
       response.setContentType("text/html; charset=ISO-8859-1")
       response.characterEncoding shouldBe "ISO-8859-1"
       response.writer.print("caf\u00e9")
+      response.getBodyBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
+    }
+
+    "getContentType includes the character encoding once it is specified or the writer is used" {
+      val specified = KtorServletResponse()
+      specified.setContentType("application/json")
+      specified.contentType shouldBe "application/json"
+      specified.setCharacterEncoding("ISO-8859-1")
+      specified.contentType shouldBe "application/json; charset=ISO-8859-1"
+
+      val written = KtorServletResponse()
+      written.setContentType("text/plain")
+      written.writer
+      written.contentType shouldBe "text/plain; charset=UTF-8"
+    }
+
+    "the character encoding cannot change after getWriter is called" {
+      val response = KtorServletResponse()
+      response.setContentType("text/plain; charset=ISO-8859-1")
+      response.writer.print("caf\u00e9")
+      response.setCharacterEncoding("UTF-8")
+      response.setContentType("text/html; charset=UTF-8")
+      response.characterEncoding shouldBe "ISO-8859-1"
+      response.contentType shouldBe "text/html; charset=ISO-8859-1"
       response.getBodyBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
     }
   }

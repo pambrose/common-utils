@@ -18,6 +18,8 @@
 package com.pambrose.common.servlet
 
 import io.ktor.http.ContentType
+import io.ktor.http.HeaderValueParam
+import io.ktor.http.HttpHeaders
 import jakarta.servlet.ServletOutputStream
 import jakarta.servlet.WriteListener
 import jakarta.servlet.http.Cookie
@@ -46,7 +48,9 @@ class KtorServletResponse : HttpServletResponse {
   private val buffer = ByteArrayOutputStream()
   private var statusCode: Int = HttpServletResponse.SC_OK
   private var contentTypeValue: String? = null
-  private var charEncodingValue: String = "UTF-8"
+
+  // null until a character encoding is specified; getCharacterEncoding() reports UTF-8 until then.
+  private var charEncodingValue: String? = null
   private var writerUsed = false
   private var streamUsed = false
   private var printWriter: PrintWriter? = null
@@ -89,22 +93,29 @@ class KtorServletResponse : HttpServletResponse {
   override fun setContentType(type: String) {
     contentTypeValue = type
     // As in a servlet container, a charset parameter in the content type sets the character encoding.
-    runCatching { ContentType.parse(type).parameter("charset") }.getOrNull()?.let { charEncodingValue = it }
+    runCatching { ContentType.parse(type).parameter("charset") }.getOrNull()?.let(::setCharacterEncoding)
   }
 
-  override fun getContentType(): String? = contentTypeValue
+  // As the servlet spec requires, the content type includes the character encoding once one has been specified
+  // or getWriter() has been called.
+  override fun getContentType(): String? =
+    contentTypeValue?.let { type ->
+      if (charEncodingValue == null && !writerUsed) type else type.withCharset(characterEncoding)
+    }
 
   override fun setCharacterEncoding(charset: String) {
-    charEncodingValue = charset
+    // As in a servlet container, the encoding cannot change once getWriter() has been called.
+    if (!writerUsed)
+      charEncodingValue = charset
   }
 
-  override fun getCharacterEncoding(): String = charEncodingValue
+  override fun getCharacterEncoding(): String = charEncodingValue ?: Charsets.UTF_8.name()
 
   override fun getWriter(): PrintWriter {
     check(!streamUsed) { "getOutputStream() has already been called on this response" }
     writerUsed = true
     if (printWriter == null) {
-      printWriter = PrintWriter(OutputStreamWriter(buffer, Charset.forName(charEncodingValue)), true)
+      printWriter = PrintWriter(OutputStreamWriter(buffer, Charset.forName(characterEncoding)), true)
     }
     return printWriter ?: error("PrintWriter is null")
   }
@@ -146,9 +157,10 @@ class KtorServletResponse : HttpServletResponse {
     statusCode = sc
     committed = true
     if (!msg.isNullOrEmpty()) {
-      contentTypeValue = "text/plain; charset=UTF-8"
-      charEncodingValue = "UTF-8"
-      buffer.write(msg.encodeToByteArray())
+      contentTypeValue = ContentType.Text.Plain.toString()
+      // Pin the encoding so the content type names the charset the message is written in.
+      charEncodingValue = characterEncoding
+      buffer.write(msg.toByteArray(Charset.forName(characterEncoding)))
     }
   }
 
@@ -164,7 +176,7 @@ class KtorServletResponse : HttpServletResponse {
     if (clearBuffer)
       discardBufferedOutput()
     statusCode = sc
-    setHeader("Location", location)
+    setHeader(HttpHeaders.Location, location)
     committed = true
   }
 
@@ -221,3 +233,11 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun getLocale(): Locale = throw UnsupportedOperationException()
 }
+
+// ContentType.withCharset would add a second charset parameter, so any existing one is replaced instead.
+private fun String.withCharset(charset: String): String =
+  runCatching { ContentType.parse(this) }
+    .map { type ->
+      val params = type.parameters.filterNot { it.name.equals("charset", ignoreCase = true) }
+      ContentType(type.contentType, type.contentSubtype, params + HeaderValueParam("charset", charset)).toString()
+    }.getOrDefault(this)
