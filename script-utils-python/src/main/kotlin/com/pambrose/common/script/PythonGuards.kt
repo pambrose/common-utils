@@ -36,45 +36,10 @@ internal object PythonGuards {
   private val SYS_EXIT_PATTERN = Regex("""(?<!\w)sys\.exit\s*\(""")
   private val SYSTEM_EXIT_PATTERN = Regex("""(?<!\w)raise\s+SystemExit\b""")
 
-  // (?<![\w.]) skips method calls on objects (obj.exit()) and longer identifiers; the def lookbehind skips definitions.
-  private val EXIT_PATTERN = Regex("""(?<![\w.])(?<!\bdef\s{1,32})exit\s*\(""")
-  private val QUIT_PATTERN = Regex("""(?<![\w.])(?<!\bdef\s{1,32})quit\s*\(""")
-
-  /** Python 2.7 keywords, which cannot be used as variable names. */
-  val KEYWORDS =
-    setOf(
-      "and",
-      "as",
-      "assert",
-      "break",
-      "class",
-      "continue",
-      "def",
-      "del",
-      "elif",
-      "else",
-      "except",
-      "exec",
-      "finally",
-      "for",
-      "from",
-      "global",
-      "if",
-      "import",
-      "in",
-      "is",
-      "lambda",
-      "not",
-      "or",
-      "pass",
-      "print",
-      "raise",
-      "return",
-      "try",
-      "while",
-      "with",
-      "yield",
-    )
+  // (?<![\w.]) skips method calls on objects (obj.exit()) and longer identifiers; the def lookbehind, placed after the
+  // literal so the literal is matched first, skips definitions.
+  private val EXIT_PATTERN = Regex("""(?<![\w.])exit(?<!\bdef\s{1,32}exit)\s*\(""")
+  private val QUIT_PATTERN = Regex("""(?<![\w.])quit(?<!\bdef\s{1,32}quit)\s*\(""")
 
   /**
    * Throws a [ScriptException] if [code] contains a call rejected by the checks described above.

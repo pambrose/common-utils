@@ -112,6 +112,7 @@ All notable changes to Common Utils are documented in this file.
   - **Messages:** `AbstractScript.params` and the `add` error messages name types the same way.
 - script-utils `AbstractEngine.engine` is deprecated. Using the engine directly bypasses variable bindings and context
   resets; use the evaluation and `resetContext` methods instead. Subclasses use the new protected `scriptEngine`.
+  `AbstractScript.initialized` is also deprecated, because nothing reads it any more.
 - script-utils `add` rejects a variable name that is not a valid identifier or is a reserved word of the script
   language, with a `ScriptException`. Before, such a name produced a confusing compile error, or injected code into
   the generated declarations.
@@ -125,9 +126,10 @@ All notable changes to Common Utils are documented in this file.
     every borrow hung.
   - **Closing:** pools are `Closeable`. Closing one closes its instances, closes any borrowed instance when it is
     returned, and makes later borrows throw `ClosedReceiveChannelException`. If creating an instance fails during
-    construction, the instances already created are closed. `AbstractExprEvaluatorPool` also uses its `T` type.
+    construction, the instances already created are closed. Both pools extend a new `AbstractEnginePool` base, and
+    `AbstractExprEvaluatorPool` now uses its `T` type.
 - script-utils expression evaluators reject literal JVM-termination calls before evaluating, through a new
-  overridable `checkExpr`, and their KDoc states that they are not a sandbox. Before,
+  overridable `checkCode`, and their KDoc states that they are not a sandbox. Before,
   `KotlinExprEvaluatorPool(5).blockingEval("kotlin.system.exitProcess(0) == Unit")` terminated the JVM.
   `PythonExprEvaluator` applies the Python checks as well.
 - script-utils expression evaluator pools reset each evaluator's context when it is returned, so the Kotlin engine's

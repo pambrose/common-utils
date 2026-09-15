@@ -50,6 +50,14 @@ abstract class AbstractEngine(
   )
   val engine: ScriptEngine get() = scriptEngine
 
+  /**
+   * Throws a [ScriptException] if [code] must not be evaluated. The default rejects literal JVM-termination calls with
+   * [ScriptGuards] on a best-effort basis; subclasses add checks for their language.
+   *
+   * @param code the code about to be evaluated
+   */
+  protected open fun checkCode(code: String) = ScriptGuards.checkNoJvmExit(code)
+
   /** Releases resources held by the engine. The default does nothing; engines that hold resources override it. */
   override fun close() {
     // Nothing to release by default.

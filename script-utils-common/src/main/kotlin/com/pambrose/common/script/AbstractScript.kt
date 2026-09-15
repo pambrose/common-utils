@@ -36,8 +36,9 @@ import kotlin.reflect.KVisibility
  * Manages a map of named values and their associated type parameters, generates parameter
  * declarations for the target language, and handles context resets between evaluations.
  *
- * Variables can be added at any time: a variable added after an evaluation is bound before the next one. Adding
- * variables, resetting, and evaluating are synchronized on the instance.
+ * Subclasses call [prepare] at the start of every evaluation, which checks the code and binds the variables added since
+ * the last evaluation. Variables can therefore be added at any time. Adding variables, resetting, and evaluating are
+ * synchronized on the instance.
  *
  * @param extension the file extension used to look up the script engine (e.g., `"kts"`, `"py"`, `"java"`)
  * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
@@ -55,12 +56,11 @@ abstract class AbstractScript(
 
   protected val valueMap = mutableMapOf<String, Any>()
 
+  /** Whether an evaluation has been prepared since the last reset. */
+  @Deprecated("No longer used: variables added after an evaluation are bound before the next one.")
   protected var initialized
     get() = _initialized.load()
     set(value) = _initialized.store(value)
-
-  /** The script language's reserved words, which cannot be used as variable names. */
-  protected open val reservedWords: Set<String> get() = emptySet()
 
   init {
     resetContext(nullGlobalContext)
@@ -73,7 +73,7 @@ abstract class AbstractScript(
    */
   @Synchronized
   fun resetContext(nullGlobalContext: Boolean) {
-    initialized = false
+    _initialized.store(false)
     valueMap.clear()
     typeMap.clear()
     unboundNames.clear()
@@ -91,7 +91,7 @@ abstract class AbstractScript(
 
   /**
    * Generates the type argument string (e.g., `<kotlin.Int, kotlin.String>`) for the variable with the given [name],
-   * with fully-qualified type names.
+   * rendering each type with [renderType].
    *
    * @param name the variable name
    * @param types the type parameters; defaults to those previously registered for [name]
@@ -101,10 +101,15 @@ abstract class AbstractScript(
   open fun params(
     name: String,
     types: Array<out KType> = typeMap[name] ?: error("No type parameters registered for $name"),
-  ): String {
-    val params = types.map { type -> type.toString() }
-    return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
-  }
+  ): String = if (types.isEmpty()) "" else types.joinToString(", ", "<", ">") { renderType(it) }
+
+  /**
+   * Renders [type] as a type argument in generated source. The default renders its fully-qualified Kotlin name.
+   *
+   * @param type the type to render
+   * @return the source text for [type]
+   */
+  protected open fun renderType(type: KType): String = type.toString()
 
   /**
    * Adds a named variable with an associated value and optional type parameters to the script context.
@@ -175,31 +180,49 @@ abstract class AbstractScript(
   }
 
   /**
-   * Throws a [ScriptException] unless [name] is a valid identifier that is not one of the [reservedWords]. Names are
+   * Whether [name] is a reserved word of the script language, which cannot be used as a variable name. The default
+   * reserves nothing.
+   *
+   * @param name the variable name to check
+   */
+  protected open fun isReserved(name: String): Boolean = false
+
+  /**
+   * Throws a [ScriptException] unless [name] is a valid identifier that is not reserved (see [isReserved]). Names are
    * spliced into generated source, so this also keeps a name from injecting code.
    *
    * @param name the variable name to check
    */
   protected fun checkName(name: String) {
-    if (!IDENTIFIER.matches(name) || name in reservedWords)
+    if (!IDENTIFIER.matches(name) || isReserved(name))
       throw ScriptException("Variable ${name.toDoubleQuoted()} is not a valid identifier")
   }
 
   /**
-   * Runs [bind] with the variables added since they were last bound, then marks them bound. Subclasses call it before
-   * each evaluation, so a variable added after an earlier evaluation is still bound. If [bind] throws, the variables
-   * stay unbound and the next evaluation tries again.
+   * Prepares to evaluate [code]: checks it with [checkCode], then binds the variables added since they were last bound
+   * with [bindVariables]. Subclasses call it at the start of every evaluation, so a variable added after an earlier
+   * evaluation is still bound. If binding throws, the variables stay unbound and the next evaluation tries again.
    *
-   * @param bind binds the given variables to the engine
+   * @param code the code about to be evaluated
+   * @throws ScriptException if [checkCode] rejects [code]
    */
   @Synchronized
-  protected fun bindNewVariables(bind: (Map<String, Any>) -> Unit) {
+  protected fun prepare(code: String) {
+    checkCode(code)
     if (unboundNames.isNotEmpty()) {
-      bind(unboundNames.associateWith { valueMap.getValue(it) })
+      bindVariables(unboundNames.associateWith { valueMap.getValue(it) })
       unboundNames.clear()
     }
-    initialized = true
+    _initialized.store(true)
   }
+
+  /**
+   * Binds [variables] to the engine. The default puts each one in the engine scope under its own name.
+   *
+   * @param variables the variables to bind, by name
+   */
+  protected open fun bindVariables(variables: Map<String, Any>) =
+    variables.forEach { (name, value) -> scriptEngine.put(name, value) }
 
   /**
    * The nearest class or interface of [value]'s runtime class that generated code can name, searched breadth-first
@@ -220,9 +243,8 @@ abstract class AbstractScript(
       .supertypesBreadthFirst()
       .firstOrNull {
         it != Any::class.java && it.isPubliclyAccessible() &&
-        (arity == 0 || it.typeParameters.size == arity)
-      }
-      ?.kotlin
+          (arity == 0 || it.typeParameters.size == arity)
+      }?.kotlin
       ?: Any::class
   }
 
@@ -243,12 +265,11 @@ abstract class AbstractScript(
         }
       }
 
-    // Whether generated Kotlin or Java code can name this class: it and every class enclosing it are public.
+    // Whether generated Kotlin or Java code can name this class: it and every class enclosing it are public. Local and
+    // anonymous classes are never public to Kotlin reflection, and lambda classes are never public to Java.
     fun Class<*>.isPubliclyAccessible(): Boolean =
       generateSequence(this) { it.enclosingClass }.all { clazz ->
         Modifier.isPublic(clazz.modifiers) &&
-          !clazz.isAnonymousClass &&
-          !clazz.isLocalClass &&
           runCatching { clazz.kotlin.visibility == KVisibility.PUBLIC }.getOrDefault(false)
       }
   }

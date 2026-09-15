@@ -22,8 +22,6 @@ package com.pambrose.common.script
  *
  * Instances are created eagerly during initialization.
  *
- * Closing the pool closes its instances.
- *
  * @param size the number of [KotlinExprEvaluator] instances to create in the pool
  */
 class KotlinExprEvaluatorPool(

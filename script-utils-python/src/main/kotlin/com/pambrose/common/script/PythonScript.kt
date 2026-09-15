@@ -37,7 +37,9 @@ import org.python.jsr223.PyScriptEngine
 class PythonScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("py", nullGlobalContext) {
-  override val reservedWords: Set<String> get() = PythonGuards.KEYWORDS
+  override fun isReserved(name: String) = name in PYTHON_KEYWORDS
+
+  override fun checkCode(code: String) = PythonGuards.check(code)
 
   /**
    * Adds a named variable to the script context.
@@ -70,12 +72,20 @@ class PythonScript(
    */
   @Synchronized
   fun eval(code: String): Any? {
-    PythonGuards.check(code)
-    bindNewVariables { variables -> variables.forEach { (name, value) -> scriptEngine.put(name, value) } }
+    prepare(code)
     return scriptEngine.eval(code)
   }
 
   override fun close() {
     (scriptEngine as PyScriptEngine).close()
+  }
+
+  private companion object {
+    // Python 2.7 keywords, which cannot be used as variable names.
+    val PYTHON_KEYWORDS =
+      (
+        "and as assert break class continue def del elif else except exec finally for from global if import in is " +
+          "lambda not or pass print raise return try while with yield"
+      ).split(" ").toSet()
   }
 }

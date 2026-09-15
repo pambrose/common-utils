@@ -22,8 +22,6 @@ package com.pambrose.common.script
  * Instances are created eagerly during initialization and recycled with context resets
  * after each use.
  *
- * Closing the pool closes its instances.
- *
  * @param size the number of [JavaScript] instances to create in the pool
  * @param nullGlobalContext ignored: [JavaScript] binds variables into the engine scope, never the
  * global scope, so its global context is always non-null. Retained for API symmetry with the other

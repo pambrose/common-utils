@@ -27,7 +27,7 @@ import org.python.jsr223.PyScriptEngine
  * @see AbstractExprEvaluator
  */
 class PythonExprEvaluator : AbstractExprEvaluator("py") {
-  override fun checkExpr(expr: String) = PythonGuards.check(expr)
+  override fun checkCode(code: String) = PythonGuards.check(code)
 
   override fun close() {
     (scriptEngine as PyScriptEngine).close()

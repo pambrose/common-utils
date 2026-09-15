@@ -42,11 +42,16 @@ private class ProbeEvaluatorPool : AbstractExprEvaluatorPool<KotlinExprEvaluator
   }
 }
 
-// An evaluator that records whether it has been closed.
+// An evaluator that records whether it has been closed, and runs onCheck in place of the usual code check.
 private class ClosingEvaluator : AbstractExprEvaluator("kts") {
   @Volatile
   var closed = false
     private set
+
+  @Volatile
+  var onCheck: () -> Unit = {}
+
+  override fun checkCode(code: String) = onCheck()
 
   override fun close() {
     closed = true
@@ -64,22 +69,6 @@ private class ClosingEvaluatorPool(
       check(created.size != failAt) { "cannot create evaluator $failAt" }
       ClosingEvaluator().also { created += it }
     }
-  }
-}
-
-// Holds an evaluator borrowed: an expression that calls pass() blocks until release is counted down.
-object PoolGate {
-  @Volatile
-  var entered = CountDownLatch(1)
-
-  @Volatile
-  var release = CountDownLatch(1)
-
-  @JvmStatic
-  fun pass(): Boolean {
-    entered.countDown()
-    release.await()
-    return true
   }
 }
 
@@ -243,15 +232,21 @@ class ScriptPoolContractTests : StringSpec() {
     "an instance returned after its pool is closed is closed" {
       withTimeout(TIMEOUT_MS) {
         val pool = ClosingEvaluatorPool(size = 1)
-        PoolGate.entered = CountDownLatch(1)
-        PoolGate.release = CountDownLatch(1)
-        val borrower = launch(Dispatchers.IO) { pool.eval("com.pambrose.common.script.PoolGate.pass()") }
-        withContext(Dispatchers.IO) { PoolGate.entered.await() }
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        // Keeps the evaluator borrowed without compiling anything: the check waits for release, then fails the eval.
+        pool.created.single().onCheck = {
+          entered.countDown()
+          release.await()
+          throw ScriptException("released")
+        }
+        val borrower = launch(Dispatchers.IO) { shouldThrow<ScriptException> { pool.eval("true") } }
+        withContext(Dispatchers.IO) { entered.await() }
 
         pool.close()
         pool.created.single().closed shouldBe false
 
-        PoolGate.release.countDown()
+        release.countDown()
         borrower.join()
         pool.created.single().closed shouldBe true
       }

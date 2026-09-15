@@ -21,7 +21,7 @@ import com.pambrose.common.script.ScriptUtils.resetContext
 /**
  * Evaluates expressions with a JSR 223 script engine.
  *
- * Expressions run in the host JVM. [checkExpr] rejects common literal JVM-termination calls on a best-effort basis
+ * Expressions run in the host JVM. [checkCode] rejects common literal JVM-termination calls on a best-effort basis
  * (see [ScriptGuards]), but this is **not** a security sandbox: do not evaluate untrusted input in-process.
  *
  * The engine keeps state across evaluations, such as the Kotlin engine's REPL history, which grows with every
@@ -39,19 +39,11 @@ abstract class AbstractExprEvaluator(
   }
 
   /**
-   * Throws a [javax.script.ScriptException] if [expr] must not be evaluated. The default rejects literal
-   * JVM-termination calls with [ScriptGuards]; subclasses add checks for their language.
-   *
-   * @param expr the expression about to be evaluated
-   */
-  protected open fun checkExpr(expr: String) = ScriptGuards.checkNoJvmExit(expr)
-
-  /**
    * Evaluates [expr] and returns its [Boolean] result.
    *
    * @param expr the boolean expression to evaluate
    * @return the boolean result of the evaluation
-   * @throws javax.script.ScriptException if [checkExpr] rejects [expr], or it fails to compile or run
+   * @throws javax.script.ScriptException if [checkCode] rejects [expr], or it fails to compile or run
    * @throws IllegalArgumentException if the expression does not evaluate to a [Boolean]
    */
   fun eval(expr: String): Boolean {
@@ -67,10 +59,10 @@ abstract class AbstractExprEvaluator(
    *
    * @param expr the expression to evaluate
    * @return the result of evaluating the expression, or `null` if the expression evaluates to `null`
-   * @throws javax.script.ScriptException if [checkExpr] rejects [expr], or it fails to compile or run
+   * @throws javax.script.ScriptException if [checkCode] rejects [expr], or it fails to compile or run
    */
   fun compute(expr: String): Any? {
-    checkExpr(expr)
+    checkCode(expr)
     return scriptEngine.eval(expr)
   }
 

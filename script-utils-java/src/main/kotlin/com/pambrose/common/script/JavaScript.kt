@@ -18,8 +18,8 @@ package com.pambrose.common.script
 
 import ch.obermuhlner.scriptengine.java.Isolation
 import ch.obermuhlner.scriptengine.java.JavaScriptEngine
-import com.pambrose.common.script.ScriptUtils.engineBindings
 import io.github.oshai.kotlinlogging.KotlinLogging
+import javax.lang.model.SourceVersion
 import javax.script.ScriptException
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -48,7 +48,7 @@ import kotlin.reflect.KType
 class JavaScript : AbstractScript("java", false) {
   private val imports: MutableList<String> = []
 
-  override val reservedWords: Set<String> get() = JAVA_KEYWORDS
+  override fun isReserved(name: String) = SourceVersion.isKeyword(name)
 
   /**
    * Generates Java-style public field declarations for all registered variables.
@@ -107,24 +107,15 @@ class JavaScript : AbstractScript("java", false) {
   }
 
   // Java source for a Kotlin type argument: kotlin.collections.List<kotlin.Int> -> java.util.List<java.lang.Integer>
-  private val KType.javaEquiv: String
-    get() {
-      val args = arguments.map { it.type?.javaEquiv ?: "?" }
-      val clazz = (classifier as? KClass<*>)?.javaObjectType
-      return when {
-        clazz == null -> "Object"
-        clazz.isArray -> "${args.singleOrNull() ?: clazz.componentType.canonicalName}[]"
-        args.isEmpty() -> clazz.canonicalName
-        else -> "${clazz.canonicalName}<${args.joinToString(", ")}>"
-      }
+  override fun renderType(type: KType): String {
+    val args = type.arguments.map { argument -> argument.type?.let(::renderType) ?: "?" }
+    val clazz = (type.classifier as? KClass<*>)?.javaObjectType
+    return when {
+      clazz == null -> "Object"
+      clazz.isArray -> "${args.singleOrNull() ?: clazz.componentType.canonicalName}[]"
+      args.isEmpty() -> clazz.canonicalName
+      else -> "${clazz.canonicalName}<${args.joinToString(", ")}>"
     }
-
-  override fun params(
-    name: String,
-    types: Array<out KType>,
-  ): String {
-    val params = types.map { type -> type.javaEquiv }
-    return if (params.isNotEmpty()) "<${params.joinToString(", ")}>" else ""
   }
 
   /**
@@ -144,8 +135,7 @@ class JavaScript : AbstractScript("java", false) {
     script: String,
     verbose: Boolean = false,
   ): Any? {
-    ScriptGuards.checkNoJvmExit(script)
-    bindNewVariables(::putBindings)
+    prepare(script)
 
     val code = importDecls + script
 
@@ -173,8 +163,7 @@ class JavaScript : AbstractScript("java", false) {
     action: String = "",
     verbose: Boolean = false,
   ): Any? {
-    ScriptGuards.checkNoJvmExit(expr, action)
-    bindNewVariables(::putBindings)
+    prepare("$action\n$expr")
 
     val code = """
 $importDecls
@@ -194,9 +183,6 @@ $varDecls
     return evaluate(code)
   }
 
-  private fun putBindings(variables: Map<String, Any>) =
-    variables.forEach { (name, value) -> scriptEngine.engineBindings[name] = value }
-
   // java-scriptengine lets some failures escape unwrapped, such as the IllegalArgumentException from assigning a
   // variable to a field of an incompatible type, so report them as ScriptExceptions like every other script failure.
   private fun evaluate(code: String): Any? =
@@ -209,64 +195,5 @@ $varDecls
 
     // java-scriptengine's own default isolation.
     val DEFAULT_ISOLATION = Isolation.CallerClassLoader
-
-    // Java's reserved keywords and literals, which cannot be used as identifiers.
-    val JAVA_KEYWORDS =
-      setOf(
-        "_",
-        "abstract",
-        "assert",
-        "boolean",
-        "break",
-        "byte",
-        "case",
-        "catch",
-        "char",
-        "class",
-        "const",
-        "continue",
-        "default",
-        "do",
-        "double",
-        "else",
-        "enum",
-        "extends",
-        "false",
-        "final",
-        "finally",
-        "float",
-        "for",
-        "goto",
-        "if",
-        "implements",
-        "import",
-        "instanceof",
-        "int",
-        "interface",
-        "long",
-        "native",
-        "new",
-        "null",
-        "package",
-        "private",
-        "protected",
-        "public",
-        "return",
-        "short",
-        "static",
-        "strictfp",
-        "super",
-        "switch",
-        "synchronized",
-        "this",
-        "throw",
-        "throws",
-        "transient",
-        "true",
-        "try",
-        "void",
-        "volatile",
-        "while",
-      )
   }
 }

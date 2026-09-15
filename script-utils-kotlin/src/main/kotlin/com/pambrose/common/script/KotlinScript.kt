@@ -42,7 +42,7 @@ import com.pambrose.common.util.toDoubleQuoted
 class KotlinScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("kts", nullGlobalContext) {
-  override val reservedWords: Set<String> get() = KOTLIN_KEYWORDS
+  override fun isReserved(name: String) = name in KOTLIN_KEYWORDS
 
   /**
    * Generates Kotlin `val` declarations that retrieve every bound variable from the engine's bindings
@@ -69,6 +69,12 @@ class KotlinScript(
 
   private fun String.toTempName() = "${this}_tmp"
 
+  // Binds each value under a temporary name, then declares a typed val with the variable's own name.
+  override fun bindVariables(variables: Map<String, Any>) {
+    variables.forEach { (name, value) -> scriptEngine.put(name.toTempName(), value) }
+    scriptEngine.eval(declarations(variables.keys))
+  }
+
   /**
    * Evaluates Kotlin [code] and returns its result.
    *
@@ -80,48 +86,16 @@ class KotlinScript(
    */
   @Synchronized
   fun eval(code: String): Any? {
-    ScriptGuards.checkNoJvmExit(code)
-
-    bindNewVariables { variables ->
-      variables.forEach { (name, value) -> scriptEngine.put(name.toTempName(), value) }
-      scriptEngine.eval(declarations(variables.keys))
-    }
-
+    prepare(code)
     return scriptEngine.eval(code)
   }
 
   private companion object {
     // Kotlin's hard keywords, which cannot be used as identifiers.
     val KOTLIN_KEYWORDS =
-      setOf(
-        "as",
-        "break",
-        "class",
-        "continue",
-        "do",
-        "else",
-        "false",
-        "for",
-        "fun",
-        "if",
-        "in",
-        "interface",
-        "is",
-        "null",
-        "object",
-        "package",
-        "return",
-        "super",
-        "this",
-        "throw",
-        "true",
-        "try",
-        "typealias",
-        "typeof",
-        "val",
-        "var",
-        "when",
-        "while",
-      )
+      (
+        "as break class continue do else false for fun if in interface is null object package return super this " +
+          "throw true try typealias typeof val var when while"
+      ).split(" ").toSet()
   }
 }

@@ -16,16 +16,14 @@
 
 package com.pambrose.common.script
 
-import java.io.Closeable
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 
 /**
  * Abstract base class for a pool of [AbstractExprEvaluator] instances.
  *
- * Uses a coroutine [Channel] as a bounded buffer to manage evaluator instances. Subclasses populate the pool with
- * [populate] in their `init` block. Each evaluator's context is reset when it is returned, so engine state such as
- * Kotlin's REPL history does not accumulate. Closing the pool closes its evaluators.
+ * Each evaluator's context is reset when it is returned, so engine state such as Kotlin's REPL history does not
+ * accumulate. Subclasses populate the pool with [populate] in their `init` block. [AbstractEnginePool] describes
+ * borrowing and closing.
  *
  * @param T the concrete type of [AbstractExprEvaluator] managed by this pool
  * @param size the number of evaluator instances in the pool; must be positive
@@ -33,41 +31,9 @@ import kotlinx.coroutines.runBlocking
  */
 @Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
-  val size: Int,
-) : Closeable {
-  init {
-    require(size > 0) { "Pool size must be positive, but was $size" }
-  }
-
-  /**
-   * Channel used as a bounded buffer for pooling evaluator instances. An evaluator handed to a borrower that is
-   * cancelled before it resumes goes back into the channel instead of being lost.
-   */
-  protected val channel: Channel<T> = Channel(size) { returnToPool(it) }
-
-  private suspend fun borrow() = channel.receive()
-
-  /**
-   * Returns an approximate, point-in-time indication of whether the pool currently has no evaluators
-   * available. Delegates to [Channel.isEmpty], which is racy under concurrent borrow/recycle and may
-   * return a stale result, so do not rely on it for correctness.
-   */
-  val isEmpty get() = channel.isEmpty
-
-  private fun returnToPool(evaluator: T): Unit = channel.returnOrClose(evaluator)
-
-  private fun recycle(evaluator: T) {
-    evaluator.resetContext()
-    returnToPool(evaluator)
-  }
-
-  /**
-   * Creates the pool's [size] evaluators with [factory] and adds them to the pool. If creating one fails, the
-   * evaluators already created are closed before the exception propagates.
-   *
-   * @param factory creates one evaluator
-   */
-  protected fun populate(factory: () -> T) = channel.populate(size, factory)
+  size: Int,
+) : AbstractEnginePool<T>(size) {
+  override fun reset(instance: T) = instance.resetContext()
 
   /**
    * Evaluates [expr] by borrowing an evaluator from the pool, blocking the current thread until one is
@@ -93,19 +59,5 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
    * @return the boolean result of the evaluation
    * @throws kotlinx.coroutines.channels.ClosedReceiveChannelException if the pool has been closed
    */
-  suspend fun eval(expr: String): Boolean =
-    borrow()
-      .let { evaluator ->
-        try {
-          evaluator.eval(expr)
-        } finally {
-          recycle(evaluator)
-        }
-      }
-
-  /**
-   * Closes the pool and the evaluators it holds. An evaluator still borrowed is closed when it is returned, and later
-   * borrows throw [kotlinx.coroutines.channels.ClosedReceiveChannelException].
-   */
-  override fun close() = channel.closeAndDrain()
+  suspend fun eval(expr: String): Boolean = withInstance { it.eval(expr) }
 }
