@@ -148,12 +148,6 @@ class KtorServletResponseTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { response.addCookie(Cookie("name", "value")) }
       shouldThrow<UnsupportedOperationException> { response.encodeURL("/url") }
       shouldThrow<UnsupportedOperationException> { response.encodeRedirectURL("/url") }
-      shouldThrow<UnsupportedOperationException> { response.sendError(HttpServletResponse.SC_BAD_REQUEST, "bad") }
-      shouldThrow<UnsupportedOperationException> { response.sendError(HttpServletResponse.SC_BAD_REQUEST) }
-      shouldThrow<UnsupportedOperationException> { response.sendRedirect("/elsewhere") }
-      shouldThrow<UnsupportedOperationException> {
-        response.sendRedirect("/elsewhere", HttpServletResponse.SC_MOVED_PERMANENTLY, true)
-      }
       shouldThrow<UnsupportedOperationException> { response.setDateHeader("Date", 0L) }
       shouldThrow<UnsupportedOperationException> { response.addDateHeader("Date", 0L) }
       shouldThrow<UnsupportedOperationException> { response.setIntHeader("X-Count", 1) }
@@ -164,10 +158,72 @@ class KtorServletResponseTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { response.bufferSize }
       shouldThrow<UnsupportedOperationException> { response.flushBuffer() }
       shouldThrow<UnsupportedOperationException> { response.resetBuffer() }
-      shouldThrow<UnsupportedOperationException> { response.isCommitted }
       shouldThrow<UnsupportedOperationException> { response.reset() }
       shouldThrow<UnsupportedOperationException> { response.setLocale(Locale.US) }
       shouldThrow<UnsupportedOperationException> { response.locale }
+    }
+
+    "sendError sets the status, discards buffered output, writes the message, and commits" {
+      val response = KtorServletResponse()
+      response.writer.print("partial output")
+      response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "not allowed")
+      response.status shouldBe HttpServletResponse.SC_METHOD_NOT_ALLOWED
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "not allowed"
+      response.contentType shouldBe "text/plain; charset=UTF-8"
+      response.isCommitted shouldBe true
+    }
+
+    "sendError without a message leaves an empty body" {
+      val response = KtorServletResponse()
+      response.writer.print("partial output")
+      response.sendError(HttpServletResponse.SC_NOT_FOUND)
+      response.status shouldBe HttpServletResponse.SC_NOT_FOUND
+      response.getBodyBytes().size shouldBe 0
+    }
+
+    "sendRedirect sets a redirect status and Location header and commits" {
+      val response = KtorServletResponse()
+      response.sendRedirect("/elsewhere")
+      response.status shouldBe HttpServletResponse.SC_FOUND
+      response.getHeader("Location") shouldBe "/elsewhere"
+      response.isCommitted shouldBe true
+
+      val permanent = KtorServletResponse()
+      permanent.sendRedirect("/moved", HttpServletResponse.SC_MOVED_PERMANENTLY, true)
+      permanent.status shouldBe HttpServletResponse.SC_MOVED_PERMANENTLY
+      permanent.getHeader("Location") shouldBe "/moved"
+    }
+
+    "setContentType with a charset parameter sets the character encoding the writer uses" {
+      val response = KtorServletResponse()
+      response.setContentType("text/html; charset=ISO-8859-1")
+      response.characterEncoding shouldBe "ISO-8859-1"
+      response.writer.print("caf\u00e9")
+      response.getBodyBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
+    }
+
+    "getContentType includes the character encoding once it is specified or the writer is used" {
+      val specified = KtorServletResponse()
+      specified.setContentType("application/json")
+      specified.contentType shouldBe "application/json"
+      specified.setCharacterEncoding("ISO-8859-1")
+      specified.contentType shouldBe "application/json; charset=ISO-8859-1"
+
+      val written = KtorServletResponse()
+      written.setContentType("text/plain")
+      written.writer
+      written.contentType shouldBe "text/plain; charset=UTF-8"
+    }
+
+    "the character encoding cannot change after getWriter is called" {
+      val response = KtorServletResponse()
+      response.setContentType("text/plain; charset=ISO-8859-1")
+      response.writer.print("caf\u00e9")
+      response.setCharacterEncoding("UTF-8")
+      response.setContentType("text/html; charset=UTF-8")
+      response.characterEncoding shouldBe "ISO-8859-1"
+      response.contentType shouldBe "text/html; charset=ISO-8859-1"
+      response.getBodyBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
     }
   }
 }

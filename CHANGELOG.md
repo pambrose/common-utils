@@ -66,9 +66,27 @@ All notable changes to Common Utils are documented in this file.
 - json-utils `get`, `getOrNull`, and `containsKeys` ignore empty path segments, as `getByPath` already did.
   `get("a..b")` is now the same as `get("a.b")`, and an empty path returns the element itself. Before, the
   lookup was for the key `""`, and it threw.
+- `HerokuHttpsRedirect.host` (ktor-server-utils) is now `String?` and defaults to `null`, which keeps the
+  host of the incoming request. Before, it defaulted to `"localhost"`, so an install without a `host`
+  redirected every visitor to `https://localhost`. Code that reads `host` as a non-null `String` must handle
+  `null`.
 
 ### Bug fixes
 
+- The ktor-server-utils servlet bridge now covers more of the servlet contract.
+  - **Responses:** `KtorServletResponse` implements `sendError`, `sendRedirect`, and `isCommitted`. Before,
+    they threw `UnsupportedOperationException`, so a request with an unsupported HTTP method returned `500`
+    instead of `HttpServlet`'s `405`.
+  - **Requests:** `KtorServletRequest.getPathInfo()` returns `null`, and request attributes work.
+  - **Lifecycle:** `Route.servlet` calls the servlet's `destroy()` once, when its own application stops.
+  - **Character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is used by the
+    writer and included in `getContentType()` and the response's `Content-Type`, and it can't change after
+    `getWriter()`. Before, the writer ignored it.
+- `KtorServletRequest.getParameterMap()` (ktor-server-utils) is case-insensitive, like the other parameter
+  accessors, and the documentation states that parameter names are case-insensitive, unlike in a servlet
+  container.
+- `HerokuHttpsRedirect.excludePrefix`/`excludeSuffix` (ktor-server-utils) match the request path, not the
+  URI with its query string. `excludeSuffix(".txt")` no longer fails to exclude `/robots.txt?v=2`.
 - `String.toJsonString()` (json-utils) is deprecated in favor of the new `String.reformatJson(prettyPrint)`.
   On a `String`, passing any argument, as in `toJsonString(prettyPrint = true)`, selects the generic overload,
   which serializes the string as a quoted JSON string literal instead of reformatting it.
@@ -139,6 +157,9 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Cover the ktor-server-utils redirect plugin's actual redirect: the `Location` host, path, and query; a
+  temporary redirect; a missing `x-forwarded-proto` header; a custom exclude predicate; and exclusions with a
+  query string. Before, the tests asserted only the status code.
 - Make the json-utils and ktor-client-utils tests able to fail.
   - **Lenient/strict formats:** the lenient-parsing test decodes into a class, so it sees
     `ignoreUnknownKeys`.

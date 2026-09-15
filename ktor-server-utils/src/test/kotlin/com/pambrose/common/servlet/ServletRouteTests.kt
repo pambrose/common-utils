@@ -21,15 +21,24 @@ import io.kotest.matchers.shouldBe
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.charset
 import io.ktor.http.contentType
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.routing.application
 import io.ktor.server.testing.testApplication
+import io.mockk.mockk
 import jakarta.servlet.ServletConfig
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.incrementAndFetch
 
 class ServletRouteTests : StringSpec() {
   init {
@@ -79,7 +88,7 @@ class ServletRouteTests : StringSpec() {
         client.get("/params?Name=Ktor&x=a&x=b").apply {
           status shouldBe HttpStatusCode.OK
           // getParameter("name") -> first value of "Name"; getParameterValues("X") -> all of "x";
-          // getParameterMap()["Name"] -> "Ktor" (map is keyed by the original-cased name)
+          // getParameterMap()["NAME"] -> "Ktor" (case-insensitive lookup; keys keep the request's casing)
           bodyAsText() shouldBe "p=Ktor;v=a,b;map=Ktor;names=Name,x"
         }
       }
@@ -160,6 +169,70 @@ class ServletRouteTests : StringSpec() {
         }
       }
     }
+
+    "POST to a servlet that only handles GET returns 405 instead of 500" {
+      testApplication {
+        routing {
+          servlet("/hello", HelloServlet())
+        }
+        client.post("/hello").status shouldBe HttpStatusCode.MethodNotAllowed
+      }
+    }
+
+    "servlet sendRedirect produces a redirect with a Location header" {
+      testApplication {
+        routing {
+          servlet("/old", RedirectServlet())
+        }
+        createClient { followRedirects = false }.get("/old").apply {
+          status shouldBe HttpStatusCode.Found
+          headers[HttpHeaders.Location] shouldBe "/new"
+        }
+      }
+    }
+
+    // listOf rather than a [...] literal: detekt's analyzer crashes on a collection literal holding lambdas.
+    val encodingSetups =
+      listOf<Pair<String, HttpServletResponse.() -> Unit>>(
+        "setContentType" to { contentType = "text/plain; charset=ISO-8859-1" },
+        "setCharacterEncoding" to {
+          contentType = "text/plain"
+          characterEncoding = "ISO-8859-1"
+        },
+      )
+    encodingSetups.forEach { (method, setEncoding) ->
+      "servlet output honors the charset given through $method and labels the Content-Type with it" {
+        testApplication {
+          routing {
+            servlet("/latin1", Latin1Servlet(setEncoding))
+          }
+          client.get("/latin1").apply {
+            bodyAsBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
+            contentType()?.charset() shouldBe Charsets.ISO_8859_1
+          }
+        }
+      }
+    }
+
+    "servlet is destroyed once, when its own application stops" {
+      val destroyCount = AtomicInt(0)
+      val tracked =
+        object : HttpServlet() {
+          override fun destroy() {
+            destroyCount.incrementAndFetch()
+          }
+        }
+      testApplication {
+        routing {
+          servlet("/tracked", tracked)
+          // Another application stopping on the same event bus, as in a development-mode reload, is ignored.
+          application.monitor.raise(ApplicationStopped, mockk<Application>(relaxed = true))
+        }
+        startApplication()
+        destroyCount.load() shouldBe 0
+      }
+      destroyCount.load() shouldBe 1
+    }
   }
 
   // Test servlets
@@ -222,8 +295,8 @@ class ServletRouteTests : StringSpec() {
     ) {
       val p = req.getParameter("name") // first value, case-insensitive
       val v = req.getParameterValues("X")?.joinToString(",") // all values, case-insensitive
-      // getParameterMap returns a plain Map keyed by the actual param names (looked up by exact case).
-      val map = req.parameterMap["Name"]?.firstOrNull()
+      // getParameterMap is case-insensitive too, like the other accessors, and keeps the request's casing.
+      val map = req.parameterMap["NAME"]?.firstOrNull()
       val names = req.parameterNames.toList().sorted().joinToString(",")
       resp.contentType = "text/plain"
       resp.writer.print("p=$p;v=$v;map=$map;names=$names")
@@ -279,6 +352,27 @@ class ServletRouteTests : StringSpec() {
     ) {
       resp.contentType = "text/plain"
       resp.writer.print("posted")
+    }
+  }
+
+  private class RedirectServlet : HttpServlet() {
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      resp.sendRedirect("/new")
+    }
+  }
+
+  private class Latin1Servlet(
+    private val setEncoding: HttpServletResponse.() -> Unit,
+  ) : HttpServlet() {
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      resp.setEncoding()
+      resp.writer.print("caf\u00e9")
     }
   }
 }

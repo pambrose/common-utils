@@ -103,7 +103,6 @@ class KtorServletRequestTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { request.cookies }
       shouldThrow<UnsupportedOperationException> { request.getDateHeader("If-Modified-Since") }
       shouldThrow<UnsupportedOperationException> { request.getIntHeader("Content-Length") }
-      shouldThrow<UnsupportedOperationException> { request.pathInfo }
       shouldThrow<UnsupportedOperationException> { request.pathTranslated }
       shouldThrow<UnsupportedOperationException> { request.remoteUser }
       shouldThrow<UnsupportedOperationException> { request.isUserInRole("admin") }
@@ -123,8 +122,6 @@ class KtorServletRequestTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { request.getPart("file") }
       shouldThrow<UnsupportedOperationException> { request.upgrade(HttpUpgradeHandler::class.java) }
       shouldThrow<UnsupportedOperationException> { request.httpServletMapping }
-      shouldThrow<UnsupportedOperationException> { request.getAttribute("name") }
-      shouldThrow<UnsupportedOperationException> { request.attributeNames }
       shouldThrow<UnsupportedOperationException> { request.characterEncoding }
       shouldThrow<UnsupportedOperationException> { request.setCharacterEncoding("UTF-8") }
       shouldThrow<UnsupportedOperationException> { request.contentLength }
@@ -142,8 +139,6 @@ class KtorServletRequestTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { request.dispatcherType }
       shouldThrow<UnsupportedOperationException> { request.remoteHost }
       shouldThrow<UnsupportedOperationException> { request.remotePort }
-      shouldThrow<UnsupportedOperationException> { request.setAttribute("name", null) }
-      shouldThrow<UnsupportedOperationException> { request.removeAttribute("name") }
       shouldThrow<UnsupportedOperationException> { request.locale }
       shouldThrow<UnsupportedOperationException> { request.locales }
       shouldThrow<UnsupportedOperationException> { request.isSecure }
@@ -152,6 +147,23 @@ class KtorServletRequestTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { request.requestId }
       shouldThrow<UnsupportedOperationException> { request.protocolRequestId }
       shouldThrow<UnsupportedOperationException> { request.servletConnection }
+    }
+
+    "getPathInfo is null because the servlet is mapped to its exact path" {
+      KtorServletRequest(mockk()).pathInfo shouldBe null
+    }
+
+    "request attributes can be set, read, listed, and removed" {
+      val request = KtorServletRequest(mockk())
+      request.getAttribute("missing") shouldBe null
+      request.setAttribute("key", "value")
+      request.getAttribute("key") shouldBe "value"
+      request.attributeNames.toList() shouldBe ["key"]
+      request.setAttribute("key", null)
+      request.getAttribute("key") shouldBe null
+      request.setAttribute("other", 1)
+      request.removeAttribute("other")
+      request.attributeNames.toList() shouldBe emptyList()
     }
   }
 

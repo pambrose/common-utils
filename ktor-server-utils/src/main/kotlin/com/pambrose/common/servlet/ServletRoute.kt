@@ -19,11 +19,14 @@ package com.pambrose.common.servlet
 
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.application
 import io.ktor.server.routing.route
 import jakarta.servlet.http.HttpServlet
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.withContext
 
 /**
@@ -34,8 +37,9 @@ import kotlinx.coroutines.withContext
  * attributes and logging, and throws [UnsupportedOperationException] for container features such as
  * dynamic registration. Each incoming request is translated into a
  * [KtorServletRequest]/[KtorServletResponse] pair. The servlet's response headers, status code, and
- * body are then forwarded back through the Ktor response pipeline. Servlet processing runs on
- * [kotlinx.coroutines.Dispatchers.IO].
+ * body are then forwarded back through the Ktor response pipeline, with the character encoding the servlet
+ * used included in the `Content-Type`. Servlet processing runs on
+ * [kotlinx.coroutines.Dispatchers.IO]. The servlet's `destroy()` is called when the application stops.
  *
  * @param path the URL path at which the servlet should be mounted
  * @param servlet the Jakarta servlet instance to handle requests
@@ -47,6 +51,17 @@ fun Route.servlet(
   // init(ServletConfig) stores the config and then calls the no-arg init(); servlets such as
   // Dropwizard's HealthCheckServlet do their setup only in the former.
   servlet.init(KtorServletConfig(servlet.javaClass.name, KtorServletContext()))
+  // Mirror a container's lifecycle: destroy the servlet when this application stops. The event bus can outlive
+  // the application (development-mode reloads), so ignore other applications and unsubscribe once done.
+  val app = application
+  lateinit var subscription: DisposableHandle
+  subscription =
+    app.monitor.subscribe(ApplicationStopped) { stopped ->
+      if (stopped === app) {
+        subscription.dispose()
+        servlet.destroy()
+      }
+    }
   route(path) {
     handle {
       val request = KtorServletRequest(call.request)

@@ -59,6 +59,14 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **`deepCopy`:** it handles non-finite numbers.
   - **Reformatting strings:** the new `reformatJson()` replaces the ambiguous `String.toJsonString()`.
   - **ktor-client-utils:** `blockingGet` accepts an existing `httpClient` and `expectSuccess`.
+- **A more complete servlet bridge (ktor-server-utils)**: `sendError`, `sendRedirect`, request
+  attributes, and `getPathInfo()` work, so unsupported HTTP methods return `405` instead of `500`.
+  - **Lifecycle:** servlets are destroyed when the application stops.
+  - **Character encoding:** the servlet's charset is honored.
+  - **`HerokuHttpsRedirect`:**
+    - **Host:** without a configured host, it keeps the request's host instead of redirecting to
+      `https://localhost`.
+    - **Exclusions:** they match the path, not the query string.
 
 ### Breaking changes
 
@@ -91,6 +99,7 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **`isNumber`:** it is `false` for quoted numbers.
   - **`isEmpty()`:** it is `true` for JSON `null`.
   - **Paths:** they ignore empty segments.
+- `HerokuHttpsRedirect.host` is `String?` and defaults to the request's host instead of `"localhost"`.
 
 ---
 
