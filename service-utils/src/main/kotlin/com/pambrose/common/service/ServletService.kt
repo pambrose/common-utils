@@ -19,45 +19,49 @@ package com.pambrose.common.service
 import com.pambrose.common.concurrent.GenericIdleService
 import com.pambrose.common.concurrent.genericServiceListener
 import com.pambrose.common.dsl.GuavaDsl.toStringElements
-import com.pambrose.common.dsl.JettyDsl.servletContextHandler
+import com.pambrose.common.util.ensureLeadingSlash
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.ee11.servlet.ServletHolder
 
 /**
  * A Guava [GenericIdleService] that runs an embedded Jetty server to host servlets from a [ServletGroup].
  *
- * Each servlet in the group is registered under the root context path (`/`). The service
- * manages the Jetty server lifecycle, starting it on [startUp] and stopping it on [shutDown].
+ * Each servlet in the group is registered under the root context path (`/`) at its path, given with or without
+ * a leading slash. The service manages the Jetty server lifecycle, starting it on [startUp] and stopping it on
+ * [shutDown].
  *
  * Used by [GenericService] for serving administrative endpoints (ping, version, health check, thread dump).
  *
  * @param port The HTTP port for the Jetty server.
  * @param servletGroup The [ServletGroup] containing servlets to register.
+ * @param host The interface to bind to, or `null` to bind every interface.
  * @param initBlock An optional initialization block invoked after the service listener is registered.
  */
 class ServletService(
   private val port: Int,
   private val servletGroup: ServletGroup,
+  host: String? = null,
   initBlock: ServletService.() -> Unit = {},
 ) : GenericIdleService() {
   private val server =
-    Server(port)
-      .apply {
-        handler =
-          servletContextHandler {
-            contextPath = "/"
-            servletGroup.servletMap.forEach { (path, servlet) ->
-              addServlet(ServletHolder(servlet), "/$path")
-            }
-          }
+    jettyServer(host, port) {
+      servletGroup.servletMap.forEach { (path, servlet) ->
+        addServlet(ServletHolder(servlet), path.ensureLeadingSlash())
       }
+    }
 
   init {
     addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
     initBlock(this)
   }
+
+  @Deprecated("Binary compatibility with the constructor that predates host", level = DeprecationLevel.HIDDEN)
+  constructor(
+    port: Int,
+    servletGroup: ServletGroup,
+    initBlock: ServletService.() -> Unit,
+  ) : this(port, servletGroup, null, initBlock)
 
   override fun startUp() = server.start()
 
@@ -66,7 +70,7 @@ class ServletService(
   override fun toString() =
     toStringElements {
       add("port", port)
-      add("paths", servletGroup.servletMap.keys.map { "/$it" })
+      add("paths", servletGroup.servletMap.keys.map { it.ensureLeadingSlash() })
     }
 
   companion object {

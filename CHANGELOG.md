@@ -70,9 +70,41 @@ All notable changes to Common Utils are documented in this file.
   host of the incoming request. Before, it defaulted to `"localhost"`, so an install without a `host`
   redirected every visitor to `https://localhost`. Code that reads `host` as a non-null `String` must handle
   `null`.
+- service-utils services must call `initServletService()` or `initKtorServletService()` exactly once before
+  starting.
+  - **Starting without init:** it now fails with a clear `IllegalStateException`. Before, a service with admin,
+    metrics, and Zipkin all disabled started anyway, and any other configuration failed with an opaque
+    `UninitializedPropertyAccessException`.
+  - **Calling init twice:** it throws `IllegalStateException`. Before, it replaced the admin servlet service,
+    orphaning the first, and then failed part-way through.
+- service-utils registers its Dropwizard exporter with `CollectorRegistry.defaultRegistry` in `startUp()` and
+  unregisters it in `shutDown()`. Before, it was registered when the service was built and never removed, so a
+  stopped service kept exporting and a second instance added duplicate metric families. Code that reads the
+  default registry before the service starts no longer sees those metrics.
 
 ### Bug fixes
 
+- service-utils Jetty admin and metrics paths work with or without a leading slash. Before, a path configured
+  as `"/ping"` was registered as `//ping`, so requests for `/ping` got a 404 under `GenericService`, while the
+  same configuration worked under `GenericKtorService`.
+- service-utils sub-services are released when startup or shutdown fails.
+  - **Startup:** when `startUp()` fails, for example because the admin port is taken, it stops the Zipkin,
+    metrics, and JMX services that had already started. Before, they kept running, and the metrics server kept
+    its port and threads.
+  - **Shutdown:** `shutDown()` attempts every step even when one fails, then rethrows the first failure with the
+    others suppressed. Before, one failure left the rest running and the shutdown hook registered.
+- service-utils `ZipkinReporterService` sends queued spans before closing. Before, spans recorded just before a
+  graceful stop were dropped.
+- service-utils `ZipkinReporterService` has a `defaultServiceName`, taken from `ZipkinConfig.serviceName` and used
+  by `newTracing()` when no name is given. Before, `ZipkinConfig.serviceName` was never used.
+- service-utils `AdminConfig` and `MetricsConfig` have an optional `host` that binds the admin and metrics
+  servers to one interface, such as `"127.0.0.1"`. Before, thread dumps, health details, and `/metrics` were
+  always served on every interface. The default, `null`, keeps that behavior.
+- service-utils logs a failed service at error level, with its cause. Before, failures were logged at info.
+- service-utils builds the Zipkin URL with a single slash when `ZipkinConfig.path` has a leading slash.
+- service-utils warns when `addService` is called after the init method. That service never reaches the
+  `ServiceManager` or the `all_services_healthy` check, and the KDoc now explains the ordering and that the
+  caller starts and stops the services it adds.
 - The ktor-server-utils servlet bridge now covers more of the servlet contract.
   - **Responses:** `KtorServletResponse` implements `sendError`, `sendRedirect`, and `isCommitted`. Before,
     they threw `UnsupportedOperationException`, so a request with an unsupported HTTP method returned `500`
@@ -157,6 +189,15 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Test the service-utils servers over HTTP.
+  - **Endpoints:** both variants are requested on every admin endpoint and on `/metrics`, with paths configured
+    with and without a leading slash. Before, no test issued a request to them.
+  - **Lifecycle:** tests cover a startup that fails on an occupied port, a shutdown with a sub-service that fails
+    to stop, and the log level of a failure.
+  - **Zipkin:** a recording sender shows that stopping sends a just-finished span and that `newTracing()` uses the
+    default service name.
+  - **Binding:** tests check that a configured `host` refuses connections on other interfaces.
+  - **Leak:** `ZipkinReporterServiceShutdownTests` closes the `OkHttpSender` it replaces.
 - Cover the ktor-server-utils redirect plugin's actual redirect: the `Location` host, path, and query; a
   temporary redirect; a missing `x-forwarded-proto` header; a custom exclude predicate; and exclusions with a
   query string. Before, the tests asserted only the status code.

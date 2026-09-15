@@ -24,35 +24,67 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.BytesMessageSender
+import java.lang.reflect.InvocationTargetException
 
 class ZipkinReporterServiceShutdownTests : StringSpec() {
+  // Swaps mocks in for the service's reporter and sender, closing the real ones first so the test does not leak
+  // the OkHttp sender they were built with.
+  private fun serviceWith(
+    reporter: AsyncReporter<*>,
+    sender: BytesMessageSender,
+  ): ZipkinReporterService =
+    ZipkinReporterService("http://localhost:9411/api/v2/spans").apply {
+      val reporterField = ZipkinReporterService::class.java.getDeclaredField("reporter").apply { isAccessible = true }
+      val senderField = ZipkinReporterService::class.java.getDeclaredField("sender").apply { isAccessible = true }
+      (reporterField.get(this) as AsyncReporter<*>).close()
+      (senderField.get(this) as BytesMessageSender).close()
+      reporterField.set(this, reporter)
+      senderField.set(this, sender)
+    }
+
+  private fun ZipkinReporterService.invokeShutDown() {
+    val shutDown = ZipkinReporterService::class.java.getDeclaredMethod("shutDown").apply { isAccessible = true }
+    try {
+      shutDown.invoke(this)
+    } catch (e: InvocationTargetException) {
+      throw e.targetException
+    }
+  }
+
   init {
     "sender is closed even when reporter close throws" {
       val mockReporter = mockk<AsyncReporter<*>>(relaxed = true)
       val mockSender = mockk<BytesMessageSender>(relaxed = true)
       every { mockReporter.close() } throws RuntimeException("boom")
 
-      val service = ZipkinReporterService("http://localhost:9411/api/v2/spans")
+      shouldThrow<RuntimeException> { serviceWith(mockReporter, mockSender).invokeShutDown() }.message shouldBe "boom"
 
-      val reporterField = ZipkinReporterService::class.java.getDeclaredField("reporter")
-      reporterField.isAccessible = true
-      reporterField.set(service, mockReporter)
+      verify(exactly = 1) { mockReporter.close() }
+      verify(exactly = 1) { mockSender.close() }
+    }
 
-      val senderField = ZipkinReporterService::class.java.getDeclaredField("sender")
-      senderField.isAccessible = true
-      senderField.set(service, mockSender)
+    "shutDown flushes queued spans before closing the reporter and the sender" {
+      val mockReporter = mockk<AsyncReporter<*>>(relaxed = true)
+      val mockSender = mockk<BytesMessageSender>(relaxed = true)
 
-      shouldThrow<RuntimeException> {
-        val shutDownMethod = ZipkinReporterService::class.java.getDeclaredMethod("shutDown")
-        shutDownMethod.isAccessible = true
-        try {
-          shutDownMethod.invoke(service)
-        } catch (e: java.lang.reflect.InvocationTargetException) {
-          throw e.targetException
-        }
-      }.message shouldBe "boom"
+      serviceWith(mockReporter, mockSender).invokeShutDown()
+
+      verifyOrder {
+        mockReporter.flush()
+        mockReporter.close()
+        mockSender.close()
+      }
+    }
+
+    "a failing flush does not prevent the reporter and the sender from closing" {
+      val mockReporter = mockk<AsyncReporter<*>>(relaxed = true)
+      val mockSender = mockk<BytesMessageSender>(relaxed = true)
+      every { mockReporter.flush() } throws IllegalStateException("flush failed")
+
+      serviceWith(mockReporter, mockSender).invokeShutDown()
 
       verify(exactly = 1) { mockReporter.close() }
       verify(exactly = 1) { mockSender.close() }

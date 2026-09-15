@@ -52,8 +52,6 @@ abstract class GenericKtorService<T> protected constructor(
   private val versionBlock: () -> String = { "No version" },
   isTestMode: Boolean = false,
 ) : AbstractGenericService<T>(configVals, adminConfig, metricsConfig, zipkinConfig, isTestMode) {
-  private lateinit var servletGroup: HttpServletGroup
-
   /** The Ktor-based servlet service hosting admin endpoints. Initialized when admin is enabled. */
   lateinit var servletService: KtorServletService
 
@@ -63,19 +61,22 @@ abstract class GenericKtorService<T> protected constructor(
   /**
    * Initializes the Ktor servlet service, metrics, Zipkin tracing, and health checks.
    *
-   * This method should be called during subclass initialization. It conditionally sets up admin
-   * servlets via an embedded Ktor server, then delegates to [initMetricsAndHealthChecks] to wire up
-   * Prometheus metrics, JMX reporting, Zipkin tracing, health checks, and the Guava `ServiceManager`.
+   * This method should be called once during subclass initialization, after adding any extra services with
+   * [addService]. It conditionally sets up admin servlets via an embedded Ktor server, then delegates to
+   * [initMetricsAndHealthChecks] to wire up Prometheus metrics, JMX reporting, Zipkin tracing, health checks,
+   * and the Guava `ServiceManager`.
    *
    * @param initKtor An optional Ktor [Application] configuration block for custom Ktor setup.
    * @param servletInit An optional block to register additional servlets in the [HttpServletGroup].
+   * @throws IllegalStateException if the service has already been initialized.
    */
   fun initKtorServletService(
     initKtor: Application.() -> Unit = {},
     servletInit: HttpServletGroup.() -> Unit = {},
   ) {
+    checkNotInitialized()
     if (isAdminEnabled) {
-      servletGroup =
+      val servletGroup =
         adminConfig.run {
           HttpServletGroup().apply {
             addServlets(
@@ -88,7 +89,8 @@ abstract class GenericKtorService<T> protected constructor(
           }
         }
 
-      servletService = KtorServletService(adminConfig.port, servletGroup, initKtor) { addService(this) }
+      servletService =
+        KtorServletService(adminConfig.port, servletGroup, initKtor, adminConfig.host) { addService(this) }
     } else {
       logger.info { "Admin service disabled" }
     }

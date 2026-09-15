@@ -28,6 +28,8 @@ class MetricsConfigTests : StringSpec() {
       config.threadExportsEnabled shouldBe false
       config.classLoadingExportsEnabled shouldBe false
       config.versionInfoExportsEnabled shouldBe false
+      // No host binds every interface, as before the setting existed.
+      config.host shouldBe null
     }
 
     "custom values are set correctly" {
@@ -41,7 +43,9 @@ class MetricsConfigTests : StringSpec() {
         threadExportsEnabled = true,
         classLoadingExportsEnabled = true,
         versionInfoExportsEnabled = true,
+        host = "127.0.0.1",
       )
+      config.host shouldBe "127.0.0.1"
       config.enabled shouldBe true
       config.port shouldBe 9090
       config.path shouldBe "/custom-metrics"

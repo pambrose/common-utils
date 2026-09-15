@@ -19,8 +19,9 @@ package com.pambrose.common.service
 /**
  * Configuration data for administrative HTTP endpoints exposed by [GenericService] and [GenericKtorService].
  *
- * Controls whether the admin servlet group is enabled and defines the port and URL paths
- * for standard operational endpoints (ping, version, health check, thread dump).
+ * Controls whether the admin servlet group is enabled and defines the port, bind address, and URL paths
+ * for standard operational endpoints (ping, version, health check, thread dump). Paths may be given with or
+ * without a leading slash.
  *
  * @property enabled Whether the admin endpoints are enabled.
  * @property port The HTTP port on which admin servlets are served.
@@ -28,6 +29,8 @@ package com.pambrose.common.service
  * @property versionPath The URL path for the version information endpoint.
  * @property healthCheckPath The URL path for the health check endpoint.
  * @property threadDumpPath The URL path for the thread dump endpoint.
+ * @property host The interface the admin server binds to, such as `"127.0.0.1"` to accept only local
+ *   connections. The default, `null`, binds every interface.
  */
 data class AdminConfig(
   val enabled: Boolean,
@@ -36,4 +39,15 @@ data class AdminConfig(
   val versionPath: String,
   val healthCheckPath: String,
   val threadDumpPath: String,
-)
+  val host: String? = null,
+) {
+  @Deprecated("Binary compatibility with the constructor that predates host", level = DeprecationLevel.HIDDEN)
+  constructor(
+    enabled: Boolean,
+    port: Int,
+    pingPath: String,
+    versionPath: String,
+    healthCheckPath: String,
+    threadDumpPath: String,
+  ) : this(enabled, port, pingPath, versionPath, healthCheckPath, threadDumpPath, null)
+}
