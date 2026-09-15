@@ -29,7 +29,8 @@ object MetricsDsl {
    * @param block a lambda with [HealthCheck] as the receiver that returns a [HealthCheck.Result].
    * @return a new [HealthCheck] instance.
    */
-  fun healthCheck(block: HealthCheck.() -> HealthCheck.Result) =
+  @JvmStatic
+  fun healthCheck(block: HealthCheck.() -> HealthCheck.Result): HealthCheck =
     object : HealthCheck() {
       @Throws(Exception::class)
       override fun check(): Result = block(this)

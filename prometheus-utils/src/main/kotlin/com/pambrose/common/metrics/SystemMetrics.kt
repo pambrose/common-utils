@@ -19,28 +19,33 @@ package com.pambrose.common.metrics
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.Collector
+import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.hotspot.ClassLoadingExports
 import io.prometheus.client.hotspot.GarbageCollectorExports
 import io.prometheus.client.hotspot.MemoryPoolsExports
 import io.prometheus.client.hotspot.StandardExports
 import io.prometheus.client.hotspot.ThreadExports
 import io.prometheus.client.hotspot.VersionInfoExports
+import java.util.WeakHashMap
 
 /**
- * Provides a one-time initialization method for registering Prometheus JVM hotspot metric exporters.
+ * Registers Prometheus JVM hotspot metric exporters.
  *
- * Calling [initialize] multiple times is safe; subsequent calls are no-ops.
+ * Calling [initialize] multiple times is safe; each exporter is registered at most once per registry.
  */
 object SystemMetrics {
   private val logger = KotlinLogging.logger {}
 
-  @Volatile
-  private var initialized = false
+  // The exporters registered so far, per registry, so a repeat call registers only the newly requested ones.
+  private val registeredExporters = WeakHashMap<CollectorRegistry, MutableSet<String>>()
 
   /**
-   * Registers the selected Prometheus JVM hotspot metric exporters.
+   * Registers the selected Prometheus JVM hotspot metric exporters with [registry].
    *
-   * This method is synchronized and idempotent -- only the first invocation registers collectors.
+   * This method is synchronized and safe to call repeatedly: an exporter already registered by an earlier call is
+   * skipped, and one requested for the first time is registered. An exporter whose metrics another collector
+   * already provides, such as one registered by `DefaultExports.initialize()`, is skipped with a warning instead
+   * of failing the call.
    *
    * @param enableStandardExports whether to register standard JMX metrics (process CPU, open file descriptors, etc.).
    * @param enableMemoryPoolsExports whether to register memory pool JMX metrics.
@@ -48,8 +53,10 @@ object SystemMetrics {
    * @param enableThreadExports whether to register thread JMX metrics.
    * @param enableClassLoadingExports whether to register class loading JMX metrics.
    * @param enableVersionInfoExports whether to register JVM version info metrics.
+   * @param registry the registry to register with. Defaults to [CollectorRegistry.defaultRegistry].
    */
   @Synchronized
+  @JvmOverloads
   fun initialize(
     enableStandardExports: Boolean = false,
     enableMemoryPoolsExports: Boolean = false,
@@ -57,39 +64,41 @@ object SystemMetrics {
     enableThreadExports: Boolean = false,
     enableClassLoadingExports: Boolean = false,
     enableVersionInfoExports: Boolean = false,
+    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
   ) {
-    if (!initialized) {
-      if (enableStandardExports) {
-        logger.info { "Enabling standard JMX metrics" }
-        StandardExports().register<Collector>()
-      }
+    val registered = registeredExporters.getOrPut(registry) { mutableSetOf() }
 
-      if (enableMemoryPoolsExports) {
-        logger.info { "Enabling memory pool JMX metrics" }
-        MemoryPoolsExports().register<Collector>()
-      }
+    fun register(
+      enabled: Boolean,
+      description: String,
+      exporter: () -> Collector,
+    ) {
+      if (enabled && description !in registered) {
+        logger.info { "Enabling $description metrics" }
+        when (val failure = runCatching { exporter().register<Collector>(registry) }.exceptionOrNull()) {
+          null -> {
+            registered += description
+          }
 
-      if (enableGarbageCollectorExports) {
-        logger.info { "Enabling garbage collector JMX metrics" }
-        GarbageCollectorExports().register<Collector>()
-      }
+          // The registry rejects metric names another collector already provides, so these metrics are already
+          // exported and retrying would only fail again.
+          is IllegalArgumentException -> {
+            registered += description
+            logger.warn { "Skipping $description metrics: ${failure.message}" }
+          }
 
-      if (enableThreadExports) {
-        logger.info { "Enabling thread JMX metrics" }
-        ThreadExports().register<Collector>()
+          else -> {
+            logger.warn(failure) { "Could not register $description metrics; a later call will retry" }
+          }
+        }
       }
-
-      if (enableClassLoadingExports) {
-        logger.info { "Enabling class loading JMX metrics" }
-        ClassLoadingExports().register<Collector>()
-      }
-
-      if (enableVersionInfoExports) {
-        logger.info { "Enabling version info metrics" }
-        VersionInfoExports().register<Collector>()
-      }
-
-      initialized = true
     }
+
+    register(enableStandardExports, "standard JMX") { StandardExports() }
+    register(enableMemoryPoolsExports, "memory pool JMX") { MemoryPoolsExports() }
+    register(enableGarbageCollectorExports, "garbage collector JMX") { GarbageCollectorExports() }
+    register(enableThreadExports, "thread JMX") { ThreadExports() }
+    register(enableClassLoadingExports, "class loading JMX") { ClassLoadingExports() }
+    register(enableVersionInfoExports, "version info") { VersionInfoExports() }
   }
 }

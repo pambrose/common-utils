@@ -59,5 +59,10 @@ class JettyDslTests : StringSpec() {
 
       server.handler shouldBe handler
     }
+
+    "the builders need no block" {
+      JettyDsl.server(0).handler shouldBe null
+      JettyDsl.servletContextHandler().contextPath shouldBe "/"
+    }
   }
 }

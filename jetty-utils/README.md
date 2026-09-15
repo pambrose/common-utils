@@ -10,15 +10,16 @@ the block is ordinary Jetty API.
 
 ### Server DSL
 
-- **`JettyDsl.server(port) { }`**: creates a `Server` bound to a port and applies the configuration block
-- **`JettyDsl.servletContextHandler { }`**: creates a `ServletContextHandler` and applies the block
+- **`JettyDsl.server(port) { }`**: creates a `Server` bound to a port and applies the optional configuration block
+- **`JettyDsl.servletContextHandler { }`**: creates a `ServletContextHandler` and applies the optional block
 
 ### Servlets
 
 - **`LambdaServlet`**: serves the result of a lambda as the GET response body
-- **`VersionServlet`**: serves a fixed version string as plain text
+- **`VersionServlet`**: a `LambdaServlet` that serves a fixed version string as plain text
 
-Both servlets handle **GET only** and send `Cache-Control: must-revalidate,no-cache,no-store`.
+Both servlets handle **GET only**, send `Cache-Control: must-revalidate,no-cache,no-store`, and encode the
+body as UTF-8 unless the content type names another charset.
 
 ## Usage Examples
 
@@ -69,7 +70,8 @@ val handler =
 ```
 
 The lambda runs on every request, so it sees fresh state each time — useful for counters, uptime, and
-health snapshots.
+health snapshots. It runs before the response is touched, so if it throws, the container sends an error
+status rather than an empty `200`.
 
 ### VersionServlet
 
@@ -102,14 +104,14 @@ addServlet(ServletHolder(VersionServlet(MyApp::class.versionDesc())), "/version"
 
 ### `JettyDsl`
 
-- `server(port: Int, block: Server.() -> Unit): Server`
-- `servletContextHandler(block: ServletContextHandler.() -> Unit): ServletContextHandler`
+- `server(port: Int, block: Server.() -> Unit = {}): Server`
+- `servletContextHandler(block: ServletContextHandler.() -> Unit = {}): ServletContextHandler`
 
 ### Servlets
 
-- `class LambdaServlet(contentType: String, block: () -> String) : HttpServlet`
-- `class LambdaServlet(block: () -> String) : HttpServlet` — content type `"text/plain"`
-- `class VersionServlet(version: String) : HttpServlet`
+- `open class LambdaServlet(contentType: String, block: () -> String) : HttpServlet`
+- `LambdaServlet(block: () -> String)` — content type `"text/plain"`
+- `class VersionServlet(version: String) : LambdaServlet`
 
 ## Dependencies
 

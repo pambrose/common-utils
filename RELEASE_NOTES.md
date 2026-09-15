@@ -73,6 +73,11 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
     no longer stops `shutDown()` from stopping the rest.
   - **Zipkin:** queued spans are sent before the reporter closes, and `ZipkinConfig.serviceName` is used.
   - **Binding:** a new `host` setting binds the admin and metrics servers to one interface.
+- **Metrics and servlet fixes (prometheus-utils, dropwizard-utils, jetty-utils)**:
+  - **Registries:** Prometheus factories accept an explicit `CollectorRegistry`. `SystemMetrics.initialize`
+    tolerates exporters that are already registered and adds newly requested ones.
+  - **Backlog checks:** `newBacklogHealthCheck` can read a live size.
+  - **Servlets:** `LambdaServlet` and `VersionServlet` send UTF-8 and let a failing lambda become a `500`.
 
 ### Breaking changes
 
@@ -108,6 +113,9 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - `HerokuHttpsRedirect.host` is `String?` and defaults to the request's host instead of `"localhost"`.
 - service-utils services must call their init method exactly once before starting.
 - The service-utils Dropwizard exporter is registered with Prometheus only while the service runs.
+- `InstrumentedThreadFactory.newThread` returns `Thread?`.
+- dropwizard-utils `MetricsUtils` and `MetricsDsl.healthCheck` are `@JvmStatic`; recompile code built against
+  earlier versions.
 
 ---
 

@@ -28,19 +28,19 @@ object JettyDsl {
    * Creates and configures a Jetty [Server] on the specified port.
    *
    * @param port the port number the server will listen on.
-   * @param block a lambda with [Server] as receiver for configuring the server.
+   * @param block an optional lambda with [Server] as receiver for configuring the server.
    * @return the configured [Server] instance.
    */
   fun server(
     port: Int,
-    block: Server.() -> Unit,
+    block: Server.() -> Unit = {},
   ) = Server(port).apply(block)
 
   /**
    * Creates and configures a [ServletContextHandler].
    *
-   * @param block a lambda with [ServletContextHandler] as receiver for adding servlets and filters.
+   * @param block an optional lambda with [ServletContextHandler] as receiver for adding servlets and filters.
    * @return the configured [ServletContextHandler] instance.
    */
-  fun servletContextHandler(block: ServletContextHandler.() -> Unit) = ServletContextHandler().apply(block)
+  fun servletContextHandler(block: ServletContextHandler.() -> Unit = {}) = ServletContextHandler().apply(block)
 }

@@ -17,35 +17,16 @@
 
 package com.pambrose.common.servlet
 
-import jakarta.servlet.ServletException
-import jakarta.servlet.http.HttpServlet
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
-import java.io.IOException
-
 /**
- * An [HttpServlet] that responds to HTTP GET requests with a plain-text version string.
+ * A [LambdaServlet] that responds to HTTP GET requests with a fixed plain-text version string.
  *
- * Responses include `Cache-Control: must-revalidate,no-cache,no-store` headers.
+ * Responses include `Cache-Control: must-revalidate,no-cache,no-store` headers and are encoded as UTF-8.
  *
  * @param version the version string to return in the response body.
  */
 class VersionServlet(
-  private val version: String,
-) : HttpServlet() {
-  @Throws(ServletException::class, IOException::class)
-  override fun doGet(
-    req: HttpServletRequest,
-    resp: HttpServletResponse,
-  ) {
-    resp.apply {
-      status = HttpServletResponse.SC_OK
-      setHeader("Cache-Control", "must-revalidate,no-cache,no-store")
-      contentType = "text/plain"
-      writer.use { it.println(version) }
-    }
-  }
-
+  version: String,
+) : LambdaServlet({ version }) {
   companion object {
     private const val serialVersionUID = -9115048679370256251L
   }

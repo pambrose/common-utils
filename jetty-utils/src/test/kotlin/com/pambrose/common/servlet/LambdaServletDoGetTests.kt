@@ -18,6 +18,7 @@
 
 package com.pambrose.common.servlet
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -101,6 +102,18 @@ class LambdaServletDoGetTests : StringSpec() {
 
       firstWriter.toString().trim() shouldBe "count=1"
       secondWriter.toString().trim() shouldBe "count=2"
+    }
+
+    "a throwing lambda leaves the response untouched, so the container can still send an error" {
+      val response = mockk<HttpServletResponse>(relaxed = true)
+      every { response.writer } returns PrintWriter(StringWriter())
+
+      shouldThrow<IllegalStateException> {
+        LambdaServlet { error("body failed") }.service(createGetRequest(), response)
+      }
+
+      verify(exactly = 0) { response.status = any() }
+      verify(exactly = 0) { response.writer }
     }
   }
 }

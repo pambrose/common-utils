@@ -81,9 +81,43 @@ All notable changes to Common Utils are documented in this file.
   unregisters it in `shutDown()`. Before, it was registered when the service was built and never removed, so a
   stopped service kept exporting and a second instance added duplicate metric families. Code that reads the
   default registry before the service starts no longer sees those metrics.
+- `InstrumentedThreadFactory.newThread` (prometheus-utils) returns `Thread?`. It returns `null` when the delegate
+  rejects the thread, as the `ThreadFactory` contract allows, instead of throwing `NullPointerException`. Kotlin
+  code that uses the result directly must handle `null`.
+- `MetricsUtils` factories and `MetricsDsl.healthCheck` (dropwizard-utils) are `@JvmStatic`, so Java calls them
+  without `INSTANCE`. Java and Kotlin source compiles unchanged, but code compiled against earlier versions must
+  be recompiled.
 
 ### Bug fixes
 
+- prometheus-utils factories take an optional `registry`.
+  - **Where:** `PrometheusDsl` builders, `SamplerGaugeCollector`, `InstrumentedThreadFactory`, and
+    `SystemMetrics.initialize`.
+  - **Default:** `CollectorRegistry.defaultRegistry`.
+  - **Before:** every metric went to the default registry, so tests could not isolate metrics, and a second
+    `InstrumentedThreadFactory` with the same name always threw.
+  - **Compatibility:** `@JvmOverloads` keeps the previous signatures.
+- `SamplerGaugeCollector` (prometheus-utils) implements `Collector.Describable`, so registering it no longer
+  runs the sampler on the constructing thread.
+- `SystemMetrics.initialize` (prometheus-utils) survives exporters that are already registered.
+  - **Tracking:** it records each exporter per registry, so a repeat call registers exporters requested for the
+    first time instead of ignoring them.
+  - **Duplicates:** an exporter whose metrics are already registered, for example by
+    `DefaultExports.initialize()`, is skipped with a warning.
+  - **Before:** the call threw, and after a partial failure every retry failed on the first exporter.
+- `InstrumentedThreadFactory` (prometheus-utils) counts a thread as created only when the delegate returns one.
+  The comment about the running/terminated invariant is also corrected.
+- `newBacklogHealthCheck` (dropwizard-utils) has a `() -> Int` overload that reads the backlog on every check.
+  The `Int` form, which captured the size once, is deprecated. Both size checks now report
+  `"Large size: N (threshold: T)"`.
+- `LambdaServlet` (jetty-utils) runs its lambda before touching the response. Before, it set status `200`
+  first, so a throwing lambda produced an empty `200` instead of a `500`.
+- `LambdaServlet` and `VersionServlet` (jetty-utils) encode as UTF-8 unless the content type names a charset.
+  Before, Jetty assumed ISO-8859-1 for `text/plain` and replaced other characters with `?`.
+- `VersionServlet` (jetty-utils) is now a `LambdaServlet`, so the two can no longer drift apart. The
+  `JettyDsl.server` and `servletContextHandler` blocks default to `{}`.
+- The prometheus-utils README names `io.prometheus:simpleclient_httpserver` as the dependency its `HTTPServer`
+  example needs.
 - service-utils Jetty admin and metrics paths work with or without a leading slash. Before, a path configured
   as `"/ping"` was registered as `//ping`, so requests for `/ping` got a 404 under `GenericService`, while the
   same configuration worked under `GenericKtorService`.
@@ -189,6 +223,12 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Strengthen the metrics and servlet tests.
+  - **Registries:** prometheus-utils tests assert values read back from a registry instead of `shouldNotBe null`
+    on non-null types, including isolated registries and `SystemMetrics` exporter registration.
+  - **Servlets:** jetty-utils tests serve `LambdaServlet` and `VersionServlet` from a real Jetty server to check
+    the encoding.
+  - **Coverage gap:** service-utils gains `HttpServletGroupTests`.
 - Test the service-utils servers over HTTP.
   - **Endpoints:** both variants are requested on every admin endpoint and on `/metrics`, with paths configured
     with and without a leading slash. Before, no test issued a request to them.

@@ -21,6 +21,7 @@ package com.pambrose.common.dsl
 import com.codahale.metrics.health.HealthCheck
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import java.lang.reflect.Modifier
 
 class MetricsDslTests : StringSpec() {
   init {
@@ -53,6 +54,10 @@ class MetricsDslTests : StringSpec() {
 
       val result = healthCheck.execute()
       result.isHealthy shouldBe false
+    }
+
+    "healthCheck is a static method, so Java callers need no INSTANCE" {
+      Modifier.isStatic(MetricsDsl::class.java.getMethod("healthCheck", Function1::class.java).modifiers) shouldBe true
     }
   }
 }
