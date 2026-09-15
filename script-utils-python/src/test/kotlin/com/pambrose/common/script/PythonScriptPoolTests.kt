@@ -20,6 +20,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import javax.script.ScriptException
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.withTimeout
 
 /**
@@ -105,6 +106,14 @@ class PythonScriptPoolTests : StringSpec() {
       withTimeout(TIMEOUT_MS) {
         val pool = PythonScriptPool(size = 1, nullGlobalContext = true)
         pool.eval { eval("2 ** 3") } shouldBe 8
+      }
+    }
+
+    "closing a python script pool fails later borrows" {
+      withTimeout(TIMEOUT_MS) {
+        val pool = PythonScriptPool(size = 1, nullGlobalContext = false)
+        pool.close()
+        shouldThrow<ClosedReceiveChannelException> { pool.eval { eval("1") } }
       }
     }
   }

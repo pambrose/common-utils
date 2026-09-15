@@ -14,8 +14,12 @@
  *   limitations under the License.
  */
 
+// DEPRECATION: some tests read the deprecated public engine.
+@file:Suppress("DEPRECATION")
+
 package com.pambrose.common.script
 
+import ch.obermuhlner.scriptengine.java.Isolation
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -23,6 +27,7 @@ import io.kotest.matchers.shouldNotBe
 import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
+import kotlinx.coroutines.withTimeout
 
 class IncClass(
   var i: Int = 0,
@@ -31,6 +36,8 @@ class IncClass(
     i++
   }
 }
+
+private fun Any.isolation() = javaClass.getDeclaredField("isolation").apply { isAccessible = true }.get(this)
 
 class JavaScriptTests : StringSpec() {
   init {
@@ -211,11 +218,11 @@ class JavaScriptTests : StringSpec() {
     }
 
     "illegal calls" {
+      // Java-syntax termination calls, rejected by the guard rather than by a compile error.
       JavaScript().use {
         it.apply {
-          shouldThrow<ScriptException> { eval("sys.exit(1)") }
-          shouldThrow<ScriptException> { eval("exit(1)") }
-          shouldThrow<ScriptException> { eval("quit(1)") }
+          shouldThrow<ScriptException> { eval("0", "java.lang.System.exit(1);") }
+          shouldThrow<ScriptException> { eval("0", "Runtime.getRuntime().exit(1);") }
         }
       }
     }
@@ -242,6 +249,71 @@ class JavaScriptTests : StringSpec() {
       // Three evals on a pool of size two force a recycle between borrows.
       repeat(3) {
         pool.eval { engine.getBindings(GLOBAL_SCOPE) } shouldNotBe null
+      }
+    }
+
+    "a variable added after an evaluation is bound for the next one" {
+      JavaScript().use {
+        it.apply {
+          add("a", 1)
+          eval("a") shouldBe 1
+          add("b", 2)
+          eval("b") shouldBe 2
+        }
+      }
+    }
+
+    "Char, Any, and nested generic type arguments compile" {
+      JavaScript().use {
+        it.apply {
+          add("chars", mutableListOf('a'), typeOf<Char>())
+          add("anys", mutableListOf<Any>(1), typeOf<Any>())
+          add("nested", mutableMapOf("k" to listOf(1, 2)), typeOf<String>(), typeOf<List<Int>>())
+          eval("""chars.size() + anys.size() + nested.get("k").size()""") shouldBe 4
+        }
+      }
+    }
+
+    "a value whose runtime class is private binds as a public supertype" {
+      JavaScript().use {
+        it.apply {
+          add("fixed", listOf(1, 2), typeOf<Int>())
+          import(ArrayList::class.java)
+          eval("fixed.size()") shouldBe 2
+        }
+      }
+    }
+
+    "a binding that does not fit the script's field is reported as a ScriptException" {
+      JavaScript().use {
+        it.apply {
+          add("count", "not a number")
+          shouldThrow<ScriptException> {
+            evalScript("public class Main { public int count; public Object getValue() { return count; } }")
+          }
+        }
+      }
+    }
+
+    "a pooled instance does not keep the previous borrower's imports or isolation" {
+      withTimeout(60_000) {
+        val pool = JavaScriptPool(1)
+        pool.eval {
+          import(ArrayList::class.java)
+          assignIsolation(Isolation.IsolatedClassLoader)
+        }
+        pool.eval {
+          importDecls shouldBe ""
+          engine.isolation() shouldBe Isolation.CallerClassLoader
+        }
+      }
+    }
+
+    "variable names must be valid Java identifiers" {
+      JavaScript().use { script ->
+        ["my-var", "new", "x; int injected"].forEach { name ->
+          shouldThrow<ScriptException> { script.add(name, 5) }
+        }
       }
     }
   }

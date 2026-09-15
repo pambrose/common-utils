@@ -23,37 +23,36 @@ import io.kotest.matchers.shouldBe
 import kotlin.reflect.typeOf
 
 /**
- * Pins the exact generated type-parameter strings produced via the private `KType.javaEquiv`
- * (exercised through `varDecls`/`params`). Guards both the `Int`/`Int?` -> `Integer` mapping and
- * the `else` branch's `removePrefix("kotlin.")` / `replace("?", "")` transformation.
+ * Pins the exact generated field declarations produced via `varDecls`/`params`: fully-qualified Java class names,
+ * with Kotlin type arguments mapped to their boxed Java types and nullability dropped.
  */
 class JavaEquivCharacterizationTests : StringSpec() {
   init {
     "typeOf<Int>() renders as Integer in a generic type parameter" {
       JavaScript().use {
         it.add("list", mutableListOf(1), typeOf<Int>())
-        it.varDecls.trim() shouldBe "public ArrayList<Integer> list;"
+        it.varDecls.trim() shouldBe "public java.util.ArrayList<java.lang.Integer> list;"
       }
     }
 
     "typeOf<Int?>() also renders as Integer (nullable Int maps to the boxed type)" {
       JavaScript().use {
         it.add("list", mutableListOf<Int?>(), typeOf<Int?>())
-        it.varDecls.trim() shouldBe "public ArrayList<Integer> list;"
+        it.varDecls.trim() shouldBe "public java.util.ArrayList<java.lang.Integer> list;"
       }
     }
 
     "non-Int type args go through the else branch (String, Integer)" {
       JavaScript().use {
         it.add("map", mutableMapOf("k" to 1), typeOf<String>(), typeOf<Int>())
-        it.varDecls.trim() shouldBe "public LinkedHashMap<String, Integer> map;"
+        it.varDecls.trim() shouldBe "public java.util.LinkedHashMap<java.lang.String, java.lang.Integer> map;"
       }
     }
 
     "nullable non-Int type arg has its '?' stripped in the else branch (String? -> String)" {
       JavaScript().use {
         it.add("list", mutableListOf<String?>(), typeOf<String?>())
-        it.varDecls.trim() shouldBe "public ArrayList<String> list;"
+        it.varDecls.trim() shouldBe "public java.util.ArrayList<java.lang.String> list;"
       }
     }
   }

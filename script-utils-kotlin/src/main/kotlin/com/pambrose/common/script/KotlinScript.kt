@@ -17,7 +17,6 @@
 package com.pambrose.common.script
 
 import com.pambrose.common.util.toDoubleQuoted
-import java.io.Closeable
 
 // See: https://github.com/Kotlin/kotlin-script-examples/blob/master/jvm/jsr223/jsr223-simple/build.gradle.kts
 // See: https://kotlinexpertise.com/run-kotlin-scripts-from-kotlin-programs/
@@ -27,69 +26,102 @@ import java.io.Closeable
 /**
  * A script engine wrapper for dynamically evaluating Kotlin source code using the `kts` extension.
  *
- * Manages variable bindings via the JSR 223 `Bindings` mechanism, generates Kotlin `val`
- * declarations that cast bound values to their appropriate types, and prepends import statements
- * to evaluated code.
+ * Manages variable bindings via the JSR 223 `Bindings` mechanism and generates Kotlin `val` declarations that cast
+ * bound values to types the script can name. A value whose runtime class cannot be named, such as the private list
+ * class behind `listOf(1, 2)`, is cast to its nearest public class or interface.
  *
  * Common literal JVM-termination calls (`System.exit`, `exitProcess`, `Runtime.getRuntime().exit/halt`)
- * are rejected on a best-effort basis via [ScriptGuards]; bare `System.exit` is additionally shadowed by
- * the auto-imported [System] object. This is a convenience against accidental termination, **not** a
- * security sandbox (see [ScriptGuards]) — run untrusted scripts in an isolated process or JVM.
+ * are rejected on a best-effort basis via [ScriptGuards]. This is a convenience against accidental termination,
+ * **not** a security sandbox (see [ScriptGuards]) — run untrusted scripts in an isolated process or JVM.
+ *
+ * [close] does nothing, because the Kotlin engine holds no resources to release.
  *
  * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
  * @see AbstractScript
  */
 class KotlinScript(
   nullGlobalContext: Boolean = false,
-) : AbstractScript("kts", nullGlobalContext),
-  Closeable {
-  private val imports = [System::class.qualifiedName]
+) : AbstractScript("kts", nullGlobalContext) {
+  override val reservedWords: Set<String> get() = KOTLIN_KEYWORDS
 
   /**
-   * Generates Kotlin `val` declarations that retrieve bound variables from the engine's bindings
-   * and cast them to their appropriate types with type parameters.
+   * Generates Kotlin `val` declarations that retrieve every bound variable from the engine's bindings
+   * and cast it to a type the script can name, with its type arguments.
    */
   val varDecls: String
-    get() {
-      val assigns: MutableList<String> = []
+    get() = declarations(valueMap.keys)
 
-      valueMap
-        .forEach { (name, value) ->
-          val kotlinClazz = value.javaClass.kotlin
-          val kotlinQualified = kotlinClazz.qualifiedName ?: error("No qualified name for $kotlinClazz")
-          val type = kotlinQualified.removePrefix("kotlin.")
-          val p = params(name)
-          assigns += "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as $type$p"
-        }
-
-      return assigns.joinToString("\n")
+  private fun declarations(names: Collection<String>) =
+    names.joinToString("\n") { name ->
+      "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as ${castType(name)}"
     }
 
-  internal fun String.toTempName() = "${this}_tmp"
+  // The accessible class with the registered type arguments, or with star projections when none were registered.
+  private fun castType(name: String): String {
+    val clazz = accessibleClass(name, valueMap.getValue(name))
+    val typeParameterCount = clazz.java.typeParameters.size
+    val typeArguments =
+      params(name).ifEmpty {
+        if (typeParameterCount > 0) List(typeParameterCount) { "*" }.joinToString(", ", "<", ">") else ""
+      }
+    return "${clazz.qualifiedName}$typeArguments"
+  }
+
+  private fun String.toTempName() = "${this}_tmp"
 
   /**
-   * The Kotlin import statements for all registered import classes (the import list is fixed, so this
-   * is computed once).
+   * Evaluates Kotlin [code] and returns its result.
+   *
+   * Variables added with [add] are bound first, including any added after an earlier evaluation.
+   *
+   * @param code the Kotlin source code to evaluate
+   * @return the value of the last expression, or `null`
+   * @throws javax.script.ScriptException if [code] contains a literal JVM-termination call, or fails to compile or run
    */
-  val importDecls: String by lazy { imports.joinToString("\n") { "import $it" } }
-
   @Synchronized
   fun eval(code: String): Any? {
     ScriptGuards.checkNoJvmExit(code)
 
-    if (!initialized) {
-      if (valueMap.isNotEmpty()) {
-        valueMap.forEach { (name, value) -> engine.put(name.toTempName(), value) }
-        engine.eval(varDecls)
-      }
-      initialized = true
+    bindNewVariables { variables ->
+      variables.forEach { (name, value) -> scriptEngine.put(name.toTempName(), value) }
+      scriptEngine.eval(declarations(variables.keys))
     }
 
-    val script = "$importDecls\n\n$code"
-    return engine.eval(script)
+    return scriptEngine.eval(code)
   }
 
-  override fun close() {
-    // Placeholder
+  private companion object {
+    // Kotlin's hard keywords, which cannot be used as identifiers.
+    val KOTLIN_KEYWORDS =
+      setOf(
+        "as",
+        "break",
+        "class",
+        "continue",
+        "do",
+        "else",
+        "false",
+        "for",
+        "fun",
+        "if",
+        "in",
+        "interface",
+        "is",
+        "null",
+        "object",
+        "package",
+        "return",
+        "super",
+        "this",
+        "throw",
+        "true",
+        "try",
+        "typealias",
+        "typeof",
+        "val",
+        "var",
+        "when",
+        "while",
+      )
   }
 }

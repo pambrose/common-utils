@@ -16,14 +16,14 @@
 
 package com.pambrose.common.script
 
-import kotlinx.coroutines.runBlocking
-
 /**
  * A pre-populated pool of [KotlinScript] instances backed by a coroutine
  * [Channel][kotlinx.coroutines.channels.Channel].
  *
  * Instances are created eagerly during initialization and recycled with context resets
  * after each use.
+ *
+ * Closing the pool closes its instances.
  *
  * @param size the number of [KotlinScript] instances to create in the pool
  * @param nullGlobalContext if `true`, resets the global scope bindings to `null` when recycling
@@ -33,8 +33,6 @@ class KotlinScriptPool(
   nullGlobalContext: Boolean,
 ) : AbstractScriptPool<KotlinScript>(size, nullGlobalContext) {
   init {
-    runBlocking {
-      repeat(size) { channel.send(KotlinScript(nullGlobalContext)) }
-    }
+    populate { KotlinScript(nullGlobalContext) }
   }
 }

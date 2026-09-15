@@ -16,11 +16,13 @@
 
 package com.pambrose.common.script
 
+import java.io.Closeable
+import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 
 /**
- * Abstract base class that wraps a JSR 223 [javax.script.ScriptEngine] resolved by file extension.
+ * Abstract base class that wraps a JSR 223 [ScriptEngine] resolved by file extension.
  *
  * Subclasses specify the script language via the [extension] parameter (e.g., `"kts"` for Kotlin,
  * `"py"` for Python, `"java"` for Java).
@@ -31,11 +33,27 @@ import javax.script.ScriptException
 @Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractEngine(
   extension: String,
-) {
+) : Closeable {
   /** The underlying JSR 223 script engine for this extension. */
-  val engine =
+  protected val scriptEngine: ScriptEngine =
     scriptManager.getEngineByExtension(extension)
       ?: throw ScriptException("Unrecognized script extension: $extension")
+
+  /**
+   * The underlying JSR 223 script engine for this extension.
+   *
+   * Using it directly bypasses the variable bindings and context resets that this class manages.
+   */
+  @Deprecated(
+    "Using the engine directly bypasses variable bindings and context resets; " +
+      "use the evaluation and resetContext methods instead.",
+  )
+  val engine: ScriptEngine get() = scriptEngine
+
+  /** Releases resources held by the engine. The default does nothing; engines that hold resources override it. */
+  override fun close() {
+    // Nothing to release by default.
+  }
 
   companion object {
     private val scriptManager by lazy { ScriptEngineManager() }

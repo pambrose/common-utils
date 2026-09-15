@@ -83,6 +83,12 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **Monitors:** retrying waits respect `maxWait`, and a throwing guard's exception reaches the caller.
   - **Zip:** `unzip(maxBytes)` can reject gzip bombs.
   - **Docs:** zipkin-utils and redis-utils have READMEs.
+- **Scripting fixes (script-utils)**:
+  - **Pools:** they survive cancelled borrowers, reject invalid sizes, and can be closed.
+  - **Evaluators:** they reject JVM-termination calls, and their pools no longer accumulate REPL history.
+  - **Bindings:** `Regex`, `listOf`, and nested generics bind, variables added after an evaluation are bound, and
+    names are validated.
+  - **Kotlin scripts:** `System.currentTimeMillis()` and other `java.lang.System` calls work again.
 
 ### Breaking changes
 
@@ -126,6 +132,9 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - guava-utils `GenericMonitor` retrying waits treat `Duration.ZERO` as a single check and reject timeouts below 1 ms.
 - guava-utils `GenericValueWaiter.currValue` has a private setter, `EMPTY_BYTE_ARRAY` is private, and
   `ServiceListenerHelper.starting` no longer accepts `null`.
+- script-utils-kotlin removes `com.pambrose.common.script.System` and `KotlinScript.importDecls`.
+- script-utils generated code and `add` messages use fully-qualified type names, and `add` rejects invalid names.
+- script-utils `AbstractEngine.engine` is deprecated.
 
 ---
 

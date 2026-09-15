@@ -14,15 +14,74 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+// DEPRECATION: the evaluator probe reads the deprecated public engine to observe context resets.
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "DEPRECATION", "InjectDispatcher")
 
 package com.pambrose.common.script
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import javax.script.ScriptException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+
+// A pool of one evaluator that the test can inspect after it is returned.
+private class ProbeEvaluatorPool : AbstractExprEvaluatorPool<KotlinExprEvaluator>(1) {
+  lateinit var evaluator: KotlinExprEvaluator
+
+  init {
+    populate { KotlinExprEvaluator().also { evaluator = it } }
+  }
+}
+
+// An evaluator that records whether it has been closed.
+private class ClosingEvaluator : AbstractExprEvaluator("kts") {
+  @Volatile
+  var closed = false
+    private set
+
+  override fun close() {
+    closed = true
+  }
+}
+
+// A pool of ClosingEvaluators that records each one it creates; creating the one at index failAt throws.
+private class ClosingEvaluatorPool(
+  size: Int,
+  val created: MutableList<ClosingEvaluator> = [],
+  failAt: Int = -1,
+) : AbstractExprEvaluatorPool<ClosingEvaluator>(size) {
+  init {
+    populate {
+      check(created.size != failAt) { "cannot create evaluator $failAt" }
+      ClosingEvaluator().also { created += it }
+    }
+  }
+}
+
+// Holds an evaluator borrowed: an expression that calls pass() blocks until release is counted down.
+object PoolGate {
+  @Volatile
+  var entered = CountDownLatch(1)
+
+  @Volatile
+  var release = CountDownLatch(1)
+
+  @JvmStatic
+  fun pass(): Boolean {
+    entered.countDown()
+    release.await()
+    return true
+  }
+}
 
 /**
  * Characterization tests for the borrow/recycle and context-reset contracts of [AbstractScriptPool]
@@ -116,6 +175,92 @@ class ScriptPoolContractTests : StringSpec() {
         pool.isEmpty shouldBe false
         pool.eval("1 > 0") shouldBe true
       }
+    }
+
+    "a borrower cancelled just as an instance is recycled does not shrink the pool" {
+      val waiterThread = Executors.newSingleThreadExecutor()
+      val waiterDispatcher = waiterThread.asCoroutineDispatcher()
+      try {
+        withTimeout(TIMEOUT_MS) {
+          val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
+          val borrowed = CountDownLatch(1)
+          val release = CountDownLatch(1)
+          val holder =
+            launch(Dispatchers.IO) {
+              pool.eval {
+                borrowed.countDown()
+                release.await()
+              }
+            }
+          withContext(Dispatchers.IO) { borrowed.await() }
+
+          val waiter = launch(waiterDispatcher) { pool.eval { } }
+          delay(200) // the waiter is now suspended, waiting for the only instance
+
+          // Occupy the waiter's only thread, so its resumption is queued instead of run.
+          val busy = CountDownLatch(1)
+          waiterThread.execute { busy.await() }
+          release.countDown()
+          holder.join() // the instance has been handed to the suspended waiter
+          waiter.cancel() // cancelled before its queued resumption runs
+          busy.countDown()
+          waiter.join()
+
+          pool.eval { eval("1 + 1") } shouldBe 2
+        }
+      } finally {
+        waiterDispatcher.close()
+      }
+    }
+
+    "pools reject a size that is not positive" {
+      shouldThrow<IllegalArgumentException> { KotlinScriptPool(size = 0, nullGlobalContext = false) }
+      shouldThrow<IllegalArgumentException> { KotlinExprEvaluatorPool(size = -1) }
+    }
+
+    "expr pool resets an evaluator's context when it is returned" {
+      withTimeout(TIMEOUT_MS) {
+        val pool = ProbeEvaluatorPool()
+        val before = pool.evaluator.engine.context
+        pool.eval("1 > 0") shouldBe true
+        (pool.evaluator.engine.context === before) shouldBe false
+      }
+    }
+
+    "closing a pool closes its instances and fails later borrows" {
+      withTimeout(TIMEOUT_MS) {
+        val evaluators = ClosingEvaluatorPool(size = 2)
+        evaluators.close()
+        evaluators.created.map { it.closed } shouldBe [true, true]
+        shouldThrow<ClosedReceiveChannelException> { evaluators.eval("1 > 0") }
+
+        val scripts = KotlinScriptPool(size = 1, nullGlobalContext = false)
+        scripts.close()
+        shouldThrow<ClosedReceiveChannelException> { scripts.eval { eval("1") } }
+      }
+    }
+
+    "an instance returned after its pool is closed is closed" {
+      withTimeout(TIMEOUT_MS) {
+        val pool = ClosingEvaluatorPool(size = 1)
+        PoolGate.entered = CountDownLatch(1)
+        PoolGate.release = CountDownLatch(1)
+        val borrower = launch(Dispatchers.IO) { pool.eval("com.pambrose.common.script.PoolGate.pass()") }
+        withContext(Dispatchers.IO) { PoolGate.entered.await() }
+
+        pool.close()
+        pool.created.single().closed shouldBe false
+
+        PoolGate.release.countDown()
+        borrower.join()
+        pool.created.single().closed shouldBe true
+      }
+    }
+
+    "a pool whose construction fails closes the instances it already created" {
+      val created: MutableList<ClosingEvaluator> = []
+      shouldThrow<IllegalStateException> { ClosingEvaluatorPool(size = 3, created = created, failAt = 2) }
+      created.map { it.closed } shouldBe [true, true]
     }
   }
 

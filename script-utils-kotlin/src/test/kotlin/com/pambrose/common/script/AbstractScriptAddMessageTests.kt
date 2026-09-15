@@ -58,8 +58,8 @@ class AbstractScriptAddMessageTests : StringSpec() {
     "add reports an unexpected single type parameter with the formatted type and singular wording" {
       KotlinScript().use { script ->
         val e = shouldThrow<ScriptException> { script.add("value", 5, typeOf<Int>()) }
-        // params() strips the "kotlin." prefix -> <Int>; one type -> "parameter"
-        e.message shouldContain "Invalid type parameter <Int> specified for"
+        // params() renders fully-qualified names -> <kotlin.Int>; one type -> "parameter"
+        e.message shouldContain "Invalid type parameter <kotlin.Int> specified for"
         e.message shouldContain "\"value\""
       }
     }
@@ -67,8 +67,8 @@ class AbstractScriptAddMessageTests : StringSpec() {
     "add reports unexpected multiple type parameters with plural wording" {
       KotlinScript().use { script ->
         val e = shouldThrow<ScriptException> { script.add("value", 5, typeOf<Int>(), typeOf<String>()) }
-        // two types -> "parameters"; both prefixes stripped
-        e.message shouldContain "Invalid type parameters <Int, String> specified for"
+        // two types -> "parameters"
+        e.message shouldContain "Invalid type parameters <kotlin.Int, kotlin.String> specified for"
       }
     }
 
@@ -78,11 +78,10 @@ class AbstractScriptAddMessageTests : StringSpec() {
           shouldThrow<ScriptException> {
             script.add("list", mutableListOf(1), typeOf<Int?>(), typeOf<Int>()) // 2 types vs 1 expected
           }
-        // paramCnt == 1 drives the singular "parameter"; the found count and the rendered type list
-        // ("kotlin." stripped) are both pinned.
+        // paramCnt == 1 drives the singular "parameter"; the found count and the rendered type list are both pinned.
         e.message shouldContain "Expected 1 type parameter for"
         e.message shouldContain "\"list\""
-        e.message shouldContain "but found 2: <Int?, Int>"
+        e.message shouldContain "but found 2: <kotlin.Int?, kotlin.Int>"
       }
     }
 
