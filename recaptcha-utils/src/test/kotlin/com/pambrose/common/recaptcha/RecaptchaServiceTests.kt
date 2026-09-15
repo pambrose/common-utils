@@ -236,33 +236,14 @@ class RecaptchaServiceTests : StringSpec() {
       body shouldContain "reCAPTCHA verification failed"
     }
 
-    // Kept last because it closes the singleton's HttpClient (close() is idempotent, and no other
-    // test performs a live verification). With the client closed, submitForm fails immediately with
-    // ClientEngineClosedException before any network I/O, driving verifyRecaptcha through its
-    // catch branch and validateRecaptcha through the verification-failed 400 response.
+    // A verification that fails for an ordinary reason, such as an I/O error reaching Google, drives
+    // verifyRecaptcha through its catch branch and validateRecaptcha through the 400 response. Cancellation
+    // is deliberately not exercised here: it propagates instead (see RecaptchaVerificationTests).
     "validateRecaptcha responds 400 when configured and verification errors out" {
-      RecaptchaService.close()
-      testApplication {
-        routing {
-          post("/v") {
-            val ok =
-              with(RecaptchaService) {
-                validateRecaptcha(
-                  config(enabled = true, siteKey = "site", secretKey = "secret"),
-                  call.receiveParameters(),
-                )
-              }
-            if (ok) call.respondText("passed")
-          }
-        }
-        client.post("/v") {
-          contentType(ContentType.Application.FormUrlEncoded)
-          setBody("g-recaptcha-response=test-token")
-        }.apply {
-          status shouldBe HttpStatusCode.BadRequest
-          bodyAsText() shouldContain "reCAPTCHA verification failed"
-        }
-      }
+      val engine = MockEngine { throw IllegalStateException("connection reset") }
+      val (status, body) = postToken(engine)
+      status shouldBe HttpStatusCode.BadRequest
+      body shouldContain "reCAPTCHA verification failed"
     }
   }
 }

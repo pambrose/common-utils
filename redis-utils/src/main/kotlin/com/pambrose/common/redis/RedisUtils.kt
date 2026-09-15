@@ -19,7 +19,6 @@ package com.pambrose.common.redis
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URI
 import java.time.Duration
-import java.util.*
 import redis.clients.jedis.ConnectionPoolConfig
 import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
@@ -27,8 +26,9 @@ import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.SslOptions
 import redis.clients.jedis.UnifiedJedis
-import redis.clients.jedis.exceptions.JedisConnectionException
+import redis.clients.jedis.exceptions.JedisException
 import redis.clients.jedis.params.ScanParams
+import redis.clients.jedis.util.JedisURIHelper
 
 /**
  * Factory methods and extension functions for creating and using Redis connections via Jedis.
@@ -51,10 +51,16 @@ object RedisUtils {
   /** System property key for the maximum wait time (in seconds) when borrowing a connection. */
   const val REDIS_MAX_WAIT_SECS = "redis.maxWaitSecs"
 
+  /** Pool size meaning "no limit", as defined by commons-pool2. */
+  const val UNLIMITED_POOL_SIZE = -1
+
+  // The placeholder used in the default URL for "no credentials", which must not be sent as a real password.
+  private const val PLACEHOLDER_PASSWORD = "none"
+
   private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
 
   private fun logConnectionFailure(
-    e: JedisConnectionException,
+    e: JedisException,
     printStackTrace: Boolean,
   ) {
     if (printStackTrace)
@@ -79,7 +85,7 @@ object RedisUtils {
   ) {
     /** Returns `true` if the user should be included in AUTH commands (i.e., is a real user, not a placeholder). */
     val includeUserInAuth
-      get() = user.isNotBlank() && user != "default" && user != "user" && password != "none"
+      get() = user.isNotBlank() && user != "default" && user != "user" && password != PLACEHOLDER_PASSWORD
   }
 
   private fun urlDetails(redisUrl: String) =
@@ -88,34 +94,58 @@ object RedisUtils {
       RedisInfo(it, userInfo.getOrElse(0) { "" }, userInfo.getOrElse(1) { "" })
     }
 
-  private val String.isSsl: Boolean get() = lowercase(Locale.getDefault()).startsWith("rediss://")
+  // Compared case-insensitively: lowercase() with a Turkish default locale maps REDISS to redıss.
+  private val URI.isSslScheme: Boolean get() = scheme.equals("rediss", ignoreCase = true)
 
-  private fun buildClientConfig(
-    info: RedisInfo,
-    isSsl: Boolean,
-  ): DefaultJedisClientConfig {
+  /**
+   * Builds the Jedis client config for [redisUrl].
+   *
+   * Reads the credentials, TLS scheme, database index (`redis://host:port/3`) and protocol
+   * (`?protocol=3`) from the URL, and applies Jedis' default connection and socket timeouts. The
+   * placeholder user names `default` and `user` are not sent, and the placeholder password `none` is treated
+   * as no password.
+   */
+  internal fun clientConfig(redisUrl: String): DefaultJedisClientConfig {
+    val info = urlDetails(redisUrl)
     val builder =
       DefaultJedisClientConfig.builder()
         .connectionTimeoutMillis(DEFAULT_TIMEOUT)
         .socketTimeoutMillis(DEFAULT_TIMEOUT)
-        .apply { if (isSsl) sslOptions(SslOptions.defaults()) }
 
-    if (info.password.isNotBlank()) {
+    if (info.uri.isSslScheme)
+      builder.ssl(true).sslOptions(SslOptions.defaults())
+
+    if (info.password.isNotBlank() && info.password != PLACEHOLDER_PASSWORD) {
       if (info.includeUserInAuth)
         builder.user(info.user)
       builder.password(info.password)
     }
+
+    if (JedisURIHelper.hasDbIndex(info.uri))
+      builder.database(JedisURIHelper.getDBIndex(info.uri))
+
+    JedisURIHelper.getRedisProtocol(info.uri)?.let { builder.protocol(it) }
 
     return builder.build()
   }
 
   private fun createRedisClient(redisUrl: String): RedisClient {
     val info = urlDetails(redisUrl)
-    val clientConfig = buildClientConfig(info, redisUrl.isSsl)
     return RedisClient.builder()
       .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
-      .clientConfig(clientConfig)
+      .clientConfig(clientConfig(redisUrl))
       .build()
+  }
+
+  // Building a client never contacts the server, so ping() is what actually proves the connection works.
+  // A client that cannot be used is closed here rather than leaked to the caller.
+  private fun connectedRedisClient(redisUrl: String): RedisClient {
+    val client = createRedisClient(redisUrl)
+    runCatching { client.ping() }.exceptionOrNull()?.let { e ->
+      runCatching { client.close() }.exceptionOrNull()?.let(e::addSuppressed)
+      throw e
+    }
+    return client
   }
 
   /**
@@ -125,12 +155,18 @@ object RedisUtils {
    * otherwise to the concrete fallback noted below. The connection and socket timeouts both use Jedis'
    * `DEFAULT_TIMEOUT`.
    *
+   * Connections are validated when they are borrowed and while they sit idle, but not when they are
+   * returned, which would add a second round-trip to every command.
+   *
    * @param redisUrl the Redis connection URL (defaults to the `REDIS_URL` environment variable)
-   * @param maxPoolSize maximum connections in the pool; defaults to the [REDIS_MAX_POOL_SIZE] property or 10
+   * @param maxPoolSize maximum connections in the pool, or [UNLIMITED_POOL_SIZE] for no limit; defaults to the
+   *   [REDIS_MAX_POOL_SIZE] property or 10
    * @param maxIdleSize maximum idle connections; defaults to the [REDIS_MAX_IDLE_SIZE] property or 5
    * @param minIdleSize minimum idle connections; defaults to the [REDIS_MIN_IDLE_SIZE] property or 1
    * @param maxWaitSecs seconds to wait when borrowing a connection; defaults to the [REDIS_MAX_WAIT_SECS] property or 1
    * @return a configured [RedisClient] with connection pooling
+   * @throws IllegalArgumentException if a pool setting is negative, or if [maxPoolSize] is 0, which would
+   *   create a pool that can never lend a connection
    */
   fun newRedisClient(
     redisUrl: String = defaultRedisUrl,
@@ -139,7 +175,9 @@ object RedisUtils {
     minIdleSize: Int = System.getProperty(REDIS_MIN_IDLE_SIZE)?.toInt() ?: 1,
     maxWaitSecs: Long = System.getProperty(REDIS_MAX_WAIT_SECS)?.toLong() ?: 1L,
   ): RedisClient {
-    require(maxPoolSize >= 0) { "Max pool size cannot be a negative number" }
+    require(maxPoolSize > 0 || maxPoolSize == UNLIMITED_POOL_SIZE) {
+      "Max pool size must be positive, or $UNLIMITED_POOL_SIZE for unlimited, but was $maxPoolSize"
+    }
     require(maxIdleSize >= 0) { "Max idle size cannot be a negative number" }
     require(minIdleSize >= 0) { "Min idle size cannot be a negative number" }
     require(maxWaitSecs >= 0) { "Max wait secs cannot be a negative number" }
@@ -157,7 +195,6 @@ object RedisUtils {
           minIdle = minIdleSize
           setMaxWait(Duration.ofSeconds(maxWaitSecs))
           testOnBorrow = true
-          testOnReturn = true
           testWhileIdle = true
 
           timeBetweenEvictionRuns = Duration.ofMinutes(1)
@@ -165,11 +202,10 @@ object RedisUtils {
         }
 
     val info = urlDetails(redisUrl)
-    val clientConfig = buildClientConfig(info, redisUrl.isSsl)
 
     return RedisClient.builder()
       .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
-      .clientConfig(clientConfig)
+      .clientConfig(clientConfig(redisUrl))
       .poolConfig(poolConfig)
       .build()
   }
@@ -177,7 +213,8 @@ object RedisUtils {
   /**
    * Executes [block] with this [RedisClient], passing `null` if the connection fails.
    *
-   * Extension function on [RedisClient]. Pings the server first to verify connectivity.
+   * Extension function on [RedisClient]. Pings the server first to verify connectivity. A pool that cannot
+   * lend a connection, and an authentication failure, both count as a connection failure.
    *
    * @param T the return type of the block
    * @param printStackTrace if `true`, logs the full stack trace on connection failure
@@ -190,7 +227,7 @@ object RedisUtils {
   ): T {
     try {
       ping()
-    } catch (e: JedisConnectionException) {
+    } catch (e: JedisException) {
       logConnectionFailure(e, printStackTrace)
       return block.invoke(null)
     }
@@ -214,7 +251,7 @@ object RedisUtils {
   ): T? {
     try {
       ping()
-    } catch (e: JedisConnectionException) {
+    } catch (e: JedisException) {
       logConnectionFailure(e, printStackTrace)
       return null
     }
@@ -238,7 +275,7 @@ object RedisUtils {
   ): T {
     try {
       ping()
-    } catch (e: JedisConnectionException) {
+    } catch (e: JedisException) {
       logConnectionFailure(e, printStackTrace)
       return block.invoke(null)
     }
@@ -262,7 +299,7 @@ object RedisUtils {
   ): T? {
     try {
       ping()
-    } catch (e: JedisConnectionException) {
+    } catch (e: JedisException) {
       logConnectionFailure(e, printStackTrace)
       return null
     }
@@ -272,7 +309,9 @@ object RedisUtils {
   /**
    * Creates a short-lived [RedisClient] connection, executes [block], and closes the client.
    *
-   * Passes `null` to [block] if the connection fails.
+   * The connection is verified with a ping before [block] runs, so an unreachable server, a pool that cannot
+   * lend a connection, or an authentication failure all pass `null` to [block] instead of failing on the
+   * first command.
    *
    * @param T the return type of the block
    * @param redisUrl the Redis connection URL
@@ -287,8 +326,8 @@ object RedisUtils {
   ): T {
     val client =
       try {
-        createRedisClient(redisUrl)
-      } catch (e: JedisConnectionException) {
+        connectedRedisClient(redisUrl)
+      } catch (e: JedisException) {
         logConnectionFailure(e, printStackTrace)
         return block.invoke(null)
       }
@@ -298,7 +337,7 @@ object RedisUtils {
   /**
    * Creates a short-lived [RedisClient] connection, executes [block] with a non-null client, and closes it.
    *
-   * Returns `null` if the connection fails.
+   * Returns `null` if the connection fails, verified with a ping as in [withRedis].
    *
    * @param T the return type of the block
    * @param redisUrl the Redis connection URL
@@ -313,8 +352,8 @@ object RedisUtils {
   ): T? {
     val client =
       try {
-        createRedisClient(redisUrl)
-      } catch (e: JedisConnectionException) {
+        connectedRedisClient(redisUrl)
+      } catch (e: JedisException) {
         logConnectionFailure(e, printStackTrace)
         return null
       }
@@ -339,8 +378,8 @@ object RedisUtils {
   ): T {
     val client =
       try {
-        createRedisClient(redisUrl)
-      } catch (e: JedisConnectionException) {
+        connectedRedisClient(redisUrl)
+      } catch (e: JedisException) {
         logConnectionFailure(e, printStackTrace)
         return block.invoke(null)
       }
@@ -364,8 +403,8 @@ object RedisUtils {
   ): T? {
     val client =
       try {
-        createRedisClient(redisUrl)
-      } catch (e: JedisConnectionException) {
+        connectedRedisClient(redisUrl)
+      } catch (e: JedisException) {
         logConnectionFailure(e, printStackTrace)
         return null
       }

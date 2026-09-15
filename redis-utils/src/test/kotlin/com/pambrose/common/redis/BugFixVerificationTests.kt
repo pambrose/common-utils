@@ -18,7 +18,6 @@
 
 package com.pambrose.common.redis
 
-import com.pambrose.common.redis.RedisUtils.withNonNullRedis
 import com.pambrose.common.redis.RedisUtils.withNonNullRedisPool
 import com.pambrose.common.redis.RedisUtils.withRedis
 import com.pambrose.common.redis.RedisUtils.withRedisPool
@@ -155,16 +154,8 @@ class BugFixVerificationTests : StringSpec() {
       callCount.load() shouldBe 1
     }
 
-    "withNonNullRedis: block JedisConnectionException propagates and block invoked once" {
-      val callCount = AtomicInt(0)
-      shouldThrow<JedisConnectionException> {
-        withNonNullRedis(redisUrl = unreachableUrl) { _ ->
-          callCount.incrementAndFetch()
-          throw JedisConnectionException("simulated mid-block failure")
-        }
-      }
-      callCount.load() shouldBe 1
-    }
+    // withNonNullRedis used to run its block against an unreachable server, because building a client does
+    // not connect. It now skips the block and returns null; RedisConfigTests covers that path.
 
     "withRedisPool: block exception from null branch propagates and block invoked once" {
       val callCount = AtomicInt(0)

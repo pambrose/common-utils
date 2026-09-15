@@ -230,26 +230,40 @@ class RedisUtilsMockTests : StringSpec() {
       }
     }
 
-    // Success paths of the withRedis family: building a client never connects, so these
-    // run without a Redis server. The blocks issue no commands.
+    // Success paths of the withRedis family. Each function now pings before handing the client over, so a
+    // connected client is stubbed in; without one, an absent server would take the null path.
 
     "withSuspendingNonNullRedis executes block with a non-null client" {
-      val result =
-        withSuspendingNonNullRedis(redisUrl = "redis://localhost:6379") { c ->
-          c shouldNotBe null
-          "suspending-nonnull-ran"
-        }
-      result shouldBe "suspending-nonnull-ran"
+      val client = mockk<RedisClient>(relaxed = true)
+      mockkObject(RedisUtils, recordPrivateCalls = true)
+      every { RedisUtils["connectedRedisClient"](any<String>()) } returns client
+      try {
+        val result =
+          withSuspendingNonNullRedis(redisUrl = "redis://localhost:6379") { c ->
+            c shouldBeSameInstanceAs client
+            "suspending-nonnull-ran"
+          }
+        result shouldBe "suspending-nonnull-ran"
+      } finally {
+        unmockkObject(RedisUtils)
+      }
     }
 
     "withRedis family uses the default redis url when none is given" {
-      withRedis { c ->
-        c shouldNotBe null
-        "r"
-      } shouldBe "r"
-      withNonNullRedis { "n" } shouldBe "n"
-      withSuspendingRedis { "sr" } shouldBe "sr"
-      withSuspendingNonNullRedis { "sn" } shouldBe "sn"
+      val client = mockk<RedisClient>(relaxed = true)
+      mockkObject(RedisUtils, recordPrivateCalls = true)
+      every { RedisUtils["connectedRedisClient"](any<String>()) } returns client
+      try {
+        withRedis { c ->
+          c shouldNotBe null
+          "r"
+        } shouldBe "r"
+        withNonNullRedis { "n" } shouldBe "n"
+        withSuspendingRedis { "sr" } shouldBe "sr"
+        withSuspendingNonNullRedis { "sn" } shouldBe "sn"
+      } finally {
+        unmockkObject(RedisUtils)
+      }
     }
 
     // newRedisClient() pool sizing falls back to system properties before hard-coded defaults
@@ -267,7 +281,8 @@ class RedisUtilsMockTests : StringSpec() {
           client.pool.minIdle shouldBe 2
           client.pool.maxWaitDuration shouldBe Duration.ofSeconds(3)
           client.pool.testOnBorrow shouldBe true
-          client.pool.testOnReturn shouldBe true
+          // testOnReturn would add a second PING to every pooled command; testWhileIdle covers idle ones.
+          client.pool.testOnReturn shouldBe false
           client.pool.testWhileIdle shouldBe true
         } finally {
           client.close()

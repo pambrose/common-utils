@@ -16,6 +16,7 @@
 
 package com.pambrose.common.recaptcha
 
+import com.pambrose.common.util.runCatchingCancellable
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -28,6 +29,8 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.RoutingContext
+import java.io.Closeable
+import kotlin.concurrent.atomics.AtomicBoolean
 import kotlinx.html.FlowContent
 import kotlinx.html.HEAD
 import kotlinx.html.div
@@ -35,7 +38,6 @@ import kotlinx.html.script
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.Closeable
 
 /**
  * Provides Google reCAPTCHA verification and HTML widget rendering for Ktor applications.
@@ -63,6 +65,9 @@ object RecaptchaService : Closeable {
       }
     }
 
+  // Whether the enabled-but-misconfigured warning has been logged; internal so tests can reset it.
+  internal val misconfiguredWarningLogged = AtomicBoolean(false)
+
   /**
    * Represents the JSON response from Google's reCAPTCHA verification endpoint.
    *
@@ -86,15 +91,10 @@ object RecaptchaService : Closeable {
     recaptchaResponse: String,
     remoteIp: String? = null,
   ): Boolean {
-    if (!isRecaptchaConfigured(config)) {
-      logger.debug { "reCAPTCHA is disabled, skipping verification" }
-      return true
-    }
-
     // isRecaptchaConfigured already guaranteed a non-blank secret key; assert the invariant explicitly.
     val secretKey = requireNotNull(config.recaptchaSecretKey) { "reCAPTCHA secret key must be configured" }
 
-    return try {
+    return runCatchingCancellable {
       val parameters =
         Parameters.build {
           append("secret", secretKey)
@@ -118,7 +118,7 @@ object RecaptchaService : Closeable {
         logger.warn { "reCAPTCHA verification failed: ${response.errorCodes.joinToString()}" }
         false
       }
-    } catch (e: Exception) {
+    }.getOrElse { e ->
       logger.error(e) { "Error verifying reCAPTCHA" }
       false
     }
@@ -131,9 +131,14 @@ object RecaptchaService : Closeable {
    * with an HTTP 400 Bad Request and returns `false`. Returns `true` when validation succeeds
    * or reCAPTCHA is not configured.
    *
+   * Cancellation is not swallowed: if the call is cancelled while Google is being contacted, for example
+   * because the client disconnected, the [kotlinx.coroutines.CancellationException] propagates instead of
+   * being reported as a failed verification.
+   *
    * @param config the [RecaptchaConfig] providing keys and enabled status.
    * @param params the form [Parameters] containing the `g-recaptcha-response` token.
    * @return `true` if validation passed or reCAPTCHA is disabled, `false` otherwise.
+   * @throws kotlinx.coroutines.CancellationException if the surrounding coroutine is cancelled.
    */
   suspend fun RoutingContext.validateRecaptcha(
     config: RecaptchaConfig,
@@ -150,7 +155,8 @@ object RecaptchaService : Closeable {
         return false
       }
 
-      val remoteIp = call.request.origin.remoteHost
+      // Google expects an IP address here; remoteHost can be a reverse-DNS hostname.
+      val remoteIp = call.request.origin.remoteAddress
       val isValid = verifyRecaptcha(config, recaptchaResponse, remoteIp)
 
       if (!isValid) {
@@ -205,11 +211,24 @@ object RecaptchaService : Closeable {
    * Requiring both keys keeps rendering and validation in lockstep: the widget is never shown unless
    * its response can actually be verified server-side, closing a fail-open gap where a missing secret
    * key would render a widget but silently skip validation.
+   *
+   * Enabled with a key missing is a configuration mistake that leaves no bot protection at all, so it logs a
+   * warning the first time it is seen rather than passing silently.
    */
-  private fun isRecaptchaConfigured(config: RecaptchaConfig): Boolean =
-    config.isRecaptchaEnabled &&
-      !config.recaptchaSiteKey.isNullOrBlank() &&
-      !config.recaptchaSecretKey.isNullOrBlank()
+  private fun isRecaptchaConfigured(config: RecaptchaConfig): Boolean {
+    val configured =
+      config.isRecaptchaEnabled &&
+        !config.recaptchaSiteKey.isNullOrBlank() &&
+        !config.recaptchaSecretKey.isNullOrBlank()
+
+    if (config.isRecaptchaEnabled && !configured && misconfiguredWarningLogged.compareAndSet(false, true))
+      logger.warn {
+        "reCAPTCHA is enabled but the site key or secret key is missing: " +
+          "no widget is rendered and no verification is performed"
+      }
+
+    return configured
+  }
 
   /**
    * Releases the underlying [HttpClient] and its connection/thread pool.

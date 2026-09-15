@@ -18,11 +18,17 @@ package com.pambrose.common.webhook
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /**
  * Represents a webhook message received from the Resend email service.
  *
  * This is the top-level envelope containing the event type, timestamp, and event-specific [Data].
+ * Decode incoming request bodies with [decode], which tolerates fields Resend adds later.
+ *
+ * This type models the payload only. It does not verify the Svix signature headers Resend sends
+ * (`svix-id`, `svix-timestamp`, `svix-signature`), so a handler that trusts unverified requests will accept
+ * forged events; verify the signature before decoding.
  *
  * @property createdAt the ISO 8601 timestamp when the webhook event was created.
  * @property data the event-specific payload containing email and event details.
@@ -36,4 +42,19 @@ data class ResendWebhookMsg(
   val `data`: Data,
   @SerialName("type")
   val type: String,
-)
+) {
+  companion object {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /**
+     * Decodes a Resend webhook request [body].
+     *
+     * Unknown fields are ignored, so an event type carrying fields these models do not declare still decodes.
+     *
+     * @param body the raw JSON request body
+     * @return the decoded message
+     * @throws kotlinx.serialization.SerializationException if [body] is not a valid webhook payload
+     */
+    fun decode(body: String): ResendWebhookMsg = json.decodeFromString(body)
+  }
+}
