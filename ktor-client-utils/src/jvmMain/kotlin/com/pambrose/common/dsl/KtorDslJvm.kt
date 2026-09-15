@@ -50,7 +50,6 @@ fun <T> KtorDsl.blockingGet(
     }
   }
 
-/** Keeps the signature without [HttpClient] and `expectSuccess` available to code compiled against earlier releases. */
 @Deprecated(
   "Binary compatibility shim for the signature without httpClient and expectSuccess.",
   level = DeprecationLevel.HIDDEN,

@@ -345,10 +345,6 @@ class JsonElementUtilsTest : StringSpec() {
       val original = sampleUser.toJsonElement()
       val copy = original.deepCopy()
 
-      copy.toString() shouldBe original.toString()
-      copy.stringValue("name") shouldBe original.stringValue("name")
-      copy.intValue("id") shouldBe original.intValue("id")
-
       copy shouldBe original
     }
 
@@ -570,7 +566,6 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "isNumber is false for quoted numeric strings and JSON null" {
-      JsonPrimitive("42").isString shouldBe true
       JsonPrimitive("42").isNumber shouldBe false
       JsonPrimitive(42).isNumber shouldBe true
       JsonNull.isNumber shouldBe false

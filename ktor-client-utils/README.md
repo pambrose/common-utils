@@ -103,7 +103,7 @@ For most code, Ktor's own `client.get(url)` is simpler; this helper exists for t
 ### blockingGet (JVM only)
 
 `blockingGet` is an extension on `KtorDsl` that wraps the whole exchange in `runBlocking`, creating and
-closing a client for you. Use it only from non-suspending JVM code — never inside a coroutine.
+closing a client unless you pass one. Use it only from non-suspending JVM code — never inside a coroutine.
 
 ```kotlin
 import com.pambrose.common.dsl.KtorDsl

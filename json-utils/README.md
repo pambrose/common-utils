@@ -62,9 +62,9 @@ There is no `isBoolean` property; use `isPrimitive` or read the value with `bool
 
 ### Nested Access
 
-The `vararg` forms walk several keys at once. The plain forms throw `IllegalArgumentException` when a key
-is missing, the value is JSON `null`, or the value has the wrong type. The `OrNull` forms return `null` in all
-three cases. Keys are split on `.`, and empty segments are ignored, so `get("a..b")` is the same as `get("a.b")`.
+The `vararg` forms walk several keys at once; see [Error Handling](#error-handling) for how the plain and `OrNull`
+forms treat a missing key, JSON `null`, or a value of the wrong type. Keys are split on `.`, and empty segments
+are ignored, so `get("a..b")` is the same as `get("a.b")`.
 
 ```kotlin
 import com.pambrose.common.json.get
@@ -138,13 +138,14 @@ if (json.containsKeys("user", "profile", "email"))
 
 ```kotlin
 import com.pambrose.common.json.deepCopy
+import com.pambrose.common.json.reformatJson
 import com.pambrose.common.json.toFormattedString
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
 
 // String -> JsonElement -> pretty String
-val pretty = """{"a":1}""".toJsonString()
+val pretty = """{"a":1}""".reformatJson()
 
 // Any serializable value -> JSON
 val asJson = myDataClass.toJsonString(prettyPrint = true)
@@ -204,7 +205,8 @@ in your own `Json { }` block.
 - `fun JsonElement.forEachJsonObject(action: (JsonObject) -> Unit)`
 - `fun JsonElement.isEmpty(): Boolean` / `isNotEmpty(): Boolean`
 - `fun JsonElement.toFormattedString(indent: String = "  "): String`
-- `fun String.toJsonString(): String`
+- `fun String.reformatJson(prettyPrint: Boolean = true): String`
+- `fun String.toJsonString(): String` (deprecated; use `reformatJson`)
 - `inline fun <reified T> T.toJsonString(prettyPrint: Boolean = true): String`
 - `inline fun <reified T> T.toJsonElement(): JsonElement`
 - `fun String.toJsonElement(verbose: Boolean = false): JsonElement`

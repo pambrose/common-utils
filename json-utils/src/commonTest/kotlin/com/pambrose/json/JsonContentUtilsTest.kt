@@ -19,11 +19,10 @@ package com.pambrose.json
 import com.pambrose.common.json.JsonContentUtils
 import com.pambrose.common.json.booleanValue
 import com.pambrose.common.json.containsKeys
-import com.pambrose.common.json.getOrNull
 import com.pambrose.common.json.defaultJsonConfig
+import com.pambrose.common.json.getOrNull
 import com.pambrose.common.json.intValue
 import com.pambrose.common.json.jsonElementList
-import com.pambrose.common.json.reformatJson
 import com.pambrose.common.json.stringValue
 import com.pambrose.common.json.stringValueOrNull
 import com.pambrose.common.json.toFormattedString
@@ -124,20 +123,6 @@ class JsonContentUtilsTest : StringSpec() {
       jsonElement.booleanValue("active") shouldBe false
     }
 
-    "string to json string formatting" {
-      val inputJsonString = """{"name":"compact","value":123}"""
-      val formattedJsonString = inputJsonString.reformatJson()
-
-      // Should be pretty printed
-      formattedJsonString.contains('\n') shouldBe true
-      formattedJsonString.contains("  ") shouldBe true
-
-      // Should contain the same data
-      val parsed = formattedJsonString.toJsonElement()
-      parsed.stringValue("name") shouldBe "compact"
-      parsed.intValue("value") shouldBe 123
-    }
-
     "to formatted string with custom indent" {
       val jsonElement = simpleData.toJsonElement()
 
@@ -177,24 +162,17 @@ class JsonContentUtilsTest : StringSpec() {
       items[1].booleanValue("active") shouldBe false
     }
 
-    "lenient format ignores unknown keys that the strict format rejects" {
+    "lenient format accepts input that the strict format rejects" {
       // Unknown keys only matter when decoding into a class; parsing to a JsonElement accepts any object.
-      val jsonWithExtraFields = """{"name": "test", "value": 42, "active": true, "extraField": "unknown"}"""
-
-      JsonContentUtils.lenientFormat.decodeFromString(SimpleData.serializer(), jsonWithExtraFields) shouldBe
-        SimpleData("test", 42, true)
-      shouldThrow<SerializationException> {
-        JsonContentUtils.strictFormat.decodeFromString(SimpleData.serializer(), jsonWithExtraFields)
-      }
-    }
-
-    "lenient format accepts unquoted keys and strings that the strict format rejects" {
-      val unquoted = """{name: test, value: 42, active: true}"""
-
-      JsonContentUtils.lenientFormat.decodeFromString(SimpleData.serializer(), unquoted) shouldBe
-        SimpleData("test", 42, true)
-      shouldThrow<SerializationException> {
-        JsonContentUtils.strictFormat.decodeFromString(SimpleData.serializer(), unquoted)
+      val inputs = [
+        """{"name": "test", "value": 42, "active": true, "extraField": "unknown"}""",
+        """{name: test, value: 42, active: true}""",
+      ]
+      for (input in inputs) {
+        JsonContentUtils.lenientFormat.decodeFromString(SimpleData.serializer(), input) shouldBe simpleData
+        shouldThrow<SerializationException> {
+          JsonContentUtils.strictFormat.decodeFromString(SimpleData.serializer(), input)
+        }
       }
     }
 

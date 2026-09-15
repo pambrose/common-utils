@@ -5,21 +5,21 @@ package com.pambrose.common.dsl
 import com.pambrose.common.dsl.KtorDsl.httpClient
 import com.pambrose.common.dsl.KtorDsl.newHttpClient
 import com.pambrose.common.dsl.KtorDsl.withHttpClient
+import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
-import com.sun.net.httpserver.HttpExchange
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ServerResponseException
-import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.withTimeout
-import kotlin.time.Duration.Companion.seconds
-import io.kotest.matchers.shouldNotBe
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.job
+import kotlinx.coroutines.withTimeout
 
 class KtorDslJvmTests : StringSpec() {
   private inline fun <T> withLocalHttpServer(
@@ -63,7 +63,7 @@ class KtorDslJvmTests : StringSpec() {
         "created"
       } shouldBe "created"
       // close() completes the client's job; join() would hang past the timeout if it were left open.
-      withTimeout(5.seconds) { created.coroutineContext[Job]!!.join() }
+      withTimeout(5.seconds) { created.coroutineContext.job.join() }
     }
 
     "httpClient creates client when null passed" {
@@ -88,14 +88,9 @@ class KtorDslJvmTests : StringSpec() {
 
     "blockingGet applies the setUp block to the request" {
       // The server echoes the header back, so the test fails if setUp is not applied.
-      withLocalHttpServer(respond = { exchange ->
-        200 to
-        (exchange.requestHeaders.getFirst("X-Test-Header") ?: "missing")
-      }) { url ->
-        KtorDsl.blockingGet(url = url, setUp = {
-          headers.append("X-Test-Header", "present")
-        }) { it.bodyAsText() } shouldBe
-          "present"
+      withLocalHttpServer(respond = { 200 to (it.requestHeaders.getFirst("X-Test-Header") ?: "missing") }) { url ->
+        val body = KtorDsl.blockingGet(url, setUp = { headers.append("X-Test-Header", "present") }) { it.bodyAsText() }
+        body shouldBe "present"
       }
     }
 
@@ -103,7 +98,7 @@ class KtorDslJvmTests : StringSpec() {
       withLocalHttpServer("reused") { url ->
         newHttpClient().use { client ->
           KtorDsl.blockingGet(url, httpClient = client) { it.bodyAsText() } shouldBe "reused"
-          client.coroutineContext[Job]!!.isActive shouldBe true
+          client.coroutineContext.job.isActive shouldBe true
         }
       }
     }
