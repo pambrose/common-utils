@@ -24,6 +24,7 @@ import com.pambrose.common.json.doubleValue
 import com.pambrose.common.json.doubleValueOrNull
 import com.pambrose.common.json.forEachJsonObject
 import com.pambrose.common.json.getByPath
+import com.pambrose.common.json.getOrNull
 import com.pambrose.common.json.intValue
 import com.pambrose.common.json.intValueOrNull
 import com.pambrose.common.json.isArray
@@ -38,15 +39,18 @@ import com.pambrose.common.json.jsonElementListOrNull
 import com.pambrose.common.json.jsonObjectValue
 import com.pambrose.common.json.jsonObjectValueOrNull
 import com.pambrose.common.json.keys
+import com.pambrose.common.json.reformatJson
 import com.pambrose.common.json.size
 import com.pambrose.common.json.stringValue
 import com.pambrose.common.json.stringValueOrNull
 import com.pambrose.common.json.toJsonElement
+import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -341,12 +345,7 @@ class JsonElementUtilsTest : StringSpec() {
       val original = sampleUser.toJsonElement()
       val copy = original.deepCopy()
 
-      copy.toString() shouldBe original.toString()
-      copy.stringValue("name") shouldBe original.stringValue("name")
-      copy.intValue("id") shouldBe original.intValue("id")
-
-      // Verify it's a true deep copy (though JsonElement is immutable anyway)
-      (original !== copy) shouldBe true
+      copy shouldBe original
     }
 
     "for each json object with object" {
@@ -535,6 +534,91 @@ class JsonElementUtilsTest : StringSpec() {
       shouldThrow<SerializationException> {
         invalidJson.toJsonElement(verbose = true)
       }
+    }
+
+    "non-OrNull accessors reject JSON null instead of returning placeholder values" {
+      val json = """{"value": null}""".toJsonElement()
+      shouldThrow<IllegalArgumentException> { json.stringValue("value") }
+      shouldThrow<IllegalArgumentException> { json.intValue("value") }
+      shouldThrow<IllegalArgumentException> { json.doubleValue("value") }
+      shouldThrow<IllegalArgumentException> { json.booleanValue("value") }
+    }
+
+    "OrNull accessors return null on a type mismatch" {
+      val json = """{"name": "test", "obj": {}, "list": [1], "flag": "maybe", "num": 3.5}""".toJsonElement()
+      json.intValueOrNull("name") shouldBe null
+      json.doubleValueOrNull("name") shouldBe null
+      json.stringValueOrNull("obj") shouldBe null
+      json.booleanValueOrNull("flag") shouldBe null
+      json.intValueOrNull("num") shouldBe null
+      json.jsonObjectValueOrNull("list") shouldBe null
+      json.jsonElementListOrNull("obj") shouldBe null
+      json.intValueOrNull("name.child") shouldBe null
+    }
+
+    "booleanValue accepts only true and false" {
+      val json = """{"yes": "yes", "one": 1, "t": true, "f": false}""".toJsonElement()
+      json.booleanValue("t") shouldBe true
+      json.booleanValue("f") shouldBe false
+      shouldThrow<IllegalArgumentException> { json.booleanValue("yes") }
+      shouldThrow<IllegalArgumentException> { json.booleanValue("one") }
+      json.booleanValueOrNull("yes") shouldBe null
+    }
+
+    "isNumber is false for quoted numeric strings and JSON null" {
+      JsonPrimitive("42").isNumber shouldBe false
+      JsonPrimitive(42).isNumber shouldBe true
+      JsonNull.isNumber shouldBe false
+    }
+
+    "path navigation ignores empty segments consistently" {
+      val json = """{"a": {"b": 1}}""".toJsonElement()
+      json.intValue("a..b") shouldBe 1
+      json.intValueOrNull(".a.b.") shouldBe 1
+      json.containsKeys("a..b") shouldBe true
+      json.getByPath("a//b")?.intValue shouldBe 1
+    }
+
+    "a key containing a dot is reachable through getByPath" {
+      val json = """{"a.b": 1}""".toJsonElement()
+      json.getByPath("a.b")?.intValue shouldBe 1
+      json.getOrNull("a.b") shouldBe null
+    }
+
+    "size counts array elements as well as object entries" {
+      """["apple", "banana", "orange"]""".toJsonElement().size shouldBe 3
+      """{"a": 1}""".toJsonElement().size shouldBe 1
+      shouldThrow<IllegalArgumentException> { JsonPrimitive("x").size }
+    }
+
+    "isEmpty treats JSON null as empty and a whitespace-only string as non-empty" {
+      JsonNull.isEmpty() shouldBe true
+      JsonPrimitive("   ").isEmpty() shouldBe false
+    }
+
+    "deepCopy preserves non-finite numbers" {
+      val original =
+        JsonObject(
+          mapOf(
+            "x" to JsonPrimitive(Double.NaN),
+            "nested" to JsonArray([JsonPrimitive(Double.POSITIVE_INFINITY)]),
+          ),
+        )
+      original.deepCopy() shouldBe original
+    }
+
+    "reformatJson re-encodes a JSON string, honoring prettyPrint" {
+      val compact = """{"name":"compact","value":123}"""
+      compact.reformatJson(prettyPrint = false) shouldBe compact
+      compact.reformatJson() shouldBe "{\n  \"name\": \"compact\",\n  \"value\": 123\n}"
+      // Any argument selects the generic toJsonString, which serializes the String as a JSON string literal.
+      compact.toJsonString(prettyPrint = false) shouldBe "\"{\\\"name\\\":\\\"compact\\\",\\\"value\\\":123}\""
+    }
+
+    "the deprecated String.toJsonString still reformats" {
+      @Suppress("DEPRECATION")
+      val formatted = """{"a":1}""".toJsonString()
+      formatted shouldBe "{\n  \"a\": 1\n}"
     }
   }
 }

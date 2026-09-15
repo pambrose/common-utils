@@ -52,6 +52,13 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **`toByteArray`:** it is no longer deprecated.
   - **`captureStdout`:** it uses UTF-8.
   - **Tests:** the core-utils suite drops about 40 million brute-force assertions.
+- **json-utils accessors that mean what they say**: the typed accessors reject JSON `null`, and
+  `booleanValue` is strict. The `OrNull` variants are null-safe on type as well as on missing keys, so they
+  are genuinely safe for untrusted input.
+  - **Arrays:** `size` works on them.
+  - **`deepCopy`:** it handles non-finite numbers.
+  - **Reformatting strings:** the new `reformatJson()` replaces the ambiguous `String.toJsonString()`.
+  - **ktor-client-utils:** `blockingGet` accepts an existing `httpClient` and `expectSuccess`.
 
 ### Breaking changes
 
@@ -78,6 +85,12 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - `toPath`/`join`/`toRootPath` skip empty elements and strip multi-character separators.
 - `GitHubRepo.rawSourcePrefix`/`GitHubFile` for non-`github.com` domains use GitHub Enterprise's
   `HOSTNAME/raw/` path, and a repository name containing `github.com` is no longer rewritten.
+- json-utils accessor behavior changes:
+  - **Plain accessors:** they throw on JSON `null`, and `booleanValue` accepts only `true`/`false`.
+  - **`OrNull` accessors:** they return `null` on a type mismatch.
+  - **`isNumber`:** it is `false` for quoted numbers.
+  - **`isEmpty()`:** it is `true` for JSON `null`.
+  - **Paths:** they ignore empty segments.
 
 ---
 

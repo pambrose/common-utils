@@ -17,36 +17,63 @@
 package com.pambrose.common.json
 
 import com.pambrose.common.json.JsonDefaults.json
-import com.pambrose.common.json.JsonElementUtils.logger
 import com.pambrose.common.util.simpleClassName
-import io.github.oshai.kotlinlogging.KotlinLogging.logger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+
+// Created lazily: it is only used on the verbose parse-failure path, so accessors should not start up logging.
+private val logger by lazy { KotlinLogging.logger {} }
 
 /** Returns the set of keys if this [JsonElement] is a [JsonObject]. Extension property on [JsonElement]. */
 val JsonElement.keys get() = jsonObject.keys
 
 // Primitive values
 
-/** Returns the string content of this [JsonElement] as a [JsonPrimitive]. Extension property on [JsonElement]. */
-val JsonElement.stringValue get() = jsonPrimitive.content
+/**
+ * Returns the string content of this [JsonElement] as a [JsonPrimitive]. Extension property on [JsonElement].
+ *
+ * @throws IllegalArgumentException if this element is JSON `null` or not a primitive
+ */
+val JsonElement.stringValue get() = nonNullContent
 
-/** Returns the integer value of this [JsonElement]'s primitive content. Extension property on [JsonElement]. */
-val JsonElement.intValue get() = jsonPrimitive.content.toInt()
+/**
+ * Returns the integer value of this [JsonElement]'s primitive content. Extension property on [JsonElement].
+ *
+ * @throws IllegalArgumentException if this element is JSON `null`, not a primitive, or not an integer
+ */
+val JsonElement.intValue get() = nonNullContent.toInt()
 
-/** Returns the double value of this [JsonElement]'s primitive content. Extension property on [JsonElement]. */
-val JsonElement.doubleValue get() = jsonPrimitive.content.toDouble()
+/**
+ * Returns the double value of this [JsonElement]'s primitive content. Extension property on [JsonElement].
+ *
+ * @throws IllegalArgumentException if this element is JSON `null`, not a primitive, or not a number
+ */
+val JsonElement.doubleValue get() = nonNullContent.toDouble()
 
-/** Returns the boolean value of this [JsonElement]'s primitive content. Extension property on [JsonElement]. */
-val JsonElement.booleanValue get() = jsonPrimitive.content.toBoolean()
+/**
+ * Returns the boolean value of this [JsonElement]'s primitive content. Extension property on [JsonElement].
+ *
+ * @throws IllegalArgumentException if this element is JSON `null`, not a primitive, or not `true` or `false`
+ */
+val JsonElement.booleanValue
+  get() = nonNullContent.let { requireNotNull(it.toBooleanStrictOrNull()) { "JSON value \"$it\" is not a boolean" } }
+
+// kotlinx's contentOrNull is null for JSON null, whose content is otherwise the string "null".
+private val JsonElement.nonNullContent: String
+  get() = requireNotNull(jsonPrimitive.contentOrNull) { "JSON value is null" }
+
+private val JsonElement.primitiveContentOrNull: String?
+  get() = (this as? JsonPrimitive)?.contentOrNull
 
 // Json object values
 
@@ -65,116 +92,137 @@ val JsonElement.isPrimitive get() = this is JsonPrimitive
 /** Returns `true` if this [JsonElement] is a string [JsonPrimitive]. Extension property on [JsonElement]. */
 val JsonElement.isString get() = this is JsonPrimitive && jsonPrimitive.isString
 
-/** Returns `true` if this [JsonElement] is a numeric [JsonPrimitive]. Extension property on [JsonElement]. */
-val JsonElement.isNumber get() = this is JsonPrimitive && jsonPrimitive.content.toDoubleOrNull() != null
+/**
+ * Returns `true` if this [JsonElement] is an unquoted numeric [JsonPrimitive]. Extension property on [JsonElement].
+ *
+ * A quoted numeric string such as `"42"` is a string, not a number, and JSON `null` is neither.
+ */
+val JsonElement.isNumber get() = this is JsonPrimitive && !isString && content.toDoubleOrNull() != null
+
+// Paths are split on [separator]; empty segments (from "a..b", a leading or trailing separator, or "") are ignored.
+private fun pathSegments(
+  paths: Array<out String>,
+  separator: Char = '.',
+) = paths.flatMap { it.split(separator) }.filter { it.isNotEmpty() }
+
+// Walks the dot-separated path, returning null as soon as a segment is missing or a non-object is reached. A JSON
+// null at the end is returned as JsonNull, so callers can tell "present but null" from "missing".
+private fun JsonElement.findOrNull(keys: Array<out String>): JsonElement? {
+  var current: JsonElement = this
+  for (key in pathSegments(keys)) {
+    current = (current as? JsonObject)?.get(key) ?: return null
+  }
+  return current
+}
 
 /**
  * Traverses this [JsonElement] using a slash-delimited path (e.g., `"a/b/c"`).
  *
- * Extension function on [JsonElement].
+ * Extension function on [JsonElement]. Empty segments are ignored. Unlike [get], `.` is not a separator, so this
+ * also reaches keys that contain a dot.
  *
  * @param path a `/`-separated path of object keys
  * @return the [JsonElement] at the given path, or `null` if any key is missing
  */
 fun JsonElement.getByPath(path: String): JsonElement? =
-  path.split("/")
-    .filter { it.isNotEmpty() }
-    .fold(this as JsonElement?) { acc, key ->
-      acc?.jsonObject?.get(key)
-    }
+  pathSegments(arrayOf(path), separator = '/')
+    .fold(this as JsonElement?) { acc, key -> acc?.jsonObject?.get(key) }
 
 /**
  * Navigates into nested [JsonObject] children using dot-separated key strings.
  *
- * Extension operator on [JsonElement]. Each key in [keys] may contain dots to traverse multiple levels.
+ * Extension operator on [JsonElement]. Each key in [keys] may contain dots to traverse multiple levels. Empty
+ * segments are ignored, so `get("a..b")` is the same as `get("a.b")` and an empty path returns this element. A key
+ * that itself contains a dot cannot be reached this way; use [getByPath], which splits on `/`.
  *
  * @param keys one or more dot-separated key paths
  * @return the [JsonElement] found by following all keys in sequence
  * @throws IllegalArgumentException if any key is not found
  */
 operator fun JsonElement.get(vararg keys: String): JsonElement =
-  keys.flatMap { it.split(".") }
-    .fold(this) { acc, key -> acc.element(key) }
+  pathSegments(keys).fold(this) { acc, key -> acc.element(key) }
 
 /**
  * Navigates into nested children like [get], but returns `null` if any key is missing or the value is [JsonNull].
  *
- * Extension function on [JsonElement].
+ * Extension function on [JsonElement]. Empty segments are ignored, as in [get].
  *
  * @param keys one or more dot-separated key paths
  * @return the [JsonElement] at the path, or `null` if not found or [JsonNull]
  */
-fun JsonElement.getOrNull(vararg keys: String): JsonElement? {
-  // Walk the path once and short-circuit on the first missing key, instead of traversing twice
-  // (containsKeys then get).
-  var current: JsonElement? = this
-  for (key in keys.flatMap { it.split(".") }) {
-    current = (current as? JsonObject)?.get(key) ?: return null
-  }
-  return current?.takeIf { it != JsonNull }
-}
+fun JsonElement.getOrNull(vararg keys: String): JsonElement? = findOrNull(keys)?.takeIf { it != JsonNull }
 
 // Primitive values
 
 /** Navigates to the nested element at [keys] and returns its string value. Extension function on [JsonElement]. */
 fun JsonElement.stringValue(vararg keys: String) = get(*keys).stringValue
 
-/** Navigates to the nested element at [keys] and returns its string value, or `null` if not found. Extension function on [JsonElement]. */
-fun JsonElement.stringValueOrNull(vararg keys: String) = getOrNull(*keys)?.stringValue
+/**
+ * Navigates to the nested element at [keys] and returns its string value, or `null` if it is missing, JSON `null`,
+ * or not a primitive. Extension function on [JsonElement].
+ */
+fun JsonElement.stringValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull
 
 /** Navigates to the nested element at [keys] and returns its integer value. Extension function on [JsonElement]. */
 fun JsonElement.intValue(vararg keys: String) = get(*keys).intValue
 
-/** Navigates to the nested element at [keys] and returns its integer value, or `null` if not found. Extension function on [JsonElement]. */
-fun JsonElement.intValueOrNull(vararg keys: String) = getOrNull(*keys)?.intValue
+/**
+ * Navigates to the nested element at [keys] and returns its integer value, or `null` if it is missing, JSON `null`,
+ * or not an integer. Extension function on [JsonElement].
+ */
+fun JsonElement.intValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull?.toIntOrNull()
 
 /** Navigates to the nested element at [keys] and returns its double value. Extension function on [JsonElement]. */
 fun JsonElement.doubleValue(vararg keys: String) = get(*keys).doubleValue
 
-/** Navigates to the nested element at [keys] and returns its double value, or `null` if not found. Extension function on [JsonElement]. */
-fun JsonElement.doubleValueOrNull(vararg keys: String) = getOrNull(*keys)?.doubleValue
+/**
+ * Navigates to the nested element at [keys] and returns its double value, or `null` if it is missing, JSON `null`,
+ * or not a number. Extension function on [JsonElement].
+ */
+fun JsonElement.doubleValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull?.toDoubleOrNull()
 
 /** Navigates to the nested element at [keys] and returns its boolean value. Extension function on [JsonElement]. */
 fun JsonElement.booleanValue(vararg keys: String) = get(*keys).booleanValue
 
-/** Navigates to the nested element at [keys] and returns its boolean value, or `null` if not found. Extension function on [JsonElement]. */
-fun JsonElement.booleanValueOrNull(vararg keys: String) = getOrNull(*keys)?.booleanValue
+/**
+ * Navigates to the nested element at [keys] and returns its boolean value, or `null` if it is missing, JSON `null`,
+ * or not `true` or `false`. Extension function on [JsonElement].
+ */
+fun JsonElement.booleanValueOrNull(vararg keys: String) =
+  getOrNull(*keys)?.primitiveContentOrNull?.toBooleanStrictOrNull()
 
 // Object values
 
 /** Navigates to the nested element at [keys] and returns it as a [JsonObject]. Extension function on [JsonElement]. */
 fun JsonElement.jsonObjectValue(vararg keys: String): JsonObject = get(*keys).jsonObjectValue
 
-/** Navigates to the nested element at [keys] and returns it as a [JsonObject], or `null` if not found. Extension function on [JsonElement]. */
-fun JsonElement.jsonObjectValueOrNull(vararg keys: String) = getOrNull(*keys)?.jsonObjectValue
+/**
+ * Navigates to the nested element at [keys] and returns it as a [JsonObject], or `null` if it is missing, JSON `null`,
+ * or not an object. Extension function on [JsonElement].
+ */
+fun JsonElement.jsonObjectValueOrNull(vararg keys: String) = getOrNull(*keys) as? JsonObject
 
 // Array values
 
 /** Navigates to the nested element at [keys] and returns it as a list of [JsonElement]. Extension function on [JsonElement]. */
 fun JsonElement.jsonElementList(vararg keys: String) = get(*keys).toJsonElementList()
 
-/** Navigates to the nested element at [keys] and returns it as a list of [JsonElement], or `null` if not found. Extension function on [JsonElement]. */
-fun JsonElement.jsonElementListOrNull(vararg keys: String) = getOrNull(*keys)?.toJsonElementList()
+/**
+ * Navigates to the nested element at [keys] and returns it as a list of [JsonElement], or `null` if it is missing,
+ * JSON `null`, or not an array. Extension function on [JsonElement].
+ */
+fun JsonElement.jsonElementListOrNull(vararg keys: String) = (getOrNull(*keys) as? JsonArray)?.toList()
 
 /**
  * Checks whether this [JsonElement] contains the nested path specified by [keys].
  *
- * Extension function on [JsonElement]. Each key may contain dots to traverse multiple levels.
+ * Extension function on [JsonElement]. Each key may contain dots to traverse multiple levels; empty segments are
+ * ignored, as in [get].
  *
  * @param keys one or more dot-separated key paths
  * @return `true` if all keys exist along the path
  */
-fun JsonElement.containsKeys(vararg keys: String): Boolean {
-  val ks = keys.flatMap { it.split(".") }
-  var currElement: JsonElement = this
-  for (k in ks) {
-    if (currElement is JsonObject && k in currElement.keys)
-      currElement = (currElement as JsonElement)[k]
-    else
-      return false
-  }
-  return true
-}
+fun JsonElement.containsKeys(vararg keys: String): Boolean = findOrNull(keys) != null
 
 /**
  * Iterates over [JsonObject] elements within this [JsonElement].
@@ -193,14 +241,33 @@ fun JsonElement.forEachJsonObject(action: (JsonObject) -> Unit) {
   }
 }
 
-/** Creates a deep copy of this [JsonElement] by serializing and deserializing it. Extension function on [JsonElement]. */
-fun JsonElement.deepCopy(): JsonElement = Json.decodeFromString(Json.encodeToString(this))
-
-/** Returns the number of entries if this [JsonElement] is a [JsonObject]. Extension property on [JsonElement]. */
-val JsonElement.size get() = jsonObject.size
+/**
+ * Creates a deep copy of this [JsonElement], rebuilding every nested object and array. Primitives are immutable, so
+ * they are shared. Extension function on [JsonElement].
+ */
+fun JsonElement.deepCopy(): JsonElement =
+  when (this) {
+    is JsonObject -> JsonObject(mapValues { (_, value) -> value.deepCopy() })
+    is JsonArray -> JsonArray(map { it.deepCopy() })
+    is JsonPrimitive -> this
+  }
 
 /**
- * Returns `true` if this [JsonElement] is empty (no keys for objects, no items for arrays, blank for primitives).
+ * Returns the number of entries in a [JsonObject] or elements in a [JsonArray]. Extension property on [JsonElement].
+ *
+ * @throws IllegalArgumentException if this element is a primitive or JSON `null`
+ */
+val JsonElement.size: Int
+  get() =
+    when (this) {
+      is JsonObject -> jsonObject.size
+      is JsonArray -> jsonArray.size
+      is JsonPrimitive -> throw IllegalArgumentException("A $simpleClassName has no size; only objects and arrays do")
+    }
+
+/**
+ * Returns `true` if this [JsonElement] is empty: an object with no keys, an array with no elements, JSON `null`, or
+ * a primitive whose content is the empty string. A whitespace-only string is not empty.
  *
  * Extension function on [JsonElement].
  */
@@ -208,7 +275,7 @@ fun JsonElement.isEmpty() =
   when (this) {
     is JsonObject -> jsonObject.isEmpty()
     is JsonArray -> jsonArray.isEmpty()
-    is JsonPrimitive -> content.isEmpty()
+    is JsonPrimitive -> contentOrNull.isNullOrEmpty()
   }
 
 /** Returns `true` if this [JsonElement] is not empty. Extension function on [JsonElement]. */
@@ -234,8 +301,23 @@ private val defaultPrettyFormat by lazy { prettyPrint("  ") }
 fun JsonElement.toFormattedString(indent: String = "  "): String =
   if (indent == "  ") defaultPrettyFormat.encodeToString(this) else prettyPrint(indent).encodeToString(this)
 
-/** Parses this [String] as JSON and re-encodes it as a pretty-printed JSON string. Extension function on [String]. */
-fun String.toJsonString() = toJsonElement().toJsonString(true)
+/**
+ * Parses this [String] as JSON and re-encodes it. Extension function on [String].
+ *
+ * @param prettyPrint if `true` (the default), formats the output with indentation; otherwise outputs compact JSON
+ * @return the re-encoded JSON string
+ * @throws kotlinx.serialization.SerializationException if this string is not valid JSON
+ */
+fun String.reformatJson(prettyPrint: Boolean = true): String = toJsonElement().toJsonString(prettyPrint)
+
+/**
+ * Parses this [String] as JSON and re-encodes it as a pretty-printed JSON string. Extension function on [String].
+ */
+@Deprecated(
+  "Passing an argument to toJsonString on a String serializes it as a JSON string literal. Use reformatJson.",
+  ReplaceWith("reformatJson()"),
+)
+fun String.toJsonString() = reformatJson()
 
 /**
  * Serializes this value to a JSON string.
@@ -318,7 +400,9 @@ internal fun JsonElement.element(key: String) =
 
 private fun JsonElement.elementOrNull(key: String) = jsonObject[key]
 
-/** Internal logger holder for JSON element utilities. */
+/** Formerly the internal logger holder for JSON element utilities. */
+@Deprecated("An internal logger that was never meant to be public API; it will be removed in a future release.")
 object JsonElementUtils {
-  val logger = logger {}
+  /** The logger formerly used by the JSON element utilities. */
+  val logger = KotlinLogging.logger {}
 }

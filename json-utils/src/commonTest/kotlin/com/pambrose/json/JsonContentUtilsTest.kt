@@ -20,16 +20,20 @@ import com.pambrose.common.json.JsonContentUtils
 import com.pambrose.common.json.booleanValue
 import com.pambrose.common.json.containsKeys
 import com.pambrose.common.json.defaultJsonConfig
+import com.pambrose.common.json.getOrNull
 import com.pambrose.common.json.intValue
 import com.pambrose.common.json.jsonElementList
 import com.pambrose.common.json.stringValue
+import com.pambrose.common.json.stringValueOrNull
 import com.pambrose.common.json.toFormattedString
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 @Serializable
@@ -119,20 +123,6 @@ class JsonContentUtilsTest : StringSpec() {
       jsonElement.booleanValue("active") shouldBe false
     }
 
-    "string to json string formatting" {
-      val inputJsonString = """{"name":"compact","value":123}"""
-      val formattedJsonString = inputJsonString.toJsonString()
-
-      // Should be pretty printed
-      formattedJsonString.contains('\n') shouldBe true
-      formattedJsonString.contains("  ") shouldBe true
-
-      // Should contain the same data
-      val parsed = formattedJsonString.toJsonElement()
-      parsed.stringValue("name") shouldBe "compact"
-      parsed.intValue("value") shouldBe 123
-    }
-
     "to formatted string with custom indent" {
       val jsonElement = simpleData.toJsonElement()
 
@@ -172,23 +162,18 @@ class JsonContentUtilsTest : StringSpec() {
       items[1].booleanValue("active") shouldBe false
     }
 
-    "lenient parsing with extra fields" {
-      val jsonWithExtraFields = """
-            {
-                "name": "test",
-                "value": 42,
-                "active": true,
-                "extraField": "should be ignored",
-                "anotherExtra": 999
-            }
-        """.trimIndent()
-
-      // Lenient format should ignore unknown keys
-      val lenientElement = JsonContentUtils.lenientFormat.parseToJsonElement(jsonWithExtraFields)
-      lenientElement.stringValue("name") shouldBe "test"
-      lenientElement.intValue("value") shouldBe 42
-      lenientElement.booleanValue("active") shouldBe true
-      lenientElement.stringValue("extraField") shouldBe "should be ignored"
+    "lenient format accepts input that the strict format rejects" {
+      // Unknown keys only matter when decoding into a class; parsing to a JsonElement accepts any object.
+      val inputs = [
+        """{"name": "test", "value": 42, "active": true, "extraField": "unknown"}""",
+        """{name: test, value: 42, active: true}""",
+      ]
+      for (input in inputs) {
+        JsonContentUtils.lenientFormat.decodeFromString(SimpleData.serializer(), input) shouldBe simpleData
+        shouldThrow<SerializationException> {
+          JsonContentUtils.strictFormat.decodeFromString(SimpleData.serializer(), input)
+        }
+      }
     }
 
     "strict format with defaults" {
@@ -223,14 +208,8 @@ class JsonContentUtilsTest : StringSpec() {
     }
 
     "error handling with malformed JSON" {
-      val malformedJson = """{"name": "test", "value": }"""
-
-      try {
-        malformedJson.toJsonElement()
-        throw AssertionError("Should have thrown an exception for malformed JSON")
-      } catch (e: Exception) {
-        // Expected - malformed JSON should throw
-        (e.message?.contains("JSON") == true || e.message?.contains("Unexpected") == true) shouldBe true
+      shouldThrow<SerializationException> {
+        """{"name": "test", "value": }""".toJsonElement()
       }
     }
 
@@ -252,11 +231,11 @@ class JsonContentUtilsTest : StringSpec() {
       element.intValue("zero") shouldBe 0
       element.booleanValue("false") shouldBe false
 
-      // Null handling
+      // A JSON null key exists, reads as null through the OrNull accessors, and is rejected by the plain ones.
       element.containsKeys("value") shouldBe true
-      // Accessing null value directly should fail, but check it exists
-      // TODO
-      // assertTrue(element.getOrNull("value") != null) // JsonNull is not null reference
+      element.getOrNull("value") shouldBe null
+      element.stringValueOrNull("value") shouldBe null
+      shouldThrow<IllegalArgumentException> { element.stringValue("value") }
     }
 
     "large data structures" {

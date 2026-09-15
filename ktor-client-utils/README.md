@@ -103,7 +103,7 @@ For most code, Ktor's own `client.get(url)` is simpler; this helper exists for t
 ### blockingGet (JVM only)
 
 `blockingGet` is an extension on `KtorDsl` that wraps the whole exchange in `runBlocking`, creating and
-closing a client for you. Use it only from non-suspending JVM code — never inside a coroutine.
+closing a client unless you pass one. Use it only from non-suspending JVM code — never inside a coroutine.
 
 ```kotlin
 import com.pambrose.common.dsl.KtorDsl
@@ -114,6 +114,16 @@ val body =
   KtorDsl.blockingGet("https://example.com/api") { response ->
     response.bodyAsText()
   }
+```
+
+Pass `httpClient` to reuse an existing client, which is left open. Pass `expectSuccess = true` to make a newly
+created client throw on non-2xx responses:
+
+```kotlin
+val client = KtorDsl.newHttpClient()
+val status = KtorDsl.blockingGet("https://example.com/api", httpClient = client) { it.status }
+
+val strictBody = KtorDsl.blockingGet("https://example.com/api", expectSuccess = true) { it.bodyAsText() }
 ```
 
 ## API Reference
@@ -127,7 +137,7 @@ val body =
 
 ### jvmMain
 
-- `fun <T> KtorDsl.blockingGet(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> T): T`
+- `fun <T> KtorDsl.blockingGet(url: String, httpClient: HttpClient? = null, expectSuccess: Boolean = false, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> T): T`
 
 ## Dependencies
 
