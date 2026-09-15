@@ -112,12 +112,12 @@ These follow the per-area batching used for #118–#136. The order within the li
 
 ### ktor-server-utils
 - [x] **CR-038** `HIGH` · bug — `Route.servlet` calls no-arg `init()`; Ktor `/healthcheck` NPEs on every request ([details](#cr-038)) — fixed in #174
-- [ ] **CR-039** `MEDIUM` · bug — `sendError` throws, so unsupported methods return 500 instead of 405/501 ([details](#cr-039)) — in progress (branch `fix-ktor-server-review-items`)
-- [ ] **CR-040** `MEDIUM` · bug — `HerokuHttpsRedirect` defaults `host` to `localhost` ([details](#cr-040)) — in progress (branch `fix-ktor-server-review-items`)
-- [ ] **CR-041** `LOW` · lifecycle — Servlet `destroy()` never called (carried over) ([details](#cr-041)) — in progress (branch `fix-ktor-server-review-items`)
-- [ ] **CR-042** `LOW` · bug — Servlet character encoding ignored by writer and Content-Type (carried over) ([details](#cr-042)) — in progress (branch `fix-ktor-server-review-items`)
-- [ ] **CR-043** `LOW` · docs — Parameter lookups case-insensitive; comment contradicts `getParameterMap` ([details](#cr-043)) — in progress (branch `fix-ktor-server-review-items`)
-- [ ] **CR-044** `LOW` · bug/tests — `excludeSuffix`/`excludePrefix` match query string; redirect tests assert status only ([details](#cr-044)) — in progress (branch `fix-ktor-server-review-items`)
+- [ ] **CR-039** `MEDIUM` · bug — `sendError` throws, so unsupported methods return 500 instead of 405/501 ([details](#cr-039)) — in progress (#178)
+- [ ] **CR-040** `MEDIUM` · bug — `HerokuHttpsRedirect` defaults `host` to `localhost` ([details](#cr-040)) — in progress (#178)
+- [ ] **CR-041** `LOW` · lifecycle — Servlet `destroy()` never called (carried over) ([details](#cr-041)) — in progress (#178)
+- [ ] **CR-042** `LOW` · bug — Servlet character encoding ignored by writer and Content-Type (carried over) ([details](#cr-042)) — in progress (#178)
+- [ ] **CR-043** `LOW` · docs — Parameter lookups case-insensitive; comment contradicts `getParameterMap` ([details](#cr-043)) — in progress (#178)
+- [ ] **CR-044** `LOW` · bug/tests — `excludeSuffix`/`excludePrefix` match query string; redirect tests assert status only ([details](#cr-044)) — in progress (#178)
 
 ### service-utils
 - [ ] **CR-045** `MEDIUM` · bug — Jetty admin/metrics paths with a leading slash become `//ping` → 404 (carried over) ([details](#cr-045))
