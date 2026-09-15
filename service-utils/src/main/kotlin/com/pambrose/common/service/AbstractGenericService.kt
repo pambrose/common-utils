@@ -190,7 +190,7 @@ abstract class AbstractGenericService<T> protected constructor(
     // Guava does not call shutDown() when startUp() throws, so on a failure stop whatever already started, most
     // recent first, instead of leaving its ports and threads behind.
     val stopActions = ArrayDeque<() -> Unit>()
-    try {
+    runCatching {
       if (isZipkinEnabled) {
         zipkinReporterService.startSync()
         stopActions.addFirst { zipkinReporterService.stopSync() }
@@ -209,7 +209,7 @@ abstract class AbstractGenericService<T> protected constructor(
         servletService.startSync()
         stopActions.addFirst { servletService.stopSync() }
       }
-    } catch (e: Throwable) {
+    }.exceptionOrNull()?.let { e ->
       stopActions.runEach().forEach(e::addSuppressed)
       throw e
     }

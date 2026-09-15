@@ -181,7 +181,7 @@ private class TestJettyService(
   admin: AdminConfig = disabledAdmin,
   metrics: MetricsConfig = disabledMetrics,
   zipkin: ZipkinConfig = disabledZipkin,
-  extraServices: List<Service> = [],
+  extraServices: Pair<Service, Service>? = null,
 ) : GenericService<String>(
     configVals = "jetty-config",
     adminConfig = admin,
@@ -212,8 +212,7 @@ private class TestJettyService(
   ) = addServices(first, *rest)
 
   init {
-    if (extraServices.isNotEmpty())
-      addExtraServices(extraServices.first(), *extraServices.drop(1).toTypedArray())
+    extraServices?.let { (first, second) -> addExtraServices(first, second) }
     initServletService()
   }
 }
@@ -504,7 +503,7 @@ class GenericServiceTests : StringSpec() {
     "services added before init are managed, while one added after init is not and triggers a warning" {
       val warnings =
         capturingServiceLogs { logs ->
-          val service = TestJettyService(extraServices = [noopService("early-one"), noopService("early-two")])
+          val service = TestJettyService(extraServices = noopService("early-one") to noopService("early-two"))
           service.addExtraServices(noopService("late-one"))
 
           // The extra services are never started, so the aggregate check names exactly the managed ones.
