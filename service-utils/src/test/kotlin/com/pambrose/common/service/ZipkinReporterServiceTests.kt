@@ -78,5 +78,17 @@ class ZipkinReporterServiceTests : StringSpec() {
     "a span finished just before a graceful stop is sent rather than dropped" {
       reportOneSpanAndStop(serviceName = "flushed").size shouldBe 1
     }
+
+    // The reporter's flusher thread holds a batch for up to the message timeout, and close() waits only the close
+    // timeout for that thread before dropping what it holds.
+    "the reporter sends a held batch before close stops waiting for it" {
+      fun Any.field(name: String): Any = javaClass.getDeclaredField(name).apply { isAccessible = true }.get(this)
+
+      val service = ZipkinReporterService("http://localhost:9411/api/v2/spans", "timeouts", recordingSender([]))
+      // The public AsyncReporter wraps the internal reporter that holds the timeouts.
+      val reporter = service.field("reporter").field("delegate")
+
+      ((reporter.field("messageTimeoutNanos") as Long) < (reporter.field("closeTimeoutNanos") as Long)) shouldBe true
+    }
   }
 }

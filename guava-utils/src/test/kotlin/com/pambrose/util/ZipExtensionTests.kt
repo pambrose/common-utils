@@ -19,8 +19,10 @@ package com.pambrose.util
 import com.pambrose.common.util.isZipped
 import com.pambrose.common.util.unzip
 import com.pambrose.common.util.zip
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import java.io.IOException
 
 class ZipExtensionTests : StringSpec() {
   init {
@@ -72,6 +74,25 @@ class ZipExtensionTests : StringSpec() {
       raw.isZipped() shouldBe false
       // Locks the UTF-8 contract for the passthrough branch; previously it used the JVM default charset.
       raw.unzip() shouldBe s
+    }
+
+    "EMPTY_BYTE_ARRAY is not part of the public API" {
+      val methods = Class.forName("com.pambrose.common.util.ZipExtensionsKt").methods.map { it.name }
+      methods.none { it == "getEMPTY_BYTE_ARRAY" } shouldBe true
+    }
+
+    "corrupt gzip input throws an IOException" {
+      shouldThrow<IOException> { byteArrayOf(0x1f, 0x8b.toByte(), 8, 0, 1, 2).unzip() }
+    }
+
+    "unzip rejects content that expands beyond maxBytes" {
+      val bomb = ByteArray(1_000_000).zip()
+      (bomb.size < 10_000) shouldBe true
+      shouldThrow<IllegalArgumentException> { bomb.unzip(maxBytes = 1_000) }
+    }
+
+    "unzip accepts content up to exactly maxBytes" {
+      "abc".zip().unzip(maxBytes = 3) shouldBe "abc"
     }
   }
 }

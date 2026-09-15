@@ -16,33 +16,24 @@
 
 package com.pambrose.common.util
 
-import com.google.common.io.CharStreams
+import com.google.common.io.ByteStreams
+import com.google.common.math.LongMath
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPInputStream.GZIP_MAGIC
 import java.util.zip.GZIPOutputStream
 
-/** An empty byte array constant, returned when compressing an empty string. */
-val EMPTY_BYTE_ARRAY = ByteArray(0)
+// Returned for empty input. An empty array has no elements to change, so sharing one instance is safe.
+private val EMPTY_BYTE_ARRAY = ByteArray(0)
 
 /**
  * Compresses this [String] using GZIP encoding.
  *
- * @return a GZIP-compressed byte array, or [EMPTY_BYTE_ARRAY] if this string is empty.
+ * @return a GZIP-compressed byte array, or an empty array if this string is empty.
  */
-fun String.zip(): ByteArray =
-  if (isEmpty())
-    EMPTY_BYTE_ARRAY
-  else
-    ByteArrayOutputStream().use { baos ->
-      GZIPOutputStream(baos).use { gzos ->
-        gzos.write(toByteArray(StandardCharsets.UTF_8))
-      }
-      baos.toByteArray()
-    }
+fun String.zip(): ByteArray = toByteArray(StandardCharsets.UTF_8).zip()
 
 /**
  * Compresses this [ByteArray] using GZIP encoding.
@@ -51,7 +42,7 @@ fun String.zip(): ByteArray =
  * the caller already holds the content as a byte array. For the same content, `bytes.zip()` produces
  * identical output to `string.zip()` when `bytes == string.toByteArray(StandardCharsets.UTF_8)`.
  *
- * @return a GZIP-compressed byte array, or [EMPTY_BYTE_ARRAY] if this array is empty.
+ * @return a GZIP-compressed byte array, or an empty array if this array is empty.
  */
 fun ByteArray.zip(): ByteArray =
   if (isEmpty())
@@ -75,12 +66,20 @@ fun ByteArray.isZipped() = size >= 2 && this[0] == GZIP_MAGIC.toByte() && this[1
  * Decompresses this [ByteArray] from GZIP encoding back to a [String].
  *
  * If the byte array is empty, returns an empty string. If the byte array is not
- * GZIP-compressed (no GZIP magic header), returns the raw bytes as a string.
+ * GZIP-compressed (no GZIP magic header), returns the raw bytes decoded as UTF-8.
  *
+ * @param maxBytes the largest decompressed size accepted, which guards against a small input that expands until
+ *   memory runs out. Defaults to no limit.
  * @return the decompressed string content.
+ * @throws IllegalArgumentException if the decompressed content is larger than [maxBytes], or [maxBytes] is
+ *   negative.
+ * @throws java.io.IOException if the data has a GZIP header but is corrupt or truncated, such as a
+ *   `java.util.zip.ZipException` or `java.io.EOFException`.
  */
-fun ByteArray.unzip(): String =
-  when {
+@JvmOverloads
+fun ByteArray.unzip(maxBytes: Long = Long.MAX_VALUE): String {
+  require(maxBytes >= 0) { "maxBytes must not be negative, but was $maxBytes" }
+  return when {
     isEmpty() -> {
       ""
     }
@@ -92,10 +91,14 @@ fun ByteArray.unzip(): String =
     }
 
     else -> {
-      ByteArrayInputStream(this).use { bais ->
-        GZIPInputStream(bais).use { gzis ->
-          InputStreamReader(gzis, StandardCharsets.UTF_8).use { CharStreams.toString(it) }
+      // Read one byte past the limit, so content of exactly maxBytes is accepted and anything larger is detected.
+      val readLimit = LongMath.saturatedAdd(maxBytes, 1)
+      val bytes =
+        GZIPInputStream(ByteArrayInputStream(this)).use { gzis ->
+          ByteStreams.toByteArray(ByteStreams.limit(gzis, readLimit))
         }
-      }
+      require(bytes.size <= maxBytes) { "Decompressed content is larger than $maxBytes bytes" }
+      String(bytes, StandardCharsets.UTF_8)
     }
   }
+}

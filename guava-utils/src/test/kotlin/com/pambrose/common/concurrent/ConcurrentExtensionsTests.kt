@@ -23,8 +23,10 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 class ConcurrentExtensionsTests : StringSpec() {
   init {
@@ -116,6 +118,13 @@ class ConcurrentExtensionsTests : StringSpec() {
 
       threadExecuted shouldBe true
       latch.isFinished shouldBe true
+    }
+
+    "count down latch await with a sub-millisecond duration waits for it instead of returning at once" {
+      val latch = CountDownLatch(1)
+      val mark = TimeSource.Monotonic.markNow()
+      latch.await(800.microseconds) shouldBe false
+      (mark.elapsedNow() >= 800.microseconds) shouldBe true
     }
   }
 }

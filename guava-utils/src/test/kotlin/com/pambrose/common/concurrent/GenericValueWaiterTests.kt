@@ -10,6 +10,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.lang.reflect.Modifier
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -155,8 +156,8 @@ class GenericValueWaiterTests : StringSpec() {
       val waiter = BooleanWaiter(false)
       waiter.setValue(true)
 
-      // checkCondition has been called; the value changed from initValue
-      // so monitorSatisfied (predicate: currValue != initValue) is true
+      // setValue already ran checkCondition, so the stored value satisfies the waitUntilTrue predicate
+      // and the wait returns without suspending.
       val result = waiter.waitUntilTrue(100.milliseconds)
       result shouldBe true
     }
@@ -209,6 +210,13 @@ class GenericValueWaiterTests : StringSpec() {
       badError!!.message shouldContain "kaboom"
       // The armed timeout job was cancelled, so the waiter failed well before the 5s timeout.
       (mark.elapsedNow() < 2.seconds) shouldBe true
+    }
+
+    "subclasses can read the monitored value but not assign it without notifying waiters" {
+      val type = GenericValueWaiter::class.java
+      type.declaredMethods.none { it.name == "setCurrValue" && !Modifier.isPrivate(it.modifiers) } shouldBe true
+      Modifier.isVolatile(type.getDeclaredField("currValue").modifiers) shouldBe true
+      type.declaredFields.none { it.name == "initValue" } shouldBe true
     }
   }
 }

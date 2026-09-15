@@ -166,5 +166,25 @@ class GuavaDslTests : StringSpec() {
         listener.failure(mockk<Service>())
       }
     }
+
+    "setting a callback again replaces it instead of throwing" {
+      val calls: MutableList<String> = []
+
+      val listener =
+        GuavaDsl.serviceListener {
+          running { calls += "first running" }
+          running { calls += "second running" }
+        }
+      listener.running()
+
+      val managerListener =
+        GuavaDsl.serviceManagerListener {
+          healthy { calls += "first healthy" }
+          healthy { calls += "second healthy" }
+        }
+      managerListener.healthy()
+
+      calls shouldBe ["second running", "second healthy"]
+    }
   }
 }

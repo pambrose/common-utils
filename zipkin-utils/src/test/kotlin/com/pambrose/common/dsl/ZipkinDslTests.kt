@@ -18,76 +18,54 @@
 
 package com.pambrose.common.dsl
 
+import brave.Tracing
 import brave.sampler.Sampler
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 
 class ZipkinDslTests : StringSpec() {
   init {
-    "tracing creation" {
-      val tracing = ZipkinDsl.tracing {
-        localServiceName("test-service")
-      }
-      tracing shouldNotBe null
-      tracing.close()
+    "the configuration block is applied to the builder" {
+      ZipkinDsl
+        .tracing {
+          localServiceName("test-service")
+          sampler(Sampler.NEVER_SAMPLE)
+        }.use { tracing ->
+          tracing.sampler() shouldBe Sampler.NEVER_SAMPLE
+          tracing.tracer().newTrace().context().sampled() shouldBe false
+        }
     }
 
-    "tracing with tracer" {
-      val tracing = ZipkinDsl.tracing {
-        localServiceName("test-tracer-service")
-      }
-      val tracer = tracing.tracer()
-      tracer shouldNotBe null
-
-      val span = tracer.newTrace().name("test-span").start()
-      span shouldNotBe null
-      span.finish()
-
-      tracing.close()
+    "spans from the tracer carry trace and span ids" {
+      ZipkinDsl
+        .tracing {
+          localServiceName("test-tracer-service")
+          sampler(Sampler.ALWAYS_SAMPLE)
+        }.use { tracing ->
+          val span = tracing.tracer().newTrace().name("test-span").start()
+          span.context().sampled() shouldBe true
+          // Trace IDs are 64-bit (16 hex chars) by default, or 128-bit (32 hex chars) if configured
+          span.context().traceIdString().length shouldBe 16
+          span.context().spanIdString().length shouldBe 16
+          span.finish()
+        }
     }
 
-    "tracing current span" {
-      val tracing = ZipkinDsl.tracing {
-        localServiceName("test-current-span-service")
+    "a scoped span becomes the current trace context" {
+      ZipkinDsl.tracing { localServiceName("test-current-span-service") }.use { tracing ->
+        val scoped = tracing.tracer().startScopedSpan("scoped-span")
+        try {
+          tracing.currentTraceContext().get() shouldBe scoped.context()
+        } finally {
+          scoped.finish()
+        }
       }
-      val tracer = tracing.tracer()
-
-      val span = tracer.newTrace().name("parent-span").start()
-      val scopedSpan = tracer.startScopedSpan("scoped-span")
-      scopedSpan shouldNotBe null
-
-      val currentSpan = tracing.currentTraceContext().get()
-      currentSpan shouldNotBe null
-
-      scopedSpan.finish()
-      span.finish()
-      tracing.close()
     }
 
-    "tracing with sampler" {
-      val tracing = ZipkinDsl.tracing {
-        localServiceName("test-sampler-service")
-        sampler(Sampler.ALWAYS_SAMPLE)
-      }
-      tracing shouldNotBe null
-      tracing.close()
-    }
-
-    "tracing trace id" {
-      val tracing = ZipkinDsl.tracing {
-        localServiceName("test-trace-id-service")
-      }
-      val tracer = tracing.tracer()
-      val span = tracer.newTrace().name("test-trace-id").start()
-
-      span.context().traceIdString() shouldNotBe null
-      span.context().spanIdString() shouldNotBe null
-      // Trace IDs are 64-bit (16 hex chars) by default, or 128-bit (32 hex chars) if configured
-      span.context().traceIdString().length shouldBe 16
-
-      span.finish()
-      tracing.close()
+    "closing the tracing clears Tracing.current()" {
+      val tracing = ZipkinDsl.tracing { localServiceName("test-close-service") }
+      tracing.use { Tracing.current() shouldBe it }
+      Tracing.current() shouldBe null
     }
   }
 }

@@ -20,9 +20,14 @@ package com.pambrose.common.concurrent
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import kotlin.concurrent.thread
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+
+// A retrying wait needs attempts of at least 1 ms: a shorter one returns almost at once, so the loop spins.
+internal fun requireRetryInterval(timeout: Duration) =
+  require(timeout >= 1.milliseconds) { "timeout must be at least 1ms, but was $timeout" }
 
 /** Whether this [CountDownLatch] has reached zero. */
 val CountDownLatch.isFinished: Boolean get() = count == 0L
@@ -48,7 +53,7 @@ fun CountDownLatch.countDown(block: () -> Unit) {
  * @return `true` if the `CountDownLatch` reached zero within the specified duration,
  *         `false` if the waiting time elapsed before the count reached zero.
  */
-fun CountDownLatch.await(duration: Duration): Boolean = await(duration.inWholeMilliseconds, MILLISECONDS)
+fun CountDownLatch.await(duration: Duration): Boolean = await(duration.inWholeNanoseconds, NANOSECONDS)
 
 /**
  * Acquires a permit from this [Semaphore], executes [block], and releases the permit in a `finally` block.

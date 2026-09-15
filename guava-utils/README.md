@@ -59,12 +59,27 @@ if (monitor.waitUntilTrue(5.seconds))
 monitor.waitUntil(false)
 ```
 
-The `debug` / `info` / `warn` / `error` methods attach a log message that is emitted while the monitor
-waits, which is useful for diagnosing stuck waits.
+The retrying overloads wait in attempts of `timeout` and call a `MonitorAction` between attempts; returning
+`false` stops waiting. `BooleanMonitor.debug` / `info` / `warn` / `error` build actions that log a message and
+keep waiting, which helps diagnose stuck waits:
+
+```kotlin
+monitor.waitUntilTrue(5.seconds, BooleanMonitor.info("Still waiting for the monitor"))
+
+// Give up after a minute overall. maxWait defaults to Duration.INFINITE, and Duration.ZERO checks once.
+monitor.waitUntilTrue(timeout = 5.seconds, maxWait = 1.minutes, block = null)
+```
+
+Each attempt's `timeout` must be at least 1 ms, and no attempt waits past `maxWait`.
+
+A `GenericMonitor` subclass must change the state its `monitorSatisfied` reads inside the monitor, for example
+with the protected `mutate { }` helper. Guava re-checks the condition only when a thread leaves the monitor or
+starts waiting, so a change made outside it can leave waiting threads blocked.
 
 ### ConditionalBoolean and ConditionalValue
 
-These are the suspending counterparts, backed by a `MutableStateFlow`. `set` is a `suspend` function.
+These are the suspending counterparts, backed by a `MutableStateFlow`. `set` does not suspend, so any code
+can call it.
 
 ```kotlin
 import com.pambrose.common.concurrent.ConditionalBoolean
@@ -92,7 +107,12 @@ status.get()  // current value, without waiting
 ```
 
 Both `waitUntilTrue` and `waitUntil` default to `Duration.INFINITE` and return `Boolean` — `true` when the
-condition was met, `false` on timeout.
+condition was met, `false` on timeout. The current value is checked first, so a condition that already holds
+returns `true` even with a zero timeout.
+
+Every `set` notifies waiters, even when the value equals the current one or is the same object changed in place.
+Waiters see only the latest value, so a value replaced before a waiter observes it can be missed; wait for
+conditions that stay true once reached.
 
 ### BooleanWaiter
 
@@ -133,20 +153,23 @@ service.startSync(30.seconds)
 service.stopSync(30.seconds)
 ```
 
-`GenericIdleService` offers the same `startSync` / `stopSync` pair over Guava's `AbstractIdleService`.
+`GenericIdleService` offers the same `startSync` / `stopSync` pair over Guava's `AbstractIdleService`. Both
+take `timeout: Duration = 30.seconds` and throw `TimeoutException` when it elapses, or `IllegalStateException`
+when the service fails.
 
 ### Service Listeners
 
-`genericServiceListener` is an **extension function** on `Service` that registers a listener logging every
-state transition:
+`genericServiceListener` is an **extension function** on `Service` that builds a listener logging every state
+transition. It only builds the listener, so add it to the service:
 
 ```kotlin
+import com.google.common.util.concurrent.MoreExecutors
 import com.pambrose.common.concurrent.genericServiceListener
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 
-service.genericServiceListener(logger)
+service.addListener(service.genericServiceListener(logger), MoreExecutors.directExecutor())
 ```
 
 For custom callbacks, build a listener with the DSL:
@@ -183,6 +206,8 @@ val manager =
 
 manager.startAsync().awaitHealthy()
 ```
+
+Setting the same callback twice keeps the later one.
 
 ### Concurrency Extensions
 
@@ -223,7 +248,13 @@ import com.pambrose.common.util.zip
 val compressed = "some long string".zip()   // ByteArray
 compressed.isZipped()                        // true
 val original = compressed.unzip()            // String
+
+// Refuse content that expands beyond 10 MB, such as a gzip bomb
+val bounded = compressed.unzip(maxBytes = 10_000_000)
 ```
+
+`unzip` throws `IllegalArgumentException` when the content is larger than `maxBytes`, and an `IOException` such
+as `ZipException` or `EOFException` when gzip data is corrupt.
 
 ### Platform Checks
 
@@ -238,12 +269,14 @@ import com.pambrose.common.util.isWindows
 
 - `abstract class GenericMonitor` — `waitUntilTrue()`, `waitUntilTrue(waitTime: Duration): Boolean`,
   `waitUntilFalse()`, `waitUntilFalse(waitTime: Duration): Boolean`, `waitUntilTrueWithInterruption(...)`,
-  `waitUntil(value: Boolean)`, plus `debug`/`info`/`warn`/`error` message actions
-- `class BooleanMonitor(initValue: Boolean) : GenericMonitor` — `get()`, `set(value: Boolean)`
+  `waitUntil(value: Boolean)`, the retrying overloads `(timeout, maxWait = INFINITE, block)`, and the protected
+  `mutate(block)`
+- `class BooleanMonitor(initValue: Boolean) : GenericMonitor` — `get()`, `set(value: Boolean)`, and the companion
+  `debug`/`info`/`warn`/`error` `MonitorAction` factories
 
 ### Conditional Values
 
-- `open class ConditionalValue<T>(initValue: T)` — `get(): T`, `suspend set(value: T)`,
+- `open class ConditionalValue<T>(initValue: T)` — `get(): T`, `set(value: T)`,
   `suspend waitUntil(timeoutDuration: Duration = INFINITE, predicate: (T) -> Boolean): Boolean`
 - `class ConditionalBoolean(initValue: Boolean) : ConditionalValue<Boolean>` — `suspend waitUntilTrue(...)`,
   `suspend waitUntilFalse(...)`
@@ -252,9 +285,10 @@ import com.pambrose.common.util.isWindows
 
 ### Services
 
-- `abstract class GenericExecutionThreadService : AbstractExecutionThreadService` — `startSync(timeout)`, `stopSync(timeout)`
-- `abstract class GenericIdleService : AbstractIdleService` — `startSync(maxWait)`, `stopSync(maxWait)`
-- `fun Service.genericServiceListener(logger: KLogger)`
+- `abstract class GenericExecutionThreadService : AbstractExecutionThreadService` — `startSync(timeout = 30.seconds)`,
+  `stopSync(timeout = 30.seconds)`, both `@Throws(TimeoutException::class)`
+- `abstract class GenericIdleService : AbstractIdleService` — the same `startSync` / `stopSync`
+- `fun Service.genericServiceListener(logger: KLogger): Service.Listener` — pass the result to `addListener`
 - `GuavaDsl.serviceManager(services: List<Service>, block: ServiceManager.() -> Unit): ServiceManager`
 - `GuavaDsl.serviceListener(init: ServiceListenerHelper.() -> Unit)`
 - `GuavaDsl.serviceManagerListener(init: ServiceManagerListenerHelper.() -> Unit)`
@@ -266,8 +300,10 @@ import com.pambrose.common.util.isWindows
   `CountDownLatch.await(duration: Duration): Boolean`
 - `fun <T> Semaphore.withLock(block: () -> T): T`
 - `fun thread(latch: CountDownLatch, start: Boolean = true, isDaemon: Boolean = false, contextClassLoader: ClassLoader? = null, name: String? = null, priority: Int = -1, block: () -> Unit): Thread`
-- `class VerboseCountDownLatch(count: Int) : CountDownLatch`
-- `String.zip(): ByteArray`, `ByteArray.zip(): ByteArray`, `ByteArray.isZipped(): Boolean`, `ByteArray.unzip(): String`
+- `class VerboseCountDownLatch(count: Int) : CountDownLatch` — `await(timeout, msg)` logs `msg` after each timeout;
+  `timeout` must be at least 1 ms
+- `String.zip(): ByteArray`, `ByteArray.zip(): ByteArray`, `ByteArray.isZipped(): Boolean`,
+  `ByteArray.unzip(maxBytes: Long = Long.MAX_VALUE): String`
 
 ## Dependencies
 
@@ -310,7 +346,7 @@ dependencies {
 ## Thread Safety
 
 - `BooleanMonitor` guards its value with Guava's `Monitor` and an atomic boolean
-- `ConditionalValue` is backed by a `MutableStateFlow`
+- `ConditionalValue` is backed by a `MutableStateFlow`, and every `set` notifies waiters
 - The service base classes follow Guava's own service contract
 
 ## License

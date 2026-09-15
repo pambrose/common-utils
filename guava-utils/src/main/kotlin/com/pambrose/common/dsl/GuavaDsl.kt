@@ -17,7 +17,6 @@
 
 package com.pambrose.common.dsl
 
-import com.pambrose.common.delegate.SingleAssignVar.singleAssign
 import com.google.common.base.MoreObjects
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
@@ -66,12 +65,17 @@ object GuavaDsl {
 
   /**
    * DSL builder for [ServiceManager.Listener] that allows setting callbacks for
-   * [healthy], [stopped], and [failure] lifecycle events.
+   * [healthy], [stopped], and [failure] lifecycle events. Setting a callback again replaces the earlier one.
    */
   class ServiceManagerListenerHelper : ServiceManager.Listener() {
-    private var healthyBlock: (() -> Unit)? by singleAssign()
-    private var stoppedBlock: (() -> Unit)? by singleAssign()
-    private var failureBlock: ((Service) -> Unit)? by singleAssign()
+    @Volatile
+    private var healthyBlock: (() -> Unit)? = null
+
+    @Volatile
+    private var stoppedBlock: (() -> Unit)? = null
+
+    @Volatile
+    private var failureBlock: ((Service) -> Unit)? = null
 
     override fun healthy() {
       super.healthy()
@@ -125,15 +129,24 @@ object GuavaDsl {
   fun serviceListener(init: ServiceListenerHelper.() -> Unit) = ServiceListenerHelper().apply { init() }
 
   /**
-   * DSL builder for [Service.Listener] that allows setting callbacks for
-   * [starting], [running], [stopping], [terminated], and [failed] lifecycle events.
+   * DSL builder for [Service.Listener] that allows setting callbacks for [starting], [running], [stopping],
+   * [terminated], and [failed] lifecycle events. Setting a callback again replaces the earlier one.
    */
   class ServiceListenerHelper : Service.Listener() {
-    private var startingBlock: (() -> Unit)? by singleAssign()
-    private var runningBlock: (() -> Unit)? by singleAssign()
-    private var stoppingBlock: ((Service.State) -> Unit)? by singleAssign()
-    private var terminatedBlock: ((Service.State) -> Unit)? by singleAssign()
-    private var failedBlock: ((Service.State, Throwable) -> Unit)? by singleAssign()
+    @Volatile
+    private var startingBlock: (() -> Unit)? = null
+
+    @Volatile
+    private var runningBlock: (() -> Unit)? = null
+
+    @Volatile
+    private var stoppingBlock: ((Service.State) -> Unit)? = null
+
+    @Volatile
+    private var terminatedBlock: ((Service.State) -> Unit)? = null
+
+    @Volatile
+    private var failedBlock: ((Service.State, Throwable) -> Unit)? = null
 
     override fun starting() {
       super.starting()
@@ -166,9 +179,9 @@ object GuavaDsl {
     /**
      * Sets the callback invoked when the service is starting.
      *
-     * @param block the callback to invoke, or `null` to clear.
+     * @param block the callback to invoke.
      */
-    fun starting(block: (() -> Unit)?) {
+    fun starting(block: () -> Unit) {
       startingBlock = block
     }
 

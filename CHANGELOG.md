@@ -87,9 +87,49 @@ All notable changes to Common Utils are documented in this file.
 - `MetricsUtils` factories and `MetricsDsl.healthCheck` (dropwizard-utils) are `@JvmStatic`, so Java calls them
   without `INSTANCE`. Java and Kotlin source compiles unchanged, but code compiled against earlier versions must
   be recompiled.
+- guava-utils `ConditionalValue.set` no longer suspends, so any code can call it. Source compiles unchanged,
+  but code compiled against earlier versions must be recompiled.
+- guava-utils `GenericIdleService.startSync` and `stopSync` name their parameter `timeout` instead of `maxWait`
+  and default to 30 seconds instead of 15, matching `GenericExecutionThreadService`. Calls that name `maxWait`
+  must use `timeout`.
+- guava-utils `GenericMonitor` retrying waits changed their limits.
+  - **`maxWait`:** the two-argument overloads default to `Duration.INFINITE`, and `Duration.ZERO` checks the
+    condition once instead of waiting without limit. A negative value still waits without limit.
+  - **`timeout`:** a value below 1 ms throws `IllegalArgumentException`. Before, it spun the loop at full CPU.
+- guava-utils visibility is tighter.
+  - **`GenericValueWaiter`:** `currValue` has a private setter, so subclasses change it only through
+    `checkCondition`, and `initValue` is no longer a property.
+  - **`EMPTY_BYTE_ARRAY`:** it is private.
+  - **`ServiceListenerHelper.starting`:** it no longer accepts `null`.
+- The demo `main` functions no longer ship in guava-utils' `ConditionalValueKt`; they moved to test sources.
 
 ### Bug fixes
 
+- guava-utils `ConditionalValue` checks its current value before waiting, so a zero or sub-millisecond timeout
+  returns `true` when the condition already holds. Before, the timeout was truncated to milliseconds, and a
+  non-positive one returned `false` at once.
+- guava-utils `ConditionalValue` notifies waiters on every `set`, including one that sets the same object after
+  changing it in place. Before, `MutableStateFlow` skipped equal values, so such a waiter blocked until its
+  timeout. The KDoc also explains that waiters see only the latest value.
+- guava-utils `GenericMonitor` fixes.
+  - **Throwing guards:** the untimed waits no longer leave the monitor a second time when the guard throws. The
+    guard's exception reaches the caller instead of an `IllegalMonitorStateException`, and a monitor the caller
+    holds stays held.
+  - **Retry loops:** no attempt waits past `maxWait`, so `timeout = 10s, maxWait = 1s` returns after about
+    1 second instead of 10.
+  - **State changes:** a new protected `mutate { }` makes a change inside the monitor, and the KDoc explains that
+    a change made outside it can strand waiting threads. `BooleanMonitor.set` uses it.
+- guava-utils waits no longer truncate sub-millisecond durations: `CountDownLatch.await(Duration)`,
+  `VerboseCountDownLatch.await`, and the monitor waits pass nanoseconds. `VerboseCountDownLatch.await` also
+  rejects a timeout below 1 ms, which logged in a tight loop.
+- guava-utils `startSync` and `stopSync` declare `@Throws(TimeoutException::class)` for Java callers and document
+  the `TimeoutException` and `IllegalStateException` they throw.
+- guava-utils `GenericValueWaiter.currValue` is `@Volatile`.
+- guava-utils `GuavaDsl` listener callbacks can be set again, replacing the earlier one. Before, a second
+  assignment threw.
+- guava-utils `ByteArray.unzip` takes an optional `maxBytes`, so a gzip bomb can be rejected with
+  `IllegalArgumentException` before it exhausts memory. The KDoc also documents the `IOException` thrown for
+  corrupt input.
 - prometheus-utils factories take an optional `registry`.
   - **Where:** `PrometheusDsl` builders, `SamplerGaugeCollector`, `InstrumentedThreadFactory`, and
     `SystemMetrics.initialize`.
@@ -129,6 +169,9 @@ All notable changes to Common Utils are documented in this file.
     others suppressed. Before, one failure left the rest running and the shutdown hook registered.
 - service-utils `ZipkinReporterService` sends queued spans before closing. Before, spans recorded just before a
   graceful stop were dropped.
+- service-utils `ZipkinReporterService` sends span batches after at most 500 ms instead of 1 second. Its flusher
+  thread then delivers a batch finished just before a graceful stop within `close()`'s 1-second wait. Before, that
+  span could still be dropped, which made `ZipkinReporterServiceTests` flaky.
 - service-utils `ZipkinReporterService` has a `defaultServiceName`, taken from `ZipkinConfig.serviceName` and used
   by `newTracing()` when no name is given. Before, `ZipkinConfig.serviceName` was never used.
 - service-utils `AdminConfig` and `MetricsConfig` have an optional `host` that binds the admin and metrics
@@ -223,6 +266,14 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Add guava-utils regression tests.
+  - **Waiting:** zero and sub-millisecond timeouts, a same-object `set`, a throwing guard, and a thread blocked in
+    a timed wait being woken by `set`.
+  - **Retry limits:** elapsed-time bounds for `maxWait`, a zero `maxWait`, and a rejected sub-millisecond timeout.
+  - **Services:** `startSync` timeouts, the `TimeoutException` declarations, and `genericServiceListener` logging.
+  - **Stale comment:** a `GenericValueWaiterTests` comment described a removed implementation.
+- zipkin-utils `ZipkinDsl` tests assert that the configuration block is applied, and close each `Tracing` with
+  `use`, so a failed assertion no longer leaks `Tracing.current()`.
 - Strengthen the metrics and servlet tests.
   - **Registries:** prometheus-utils tests assert values read back from a registry instead of `shouldNotBe null`
     on non-null types, including isolated registries and `SystemMetrics` exporter registration.
@@ -255,6 +306,11 @@ All notable changes to Common Utils are documented in this file.
 
 ### Documentation
 
+- Add READMEs for zipkin-utils and redis-utils, which llms.txt already linked to.
+- Correct the guava-utils README.
+  - **`genericServiceListener`:** it only builds a listener, so the example now passes it to `addListener`.
+  - **Logging actions:** the `debug`/`info`/`warn`/`error` factories belong to `BooleanMonitor`'s companion, not
+    to `GenericMonitor`.
 - Fix core-utils README snippets that did not compile or misdescribed behavior.
   - **`Atomic.withLock`:** the lambda now uses its receiver instead of `it`.
   - **`criticalSection`:** it only sets a flag while the block runs; it does not exclude other callers.

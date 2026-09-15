@@ -83,12 +83,15 @@ class BooleanWaiter(
  */
 @Suppress("AbstractClassCanBeConcreteClass")
 abstract class GenericValueWaiter<T>(
-  protected val initValue: T,
+  initValue: T,
 ) {
   private val lock = ReentrantLock()
   private val waiters: MutableList<Waiter> = []
 
-  protected var currValue = initValue
+  /** The monitored value. Only [checkCondition] changes it, so every change is seen by waiting coroutines. */
+  @Volatile
+  protected var currValue: T = initValue
+    private set
 
   private class Waiter(
     val predicate: () -> Boolean,

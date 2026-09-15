@@ -19,7 +19,6 @@ package com.pambrose.common.concurrent
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 
 /**
@@ -39,6 +38,7 @@ class VerboseCountDownLatch(
    * @param timeout the duration of each individual wait attempt.
    * @param msg the message to log on each timeout.
    * @throws InterruptedException if the current thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   @Throws(InterruptedException::class)
   fun await(
@@ -53,16 +53,16 @@ class VerboseCountDownLatch(
    * @param timeout the duration of each individual wait attempt.
    * @param msg a lambda producing the message to log on each timeout.
    * @throws InterruptedException if the current thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   @Throws(InterruptedException::class)
   fun await(
     timeout: Duration,
     msg: () -> Any?,
   ) {
-    while (true) {
-      val satisfied = await(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-      if (satisfied)
-        break
+    // A shorter timeout makes each attempt return almost at once, logging msg in a tight loop.
+    requireRetryInterval(timeout)
+    while (!await(timeout)) {
       logger.info(msg)
     }
   }

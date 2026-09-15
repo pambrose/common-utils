@@ -147,25 +147,25 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-063** `LOW` · cleanup — `VersionServlet` duplicates `LambdaServlet`; DSL builders lack default block; `HttpServletGroup` untested (carried over) ([details](#cr-063)) — fixed in #180
 
 ### guava-utils
-- [ ] **CR-064** `MEDIUM` · bug — `ConditionalValue.waitUntil` returns `false` for zero/sub-ms timeout even when already satisfied ([details](#cr-064))
-- [ ] **CR-065** `MEDIUM` · concurrency — `ConditionalValue` misses updates for equal/mutated values (StateFlow conflation) ([details](#cr-065))
-- [ ] **CR-066** `MEDIUM` · concurrency — `GenericMonitor` untimed waits double-`leave()`, masking the real exception ([details](#cr-066))
-- [ ] **CR-067** `MEDIUM` · bug — `GenericMonitor` retry loops overrun `maxWait`, treat ZERO as unlimited, can busy-spin (partly carried over) ([details](#cr-067))
-- [ ] **CR-068** `LOW` · docs — `GenericMonitor` doesn't require state changes inside the monitor ([details](#cr-068))
-- [ ] **CR-069** `LOW` · API — `startSync`/`stopSync` hide `TimeoutException`; no `@Throws`; inconsistent params ([details](#cr-069))
-- [ ] **CR-070** `LOW` · bug — Sub-ms durations truncate to 0; `VerboseCountDownLatch` log flood ([details](#cr-070))
-- [ ] **CR-071** `LOW` · API — `GenericValueWaiter.currValue` settable without notification; unused `initValue` ([details](#cr-071))
-- [ ] **CR-072** `LOW` · API — `ConditionalValue.set` still `yield()`s (carried over) ([details](#cr-072))
-- [ ] **CR-073** `LOW` · cleanup — Demo `main()`s in published JAR; stale Kover exclusion (carried over) ([details](#cr-073))
-- [ ] **CR-074** `LOW` · API — `GuavaDsl` callbacks throw on reassignment; `starting(null)` KDoc false (carried over) ([details](#cr-074))
-- [ ] **CR-075** `LOW` · API — `EMPTY_BYTE_ARRAY` is public (carried over) ([details](#cr-075))
-- [ ] **CR-076** `LOW` · security — `unzip()` has no decompressed-size limit ([details](#cr-076))
-- [ ] **CR-077** `LOW` · docs — guava-utils README misdescribes `genericServiceListener` and logging factories ([details](#cr-077))
-- [ ] **CR-078** `LOW` · tests — No timed-wakeup, `maxWait`-elapsed, or service-helper tests; stale comment ([details](#cr-078))
+- [x] **CR-064** `MEDIUM` · bug — `ConditionalValue.waitUntil` returns `false` for zero/sub-ms timeout even when already satisfied ([details](#cr-064)) — fixed in #181
+- [x] **CR-065** `MEDIUM` · concurrency — `ConditionalValue` misses updates for equal/mutated values (StateFlow conflation) ([details](#cr-065)) — fixed in #181
+- [x] **CR-066** `MEDIUM` · concurrency — `GenericMonitor` untimed waits double-`leave()`, masking the real exception ([details](#cr-066)) — fixed in #181
+- [x] **CR-067** `MEDIUM` · bug — `GenericMonitor` retry loops overrun `maxWait`, treat ZERO as unlimited, can busy-spin (partly carried over) ([details](#cr-067)) — fixed in #181
+- [x] **CR-068** `LOW` · docs — `GenericMonitor` doesn't require state changes inside the monitor ([details](#cr-068)) — fixed in #181
+- [x] **CR-069** `LOW` · API — `startSync`/`stopSync` hide `TimeoutException`; no `@Throws`; inconsistent params ([details](#cr-069)) — fixed in #181
+- [x] **CR-070** `LOW` · bug — Sub-ms durations truncate to 0; `VerboseCountDownLatch` log flood ([details](#cr-070)) — fixed in #181
+- [x] **CR-071** `LOW` · API — `GenericValueWaiter.currValue` settable without notification; unused `initValue` ([details](#cr-071)) — fixed in #181
+- [x] **CR-072** `LOW` · API — `ConditionalValue.set` still `yield()`s (carried over) ([details](#cr-072)) — fixed in #181
+- [x] **CR-073** `LOW` · cleanup — Demo `main()`s in published JAR; stale Kover exclusion (carried over) ([details](#cr-073)) — fixed in #181
+- [x] **CR-074** `LOW` · API — `GuavaDsl` callbacks throw on reassignment; `starting(null)` KDoc false (carried over) ([details](#cr-074)) — fixed in #181
+- [x] **CR-075** `LOW` · API — `EMPTY_BYTE_ARRAY` is public (carried over) ([details](#cr-075)) — fixed in #181
+- [x] **CR-076** `LOW` · security — `unzip()` has no decompressed-size limit ([details](#cr-076)) — fixed in #181
+- [x] **CR-077** `LOW` · docs — guava-utils README misdescribes `genericServiceListener` and logging factories ([details](#cr-077)) — fixed in #181
+- [x] **CR-078** `LOW` · tests — No timed-wakeup, `maxWait`-elapsed, or service-helper tests; stale comment ([details](#cr-078)) — fixed in #181
 
 ### zipkin-utils
-- [ ] **CR-079** `LOW` · tests — `ZipkinDsl` tests never verify the config block; leak `Tracing` on failure (carried over) ([details](#cr-079))
-- [ ] **CR-080** `LOW` · docs — zipkin-utils and redis-utils have no README (linked from llms.txt) ([details](#cr-080))
+- [x] **CR-079** `LOW` · tests — `ZipkinDsl` tests never verify the config block; leak `Tracing` on failure (carried over) ([details](#cr-079)) — fixed in #181
+- [x] **CR-080** `LOW` · docs — zipkin-utils and redis-utils have no README (linked from llms.txt) ([details](#cr-080)) — fixed in #181
 
 ### script-utils (common / java / kotlin / python)
 - [ ] **CR-081** `MEDIUM` · concurrency — Pooled engines lost forever when a waiting borrower is cancelled ([details](#cr-081))
