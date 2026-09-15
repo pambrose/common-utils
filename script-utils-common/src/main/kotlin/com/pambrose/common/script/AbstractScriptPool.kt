@@ -16,45 +16,31 @@
 
 package com.pambrose.common.script
 
-import kotlinx.coroutines.channels.Channel
-
 /**
  * Abstract base class for a pool of [AbstractScript] instances.
  *
- * Uses a coroutine [Channel] as a bounded buffer to manage script engine instances.
- * When a script is returned to the pool, its context is automatically reset. Subclasses
- * are responsible for populating the pool in their `init` block.
+ * When a script is returned to the pool, [AbstractScript.resetForReuse] prepares it for the next borrower. Subclasses
+ * populate the pool with [populate] in their `init` block. [AbstractEnginePool] describes borrowing and closing.
  *
  * @param T the concrete type of [AbstractScript] managed by this pool
- * @param size the number of script instances in the pool
+ * @param size the number of script instances in the pool; must be positive
  * @param nullGlobalContext if `true`, resets the global scope bindings to `null` when recycling
+ * @throws IllegalArgumentException if [size] is not positive
  */
 @Suppress("AbstractClassCanBeConcreteClass")
 abstract class AbstractScriptPool<T : AbstractScript>(
-  val size: Int,
+  size: Int,
   private val nullGlobalContext: Boolean,
-) {
-  /** Channel used as a bounded buffer for pooling script instances. */
-  protected val channel = Channel<T>(size)
-
-  private suspend fun borrow() = channel.receive()
+) : AbstractEnginePool<T>(size) {
+  override fun reset(instance: T) = instance.resetForReuse(nullGlobalContext)
 
   /**
-   * Returns an approximate, point-in-time indication of whether the pool currently has no script
-   * instances available. Delegates to [Channel.isEmpty], which is racy under concurrent borrow/recycle
-   * and may return a stale result, so do not rely on it for correctness.
+   * Suspends until a script instance can be borrowed, runs [block] on it, and returns the instance to the pool
+   * afterwards, even if [block] throws.
+   *
+   * @param block the work to do with the borrowed instance
+   * @return the result of [block]
+   * @throws kotlinx.coroutines.channels.ClosedReceiveChannelException if the pool has been closed
    */
-  val isEmpty get() = channel.isEmpty
-
-  // Reset the context before returning to pool
-  private suspend fun recycle(scriptObject: T) = channel.send(scriptObject.apply { resetContext(nullGlobalContext) })
-
-  suspend fun <R> eval(block: T.() -> R): R =
-    borrow().let { engine ->
-      try {
-        block.invoke(engine)
-      } finally {
-        recycle(engine)
-      }
-    }
+  suspend fun <R> eval(block: T.() -> R): R = withInstance(block)
 }

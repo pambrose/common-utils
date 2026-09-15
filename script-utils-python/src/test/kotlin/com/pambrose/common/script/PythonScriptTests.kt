@@ -279,5 +279,77 @@ class PythonScriptTests : StringSpec() {
           }
       }
     }
+
+    "JVM termination through java.lang is rejected" {
+      PythonScript().use {
+        it.apply {
+          // Each call is inside a function that is never called, so an unguarded script returns instead of
+          // terminating the test JVM.
+          shouldThrow<ScriptException> {
+            eval(
+              """
+              def shutdown():
+                from java.lang import System
+                System.exit(0)
+              """.trimIndent(),
+            )
+          }
+          shouldThrow<ScriptException> {
+            eval(
+              """
+              def stop():
+                from java.lang import Runtime
+                Runtime.getRuntime().halt(0)
+              """.trimIndent(),
+            )
+          }
+        }
+      }
+    }
+
+    "methods named exit or quit can be defined" {
+      PythonScript().use {
+        it.apply {
+          shouldNotThrow<ScriptException> {
+            eval(
+              """
+              class Door:
+                def exit(self):
+                  return 1
+                def quit(self):
+                  return 2
+              """.trimIndent(),
+            )
+          }
+          eval("Door().exit() + Door().quit()") shouldBe 3
+        }
+      }
+    }
+
+    "a variable added after an evaluation is bound for the next one" {
+      PythonScript().use {
+        it.apply {
+          add("a", 1)
+          eval("a") shouldBe 1
+          add("b", 2)
+          eval("a + b") shouldBe 3
+        }
+      }
+    }
+
+    "variable names must be valid Python identifiers" {
+      PythonScript().use { script ->
+        ["my-var", "print", "x = 1"].forEach { name ->
+          shouldThrow<ScriptException> { script.add(name, 5) }
+        }
+      }
+    }
+
+    "the Python evaluator rejects literal termination calls" {
+      val evaluator = PythonExprEvaluator()
+      // The lambdas are never called, so an unguarded evaluator returns True instead of exiting.
+      shouldThrow<ScriptException> { evaluator.eval("(lambda: System.exit(0)) is not None") }
+      shouldThrow<ScriptException> { evaluator.eval("(lambda: sys.exit(0)) is not None") }
+    }
   }
 }

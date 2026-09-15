@@ -16,8 +16,6 @@
 
 package com.pambrose.common.script
 
-import kotlinx.coroutines.runBlocking
-
 /**
  * A pre-populated pool of [PythonScript] instances backed by a coroutine
  * [Channel][kotlinx.coroutines.channels.Channel].
@@ -33,8 +31,6 @@ class PythonScriptPool(
   nullGlobalContext: Boolean,
 ) : AbstractScriptPool<PythonScript>(size, nullGlobalContext) {
   init {
-    runBlocking {
-      repeat(size) { channel.send(PythonScript(nullGlobalContext)) }
-    }
+    populate { PythonScript(nullGlobalContext) }
   }
 }

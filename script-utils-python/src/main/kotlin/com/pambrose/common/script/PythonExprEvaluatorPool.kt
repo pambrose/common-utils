@@ -16,8 +16,6 @@
 
 package com.pambrose.common.script
 
-import kotlinx.coroutines.runBlocking
-
 /**
  * A pre-populated pool of [PythonExprEvaluator] instances backed by a coroutine
  * [Channel][kotlinx.coroutines.channels.Channel].
@@ -30,8 +28,6 @@ class PythonExprEvaluatorPool(
   size: Int,
 ) : AbstractExprEvaluatorPool<PythonExprEvaluator>(size) {
   init {
-    runBlocking {
-      repeat(size) { channel.send(PythonExprEvaluator()) }
-    }
+    populate { PythonExprEvaluator() }
   }
 }

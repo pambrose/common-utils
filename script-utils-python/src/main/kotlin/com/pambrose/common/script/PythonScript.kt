@@ -16,8 +16,6 @@
 
 package com.pambrose.common.script
 
-import java.io.Closeable
-import javax.script.ScriptException
 import kotlin.reflect.KType
 import org.python.jsr223.PyScriptEngine
 
@@ -27,19 +25,22 @@ import org.python.jsr223.PyScriptEngine
  * Variables are bound directly to the engine without type parameter support, since Python
  * is dynamically typed.
  *
- * Common literal calls to `sys.exit()`, `exit()`, and `quit()` are rejected on a best-effort basis.
- * This is a convenience against accidental termination, **not** a security sandbox: it is trivially
- * bypassed (e.g. `os._exit(0)`, `getattr(sys, 'ex' + 'it')(0)`, reflection, or any JVM access exposed
- * by Jython), and it does not inspect string literals or comments. Run untrusted scripts in an isolated
- * process or JVM. Method calls on user objects (for example `obj.exit()`) are intentionally allowed.
+ * Code is checked before it runs, on a best-effort basis: literal JVM-termination calls and Python's `sys.exit()`,
+ * `exit()`, `quit()`, and `raise SystemExit` are rejected. The checks match text, including inside string literals and
+ * comments, and they are **not** a security sandbox; see [PythonGuards] for what they do and do not catch. Run
+ * untrusted scripts in an isolated process or JVM. Method calls and definitions such as `obj.exit()` and
+ * `def exit(self):` are allowed.
  *
  * @param nullGlobalContext if `true`, sets the global scope bindings to `null` on initialization
  * @see AbstractScript
  */
 class PythonScript(
   nullGlobalContext: Boolean = false,
-) : AbstractScript("py", nullGlobalContext),
-  Closeable {
+) : AbstractScript("py", nullGlobalContext) {
+  override fun isReserved(name: String) = name in PYTHON_KEYWORDS
+
+  override fun checkCode(code: String) = PythonGuards.check(code)
+
   /**
    * Adds a named variable to the script context.
    *
@@ -48,49 +49,43 @@ class PythonScript(
    * @param name the variable name to bind in the script
    * @param value the value to associate with the variable
    * @param types ignored for Python scripts
+   * @throws javax.script.ScriptException if [name] is not a valid Python identifier
    */
+  @Synchronized
   override fun add(
     name: String,
     value: Any,
     vararg types: KType,
   ) {
-    valueMap[name] = value
+    checkName(name)
+    register(name, value)
   }
 
+  /**
+   * Evaluates Python [code] and returns its result.
+   *
+   * Variables added with [add] are bound first, including any added after an earlier evaluation.
+   *
+   * @param code the Python source code to evaluate
+   * @return the result of the evaluation, or `null`
+   * @throws javax.script.ScriptException if [code] fails the checks described above, or fails to run
+   */
   @Synchronized
   fun eval(code: String): Any? {
-    if (SYS_EXIT_PATTERN.containsMatchIn(code))
-      throw ScriptException("Illegal call to sys.exit()")
-
-    // sys.exit()/exit()/quit() are all implemented as `raise SystemExit`, which is the same
-    // termination written directly; reject it too.
-    if (SYSTEM_EXIT_PATTERN.containsMatchIn(code))
-      throw ScriptException("Illegal 'raise SystemExit'")
-
-    if (EXIT_PATTERN.containsMatchIn(code))
-      throw ScriptException("Illegal call to exit()")
-
-    if (QUIT_PATTERN.containsMatchIn(code))
-      throw ScriptException("Illegal call to quit()")
-
-    if (!initialized) {
-      valueMap.forEach { (name, value) -> engine.put(name, value) }
-      initialized = true
-    }
-
-    return engine.eval(code)
+    prepare(code)
+    return scriptEngine.eval(code)
   }
 
   override fun close() {
-    (engine as PyScriptEngine).close()
+    (scriptEngine as PyScriptEngine).close()
   }
 
-  companion object {
-    // (?<![\w.]) excludes a preceding word char *or* '.', so a method call on a user object
-    // (e.g. obj.exit(), queue.quit()) is not mistaken for the bare Python builtin. Best-effort only.
-    private val SYS_EXIT_PATTERN = Regex("""(?<!\w)sys\.exit\s*\(""")
-    private val SYSTEM_EXIT_PATTERN = Regex("""(?<!\w)raise\s+SystemExit\b""")
-    private val EXIT_PATTERN = Regex("""(?<![\w.])exit\s*\(""")
-    private val QUIT_PATTERN = Regex("""(?<![\w.])quit\s*\(""")
+  private companion object {
+    // Python 2.7 keywords, which cannot be used as variable names.
+    val PYTHON_KEYWORDS =
+      (
+        "and as assert break class continue def del elif else except exec finally for from global if import in is " +
+          "lambda not or pass print raise return try while with yield"
+      ).split(" ").toSet()
   }
 }

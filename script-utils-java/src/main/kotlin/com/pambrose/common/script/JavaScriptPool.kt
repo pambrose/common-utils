@@ -16,8 +16,6 @@
 
 package com.pambrose.common.script
 
-import kotlinx.coroutines.runBlocking
-
 /**
  * A pre-populated pool of [JavaScript] instances backed by a coroutine [Channel][kotlinx.coroutines.channels.Channel].
  *
@@ -34,8 +32,6 @@ class JavaScriptPool(
   @Suppress("UNUSED_PARAMETER", "UnusedPrivateProperty") nullGlobalContext: Boolean = false,
 ) : AbstractScriptPool<JavaScript>(size, false) {
   init {
-    runBlocking {
-      repeat(size) { channel.send(JavaScript()) }
-    }
+    populate { JavaScript() }
   }
 }

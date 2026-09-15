@@ -16,11 +16,20 @@
 
 package com.pambrose.common.script
 
+import org.python.jsr223.PyScriptEngine
+
 /**
  * An expression evaluator backed by the Python (Jython) scripting engine (`py` extension).
  *
- * Evaluates Python expressions and returns boolean or arbitrary results.
+ * Evaluates Python expressions and returns boolean or arbitrary results. Expressions pass the same best-effort checks
+ * as [PythonScript] code first; see [PythonGuards].
  *
  * @see AbstractExprEvaluator
  */
-class PythonExprEvaluator : AbstractExprEvaluator("py")
+class PythonExprEvaluator : AbstractExprEvaluator("py") {
+  override fun checkCode(code: String) = PythonGuards.check(code)
+
+  override fun close() {
+    (scriptEngine as PyScriptEngine).close()
+  }
+}

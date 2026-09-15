@@ -14,7 +14,8 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+// DEPRECATION: the nullGlobalContext test reads the deprecated public engine.
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "DEPRECATION")
 
 package com.pambrose.common.script
 

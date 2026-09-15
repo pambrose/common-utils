@@ -102,9 +102,54 @@ All notable changes to Common Utils are documented in this file.
   - **`EMPTY_BYTE_ARRAY`:** it is private.
   - **`ServiceListenerHelper.starting`:** it no longer accepts `null`.
 - The demo `main` functions no longer ship in guava-utils' `ConditionalValueKt`; they moved to test sources.
+- script-utils-kotlin no longer has the `com.pambrose.common.script.System` object or `KotlinScript.importDecls`.
+  Scripts are no longer prefixed with an import of that object, so `System.currentTimeMillis()`, `System.getenv()`,
+  and every other `java.lang.System` member work again. `ScriptGuards` still rejects literal `System.exit(...)`.
+- script-utils generated code and messages use fully-qualified type names.
+  - **Kotlin casts:** `KotlinScript.varDecls` casts to names such as `java.util.ArrayList<kotlin.Int?>`.
+  - **Java fields:** `JavaScript.varDecls` declares types such as `java.util.ArrayList<java.lang.Integer>`, so those
+    types no longer need imports.
+  - **Messages:** `AbstractScript.params` and the `add` error messages name types the same way.
+- script-utils `AbstractEngine.engine` is deprecated. Using the engine directly bypasses variable bindings and context
+  resets; use the evaluation and `resetContext` methods instead. Subclasses use the new protected `scriptEngine`.
+  `AbstractScript.initialized` is also deprecated, because nothing reads it any more.
+- script-utils `add` rejects a variable name that is not a valid identifier or is a reserved word of the script
+  language, with a `ScriptException`. Before, such a name produced a confusing compile error, or injected code into
+  the generated declarations.
 
 ### Bug fixes
 
+- script-utils pools no longer lose instances.
+  - **Cancelled borrowers:** a borrower cancelled just as an instance was handed to it dropped that instance, shrinking
+    the pool until every borrow waited forever. The instance now goes back into the pool.
+  - **Sizes:** a size that is not positive throws `IllegalArgumentException`. Before, the pool had no instances and
+    every borrow hung.
+  - **Closing:** pools are `Closeable`. Closing one closes its instances, closes any borrowed instance when it is
+    returned, and makes later borrows throw `ClosedReceiveChannelException`. If creating an instance fails during
+    construction, the instances already created are closed. Both pools extend a new `AbstractEnginePool` base, and
+    `AbstractExprEvaluatorPool` now uses its `T` type.
+- script-utils expression evaluators reject literal JVM-termination calls before evaluating, through a new
+  overridable `checkCode`, and their KDoc states that they are not a sandbox. Before,
+  `KotlinExprEvaluatorPool(5).blockingEval("kotlin.system.exitProcess(0) == Unit")` terminated the JVM.
+  `PythonExprEvaluator` applies the Python checks as well.
+- script-utils expression evaluator pools reset each evaluator's context when it is returned, so the Kotlin engine's
+  REPL history no longer grows with every expression. Each evaluator also gets its own global bindings instead of
+  sharing the `ScriptEngineManager`'s.
+- script-utils `KotlinScript` and `JavaScript` bind values whose runtime class cannot be named in code, such as
+  `Regex`, `listOf(1, 2)`, `emptyList()`, and nested generic type arguments. They use the nearest public class or
+  interface. `JavaScript` also maps `Char`, `Any`, and nested type arguments to valid Java, and reports an engine
+  failure such as assigning a variable to an incompatible field as a `ScriptException`.
+- script-utils scripts bind a variable added after an evaluation before the next one. Before, `KotlinScript` and
+  `PythonScript` failed with an unresolved name, and `JavaScript` silently returned the field's default value. `add`
+  and `resetContext` are now synchronized like the evaluation methods.
+- script-utils `JavaScript` clears its imports and restores the default isolation when a pool reuses it. Before, one
+  borrower's imports accumulated for every later borrower, and its isolation carried over.
+- script-utils-python rejects `java.lang.System.exit(...)` and `Runtime.getRuntime().halt(...)`, which terminate the
+  JVM from Jython. Methods named `exit` or `quit` can be defined, and the KDoc explains that the checks also match text
+  inside string literals and comments.
+- script-utils `KotlinScript` and `JavaScript` document that `close()` does nothing, `KotlinScript.eval` and
+  `PythonScript.eval` have KDoc, and `JavaScript.evalScript` documents that every variable needs a matching public
+  field.
 - guava-utils `ConditionalValue` checks its current value before waiting, so a zero or sub-millisecond timeout
   returns `true` when the condition already holds. Before, the timeout was truncated to milliseconds, and a
   non-positive one returned `false` at once.
@@ -266,6 +311,15 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Add script-utils regression tests.
+  - **Pools:** a borrower cancelled mid-handoff, invalid sizes, closing, instances returned after close, and a failed
+    construction.
+  - **Evaluators:** termination calls, context resets, and separate global bindings.
+  - **Bindings:** hard-to-name values, variables added after an evaluation, invalid names, and Java type mapping.
+  - **Guards:** the termination calls sit in functions or lambdas that are never called, so an unguarded engine
+    returns instead of exiting the test JVM.
+  - **Existing tests:** the Kotlin guard test uses the real `java.lang.System`, and the Java "illegal calls" test uses
+    Java syntax instead of passing only because Python syntax does not compile as Java.
 - Add guava-utils regression tests.
   - **Waiting:** zero and sub-millisecond timeouts, a same-object `set`, a throwing guard, and a thread blocked in
     a timed wait being woken by `set`.

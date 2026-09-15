@@ -178,8 +178,7 @@ class KotlinScriptTests : StringSpec() {
         it.apply {
           add("list", list, typeOf<Int?>())
 
-          val s = "list".toTempName()
-          varDecls shouldBe "val list = bindings[\"$s\"] as java.util.ArrayList<Int?>"
+          varDecls shouldBe "val list = bindings[\"list_tmp\"] as java.util.ArrayList<kotlin.Int?>"
 
           list.size shouldBe eval("list.size")
 
@@ -260,7 +259,7 @@ class KotlinScriptTests : StringSpec() {
       KotlinScript().use {
         it.apply {
           shouldThrow<ScriptException> { eval("System.exit(1)") }
-          shouldThrow<ScriptException> { eval("com.lang.System.exit(1)") }
+          shouldThrow<ScriptException> { eval("java.lang.System.exit(1)") }
           shouldThrow<ScriptException> { eval("exitProcess(0)") }
           shouldThrow<ScriptException> { eval("kotlin.system.exitProcess(0)") }
           shouldThrow<ScriptException> { eval("Runtime.getRuntime().exit(0)") }
@@ -300,6 +299,50 @@ class KotlinScriptTests : StringSpec() {
             shouldNotThrow<ScriptException> { blockingEval("$i == $i") }
           }
       }
+    }
+
+    "java.lang.System stays usable in scripts" {
+      KotlinScript().use { it.eval("System.currentTimeMillis() > 0") shouldBe true }
+    }
+
+    "values whose runtime class is private, internal, or outside kotlin can be bound" {
+      KotlinScript().use {
+        it.apply {
+          add("regex", Regex("a+"))
+          add("fixed", listOf(1, 2), typeOf<Int>())
+          add("nested", mapOf("k" to listOf(1, 2)), typeOf<String>(), typeOf<List<Int>>())
+          add("empty", emptyList<Int>())
+
+          eval("""regex.matches("aaa")""") shouldBe true
+          eval("fixed.size") shouldBe 2
+          eval("""nested.getValue("k").sum()""") shouldBe 3
+          eval("empty.size") shouldBe 0
+        }
+      }
+    }
+
+    "a variable added after an evaluation is bound for the next one" {
+      KotlinScript().use {
+        it.apply {
+          add("a", 1)
+          eval("a") shouldBe 1
+          add("b", 2)
+          eval("a + b") shouldBe 3
+        }
+      }
+    }
+
+    "variable names must be valid identifiers" {
+      KotlinScript().use { script ->
+        ["my-var", "class", "x = 1; val injected", ""].forEach { name ->
+          shouldThrow<ScriptException> { script.add(name, 5) }
+        }
+      }
+    }
+
+    "the public engine property is deprecated" {
+      // Kotlin keeps a property's annotations on the property, not its getter, so read them with Kotlin reflection.
+      AbstractEngine::class.members.single { it.name == "engine" }.annotations.any { it is Deprecated } shouldBe true
     }
   }
 }
