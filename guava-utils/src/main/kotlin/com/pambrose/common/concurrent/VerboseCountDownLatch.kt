@@ -39,6 +39,7 @@ class VerboseCountDownLatch(
    * @param timeout the duration of each individual wait attempt.
    * @param msg the message to log on each timeout.
    * @throws InterruptedException if the current thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is not positive.
    */
   @Throws(InterruptedException::class)
   fun await(
@@ -53,16 +54,16 @@ class VerboseCountDownLatch(
    * @param timeout the duration of each individual wait attempt.
    * @param msg a lambda producing the message to log on each timeout.
    * @throws InterruptedException if the current thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is not positive.
    */
   @Throws(InterruptedException::class)
   fun await(
     timeout: Duration,
     msg: () -> Any?,
   ) {
-    while (true) {
-      val satisfied = await(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-      if (satisfied)
-        break
+    // A non-positive timeout makes every attempt return at once, logging msg in a tight loop.
+    require(timeout.isPositive()) { "timeout must be positive, but was $timeout" }
+    while (!await(timeout.inWholeNanoseconds, TimeUnit.NANOSECONDS)) {
       logger.info(msg)
     }
   }

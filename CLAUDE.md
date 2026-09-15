@@ -147,8 +147,6 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
 - `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
   MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
-- Demo `main()` functions in guava-utils concurrent classes are excluded from coverage via
-  `koverExcludeClasses` in the root build script; don't write tests for them.
 - `script-utils-kotlin` runs the Kotlin compiler **in-process** (the JSR-223 engine compiles every
   snippet), so its test task sets `maxHeapSize = "2g"` in the module's own `build.gradle.kts`; nothing
   else sets a test heap, so every other module uses Gradle's 512m default. Leave that setting in place.

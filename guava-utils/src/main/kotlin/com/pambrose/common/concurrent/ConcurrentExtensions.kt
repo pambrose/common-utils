@@ -20,7 +20,7 @@ package com.pambrose.common.concurrent
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import kotlin.concurrent.thread
 import kotlin.time.Duration
 
@@ -48,7 +48,7 @@ fun CountDownLatch.countDown(block: () -> Unit) {
  * @return `true` if the `CountDownLatch` reached zero within the specified duration,
  *         `false` if the waiting time elapsed before the count reached zero.
  */
-fun CountDownLatch.await(duration: Duration): Boolean = await(duration.inWholeMilliseconds, MILLISECONDS)
+fun CountDownLatch.await(duration: Duration): Boolean = await(duration.inWholeNanoseconds, NANOSECONDS)
 
 /**
  * Acquires a permit from this [Semaphore], executes [block], and releases the permit in a `finally` block.

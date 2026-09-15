@@ -27,6 +27,7 @@ import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.BytesMessageSender
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.okhttp3.OkHttpSender
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 /**
  * A Guava [GenericIdleService] that manages a Zipkin span reporter lifecycle.
@@ -65,7 +66,10 @@ class ZipkinReporterService internal constructor(
     initBlock: ZipkinReporterService.() -> Unit,
   ) : this(url, DEFAULT_SERVICE_NAME, initBlock)
 
-  private val reporter = AsyncReporter.create(sender)
+  // The flusher thread holds a batch for up to the message timeout before sending it, and close() waits only its
+  // close timeout (1 second by default) for that thread. A shorter message timeout lets the final batch go out
+  // before close() gives up, without making shutdown any slower.
+  private val reporter = AsyncReporter.builder(sender).messageTimeout(MESSAGE_TIMEOUT_MILLIS, MILLISECONDS).build()
   private val handler = ZipkinSpanHandler.create(reporter)
 
   init {
@@ -108,5 +112,7 @@ class ZipkinReporterService internal constructor(
 
     // Brave's own default for Tracing.Builder.localServiceName.
     private const val DEFAULT_SERVICE_NAME = "unknown"
+
+    private const val MESSAGE_TIMEOUT_MILLIS = 500L
   }
 }

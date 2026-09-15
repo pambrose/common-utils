@@ -18,7 +18,8 @@
 package com.pambrose.common.concurrent
 
 import com.google.common.util.concurrent.AbstractIdleService
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -28,22 +29,28 @@ import kotlin.time.Duration.Companion.seconds
  */
 abstract class GenericIdleService : AbstractIdleService() {
   /**
-   * Starts the service asynchronously and blocks until it is running or the timeout expires.
+   * Starts the service asynchronously and blocks until it is running.
    *
-   * @param maxWait the maximum duration to wait for the service to start. Defaults to 15 seconds.
+   * @param timeout the maximum duration to wait for the service to start. Defaults to 30 seconds.
+   * @throws TimeoutException if the service is not running within [timeout].
+   * @throws IllegalStateException if the service fails, or reaches a state from which it cannot start.
    */
-  fun startSync(maxWait: Duration = 15.seconds) {
+  @Throws(TimeoutException::class)
+  fun startSync(timeout: Duration = 30.seconds) {
     startAsync()
-    awaitRunning(maxWait.inWholeMilliseconds, MILLISECONDS)
+    awaitRunning(timeout.inWholeNanoseconds, NANOSECONDS)
   }
 
   /**
-   * Stops the service asynchronously and blocks until it has terminated or the timeout expires.
+   * Stops the service asynchronously and blocks until it has terminated.
    *
-   * @param maxWait the maximum duration to wait for the service to stop. Defaults to 15 seconds.
+   * @param timeout the maximum duration to wait for the service to stop. Defaults to 30 seconds.
+   * @throws TimeoutException if the service has not terminated within [timeout].
+   * @throws IllegalStateException if the service fails.
    */
-  fun stopSync(maxWait: Duration = 15.seconds) {
+  @Throws(TimeoutException::class)
+  fun stopSync(timeout: Duration = 30.seconds) {
     stopAsync()
-    awaitTerminated(maxWait.inWholeMilliseconds, MILLISECONDS)
+    awaitTerminated(timeout.inWholeNanoseconds, NANOSECONDS)
   }
 }

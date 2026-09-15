@@ -48,14 +48,7 @@ class BooleanMonitor(
    *
    * @param value the new boolean value.
    */
-  fun set(value: Boolean) {
-    monitor.enter()
-    try {
-      monVal.store(value)
-    } finally {
-      monitor.leave()
-    }
-  }
+  fun set(value: Boolean) = mutate { monVal.store(value) }
 
   override fun toString() =
     MoreObjects

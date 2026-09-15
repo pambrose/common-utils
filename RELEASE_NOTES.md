@@ -78,6 +78,11 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
     tolerates exporters that are already registered and adds newly requested ones.
   - **Backlog checks:** `newBacklogHealthCheck` can read a live size.
   - **Servlets:** `LambdaServlet` and `VersionServlet` send UTF-8 and let a failing lambda become a `500`.
+- **Waiting and service fixes (guava-utils)**:
+  - **Conditional values:** a zero timeout sees a condition that already holds, and every `set` wakes waiters.
+  - **Monitors:** retrying waits respect `maxWait`, and a throwing guard's exception reaches the caller.
+  - **Zip:** `unzip(maxBytes)` can reject gzip bombs.
+  - **Docs:** zipkin-utils and redis-utils have READMEs.
 
 ### Breaking changes
 
@@ -116,6 +121,11 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - `InstrumentedThreadFactory.newThread` returns `Thread?`.
 - dropwizard-utils `MetricsUtils` and `MetricsDsl.healthCheck` are `@JvmStatic`; recompile code built against
   earlier versions.
+- guava-utils `ConditionalValue.set` no longer suspends; recompile code built against earlier versions.
+- guava-utils `GenericIdleService.startSync`/`stopSync` take `timeout` (default 30 s) instead of `maxWait` (15 s).
+- guava-utils `GenericMonitor` retrying waits treat `Duration.ZERO` as a single check and reject timeouts below 1 ms.
+- guava-utils `GenericValueWaiter.currValue` has a private setter, `EMPTY_BYTE_ARRAY` is private, and
+  `ServiceListenerHelper.starting` no longer accepts `null`.
 
 ---
 

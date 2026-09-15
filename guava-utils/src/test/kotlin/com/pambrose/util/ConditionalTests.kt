@@ -19,13 +19,20 @@ package com.pambrose.util
 import com.pambrose.common.concurrent.ConditionalBoolean
 import com.pambrose.common.concurrent.ConditionalValue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
+import kotlin.concurrent.thread
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.microseconds
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ConditionalTests : StringSpec() {
@@ -60,7 +67,8 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      results shouldBe [3, 1, 2]
+      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
+      results shouldContainExactlyInAnyOrder [1, 2, 3]
     }
 
     "list bools" {
@@ -84,7 +92,8 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      results shouldBe expected
+      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
+      results shouldContainExactlyInAnyOrder expected
     }
 
     "multi int listeners" {
@@ -108,7 +117,8 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      results shouldBe expected
+      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
+      results shouldContainExactlyInAnyOrder expected
     }
 
     "multi list listeners" {
@@ -134,7 +144,8 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      results shouldBe expected
+      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
+      results shouldContainExactlyInAnyOrder expected
     }
 
     "wait until false returns immediately when already false" {
@@ -162,6 +173,48 @@ class ConditionalTests : StringSpec() {
 
       cv.set(5)
       cv.get() shouldBe 5
+    }
+
+    "a zero timeout still reports a condition that already holds" {
+      ConditionalBoolean(true).waitUntilTrue(Duration.ZERO) shouldBe true
+      ConditionalBoolean(false).waitUntilFalse(Duration.ZERO) shouldBe true
+      ConditionalValue(5).waitUntil(Duration.ZERO) { it == 5 } shouldBe true
+      ConditionalValue(5).waitUntil(Duration.ZERO) { it == 6 } shouldBe false
+    }
+
+    "a sub-millisecond timeout still reports a condition that already holds" {
+      ConditionalBoolean(true).waitUntilTrue(500.microseconds) shouldBe true
+      ConditionalValue("ready").waitUntil(1.nanoseconds) { it == "ready" } shouldBe true
+    }
+
+    "setting the same mutable list again after changing it wakes a waiter" {
+      val list: MutableList<Int> = [1]
+      val cv = ConditionalValue<List<Int>>(list)
+      var result: Boolean? = null
+      val job = launch { result = cv.waitUntil(2.seconds) { 5 in it } }
+      delay(50.milliseconds)
+
+      list += 5
+      cv.set(list)
+      job.join()
+
+      result shouldBe true
+    }
+
+    "the demo main functions are not shipped with ConditionalValue" {
+      runCatching { Class.forName("com.pambrose.common.concurrent.ConditionalValueKt") }.isFailure shouldBe true
+    }
+
+    "set can be called from code that is not suspending" {
+      val ready = ConditionalBoolean(false)
+      var result: Boolean? = null
+      val job = launch { result = ready.waitUntilTrue(2.seconds) }
+      delay(50.milliseconds)
+
+      thread { ready.set(true) }.join()
+      job.join()
+
+      result shouldBe true
     }
   }
 }

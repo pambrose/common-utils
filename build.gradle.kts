@@ -10,7 +10,6 @@ import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.DetektCreateBaselineTask
 import dev.detekt.gradle.extensions.DetektExtension
 import io.kotest.framework.gradle.KotestGradleExtension
-import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
@@ -88,22 +87,6 @@ fun DokkaExtension.configureHtml() {
 dokka {
     moduleName.set(projectName)
     configureHtml()
-}
-
-// Demo `main()`/`mainN()` functions colocated in production sources for manual playground use.
-val koverExcludeClasses = listOf(
-    "com.pambrose.common.concurrent.ConditionalValueKt*",
-    "com.pambrose.common.concurrent.GenericValueWaiterKt*",
-)
-
-kover {
-    reports {
-        filters {
-            excludes {
-                classes(koverExcludeClasses)
-            }
-        }
-    }
 }
 
 // Force patched versions of vulnerable transitive npm packages in the JS/wasmJs test
@@ -221,7 +204,6 @@ subprojects {
 
     configureDetekt()
     configureDokka()
-    configureKover()
     configureVersions()
 
     rootProject.dependencies.add("dokka", this)
@@ -382,18 +364,6 @@ fun Project.configureDetekt() {
 fun Project.configureDokka() {
     extensions.configure<DokkaExtension> {
         configureHtml()
-    }
-}
-
-fun Project.configureKover() {
-    extensions.configure<KoverProjectExtension> {
-        reports {
-            filters {
-                excludes {
-                    classes(koverExcludeClasses)
-                }
-            }
-        }
     }
 }
 

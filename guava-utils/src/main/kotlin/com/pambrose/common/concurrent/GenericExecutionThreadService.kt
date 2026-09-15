@@ -18,7 +18,8 @@
 package com.pambrose.common.concurrent
 
 import com.google.common.util.concurrent.AbstractExecutionThreadService
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -28,22 +29,28 @@ import kotlin.time.Duration.Companion.seconds
  */
 abstract class GenericExecutionThreadService : AbstractExecutionThreadService() {
   /**
-   * Starts the service asynchronously and blocks until it is running or the timeout expires.
+   * Starts the service asynchronously and blocks until it is running.
    *
    * @param timeout the maximum duration to wait for the service to start. Defaults to 30 seconds.
+   * @throws TimeoutException if the service is not running within [timeout].
+   * @throws IllegalStateException if the service fails, or reaches a state from which it cannot start.
    */
+  @Throws(TimeoutException::class)
   fun startSync(timeout: Duration = 30.seconds) {
     startAsync()
-    awaitRunning(timeout.inWholeMilliseconds, MILLISECONDS)
+    awaitRunning(timeout.inWholeNanoseconds, NANOSECONDS)
   }
 
   /**
-   * Stops the service asynchronously and blocks until it has terminated or the timeout expires.
+   * Stops the service asynchronously and blocks until it has terminated.
    *
    * @param timeout the maximum duration to wait for the service to stop. Defaults to 30 seconds.
+   * @throws TimeoutException if the service has not terminated within [timeout].
+   * @throws IllegalStateException if the service fails.
    */
+  @Throws(TimeoutException::class)
   fun stopSync(timeout: Duration = 30.seconds) {
     stopAsync()
-    awaitTerminated(timeout.inWholeMilliseconds, MILLISECONDS)
+    awaitTerminated(timeout.inWholeNanoseconds, NANOSECONDS)
   }
 }

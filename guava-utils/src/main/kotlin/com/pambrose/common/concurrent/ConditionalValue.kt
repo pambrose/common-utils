@@ -17,15 +17,9 @@
 package com.pambrose.common.concurrent
 
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.yield
 
 /**
  * A [ConditionalValue] specialized for boolean values, providing [waitUntilTrue] and [waitUntilFalse]
@@ -62,125 +56,58 @@ class ConditionalBoolean(
  * Holds a value of type [T] and allows coroutines to suspend until the value satisfies
  * an arbitrary predicate, with optional timeout support.
  *
+ * Every [set] notifies waiters, even when the new value equals the current one or is the same object changed in
+ * place, so each waiter re-checks its predicate. Waiters observe only the latest value: a value replaced before a
+ * waiter sees it can be missed, so wait for conditions that stay true once reached.
+ *
  * @param T the type of the monitored value.
  * @param initValue the initial value.
  */
 open class ConditionalValue<T>(
   initValue: T,
 ) {
-  private val flowValue = MutableStateFlow(initValue)
+  // Each value is boxed so that every set() emits. MutableStateFlow skips a value equal to the current one, which
+  // would strand a waiter after an in-place change followed by set(sameObject).
+  private class Box<T>(
+    val value: T,
+  )
+
+  private val flowValue = MutableStateFlow(Box(initValue))
 
   /**
    * Returns the current value.
    *
    * @return the current value of type [T].
    */
-  fun get(): T = flowValue.value
+  fun get(): T = flowValue.value.value
 
   /**
-   * Suspends until the predicate becomes true or timeout occurs.
+   * Suspends until [predicate] holds for the current value or [timeoutDuration] elapses.
+   *
+   * The current value is checked first, so a condition that already holds returns `true` even for a zero timeout.
+   *
+   * @param timeoutDuration the maximum duration to wait. Defaults to [Duration.INFINITE].
+   * @param predicate the condition to wait for.
+   * @return `true` if the predicate was satisfied, `false` if the timeout expired.
    */
   suspend fun waitUntil(
     timeoutDuration: Duration = Duration.INFINITE,
     predicate: (T) -> Boolean,
   ): Boolean =
-    withTimeoutOrNull(timeoutDuration.inWholeMilliseconds.milliseconds) {
-      flowValue.first { predicate(it) }
-      true
-    } ?: false
+    predicate(get()) ||
+      (
+        withTimeoutOrNull(timeoutDuration) {
+          flowValue.first { predicate(it.value) }
+          true
+        } ?: false
+      )
 
   /**
-   * Sets the value and yields to allow waiting coroutines to observe the change.
+   * Sets the value and notifies waiting coroutines. It does not suspend, so any thread can call it.
    *
    * @param value the new value.
    */
-  suspend fun set(value: T) {
-    flowValue.value = value
-    yield()
+  fun set(value: T) {
+    flowValue.value = Box(value)
   }
 }
-
-fun main() =
-  runBlocking {
-    val waiter = ConditionalValue(false)
-
-    // Launch a coroutine that waits for the condition to become true
-    val job = launch {
-      println("Waiting for condition to become true...")
-      waiter.waitUntil(20.seconds) { it }.also { if (!it) println("Timed out") }
-      println("Condition is now true!")
-    }
-
-    yield()
-    for (s in [false, false, true]) {
-      println("Setting value to $s")
-      waiter.set(s)
-      delay(1.seconds)
-    }
-
-    job.join()
-  }
-
-fun main2() =
-  runBlocking {
-    val waiter = ConditionalValue(1)
-
-    // Launch a coroutine that waits for the condition to become true
-    val job = launch {
-      println("Waiting for condition to become true...")
-      waiter.waitUntil(20.seconds) { it == 5 }.also { if (!it) println("Timed out") }
-      println("Condition is now true!")
-    }
-
-    yield()
-    for (i in 3..7) {
-      println("Setting value to $i  curr: ${waiter.get()}")
-      waiter.set(i)
-      delay(1.seconds)
-    }
-
-    job.join()
-  }
-
-fun main3() =
-  runBlocking {
-    val waiter = ConditionalValue([1])
-
-    // Launch a coroutine that waits for the condition to become true
-    val job = launch {
-      println("Waiting for condition to become true...")
-      waiter.waitUntil(20.seconds) { 5 in it }.also { if (!it) println("Timed out") }
-      println("Condition is now true!")
-    }
-
-    yield()
-    for (i in 3..7) {
-      val l = List(i) { it }
-      println("Setting value to $l  curr: ${waiter.get()}")
-      waiter.set(l)
-      delay(1.seconds)
-    }
-
-    job.join()
-  }
-
-fun main4() =
-  runBlocking {
-    val waiter = ConditionalValue("Hello")
-
-    // Launch a coroutine that waits for the condition to become true
-    val job = launch {
-      println("Waiting for condition to become true...")
-      waiter.waitUntil(20.seconds) { "Paul" in it }.also { if (!it) println("Timed out") }
-      println("Condition is now true!")
-    }
-
-    yield()
-    for (s in ["Bill", "Bob", "Paul", "John"].map { "$it Ambrose" }) {
-      println("Setting value to $s  curr: ${waiter.get()}")
-      waiter.set(s)
-      delay(1.seconds)
-    }
-
-    job.join()
-  }

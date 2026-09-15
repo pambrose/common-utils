@@ -2,12 +2,14 @@
 
 package com.pambrose.common.concurrent
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.delay
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 class VerboseCountDownLatchTests : StringSpec() {
@@ -104,6 +106,12 @@ class VerboseCountDownLatchTests : StringSpec() {
         latch.countDown()
         t.join(5000)
       }
+    }
+
+    "the verbose await rejects a non-positive timeout instead of logging in a tight loop" {
+      val latch = VerboseCountDownLatch(0)
+      shouldThrow<IllegalArgumentException> { latch.await(Duration.ZERO, "never logged") }
+      shouldThrow<IllegalArgumentException> { latch.await((-1).milliseconds) { "never logged" } }
     }
   }
 }

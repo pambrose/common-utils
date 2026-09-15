@@ -2,13 +2,45 @@
 
 package com.pambrose.common.concurrent
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.delay
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
+
+// A monitor whose guard throws, to check that the guard's own exception reaches the caller.
+private class ThrowingMonitor : GenericMonitor() {
+  override val monitorSatisfied: Boolean get() = error("guard failed")
+
+  val isHeldByCurrentThread get() = monitor.isOccupiedByCurrentThread
+
+  fun <T> holding(block: () -> T): T {
+    monitor.enter()
+    try {
+      return block()
+    } finally {
+      monitor.leave()
+    }
+  }
+}
+
+// A monitor over a counter that changes only through mutate, so waiting threads re-check the guard.
+private class CountingMonitor(
+  private val target: Int,
+) : GenericMonitor() {
+  private var count = 0
+
+  override val monitorSatisfied: Boolean get() = count >= target
+
+  fun increment() = mutate { ++count }
+}
 
 class GenericMonitorTests : StringSpec() {
   init {
@@ -250,6 +282,97 @@ class GenericMonitorTests : StringSpec() {
       val monitorFalse = BooleanMonitor(false)
       monitorFalse.waitUntil(false)
       monitorFalse.get() shouldBe false
+    }
+
+    "a guard that throws surfaces its own exception from the untimed waits" {
+      val monitor = ThrowingMonitor()
+      shouldThrow<IllegalStateException> { monitor.waitUntilTrue() }.message shouldBe "guard failed"
+      shouldThrow<IllegalStateException> { monitor.waitUntilFalse() }.message shouldBe "guard failed"
+      monitor.isHeldByCurrentThread shouldBe false
+    }
+
+    "a throwing guard does not release a monitor the caller already holds" {
+      val monitor = ThrowingMonitor()
+      monitor.holding {
+        shouldThrow<IllegalStateException> { monitor.waitUntilTrueWithInterruption() }.message shouldBe "guard failed"
+        monitor.isHeldByCurrentThread shouldBe true
+      }
+      monitor.isHeldByCurrentThread shouldBe false
+    }
+
+    "retrying waits stop at maxWait even when each attempt is longer" {
+      val attempts =
+        listOf<(BooleanMonitor) -> Boolean>(
+          { it.waitUntilTrue(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) },
+          { it.waitUntilTrueWithInterruption(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) },
+          { it.waitUntilFalse(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) },
+        )
+      attempts.forEachIndexed { i, attempt ->
+        val monitor = BooleanMonitor(i == 2)
+        val mark = TimeSource.Monotonic.markNow()
+        attempt(monitor) shouldBe false
+        val elapsed = mark.elapsedNow()
+        (elapsed >= 200.milliseconds) shouldBe true
+        (elapsed < 1.seconds) shouldBe true
+      }
+    }
+
+    "a zero maxWait checks once instead of waiting without limit" {
+      val monitor = BooleanMonitor(false)
+      var retries = 0
+      monitor.waitUntilTrue(timeout = 20.milliseconds, maxWait = Duration.ZERO) { ++retries < 3 } shouldBe false
+      retries shouldBe 0
+    }
+
+    "a negative maxWait still waits without an overall limit" {
+      val monitor = BooleanMonitor(false)
+      var retries = 0
+      monitor.waitUntilTrue(timeout = 10.milliseconds, maxWait = (-1).seconds) { ++retries < 3 } shouldBe false
+      retries shouldBe 3
+    }
+
+    "a sub-millisecond retry timeout is rejected instead of spinning" {
+      val monitor = BooleanMonitor(false)
+      shouldThrow<IllegalArgumentException> {
+        monitor.waitUntilTrue(timeout = 500.microseconds, maxWait = 50.milliseconds, block = null)
+      }
+    }
+
+    "a thread blocked in a timed wait is woken by set well before the timeout" {
+      val monitor = BooleanMonitor(false)
+      val started = CountDownLatch(1)
+      var result: Boolean? = null
+      val mark = TimeSource.Monotonic.markNow()
+      val t =
+        thread {
+          started.countDown()
+          result = monitor.waitUntilTrue(5.seconds)
+        }
+
+      started.await(5, TimeUnit.SECONDS) shouldBe true
+      delay(50.milliseconds)
+      monitor.set(true)
+      t.join(5000)
+
+      result shouldBe true
+      (mark.elapsedNow() < 2.seconds) shouldBe true
+    }
+
+    "state changed through mutate wakes waiting threads" {
+      val monitor = CountingMonitor(target = 3)
+      val done = CountDownLatch(1)
+      val t =
+        thread {
+          monitor.waitUntilTrue()
+          done.countDown()
+        }
+
+      delay(50.milliseconds)
+      done.count shouldBe 1L
+      repeat(3) { monitor.increment() }
+
+      done.await(5, TimeUnit.SECONDS) shouldBe true
+      t.join(5000)
     }
   }
 }

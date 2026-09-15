@@ -18,9 +18,9 @@
 package com.pambrose.common.concurrent
 
 import com.google.common.util.concurrent.Monitor
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource.Monotonic
 
 /**
@@ -37,6 +37,10 @@ typealias MonitorAction = () -> Boolean
  * Subclasses must implement [monitorSatisfied] to define when the monitor's condition is met.
  * Methods are provided to wait until the condition is `true` or `false`, with optional
  * timeouts, interruptibility, and retry callbacks.
+ *
+ * Guava re-evaluates [monitorSatisfied] only when a thread leaves the monitor or starts waiting, so a subclass must
+ * change the state that [monitorSatisfied] reads inside the monitor, for example with [mutate]. A change made
+ * outside the monitor can leave waiting threads blocked.
  */
 abstract class GenericMonitor {
   protected val monitor = Monitor()
@@ -55,15 +59,32 @@ abstract class GenericMonitor {
   abstract val monitorSatisfied: Boolean
 
   /**
-   * Blocks the current thread until [monitorSatisfied] returns `true`.
-   * This method is not interruptible.
+   * Runs [block] while holding the monitor, then leaves it so that waiting threads re-check their conditions.
+   * Use it for every change to the state that [monitorSatisfied] reads.
+   *
+   * @param block the change to make.
+   * @return the result of [block].
    */
-  fun waitUntilTrue() =
+  protected inline fun <T> mutate(block: () -> T): T {
+    monitor.enter()
     try {
-      monitor.enterWhenUninterruptibly(trueValueGuard)
+      return block()
     } finally {
       monitor.leave()
     }
+  }
+
+  // The untimed enter methods already leave the monitor when the guard throws, so each wait leaves it only after
+  // entering succeeds; leaving again would release a monitor the caller holds or mask the guard's exception.
+
+  /**
+   * Blocks the current thread until [monitorSatisfied] returns `true`.
+   * This method is not interruptible.
+   */
+  fun waitUntilTrue() {
+    monitor.enterWhenUninterruptibly(trueValueGuard)
+    monitor.leave()
+  }
 
   /**
    * Blocks the current thread until [monitorSatisfied] returns `true`.
@@ -72,238 +93,151 @@ abstract class GenericMonitor {
    * @throws InterruptedException if the thread is interrupted while waiting.
    */
   @Throws(InterruptedException::class)
-  fun waitUntilTrueWithInterruption() =
-    try {
-      monitor.enterWhen(trueValueGuard)
-    } finally {
-      if (monitor.isOccupiedByCurrentThread)
-        monitor.leave()
-    }
+  fun waitUntilTrueWithInterruption() {
+    monitor.enterWhen(trueValueGuard)
+    monitor.leave()
+  }
 
   /**
    * Blocks the current thread until [monitorSatisfied] returns `true` or the timeout expires.
    * This method is not interruptible.
    *
-   * @param waitTime the maximum duration to wait.
+   * @param waitTime the maximum duration to wait. A zero or negative duration checks the condition once.
    * @return `true` if the condition was satisfied, `false` if the wait timed out.
    */
-  fun waitUntilTrue(waitTime: Duration): Boolean {
-    var satisfied = false
-    try {
-      satisfied =
-        monitor.enterWhenUninterruptibly(
-          trueValueGuard,
-          waitTime.inWholeMilliseconds,
-          MILLISECONDS,
-        )
-    } finally {
-      if (satisfied)
-        monitor.leave()
-    }
-    return satisfied
-  }
+  fun waitUntilTrue(waitTime: Duration): Boolean =
+    monitor
+      .enterWhenUninterruptibly(trueValueGuard, waitTime.inWholeNanoseconds, NANOSECONDS)
+      .also { if (it) monitor.leave() }
 
   /**
    * Blocks the current thread until [monitorSatisfied] returns `true` or the timeout expires.
    * This method can be interrupted.
    *
-   * @param waitTime the maximum duration to wait.
+   * @param waitTime the maximum duration to wait. A zero or negative duration checks the condition once.
    * @return `true` if the condition was satisfied, `false` if the wait timed out.
    * @throws InterruptedException if the thread is interrupted while waiting.
    */
   @Throws(InterruptedException::class)
-  fun waitUntilTrueWithInterruption(waitTime: Duration): Boolean {
-    var satisfied = false
-    try {
-      satisfied = monitor.enterWhen(trueValueGuard, waitTime.inWholeMilliseconds, MILLISECONDS)
-    } finally {
-      if (satisfied)
-        monitor.leave()
-    }
-    return satisfied
-  }
+  fun waitUntilTrueWithInterruption(waitTime: Duration): Boolean =
+    monitor
+      .enterWhen(trueValueGuard, waitTime.inWholeNanoseconds, NANOSECONDS)
+      .also { if (it) monitor.leave() }
 
   /**
    * Blocks the current thread until [monitorSatisfied] returns `false`.
    * This method is not interruptible.
    */
-  fun waitUntilFalse() =
-    try {
-      monitor.enterWhenUninterruptibly(falseValueGuard)
-    } finally {
-      monitor.leave()
-    }
+  fun waitUntilFalse() {
+    monitor.enterWhenUninterruptibly(falseValueGuard)
+    monitor.leave()
+  }
 
   /**
    * Blocks the current thread until [monitorSatisfied] returns `false` or the timeout expires.
    * This method is not interruptible.
    *
-   * @param waitTime the maximum duration to wait.
+   * @param waitTime the maximum duration to wait. A zero or negative duration checks the condition once.
    * @return `true` if the condition was satisfied, `false` if the wait timed out.
    */
-  fun waitUntilFalse(waitTime: Duration): Boolean {
-    var satisfied = false
-    try {
-      satisfied =
-        monitor.enterWhenUninterruptibly(
-          falseValueGuard,
-          waitTime.inWholeMilliseconds,
-          MILLISECONDS,
-        )
-    } finally {
-      if (satisfied)
-        monitor.leave()
-    }
-    return satisfied
-  }
+  fun waitUntilFalse(waitTime: Duration): Boolean =
+    monitor
+      .enterWhenUninterruptibly(falseValueGuard, waitTime.inWholeNanoseconds, NANOSECONDS)
+      .also { if (it) monitor.leave() }
 
   /**
    * Repeatedly waits for the condition to become `true`, invoking [block] on each timeout.
    *
-   * @param timeout the duration for each individual wait attempt.
+   * @param timeout the duration of each wait attempt; at least 1 ms.
    * @param block the action invoked on each timeout; return `false` to stop waiting.
    * @return `true` if the condition was satisfied, `false` if the [block] returned `false`.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   fun waitUntilTrue(
     timeout: Duration,
     block: MonitorAction,
-  ) = waitUntilTrue(timeout, (-1).seconds, block)
+  ) = waitUntilTrue(timeout, Duration.INFINITE, block)
 
   /**
    * Repeatedly waits for the condition to become `true`, invoking [block] on each timeout,
    * up to an overall maximum wait duration.
    *
-   * @param timeout the duration for each individual wait attempt.
-   * @param maxWait the overall maximum duration to wait. Use a negative value for no limit.
+   * @param timeout the duration of each wait attempt; at least 1 ms. No attempt waits past [maxWait].
+   * @param maxWait the overall maximum duration to wait. [Duration.INFINITE] waits without limit and
+   *   [Duration.ZERO] checks the condition once. A negative value also waits without limit.
    * @param block the action invoked on each timeout; return `false` to stop waiting. May be `null`.
    * @return `true` if the condition was satisfied, `false` if [maxWait] elapsed or [block] returned `false`.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   fun waitUntilTrue(
     timeout: Duration,
     maxWait: Duration,
     block: MonitorAction?,
-  ): Boolean {
-    val start = Monotonic.markNow()
-    while (true) {
-      when {
-        waitUntilTrue(timeout) -> {
-          return true
-        }
-
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> {
-          return false
-        }
-
-        else -> {
-          block?.also { monitorAction ->
-            val continueToWait = monitorAction()
-            if (!continueToWait)
-              return false
-          }
-        }
-      }
-    }
-  }
+  ): Boolean = waitWithRetries(timeout, maxWait, block) { waitUntilTrue(it) }
 
   /**
    * Repeatedly waits (interruptibly) for the condition to become `true`, invoking [block] on each timeout.
    *
-   * @param timeout the duration for each individual wait attempt.
+   * @param timeout the duration of each wait attempt; at least 1 ms.
    * @param block the action invoked on each timeout; return `false` to stop waiting.
    * @return `true` if the condition was satisfied, `false` if the [block] returned `false`.
    * @throws InterruptedException if the thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(
     timeout: Duration,
     block: MonitorAction,
-  ) = waitUntilTrueWithInterruption(timeout, (-1).seconds, block)
+  ) = waitUntilTrueWithInterruption(timeout, Duration.INFINITE, block)
 
   /**
    * Repeatedly waits (interruptibly) for the condition to become `true`, invoking [block] on each timeout,
    * up to an overall maximum wait duration.
    *
-   * @param timeout the duration for each individual wait attempt.
-   * @param maxWait the overall maximum duration to wait. Use a negative value for no limit.
+   * @param timeout the duration of each wait attempt; at least 1 ms. No attempt waits past [maxWait].
+   * @param maxWait the overall maximum duration to wait. [Duration.INFINITE] waits without limit and
+   *   [Duration.ZERO] checks the condition once. A negative value also waits without limit.
    * @param block the action invoked on each timeout; return `false` to stop waiting. May be `null`.
    * @return `true` if the condition was satisfied, `false` if [maxWait] elapsed or [block] returned `false`.
    * @throws InterruptedException if the thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   @Throws(InterruptedException::class)
   fun waitUntilTrueWithInterruption(
     timeout: Duration,
     maxWait: Duration,
     block: MonitorAction?,
-  ): Boolean {
-    val start = Monotonic.markNow()
-    while (true) {
-      when {
-        waitUntilTrueWithInterruption(timeout) -> {
-          return true
-        }
-
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> {
-          return false
-        }
-
-        else -> {
-          block?.also { monitorAction ->
-            val continueToWait = monitorAction()
-            if (!continueToWait)
-              return false
-          }
-        }
-      }
-    }
-  }
+  ): Boolean = waitWithRetries(timeout, maxWait, block) { waitUntilTrueWithInterruption(it) }
 
   /**
    * Repeatedly waits for the condition to become `false`, invoking [block] on each timeout.
    *
-   * @param timeout the duration for each individual wait attempt.
+   * @param timeout the duration of each wait attempt; at least 1 ms.
    * @param block the action invoked on each timeout; return `false` to stop waiting.
    * @return `true` if the condition was satisfied, `false` if the [block] returned `false`.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   fun waitUntilFalse(
     timeout: Duration,
     block: MonitorAction,
-  ) = waitUntilFalse(timeout, (-1).seconds, block)
+  ) = waitUntilFalse(timeout, Duration.INFINITE, block)
 
   /**
    * Repeatedly waits for the condition to become `false`, invoking [block] on each timeout,
    * up to an overall maximum wait duration.
    *
-   * @param timeout the duration for each individual wait attempt.
-   * @param maxWait the overall maximum duration to wait. Use a negative value for no limit.
+   * @param timeout the duration of each wait attempt; at least 1 ms. No attempt waits past [maxWait].
+   * @param maxWait the overall maximum duration to wait. [Duration.INFINITE] waits without limit and
+   *   [Duration.ZERO] checks the condition once. A negative value also waits without limit.
    * @param block the action invoked on each timeout; return `false` to stop waiting. May be `null`.
    * @return `true` if the condition was satisfied, `false` if [maxWait] elapsed or [block] returned `false`.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
    */
   fun waitUntilFalse(
     timeout: Duration,
     maxWait: Duration,
     block: MonitorAction?,
-  ): Boolean {
-    val start = Monotonic.markNow()
-    while (true) {
-      when {
-        waitUntilFalse(timeout) -> {
-          return true
-        }
-
-        maxWait > 0.seconds && start.elapsedNow() >= maxWait -> {
-          return false
-        }
-
-        else -> {
-          block?.also { monitorAction ->
-            val continueToWait = monitorAction()
-            if (!continueToWait)
-              return false
-          }
-        }
-      }
-    }
-  }
+  ): Boolean = waitWithRetries(timeout, maxWait, block) { waitUntilFalse(it) }
 
   /**
    * Blocks until the condition matches [value] or the timeout expires.
@@ -323,4 +257,23 @@ abstract class GenericMonitor {
    * @param value `true` to wait for the condition to become `true`, `false` for `false`.
    */
   fun waitUntil(value: Boolean) = if (value) waitUntilTrue() else waitUntilFalse()
+
+  // Waits in attempts of at most timeout, never past maxWait, calling block after each unsuccessful attempt.
+  private fun waitWithRetries(
+    timeout: Duration,
+    maxWait: Duration,
+    block: MonitorAction?,
+    attempt: (Duration) -> Boolean,
+  ): Boolean {
+    // A shorter attempt returns at once, so a null block would spin the loop at full CPU.
+    require(timeout >= 1.milliseconds) { "timeout must be at least 1ms, but was $timeout" }
+    val limit = if (maxWait.isNegative()) Duration.INFINITE else maxWait
+    val start = Monotonic.markNow()
+    while (true) {
+      if (attempt(minOf(timeout, limit - start.elapsedNow())))
+        return true
+      if (start.elapsedNow() >= limit || (block != null && !block()))
+        return false
+    }
+  }
 }
