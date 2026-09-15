@@ -94,13 +94,7 @@ open class ConditionalValue<T>(
     timeoutDuration: Duration = Duration.INFINITE,
     predicate: (T) -> Boolean,
   ): Boolean =
-    predicate(get()) ||
-      (
-        withTimeoutOrNull(timeoutDuration) {
-          flowValue.first { predicate(it.value) }
-          true
-        } ?: false
-      )
+    predicate(get()) || withTimeoutOrNull(timeoutDuration) { flowValue.first { predicate(it.value) } } != null
 
   /**
    * Sets the value and notifies waiting coroutines. It does not suspend, so any thread can call it.

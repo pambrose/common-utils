@@ -121,7 +121,7 @@ All notable changes to Common Utils are documented in this file.
     a change made outside it can strand waiting threads. `BooleanMonitor.set` uses it.
 - guava-utils waits no longer truncate sub-millisecond durations: `CountDownLatch.await(Duration)`,
   `VerboseCountDownLatch.await`, and the monitor waits pass nanoseconds. `VerboseCountDownLatch.await` also
-  rejects a non-positive timeout, which logged in a tight loop.
+  rejects a timeout below 1 ms, which logged in a tight loop.
 - guava-utils `startSync` and `stopSync` declare `@Throws(TimeoutException::class)` for Java callers and document
   the `TimeoutException` and `IllegalStateException` they throw.
 - guava-utils `GenericValueWaiter.currValue` is `@Volatile`.

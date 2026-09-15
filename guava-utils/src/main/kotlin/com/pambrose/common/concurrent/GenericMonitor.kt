@@ -20,7 +20,6 @@ package com.pambrose.common.concurrent
 import com.google.common.util.concurrent.Monitor
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource.Monotonic
 
 /**
@@ -41,6 +40,10 @@ typealias MonitorAction = () -> Boolean
  * Guava re-evaluates [monitorSatisfied] only when a thread leaves the monitor or starts waiting, so a subclass must
  * change the state that [monitorSatisfied] reads inside the monitor, for example with [mutate]. A change made
  * outside the monitor can leave waiting threads blocked.
+ *
+ * The retrying waits make attempts of `timeout`, which must be at least 1 ms, and no attempt waits past `maxWait`.
+ * For `maxWait`, [Duration.INFINITE] waits without limit, [Duration.ZERO] checks the condition once, and a negative
+ * value also waits without limit.
  */
 abstract class GenericMonitor {
   protected val monitor = Monitor()
@@ -162,9 +165,8 @@ abstract class GenericMonitor {
    * Repeatedly waits for the condition to become `true`, invoking [block] on each timeout,
    * up to an overall maximum wait duration.
    *
-   * @param timeout the duration of each wait attempt; at least 1 ms. No attempt waits past [maxWait].
-   * @param maxWait the overall maximum duration to wait. [Duration.INFINITE] waits without limit and
-   *   [Duration.ZERO] checks the condition once. A negative value also waits without limit.
+   * @param timeout the duration of each wait attempt; at least 1 ms.
+   * @param maxWait the overall maximum duration to wait; see [GenericMonitor] for its limits.
    * @param block the action invoked on each timeout; return `false` to stop waiting. May be `null`.
    * @return `true` if the condition was satisfied, `false` if [maxWait] elapsed or [block] returned `false`.
    * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
@@ -194,9 +196,8 @@ abstract class GenericMonitor {
    * Repeatedly waits (interruptibly) for the condition to become `true`, invoking [block] on each timeout,
    * up to an overall maximum wait duration.
    *
-   * @param timeout the duration of each wait attempt; at least 1 ms. No attempt waits past [maxWait].
-   * @param maxWait the overall maximum duration to wait. [Duration.INFINITE] waits without limit and
-   *   [Duration.ZERO] checks the condition once. A negative value also waits without limit.
+   * @param timeout the duration of each wait attempt; at least 1 ms.
+   * @param maxWait the overall maximum duration to wait; see [GenericMonitor] for its limits.
    * @param block the action invoked on each timeout; return `false` to stop waiting. May be `null`.
    * @return `true` if the condition was satisfied, `false` if [maxWait] elapsed or [block] returned `false`.
    * @throws InterruptedException if the thread is interrupted while waiting.
@@ -226,9 +227,8 @@ abstract class GenericMonitor {
    * Repeatedly waits for the condition to become `false`, invoking [block] on each timeout,
    * up to an overall maximum wait duration.
    *
-   * @param timeout the duration of each wait attempt; at least 1 ms. No attempt waits past [maxWait].
-   * @param maxWait the overall maximum duration to wait. [Duration.INFINITE] waits without limit and
-   *   [Duration.ZERO] checks the condition once. A negative value also waits without limit.
+   * @param timeout the duration of each wait attempt; at least 1 ms.
+   * @param maxWait the overall maximum duration to wait; see [GenericMonitor] for its limits.
    * @param block the action invoked on each timeout; return `false` to stop waiting. May be `null`.
    * @return `true` if the condition was satisfied, `false` if [maxWait] elapsed or [block] returned `false`.
    * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
@@ -265,8 +265,7 @@ abstract class GenericMonitor {
     block: MonitorAction?,
     attempt: (Duration) -> Boolean,
   ): Boolean {
-    // A shorter attempt returns at once, so a null block would spin the loop at full CPU.
-    require(timeout >= 1.milliseconds) { "timeout must be at least 1ms, but was $timeout" }
+    requireRetryInterval(timeout)
     val limit = if (maxWait.isNegative()) Duration.INFINITE else maxWait
     val start = Monotonic.markNow()
     while (true) {

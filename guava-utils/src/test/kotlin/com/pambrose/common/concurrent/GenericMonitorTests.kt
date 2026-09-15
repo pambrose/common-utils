@@ -21,14 +21,7 @@ private class ThrowingMonitor : GenericMonitor() {
 
   val isHeldByCurrentThread get() = monitor.isOccupiedByCurrentThread
 
-  fun <T> holding(block: () -> T): T {
-    monitor.enter()
-    try {
-      return block()
-    } finally {
-      monitor.leave()
-    }
-  }
+  fun <T> holding(block: () -> T): T = mutate(block)
 }
 
 // A monitor over a counter that changes only through mutate, so waiting threads re-check the guard.
@@ -301,20 +294,23 @@ class GenericMonitorTests : StringSpec() {
     }
 
     "retrying waits stop at maxWait even when each attempt is longer" {
-      val attempts =
-        listOf<(BooleanMonitor) -> Boolean>(
-          { it.waitUntilTrue(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) },
-          { it.waitUntilTrueWithInterruption(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) },
-          { it.waitUntilFalse(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) },
-        )
-      attempts.forEachIndexed { i, attempt ->
-        val monitor = BooleanMonitor(i == 2)
+      fun stopsAtMaxWait(
+        initValue: Boolean,
+        attempt: BooleanMonitor.() -> Boolean,
+      ) {
+        val monitor = BooleanMonitor(initValue)
         val mark = TimeSource.Monotonic.markNow()
-        attempt(monitor) shouldBe false
+        monitor.attempt() shouldBe false
         val elapsed = mark.elapsedNow()
         (elapsed >= 200.milliseconds) shouldBe true
         (elapsed < 1.seconds) shouldBe true
       }
+
+      stopsAtMaxWait(false) { waitUntilTrue(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) }
+      stopsAtMaxWait(false) {
+        waitUntilTrueWithInterruption(timeout = 2.seconds, maxWait = 200.milliseconds, block = null)
+      }
+      stopsAtMaxWait(true) { waitUntilFalse(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) }
     }
 
     "a zero maxWait checks once instead of waiting without limit" {

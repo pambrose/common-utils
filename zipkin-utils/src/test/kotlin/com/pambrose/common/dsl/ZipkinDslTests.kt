@@ -43,14 +43,11 @@ class ZipkinDslTests : StringSpec() {
           sampler(Sampler.ALWAYS_SAMPLE)
         }.use { tracing ->
           val span = tracing.tracer().newTrace().name("test-span").start()
-          try {
-            span.context().sampled() shouldBe true
-            // Trace IDs are 64-bit (16 hex chars) by default, or 128-bit (32 hex chars) if configured
-            span.context().traceIdString().length shouldBe 16
-            span.context().spanIdString().length shouldBe 16
-          } finally {
-            span.finish()
-          }
+          span.context().sampled() shouldBe true
+          // Trace IDs are 64-bit (16 hex chars) by default, or 128-bit (32 hex chars) if configured
+          span.context().traceIdString().length shouldBe 16
+          span.context().spanIdString().length shouldBe 16
+          span.finish()
         }
     }
 

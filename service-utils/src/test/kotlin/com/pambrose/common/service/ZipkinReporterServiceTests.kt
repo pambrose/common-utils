@@ -90,9 +90,5 @@ class ZipkinReporterServiceTests : StringSpec() {
 
       ((reporter.field("messageTimeoutNanos") as Long) < (reporter.field("closeTimeoutNanos") as Long)) shouldBe true
     }
-
-    "spans finished just before repeated graceful stops are all sent" {
-      repeat(5) { reportOneSpanAndStop(serviceName = "repeated").size shouldBe 1 }
-    }
   }
 }

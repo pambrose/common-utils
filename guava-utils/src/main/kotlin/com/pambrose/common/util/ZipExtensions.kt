@@ -17,6 +17,7 @@
 package com.pambrose.common.util
 
 import com.google.common.io.ByteStreams
+import com.google.common.math.LongMath
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
@@ -32,16 +33,7 @@ private val EMPTY_BYTE_ARRAY = ByteArray(0)
  *
  * @return a GZIP-compressed byte array, or an empty array if this string is empty.
  */
-fun String.zip(): ByteArray =
-  if (isEmpty())
-    EMPTY_BYTE_ARRAY
-  else
-    ByteArrayOutputStream().use { baos ->
-      GZIPOutputStream(baos).use { gzos ->
-        gzos.write(toByteArray(StandardCharsets.UTF_8))
-      }
-      baos.toByteArray()
-    }
+fun String.zip(): ByteArray = toByteArray(StandardCharsets.UTF_8).zip()
 
 /**
  * Compresses this [ByteArray] using GZIP encoding.
@@ -100,7 +92,7 @@ fun ByteArray.unzip(maxBytes: Long = Long.MAX_VALUE): String {
 
     else -> {
       // Read one byte past the limit, so content of exactly maxBytes is accepted and anything larger is detected.
-      val readLimit = if (maxBytes == Long.MAX_VALUE) maxBytes else maxBytes + 1
+      val readLimit = LongMath.saturatedAdd(maxBytes, 1)
       val bytes =
         GZIPInputStream(ByteArrayInputStream(this)).use { gzis ->
           ByteStreams.toByteArray(ByteStreams.limit(gzis, readLimit))

@@ -77,10 +77,8 @@ class ZipExtensionTests : StringSpec() {
     }
 
     "EMPTY_BYTE_ARRAY is not part of the public API" {
-      Class.forName("com.pambrose.common.util.ZipExtensionsKt").methods.none {
-        it.name == "getEMPTY_BYTE_ARRAY"
-      } shouldBe
-        true
+      val methods = Class.forName("com.pambrose.common.util.ZipExtensionsKt").methods.map { it.name }
+      methods.none { it == "getEMPTY_BYTE_ARRAY" } shouldBe true
     }
 
     "corrupt gzip input throws an IOException" {

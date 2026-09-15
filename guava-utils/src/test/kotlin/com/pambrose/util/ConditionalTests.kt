@@ -67,7 +67,6 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
       results shouldContainExactlyInAnyOrder [1, 2, 3]
     }
 
@@ -92,7 +91,6 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
       results shouldContainExactlyInAnyOrder expected
     }
 
@@ -117,7 +115,6 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
       results shouldContainExactlyInAnyOrder expected
     }
 
@@ -144,7 +141,6 @@ class ConditionalTests : StringSpec() {
 
       jobs.joinAll()
 
-      // set() no longer yields, so waiters may resume in any order; each must still resume exactly once.
       results shouldContainExactlyInAnyOrder expected
     }
 

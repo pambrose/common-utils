@@ -301,7 +301,7 @@ import com.pambrose.common.util.isWindows
 - `fun <T> Semaphore.withLock(block: () -> T): T`
 - `fun thread(latch: CountDownLatch, start: Boolean = true, isDaemon: Boolean = false, contextClassLoader: ClassLoader? = null, name: String? = null, priority: Int = -1, block: () -> Unit): Thread`
 - `class VerboseCountDownLatch(count: Int) : CountDownLatch` — `await(timeout, msg)` logs `msg` after each timeout;
-  `timeout` must be positive
+  `timeout` must be at least 1 ms
 - `String.zip(): ByteArray`, `ByteArray.zip(): ByteArray`, `ByteArray.isZipped(): Boolean`,
   `ByteArray.unzip(maxBytes: Long = Long.MAX_VALUE): String`
 
