@@ -120,16 +120,16 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-044** `LOW` · bug/tests — `excludeSuffix`/`excludePrefix` match query string; redirect tests assert status only ([details](#cr-044)) — fixed in #178
 
 ### service-utils
-- [ ] **CR-045** `MEDIUM` · bug — Jetty admin/metrics paths with a leading slash become `//ping` → 404 (carried over) ([details](#cr-045)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-046** `MEDIUM` · leak — Failed `startUp()`/`shutDown()` leaves already-started sub-services running ([details](#cr-046)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-047** `MEDIUM` · tests — No test issues an HTTP request to any admin/metrics endpoint ([details](#cr-047)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-048** `LOW` · API — Services added after init are silently unmanaged; test asserts the wrong thing ([details](#cr-048)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-049** `LOW` · bug — `ZipkinReporterService.shutDown` drops queued spans (no `flush()`) ([details](#cr-049)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-050** `LOW` · leak — `DropwizardExports` registered globally, never unregistered ([details](#cr-050)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-051** `LOW` · robustness — Failure logged at info; Zipkin URL `//`; no init guard (carried over) ([details](#cr-051)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-052** `LOW` · API — `ZipkinConfig.serviceName` never used (carried over) ([details](#cr-052)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-053** `LOW` · security — Admin and metrics servers bind all interfaces, no host setting ([details](#cr-053)) — in progress (branch `fix-service-utils-review-items`)
-- [ ] **CR-054** `LOW` · cleanup — `runBlocking` around non-suspend `start`; single-use `servletGroup` lateinits ([details](#cr-054)) — in progress (branch `fix-service-utils-review-items`)
+- [ ] **CR-045** `MEDIUM` · bug — Jetty admin/metrics paths with a leading slash become `//ping` → 404 (carried over) ([details](#cr-045)) — in progress (#179)
+- [ ] **CR-046** `MEDIUM` · leak — Failed `startUp()`/`shutDown()` leaves already-started sub-services running ([details](#cr-046)) — in progress (#179)
+- [ ] **CR-047** `MEDIUM` · tests — No test issues an HTTP request to any admin/metrics endpoint ([details](#cr-047)) — in progress (#179)
+- [ ] **CR-048** `LOW` · API — Services added after init are silently unmanaged; test asserts the wrong thing ([details](#cr-048)) — in progress (#179)
+- [ ] **CR-049** `LOW` · bug — `ZipkinReporterService.shutDown` drops queued spans (no `flush()`) ([details](#cr-049)) — in progress (#179)
+- [ ] **CR-050** `LOW` · leak — `DropwizardExports` registered globally, never unregistered ([details](#cr-050)) — in progress (#179)
+- [ ] **CR-051** `LOW` · robustness — Failure logged at info; Zipkin URL `//`; no init guard (carried over) ([details](#cr-051)) — in progress (#179)
+- [ ] **CR-052** `LOW` · API — `ZipkinConfig.serviceName` never used (carried over) ([details](#cr-052)) — in progress (#179)
+- [ ] **CR-053** `LOW` · security — Admin and metrics servers bind all interfaces, no host setting ([details](#cr-053)) — in progress (#179)
+- [ ] **CR-054** `LOW` · cleanup — `runBlocking` around non-suspend `start`; single-use `servletGroup` lateinits ([details](#cr-054)) — in progress (#179)
 
 ### prometheus-utils
 - [ ] **CR-055** `MEDIUM` · API — Factories hard-wired to the default `CollectorRegistry` (carried over) ([details](#cr-055))
