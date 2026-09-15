@@ -138,7 +138,9 @@ All notable changes to Common Utils are documented in this file.
 - email-utils webhook models decode the payloads Resend documents. `Data` gained `tags`, `broadcast_id`,
   `message_id` and `template_id`, and `Bounce` gained `subType` and `type`, so a bounce keeps its
   `Permanent`/`Suppressed` classification. `ResendWebhookMsg.decode(body)` ignores unknown fields, so an event
-  carrying fields these models do not declare still decodes; a default `Json` threw before.
+  carrying fields these models do not declare still decodes; a default `Json` threw before. The same
+  configured instance is exposed as `ResendWebhookMsg.json`, so a Ktor consumer can register it for
+  `call.receive<ResendWebhookMsg>()`.
 - email-utils ships the default `css/email.css`, so `email { }` works for a consumer of the published jar. The
   file previously existed only in this module's test resources, and the default threw `IllegalArgumentException`.
 - email-utils `sendEmail` logs recipient counts and the Resend message id at info level, never the addresses

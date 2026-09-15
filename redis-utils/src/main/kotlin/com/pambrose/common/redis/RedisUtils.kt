@@ -83,9 +83,13 @@ object RedisUtils {
     val user: String,
     val password: String,
   ) {
+    // The single rule for what counts as a real password: blank and the "none" placeholder are neither sent
+    // as a password nor treated as credentials to attach a username to.
+    internal val hasRealPassword get() = password.isNotBlank() && password != PLACEHOLDER_PASSWORD
+
     /** Returns `true` if the user should be included in AUTH commands (i.e., is a real user, not a placeholder). */
     val includeUserInAuth
-      get() = user.isNotBlank() && user != "default" && user != "user" && password != PLACEHOLDER_PASSWORD
+      get() = user.isNotBlank() && user != "default" && user != "user" && hasRealPassword
   }
 
   private fun urlDetails(redisUrl: String) =
@@ -105,17 +109,23 @@ object RedisUtils {
    * placeholder user names `default` and `user` are not sent, and the placeholder password `none` is treated
    * as no password.
    */
-  internal fun clientConfig(redisUrl: String): DefaultJedisClientConfig {
-    val info = urlDetails(redisUrl)
+  internal fun clientConfig(redisUrl: String): DefaultJedisClientConfig = clientConfig(urlDetails(redisUrl))
+
+  // Jedis' own URI-aware builders are deliberately not used here: DefaultJedisClientConfig.builder(URI) and the
+  // deprecated StandaloneClientBuilder.fromURI(URI) both throw IllegalArgumentException for a URL that carries a
+  // user but no password, such as redis://username@localhost:6379, which this library accepts. Only the parts
+  // with no such trap (database index, protocol) are delegated to JedisURIHelper.
+  private fun clientConfig(info: RedisInfo): DefaultJedisClientConfig {
     val builder =
       DefaultJedisClientConfig.builder()
         .connectionTimeoutMillis(DEFAULT_TIMEOUT)
         .socketTimeoutMillis(DEFAULT_TIMEOUT)
 
+    // sslOptions is what enables TLS in jedis 8, and takes precedence over the deprecated ssl(true) flag.
     if (info.uri.isSslScheme)
-      builder.ssl(true).sslOptions(SslOptions.defaults())
+      builder.sslOptions(SslOptions.defaults())
 
-    if (info.password.isNotBlank() && info.password != PLACEHOLDER_PASSWORD) {
+    if (info.hasRealPassword) {
       if (info.includeUserInAuth)
         builder.user(info.user)
       builder.password(info.password)
@@ -133,20 +143,44 @@ object RedisUtils {
     val info = urlDetails(redisUrl)
     return RedisClient.builder()
       .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
-      .clientConfig(clientConfig(redisUrl))
+      .clientConfig(clientConfig(info))
       .build()
   }
 
   // Building a client never contacts the server, so ping() is what actually proves the connection works.
-  // A client that cannot be used is closed here rather than leaked to the caller.
-  private fun connectedRedisClient(redisUrl: String): RedisClient {
-    val client = createRedisClient(redisUrl)
-    runCatching { client.ping() }.exceptionOrNull()?.let { e ->
+  // A client that cannot be used is closed here rather than handed to the caller.
+  private fun connectOrNull(
+    redisUrl: String,
+    printStackTrace: Boolean,
+  ): RedisClient? {
+    val client =
+      try {
+        createRedisClient(redisUrl)
+      } catch (e: JedisException) {
+        logConnectionFailure(e, printStackTrace)
+        return null
+      }
+
+    return try {
+      client.ping()
+      client
+    } catch (e: JedisException) {
       runCatching { client.close() }.exceptionOrNull()?.let(e::addSuppressed)
-      throw e
+      logConnectionFailure(e, printStackTrace)
+      null
     }
-    return client
   }
+
+  // Whether the server answers. Any Jedis failure counts as a connection failure, including pool exhaustion,
+  // borrow validation failures and rejected credentials.
+  private fun RedisClient.pingSucceeds(printStackTrace: Boolean): Boolean =
+    try {
+      ping()
+      true
+    } catch (e: JedisException) {
+      logConnectionFailure(e, printStackTrace)
+      false
+    }
 
   /**
    * Creates a new pooled [RedisClient] with the given configuration.
@@ -205,7 +239,7 @@ object RedisUtils {
 
     return RedisClient.builder()
       .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
-      .clientConfig(clientConfig(redisUrl))
+      .clientConfig(clientConfig(info))
       .poolConfig(poolConfig)
       .build()
   }
@@ -224,15 +258,7 @@ object RedisUtils {
   fun <T> RedisClient.withRedisPool(
     printStackTrace: Boolean = false,
     block: (RedisClient?) -> T,
-  ): T {
-    try {
-      ping()
-    } catch (e: JedisException) {
-      logConnectionFailure(e, printStackTrace)
-      return block.invoke(null)
-    }
-    return block.invoke(this)
-  }
+  ): T = block.invoke(if (pingSucceeds(printStackTrace)) this else null)
 
   /**
    * Executes [block] with this [RedisClient], returning `null` if the connection fails.
@@ -248,15 +274,7 @@ object RedisUtils {
   fun <T> RedisClient.withNonNullRedisPool(
     printStackTrace: Boolean = false,
     block: (RedisClient) -> T,
-  ): T? {
-    try {
-      ping()
-    } catch (e: JedisException) {
-      logConnectionFailure(e, printStackTrace)
-      return null
-    }
-    return block.invoke(this)
-  }
+  ): T? = if (pingSucceeds(printStackTrace)) block.invoke(this) else null
 
   /**
    * Suspending variant of [withRedisPool]. Executes a suspending [block] with this [RedisClient],
@@ -272,15 +290,7 @@ object RedisUtils {
   suspend fun <T> RedisClient.withSuspendingRedisPool(
     printStackTrace: Boolean = false,
     block: suspend (RedisClient?) -> T,
-  ): T {
-    try {
-      ping()
-    } catch (e: JedisException) {
-      logConnectionFailure(e, printStackTrace)
-      return block.invoke(null)
-    }
-    return block.invoke(this)
-  }
+  ): T = block.invoke(if (pingSucceeds(printStackTrace)) this else null)
 
   /**
    * Suspending variant of [withNonNullRedisPool]. Executes a suspending [block] with this [RedisClient],
@@ -296,15 +306,7 @@ object RedisUtils {
   suspend fun <T> RedisClient.withSuspendingNonNullRedisPool(
     printStackTrace: Boolean = false,
     block: suspend (RedisClient) -> T,
-  ): T? {
-    try {
-      ping()
-    } catch (e: JedisException) {
-      logConnectionFailure(e, printStackTrace)
-      return null
-    }
-    return block.invoke(this)
-  }
+  ): T? = if (pingSucceeds(printStackTrace)) block.invoke(this) else null
 
   /**
    * Creates a short-lived [RedisClient] connection, executes [block], and closes the client.
@@ -324,13 +326,7 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: (RedisClient?) -> T,
   ): T {
-    val client =
-      try {
-        connectedRedisClient(redisUrl)
-      } catch (e: JedisException) {
-        logConnectionFailure(e, printStackTrace)
-        return block.invoke(null)
-      }
+    val client = connectOrNull(redisUrl, printStackTrace) ?: return block.invoke(null)
     return client.use { block.invoke(it) }
   }
 
@@ -350,13 +346,7 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: (RedisClient) -> T,
   ): T? {
-    val client =
-      try {
-        connectedRedisClient(redisUrl)
-      } catch (e: JedisException) {
-        logConnectionFailure(e, printStackTrace)
-        return null
-      }
+    val client = connectOrNull(redisUrl, printStackTrace) ?: return null
     return client.use { block.invoke(it) }
   }
 
@@ -376,13 +366,7 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: suspend (RedisClient?) -> T,
   ): T {
-    val client =
-      try {
-        connectedRedisClient(redisUrl)
-      } catch (e: JedisException) {
-        logConnectionFailure(e, printStackTrace)
-        return block.invoke(null)
-      }
+    val client = connectOrNull(redisUrl, printStackTrace) ?: return block.invoke(null)
     return client.use { block.invoke(it) }
   }
 
@@ -401,13 +385,7 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: suspend (RedisClient) -> T,
   ): T? {
-    val client =
-      try {
-        connectedRedisClient(redisUrl)
-      } catch (e: JedisException) {
-        logConnectionFailure(e, printStackTrace)
-        return null
-      }
+    val client = connectOrNull(redisUrl, printStackTrace) ?: return null
     return client.use { block.invoke(it) }
   }
 

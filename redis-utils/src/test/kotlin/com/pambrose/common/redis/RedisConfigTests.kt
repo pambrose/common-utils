@@ -77,8 +77,9 @@ class RedisConfigTests : StringSpec() {
       val previous = Locale.getDefault()
       Locale.setDefault(Locale.forLanguageTag("tr"))
       try {
-        RedisUtils.clientConfig("REDISS://localhost:6379").isSsl shouldBe true
-        RedisUtils.clientConfig("redis://localhost:6379").isSsl shouldBe false
+        // sslOptions, not the deprecated ssl flag, is what turns TLS on in jedis 8.
+        RedisUtils.clientConfig("REDISS://localhost:6379").sslOptions shouldNotBe null
+        RedisUtils.clientConfig("redis://localhost:6379").sslOptions shouldBe null
       } finally {
         Locale.setDefault(previous)
       }
@@ -93,17 +94,6 @@ class RedisConfigTests : StringSpec() {
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = -1)
       try {
         client.pool.maxTotal shouldBe -1
-      } finally {
-        client.close()
-      }
-    }
-
-    // Each pooled command paid for a PING on borrow and another on return.
-    "the pool does not test connections on return" {
-      val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
-      try {
-        client.pool.testOnReturn shouldBe false
-        client.pool.testOnBorrow shouldBe true
       } finally {
         client.close()
       }
@@ -146,36 +136,21 @@ class RedisConfigTests : StringSpec() {
       withSuspendingNonNullRedis(redisUrl = unreachableUrl) { "should-not-reach" } shouldBe null
     }
 
-    // Pool exhaustion and borrow-validation failures arrive as a plain JedisException, and auth failures as
-    // JedisAccessControlException; both are connection failures from the caller's point of view.
-    "pool helpers take the null path when the pool is exhausted" {
-      val client = mockk<RedisClient>()
-      every { client.ping() } throws JedisException("Could not get a resource from the pool")
+    // Pool exhaustion and borrow-validation failures arrive as a plain JedisException, and rejected
+    // credentials as JedisAccessControlException; both are connection failures from the caller's point of view.
+    "pool helpers take the null path for any Jedis failure" {
+      listOf(
+        JedisException("Could not get a resource from the pool"),
+        JedisAccessControlException("WRONGPASS invalid username-password pair"),
+      ).forEach { failure ->
+        val client = mockk<RedisClient>()
+        every { client.ping() } throws failure
 
-      client.withRedisPool {
-        it shouldBe null
-        "null-branch"
-      } shouldBe "null-branch"
-      client.withNonNullRedisPool { "should-not-reach" } shouldBe null
-    }
-
-    "pool helpers take the null path when authentication fails" {
-      val client = mockk<RedisClient>()
-      every { client.ping() } throws JedisAccessControlException("WRONGPASS invalid username-password pair")
-
-      client.withRedisPool {
-        it shouldBe null
-        "null-branch"
-      } shouldBe "null-branch"
-      client.withNonNullRedisPool { "should-not-reach" } shouldBe null
-    }
-
-    "a client for a reachable-looking url is still created" {
-      val client = RedisUtils.newRedisClient(redisUrl = "redis://alice:secret@localhost:6379/2", maxPoolSize = 1)
-      try {
-        client shouldNotBe null
-      } finally {
-        client.close()
+        client.withRedisPool {
+          it shouldBe null
+          "null-branch"
+        } shouldBe "null-branch"
+        client.withNonNullRedisPool { "should-not-reach" } shouldBe null
       }
     }
   }

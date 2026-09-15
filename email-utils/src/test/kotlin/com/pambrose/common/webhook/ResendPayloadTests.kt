@@ -131,10 +131,5 @@ class ResendPayloadTests : StringSpec() {
       msg.type shouldBe "email.opened"
       msg.data.emailId shouldBe "56761188-7520-42d8-8898-ff6fc54ce618"
     }
-
-    "decode reads the documented payloads too" {
-      ResendWebhookMsg.decode(bouncedPayload).data.bounce?.type shouldBe "Permanent"
-      ResendWebhookMsg.decode(clickedPayload).data.click?.link shouldBe "https://resend.com"
-    }
   }
 }

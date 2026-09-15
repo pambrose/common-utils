@@ -55,6 +55,12 @@ class RedisUtilsMockTests : StringSpec() {
     every { RedisUtils["createRedisClient"](any<String>()) } throws JedisConnectionException("simulated create failure")
   }
 
+  // Stubs the private connect-and-ping step, so a success path runs without a Redis server.
+  private fun stubConnectedRedisClient(client: RedisClient) {
+    mockkObject(RedisUtils, recordPrivateCalls = true)
+    every { RedisUtils["connectOrNull"](any<String>(), any<Boolean>()) } returns client
+  }
+
   init {
     // scanKeys() drives the SCAN command page by page until the cursor returns to "0"
 
@@ -235,8 +241,7 @@ class RedisUtilsMockTests : StringSpec() {
 
     "withSuspendingNonNullRedis executes block with a non-null client" {
       val client = mockk<RedisClient>(relaxed = true)
-      mockkObject(RedisUtils, recordPrivateCalls = true)
-      every { RedisUtils["connectedRedisClient"](any<String>()) } returns client
+      stubConnectedRedisClient(client)
       try {
         val result =
           withSuspendingNonNullRedis(redisUrl = "redis://localhost:6379") { c ->
@@ -251,8 +256,7 @@ class RedisUtilsMockTests : StringSpec() {
 
     "withRedis family uses the default redis url when none is given" {
       val client = mockk<RedisClient>(relaxed = true)
-      mockkObject(RedisUtils, recordPrivateCalls = true)
-      every { RedisUtils["connectedRedisClient"](any<String>()) } returns client
+      stubConnectedRedisClient(client)
       try {
         withRedis { c ->
           c shouldNotBe null

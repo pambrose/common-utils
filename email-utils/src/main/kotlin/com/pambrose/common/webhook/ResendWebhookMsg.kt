@@ -44,10 +44,17 @@ data class ResendWebhookMsg(
   val type: String,
 ) {
   companion object {
-    private val json = Json { ignoreUnknownKeys = true }
+    /**
+     * A [Json] configured for Resend payloads, which ignores fields these models do not declare.
+     *
+     * Register it wherever the payload is decoded, for example in Ktor's
+     * `install(ContentNegotiation) { json(ResendWebhookMsg.json) }`, so `call.receive<ResendWebhookMsg>()`
+     * tolerates fields Resend adds later just as [decode] does.
+     */
+    val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * Decodes a Resend webhook request [body].
+     * Decodes a Resend webhook request [body] with [json].
      *
      * Unknown fields are ignored, so an event type carrying fields these models do not declare still decodes.
      *

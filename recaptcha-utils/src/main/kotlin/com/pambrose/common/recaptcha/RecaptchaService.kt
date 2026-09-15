@@ -216,12 +216,12 @@ object RecaptchaService : Closeable {
    * warning the first time it is seen rather than passing silently.
    */
   private fun isRecaptchaConfigured(config: RecaptchaConfig): Boolean {
-    val configured =
-      config.isRecaptchaEnabled &&
-        !config.recaptchaSiteKey.isNullOrBlank() &&
-        !config.recaptchaSecretKey.isNullOrBlank()
+    if (!config.isRecaptchaEnabled)
+      return false
 
-    if (config.isRecaptchaEnabled && !configured && misconfiguredWarningLogged.compareAndSet(false, true))
+    val configured = !config.recaptchaSiteKey.isNullOrBlank() && !config.recaptchaSecretKey.isNullOrBlank()
+
+    if (!configured && misconfiguredWarningLogged.compareAndSet(false, true))
       logger.warn {
         "reCAPTCHA is enabled but the site key or secret key is missing: " +
           "no widget is rendered and no verification is performed"

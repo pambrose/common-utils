@@ -14,8 +14,7 @@
  *   limitations under the License.
  */
 
-// DEPRECATION: mutableOriginConnectionPoint is how Ktor itself overrides the remote address.
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "DEPRECATION")
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.recaptcha
 
@@ -27,28 +26,20 @@ import com.pambrose.common.recaptcha.RecaptchaService.validateRecaptcha
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.plugins.mutableOriginConnectionPoint
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
 // Runs block with a function that snapshots the log events emitted by the recaptcha package in the meantime.
@@ -69,86 +60,11 @@ private inline fun <T> capturingRecaptchaLogs(block: (logs: () -> List<ILoggingE
  */
 class RecaptchaVerificationTests : StringSpec() {
   init {
-    fun config(
-      enabled: Boolean,
-      siteKey: String?,
-      secretKey: String?,
-    ) = object : RecaptchaConfig {
-      override val isRecaptchaEnabled = enabled
-      override val recaptchaSiteKey = siteKey
-      override val recaptchaSecretKey = secretKey
-    }
-
-    fun mockVerificationClient(engine: MockEngine): HttpClient =
-      HttpClient(engine) {
-        install(ContentNegotiation) {
-          json(
-            Json {
-              ignoreUnknownKeys = true
-              coerceInputValues = true
-            },
-          )
-        }
-      }
-
-    // Swaps in a MockEngine-backed client, runs one request through validateRecaptcha, and restores the
-    // original client. remoteAddress is overridden so it differs from the test host's remoteHost.
-    suspend fun postToken(
-      engine: MockEngine,
-      config: RecaptchaConfig,
-      remoteAddress: String = "203.0.113.7",
-    ): Pair<HttpStatusCode, String> {
-      val previous = RecaptchaService.httpClient
-      RecaptchaService.httpClient = mockVerificationClient(engine)
-      try {
-        var result: Pair<HttpStatusCode, String>? = null
-        testApplication {
-          routing {
-            post("/v") {
-              call.mutableOriginConnectionPoint.remoteAddress = remoteAddress
-              val outcome =
-                runCatching {
-                  with(RecaptchaService) { validateRecaptcha(config, call.receiveParameters()) }
-                }
-              val failure = outcome.exceptionOrNull()
-              when {
-                // validateRecaptcha already wrote a 400 body when it returned false.
-                failure != null -> call.respondText("propagated ${failure::class.simpleName}")
-
-                outcome.getOrThrow() -> call.respondText("passed")
-
-                else -> Unit
-              }
-            }
-          }
-          client.post("/v") {
-            contentType(ContentType.Application.FormUrlEncoded)
-            setBody("g-recaptcha-response=test-token")
-          }.apply {
-            result = status to bodyAsText()
-          }
-        }
-        return result!!
-      } finally {
-        RecaptchaService.httpClient.close()
-        RecaptchaService.httpClient = previous
-      }
-    }
-
-    fun successEngine() =
-      MockEngine {
-        respond(
-          content = """{"success": true, "hostname": "example.com"}""",
-          status = HttpStatusCode.OK,
-          headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-        )
-      }
-
     // Cancellation (a disconnected client, or shutdown) must not be swallowed and turned into "not a human".
     "a cancelled verification propagates instead of returning false" {
       val engine = MockEngine { throw CancellationException("client disconnected") }
 
-      val (status, body) = postToken(engine, config(enabled = true, siteKey = "site", secretKey = "secret"))
+      val (status, body) = postToken(engine)
 
       status shouldBe HttpStatusCode.OK
       body shouldContain "Cancellation"
@@ -158,7 +74,7 @@ class RecaptchaVerificationTests : StringSpec() {
     "the verification request sends the remote IP address" {
       val engine = successEngine()
 
-      val (status, body) = postToken(engine, config(enabled = true, siteKey = "site", secretKey = "secret"))
+      val (status, body) = postToken(engine)
 
       status shouldBe HttpStatusCode.OK
       body shouldBe "passed"
@@ -168,19 +84,20 @@ class RecaptchaVerificationTests : StringSpec() {
 
     // Enabled but missing a key means no bot protection at all, so it must not pass silently.
     "an enabled but misconfigured reCAPTCHA warns once and keeps passing requests" {
-      val misconfigured = config(enabled = true, siteKey = "site", secretKey = null)
+      val misconfigured = recaptchaConfig(enabled = true, siteKey = "site", secretKey = null)
       RecaptchaService.misconfiguredWarningLogged.store(false)
 
       val events =
         capturingRecaptchaLogs { logs ->
-          repeat(2) {
-            testApplication {
-              routing {
-                post("/v") {
-                  val ok = with(RecaptchaService) { validateRecaptcha(misconfigured, call.receiveParameters()) }
-                  if (ok) call.respondText("passed")
-                }
+          testApplication {
+            routing {
+              post("/v") {
+                val ok = with(RecaptchaService) { validateRecaptcha(misconfigured, call.receiveParameters()) }
+                if (ok) call.respondText("passed")
               }
+            }
+            // Two requests, one warning: the gate runs per call, not per application.
+            repeat(2) {
               client.post("/v") {
                 contentType(ContentType.Application.FormUrlEncoded)
                 setBody("")
@@ -207,7 +124,7 @@ class RecaptchaVerificationTests : StringSpec() {
                 val ok =
                   with(RecaptchaService) {
                     validateRecaptcha(
-                      config(enabled = false, siteKey = null, secretKey = null),
+                      recaptchaConfig(enabled = false, siteKey = null, secretKey = null),
                       call.receiveParameters(),
                     )
                   }
