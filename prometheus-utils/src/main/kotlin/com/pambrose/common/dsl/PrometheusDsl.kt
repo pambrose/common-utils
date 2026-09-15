@@ -41,11 +41,7 @@ object PrometheusDsl {
   fun counter(
     registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
     block: Counter.Builder.() -> Unit,
-  ): Counter =
-    Counter.build().run {
-      block(this)
-      register(registry)
-    }
+  ): Counter = Counter.build().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Summary].
@@ -58,11 +54,7 @@ object PrometheusDsl {
   fun summary(
     registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
     block: Summary.Builder.() -> Unit,
-  ): Summary =
-    Summary.build().run {
-      block(this)
-      register(registry)
-    }
+  ): Summary = Summary.build().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Gauge].
@@ -75,11 +67,7 @@ object PrometheusDsl {
   fun gauge(
     registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
     block: Gauge.Builder.() -> Unit,
-  ): Gauge =
-    Gauge.build().run {
-      block(this)
-      register(registry)
-    }
+  ): Gauge = Gauge.build().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Histogram].
@@ -92,9 +80,5 @@ object PrometheusDsl {
   fun histogram(
     registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
     block: Histogram.Builder.() -> Unit,
-  ): Histogram =
-    Histogram.build().run {
-      block(this)
-      register(registry)
-    }
+  ): Histogram = Histogram.build().apply(block).register(registry)
 }

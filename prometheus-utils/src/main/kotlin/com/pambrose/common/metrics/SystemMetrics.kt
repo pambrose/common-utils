@@ -45,7 +45,8 @@ object SystemMetrics {
    * This method is synchronized and safe to call repeatedly: an exporter already registered by an earlier call is
    * skipped, and one requested for the first time is registered. An exporter whose metrics another collector
    * already provides, such as one registered by `DefaultExports.initialize()`, is skipped with a warning instead
-   * of failing the call.
+   * of failing the call. Registrations are tracked per registry, so an exporter later removed with
+   * [CollectorRegistry.clear] or [CollectorRegistry.unregister] is not registered again.
    *
    * @param enableStandardExports whether to register standard JMX metrics (process CPU, open file descriptors, etc.).
    * @param enableMemoryPoolsExports whether to register memory pool JMX metrics.

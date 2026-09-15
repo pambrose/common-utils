@@ -44,8 +44,9 @@ open class LambdaServlet(
    */
   constructor(block: () -> String) : this("text/plain", block)
 
+  // Final, so a subclass such as VersionServlet keeps the error handling and encoding below.
   @Throws(ServletException::class, IOException::class)
-  override fun doGet(
+  final override fun doGet(
     req: HttpServletRequest,
     resp: HttpServletResponse,
   ) {

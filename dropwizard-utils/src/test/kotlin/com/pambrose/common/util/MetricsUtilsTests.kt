@@ -20,6 +20,7 @@
 package com.pambrose.common.util
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.lang.reflect.Modifier
@@ -76,14 +77,11 @@ class MetricsUtilsTests : StringSpec() {
     }
 
     "the factories are static methods, so Java callers need no INSTANCE" {
-      val type = MetricsUtils::class.java
-      Modifier.isStatic(type.getMethod("newBacklogHealthCheck", Int::class.java, Int::class.java).modifiers) shouldBe
-        true
-      Modifier.isStatic(type.getMethod("newMapHealthCheck", Map::class.java, Int::class.java).modifiers) shouldBe true
-      Modifier.isStatic(
-        type.getMethod("newBacklogHealthCheck", Function0::class.java, Int::class.java).modifiers,
-      ) shouldBe
-        true
+      val factories =
+        MetricsUtils::class.java.declaredMethods
+          .filter { Modifier.isPublic(it.modifiers) && it.name.startsWith("new") }
+      factories shouldHaveSize 3
+      factories.all { Modifier.isStatic(it.modifiers) } shouldBe true
     }
 
     "a backlog check built from a supplier reads the current size on every check" {

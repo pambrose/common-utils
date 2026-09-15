@@ -37,7 +37,14 @@ object MetricsUtils {
   fun newBacklogHealthCheck(
     backlogSize: () -> Int,
     size: Int,
-  ): HealthCheck = sizeHealthCheck(size, backlogSize)
+  ): HealthCheck =
+    MetricsDsl.healthCheck {
+      val current = backlogSize()
+      if (current < size)
+        HealthCheck.Result.healthy()
+      else
+        HealthCheck.Result.unhealthy("Large size: $current (threshold: $size)")
+    }
 
   /**
    * Creates a [HealthCheck] that reports unhealthy when [backlogSize] meets or exceeds the given threshold.
@@ -67,16 +74,5 @@ object MetricsUtils {
   fun newMapHealthCheck(
     map: Map<*, *>,
     size: Int,
-  ): HealthCheck = sizeHealthCheck(size) { map.size }
-
-  private fun sizeHealthCheck(
-    threshold: Int,
-    currentSize: () -> Int,
-  ) = MetricsDsl.healthCheck {
-    val current = currentSize()
-    if (current < threshold)
-      HealthCheck.Result.healthy()
-    else
-      HealthCheck.Result.unhealthy("Large size: $current (threshold: $threshold)")
-  }
+  ): HealthCheck = newBacklogHealthCheck({ map.size }, size)
 }

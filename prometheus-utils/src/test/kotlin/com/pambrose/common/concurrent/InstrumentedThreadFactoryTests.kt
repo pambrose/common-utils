@@ -146,10 +146,7 @@ class InstrumentedThreadFactoryTests : StringSpec() {
     "a delegate that rejects the thread yields null and is not counted as created" {
       val factory = InstrumentedThreadFactory(delegate = ThreadFactory { null }, name = "itf_rejected", help = "Test")
 
-      val result = runCatching { factory.newThread {} }
-
-      result.exceptionOrNull() shouldBe null
-      result.getOrNull() shouldBe null
+      factory.newThread {} shouldBe null
       CollectorRegistry.defaultRegistry.getSampleValue("itf_rejected_threads_created_total") shouldBe 0.0
     }
 

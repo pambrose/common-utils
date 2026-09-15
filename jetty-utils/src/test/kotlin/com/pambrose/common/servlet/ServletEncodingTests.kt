@@ -29,63 +29,49 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
 
 // Characters outside ISO-8859-1, which Jetty otherwise assumes for text/plain.
 private const val NON_LATIN_TEXT = "caf\u00e9 \u2615 \u65e5\u672c"
 
 class ServletEncodingTests : StringSpec() {
-  // Serves servlet at /test from a real Jetty server on an ephemeral port for the duration of block.
-  private inline fun <T> withServlet(
-    servlet: HttpServlet,
-    block: (port: Int) -> T,
-  ): T {
+  // Serves servlet from a real Jetty server on an ephemeral port and returns the response to one GET.
+  private fun fetch(servlet: HttpServlet): HttpResponse<ByteArray> {
     val server =
       JettyDsl.server(0) {
-        handler =
-          JettyDsl.servletContextHandler {
-            contextPath = "/"
-            addServlet(ServletHolder(servlet), "/test")
-          }
+        handler = JettyDsl.servletContextHandler { addServlet(ServletHolder(servlet), "/test") }
       }
     server.start()
     return try {
-      block((server.connectors.single() as ServerConnector).localPort)
+      val port = (server.connectors.single() as ServerConnector).localPort
+      HttpClient.newHttpClient().send(
+        HttpRequest.newBuilder(URI("http://127.0.0.1:$port/test")).timeout(Duration.ofSeconds(10)).build(),
+        HttpResponse.BodyHandlers.ofByteArray(),
+      )
     } finally {
       server.stop()
     }
   }
 
-  private fun get(port: Int): HttpResponse<ByteArray> =
-    HttpClient.newHttpClient().send(
-      HttpRequest.newBuilder(URI("http://127.0.0.1:$port/test")).build(),
-      HttpResponse.BodyHandlers.ofByteArray(),
-    )
-
   private fun HttpResponse<ByteArray>.contentType() = headers().firstValue("Content-Type").orElse("").lowercase()
 
   init {
     "LambdaServlet sends text as UTF-8 and says so in the Content-Type" {
-      withServlet(LambdaServlet { NON_LATIN_TEXT }) { port ->
-        val response = get(port)
-        response.body().decodeToString().trim() shouldBe NON_LATIN_TEXT
-        response.contentType() shouldContain "charset=utf-8"
-      }
+      val response = fetch(LambdaServlet { NON_LATIN_TEXT })
+      response.body().decodeToString().trim() shouldBe NON_LATIN_TEXT
+      response.contentType() shouldContain "charset=utf-8"
     }
 
     "VersionServlet sends the version as UTF-8" {
-      withServlet(VersionServlet(NON_LATIN_TEXT)) { port ->
-        val response = get(port)
-        response.body().decodeToString().trim() shouldBe NON_LATIN_TEXT
-        response.contentType() shouldContain "charset=utf-8"
-      }
+      val response = fetch(VersionServlet(NON_LATIN_TEXT))
+      response.body().decodeToString().trim() shouldBe NON_LATIN_TEXT
+      response.contentType() shouldContain "charset=utf-8"
     }
 
     "a charset given in the content type is still honored" {
-      withServlet(LambdaServlet("text/plain; charset=ISO-8859-1") { "caf\u00e9" }) { port ->
-        val response = get(port)
-        String(response.body(), Charsets.ISO_8859_1).trim() shouldBe "caf\u00e9"
-        response.contentType() shouldContain "charset=iso-8859-1"
-      }
+      val response = fetch(LambdaServlet("text/plain; charset=ISO-8859-1") { "caf\u00e9" })
+      String(response.body(), Charsets.ISO_8859_1).trim() shouldBe "caf\u00e9"
+      response.contentType() shouldContain "charset=iso-8859-1"
     }
   }
 }
