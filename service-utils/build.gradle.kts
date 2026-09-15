@@ -19,4 +19,6 @@ dependencies {
     implementation(libs.zipkin.sender.okhttp)
 
     testImplementation(libs.mockk)
+    // ListAppender, to assert the level service failures are logged at.
+    testImplementation(libs.logback.classic)
 }

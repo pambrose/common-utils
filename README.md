@@ -193,6 +193,7 @@ Service lifecycle and configuration management.
 - Generic service base classes
 - Admin interface configuration
 - Metrics service integration
+- Admin and metrics servers that can bind to a single interface
 - Servlet service management
 - Zipkin reporting service
 

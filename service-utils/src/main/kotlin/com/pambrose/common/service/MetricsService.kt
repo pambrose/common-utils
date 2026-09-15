@@ -20,9 +20,8 @@ import com.codahale.metrics.health.HealthCheck
 import com.pambrose.common.concurrent.GenericIdleService
 import com.pambrose.common.concurrent.genericServiceListener
 import com.pambrose.common.dsl.GuavaDsl.toStringElements
-import com.pambrose.common.dsl.JettyDsl.server
-import com.pambrose.common.dsl.JettyDsl.servletContextHandler
 import com.pambrose.common.dsl.MetricsDsl.healthCheck
+import com.pambrose.common.util.ensureLeadingSlash
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
@@ -36,21 +35,19 @@ import org.eclipse.jetty.ee11.servlet.ServletHolder
  * Dropwizard health check registries.
  *
  * @param port The HTTP port for the metrics endpoint.
- * @param path The URL path for the Prometheus metrics servlet (without a leading slash).
+ * @param path The URL path for the Prometheus metrics servlet, with or without a leading slash.
+ * @param host The interface to bind to, or `null` to bind every interface.
  * @param initBlock An optional initialization block invoked after the service listener is registered.
  */
 class MetricsService(
   private val port: Int,
   private val path: String,
+  host: String? = null,
   initBlock: (MetricsService.() -> Unit) = {},
 ) : GenericIdleService() {
   private val server =
-    server(port) {
-      handler =
-        servletContextHandler {
-          contextPath = "/"
-          addServlet(ServletHolder(MetricsServlet()), "/$path")
-        }
+    jettyServer(host, port) {
+      addServlet(ServletHolder(MetricsServlet()), path.ensureLeadingSlash())
     }
 
   /** A Dropwizard [HealthCheck] that reports healthy when the embedded Jetty server is running. */
@@ -67,6 +64,13 @@ class MetricsService(
     initBlock(this)
   }
 
+  @Deprecated("Binary compatibility with the constructor that predates host", level = DeprecationLevel.HIDDEN)
+  constructor(
+    port: Int,
+    path: String,
+    initBlock: MetricsService.() -> Unit,
+  ) : this(port, path, null, initBlock)
+
   override fun startUp() = server.start()
 
   override fun shutDown() = server.stop()
@@ -74,7 +78,7 @@ class MetricsService(
   override fun toString() =
     toStringElements {
       add("port", port)
-      add("path", "/$path")
+      add("path", path.ensureLeadingSlash())
     }
 
   companion object {

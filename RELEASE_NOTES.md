@@ -67,6 +67,12 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
     - **Host:** without a configured host, it keeps the request's host instead of redirecting to
       `https://localhost`.
     - **Exclusions:** they match the path, not the query string.
+- **More robust service lifecycle (service-utils)**:
+  - **Paths:** Jetty admin and metrics paths work with a leading slash.
+  - **Failures:** a failed startup stops the sub-services that had already started, and a failing sub-service
+    no longer stops `shutDown()` from stopping the rest.
+  - **Zipkin:** queued spans are sent before the reporter closes, and `ZipkinConfig.serviceName` is used.
+  - **Binding:** a new `host` setting binds the admin and metrics servers to one interface.
 
 ### Breaking changes
 
@@ -100,6 +106,8 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **`isEmpty()`:** it is `true` for JSON `null`.
   - **Paths:** they ignore empty segments.
 - `HerokuHttpsRedirect.host` is `String?` and defaults to the request's host instead of `"localhost"`.
+- service-utils services must call their init method exactly once before starting.
+- The service-utils Dropwizard exporter is registered with Prometheus only while the service runs.
 
 ---
 

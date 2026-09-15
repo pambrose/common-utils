@@ -50,7 +50,7 @@ import kotlin.time.TimeSource.Monotonic
  *
  * Subclasses supply only the embedded server used to host the admin servlets — exposing it through
  * [servletServiceOrNull] — and call [initMetricsAndHealthChecks] from their own init method once that
- * servlet service has been constructed.
+ * servlet service has been constructed. The init method must run exactly once, before the service starts.
  *
  * @param T The type of the configuration values object.
  * @param configVals The application-specific configuration values.
@@ -70,6 +70,14 @@ abstract class AbstractGenericService<T> protected constructor(
   protected val startTime = Monotonic.markNow()
   protected val healthCheckRegistry = HealthCheckRegistry()
   protected val metricRegistry = MetricRegistry()
+
+  /**
+   * The services added through [addService] and [addServices].
+   *
+   * The Guava [ServiceManager] built by the init method takes a copy of this list, so only the services added
+   * before then reach it, its failure listener, and the `all_services_healthy` health check. This class never
+   * starts or stops the services added here; that stays with the caller.
+   */
   protected val services: MutableList<Service> = []
 
   /** Whether admin endpoints are enabled, based on [AdminConfig.enabled]. */
@@ -82,6 +90,10 @@ abstract class AbstractGenericService<T> protected constructor(
   val isZipkinEnabled = zipkinConfig.enabled
 
   private lateinit var serviceManager: ServiceManager
+
+  // Registered with Prometheus only while the service runs, so a stopped service stops exporting and a second
+  // instance in the same JVM does not add duplicate metric families.
+  private var dropwizardExports: DropwizardExports? = null
 
   @Volatile
   private var shutDownHook: Thread? = null
@@ -118,10 +130,9 @@ abstract class AbstractGenericService<T> protected constructor(
   protected fun initMetricsAndHealthChecks() {
     if (isMetricsEnabled) {
       logger.info { "Enabling Dropwizard metrics" }
-      CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry))
 
       logger.info { "Enabling JMX metrics" }
-      metricsService = MetricsService(metricsConfig.port, metricsConfig.path) { addService(this) }
+      metricsService = MetricsService(metricsConfig.port, metricsConfig.path, metricsConfig.host) { addService(this) }
       SystemMetrics.initialize(
         enableStandardExports = metricsConfig.standardExportsEnabled,
         enableMemoryPoolsExports = metricsConfig.memoryPoolsExportsEnabled,
@@ -136,9 +147,9 @@ abstract class AbstractGenericService<T> protected constructor(
     }
 
     if (isZipkinEnabled) {
-      val url = "http://${zipkinConfig.hostname}:${zipkinConfig.port}/${zipkinConfig.path}"
+      val url = "http://${zipkinConfig.hostname}:${zipkinConfig.port}/${zipkinConfig.path.removePrefix("/")}"
       zipkinReporterService =
-        ZipkinReporterService(url) { addService(this) }
+        ZipkinReporterService(url, zipkinConfig.serviceName) { addService(this) }
     } else {
       logger.info { "Zipkin reporter service disabled" }
     }
@@ -154,7 +165,7 @@ abstract class AbstractGenericService<T> protected constructor(
           serviceManagerListener {
             healthy { logger.info { "All $clazzname services healthy" } }
             stopped { logger.info { "All $clazzname services stopped" } }
-            failure { logger.info { "$clazzname service failed: $it" } }
+            failure { logger.error(it.failureCause()) { "$clazzname service failed: $it" } }
           },
           directExecutor(),
         )
@@ -163,52 +174,94 @@ abstract class AbstractGenericService<T> protected constructor(
     registerHealthChecks()
   }
 
+  // Called first by each init method: a second run would replace the admin servlet service, orphaning the first,
+  // and then fail part-way through when registering the health checks again.
+  internal fun checkNotInitialized() =
+    check(!::serviceManager.isInitialized) {
+    "$simpleClassName is already initialized"
+  }
+
   override fun startUp() {
-    super.startUp()
-    if (isZipkinEnabled)
-      zipkinReporterService.startSync()
-
-    if (isMetricsEnabled) {
-      metricsService.startSync()
-      jmxReporter.start()
+    check(::serviceManager.isInitialized) {
+      "Call initServletService() or initKtorServletService() before starting $simpleClassName"
     }
+    super.startUp()
 
-    servletServiceOrNull?.startSync()
+    // Guava does not call shutDown() when startUp() throws, so on a failure stop whatever already started, most
+    // recent first, instead of leaving its ports and threads behind.
+    val stopActions = ArrayDeque<() -> Unit>()
+    try {
+      if (isZipkinEnabled) {
+        zipkinReporterService.startSync()
+        stopActions.addFirst { zipkinReporterService.stopSync() }
+      }
+
+      if (isMetricsEnabled) {
+        registerDropwizardExports()
+        stopActions.addFirst(::unregisterDropwizardExports)
+        metricsService.startSync()
+        stopActions.addFirst { metricsService.stopSync() }
+        jmxReporter.start()
+        stopActions.addFirst { jmxReporter.stop() }
+      }
+
+      servletServiceOrNull?.also { servletService ->
+        servletService.startSync()
+        stopActions.addFirst { servletService.stopSync() }
+      }
+    } catch (e: Throwable) {
+      stopActions.runEach().forEach(e::addSuppressed)
+      throw e
+    }
 
     shutDownHook = shutDownHookAction(this).also { Runtime.getRuntime().addShutdownHook(it) }
   }
 
   override fun shutDown() {
-    servletServiceOrNull?.stopSync()
-
-    if (isMetricsEnabled) {
-      metricsService.stopSync()
-      jmxReporter.stop()
-    }
-
-    if (isZipkinEnabled)
-      zipkinReporterService.stopSync()
-
-    shutDownHook?.let { hook ->
-      // removeShutdownHook throws IllegalStateException if the JVM is already shutting down (e.g. when
-      // shutDown was triggered by the hook itself) and SecurityException under a SecurityManager; in both
-      // cases the hook simply remains registered until JVM exit, so swallow rather than fail the shutdown.
-      val _ = runCatching { Runtime.getRuntime().removeShutdownHook(hook) }
-      shutDownHook = null
-    }
+    // Every step runs even when an earlier one fails, so one sub-service failing to stop cannot leave the others
+    // running. The first failure is rethrown with the rest attached as suppressed exceptions.
+    val failures =
+      listOf<() -> Unit>(
+        { servletServiceOrNull?.stopSync() },
+        { if (isMetricsEnabled) metricsService.stopSync() },
+        { if (isMetricsEnabled) jmxReporter.stop() },
+        ::unregisterDropwizardExports,
+        { if (isZipkinEnabled) zipkinReporterService.stopSync() },
+        ::removeShutDownHook,
+      ).runEach()
 
     super.shutDown()
+
+    failures.firstOrNull()?.let { first ->
+      failures.drop(1).forEach(first::addSuppressed)
+      throw first
+    }
   }
 
   override fun close() {
     stopSync()
   }
 
+  /**
+   * Adds [service] to [services].
+   *
+   * Call it before the init method ([GenericService.initServletService] or
+   * [GenericKtorService.initKtorServletService]). The [ServiceManager] is built there from a copy of [services], so a
+   * service added afterwards is not managed, and a warning is logged. This class never starts or stops added
+   * services.
+   */
   protected fun addService(service: Service) {
-    logger.info { "Adding service $service" }
+    if (::serviceManager.isInitialized)
+      logger.warn {
+        "$service was added after $simpleClassName was initialized, so its ServiceManager and the " +
+          "all_services_healthy check do not include it"
+      }
+    else
+      logger.info { "Adding service $service" }
     services += service
   }
 
+  /** Adds each of the given services with [addService], which must be called before the init method. */
   protected fun addServices(
     service: Service,
     vararg services: Service,
@@ -244,6 +297,25 @@ abstract class AbstractGenericService<T> protected constructor(
       }
   }
 
+  private fun registerDropwizardExports() {
+    dropwizardExports = DropwizardExports(metricRegistry).also { CollectorRegistry.defaultRegistry.register(it) }
+  }
+
+  private fun unregisterDropwizardExports() {
+    dropwizardExports?.let { CollectorRegistry.defaultRegistry.unregister(it) }
+    dropwizardExports = null
+  }
+
+  private fun removeShutDownHook() {
+    shutDownHook?.let { hook ->
+      // removeShutdownHook throws IllegalStateException if the JVM is already shutting down (e.g. when
+      // shutDown was triggered by the hook itself) and SecurityException under a SecurityManager; in both
+      // cases the hook simply remains registered until JVM exit, so swallow rather than fail the shutdown.
+      val _ = runCatching { Runtime.getRuntime().removeShutdownHook(hook) }
+      shutDownHook = null
+    }
+  }
+
   companion object {
     private val logger = KotlinLogging.logger {}
 
@@ -262,3 +334,6 @@ abstract class AbstractGenericService<T> protected constructor(
       }
   }
 }
+
+// Runs every step, including those after one that throws, and returns what they threw.
+private fun Iterable<() -> Unit>.runEach(): List<Throwable> = mapNotNull { step -> runCatching(step).exceptionOrNull() }

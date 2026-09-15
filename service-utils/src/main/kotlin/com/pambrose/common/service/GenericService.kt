@@ -49,8 +49,6 @@ abstract class GenericService<T> protected constructor(
   private val versionBlock: () -> String = { "No version" },
   isTestMode: Boolean = false,
 ) : AbstractGenericService<T>(configVals, adminConfig, metricsConfig, zipkinConfig, isTestMode) {
-  private lateinit var servletGroup: ServletGroup
-
   /** The Jetty-based servlet service hosting admin endpoints. Initialized when admin is enabled. */
   lateinit var servletService: ServletService
 
@@ -60,15 +58,18 @@ abstract class GenericService<T> protected constructor(
   /**
    * Initializes the servlet service, metrics, Zipkin tracing, and health checks.
    *
-   * This method should be called during subclass initialization. It conditionally sets up admin
-   * servlets via an embedded Jetty server, then delegates to [initMetricsAndHealthChecks] to wire up
-   * Prometheus metrics, JMX reporting, Zipkin tracing, health checks, and the Guava `ServiceManager`.
+   * This method should be called once during subclass initialization, after adding any extra services with
+   * [addService]. It conditionally sets up admin servlets via an embedded Jetty server, then delegates to
+   * [initMetricsAndHealthChecks] to wire up Prometheus metrics, JMX reporting, Zipkin tracing, health checks,
+   * and the Guava `ServiceManager`.
    *
    * @param servletInit An optional block to register additional servlets in the [ServletGroup].
+   * @throws IllegalStateException if the service has already been initialized.
    */
   fun initServletService(servletInit: ServletGroup.() -> Unit = {}) {
+    checkNotInitialized()
     if (isAdminEnabled) {
-      servletGroup =
+      val servletGroup =
         adminConfig.run {
           ServletGroup()
             .apply {
@@ -81,7 +82,7 @@ abstract class GenericService<T> protected constructor(
         }
 
       servletService =
-        ServletService(port = adminConfig.port, servletGroup) {
+        ServletService(adminConfig.port, servletGroup, adminConfig.host) {
           addService(this)
         }
     } else {

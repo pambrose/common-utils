@@ -26,7 +26,6 @@ import io.ktor.server.application.Application
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
-import kotlinx.coroutines.runBlocking
 
 /**
  * A Guava [GenericIdleService] that runs an embedded Ktor CIO server to host servlets from an [HttpServletGroup].
@@ -39,16 +38,18 @@ import kotlinx.coroutines.runBlocking
  * @param port The HTTP port for the Ktor server.
  * @param servletGroup The [HttpServletGroup] containing servlets to register as routes.
  * @param initKtor An optional Ktor [Application] configuration block applied before routing.
+ * @param host The interface to bind to, or `null` to bind every interface.
  * @param initBlock An optional initialization block invoked after the service listener is registered.
  */
 class KtorServletService(
   private val port: Int,
   private val servletGroup: HttpServletGroup,
   initKtor: Application.() -> Unit = {},
+  host: String? = null,
   initBlock: KtorServletService.() -> Unit = {},
 ) : GenericIdleService() {
   private val ktorServer =
-    embeddedServer(CIO, port = port) {
+    embeddedServer(CIO, port = port, host = host ?: "0.0.0.0") {
       initKtor()
       routing {
         servletGroup.servletMap.forEach { (path, servlet) ->
@@ -62,11 +63,17 @@ class KtorServletService(
     initBlock(this)
   }
 
-  override fun startUp() =
-    runBlocking {
-      ktorServer.start(false)
-      Unit
-    }
+  @Deprecated("Binary compatibility with the constructor that predates host", level = DeprecationLevel.HIDDEN)
+  constructor(
+    port: Int,
+    servletGroup: HttpServletGroup,
+    initKtor: Application.() -> Unit,
+    initBlock: KtorServletService.() -> Unit,
+  ) : this(port, servletGroup, initKtor, null, initBlock)
+
+  override fun startUp() {
+    ktorServer.start(wait = false)
+  }
 
   override fun shutDown() = ktorServer.stop()
 

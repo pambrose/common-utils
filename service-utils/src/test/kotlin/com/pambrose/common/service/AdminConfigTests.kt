@@ -23,6 +23,8 @@ class AdminConfigTests : StringSpec() {
       config.versionPath shouldBe "version"
       config.healthCheckPath shouldBe "healthcheck"
       config.threadDumpPath shouldBe "threaddump"
+      // No host binds every interface, as before the setting existed.
+      config.host shouldBe null
     }
 
     "custom values are set correctly" {
@@ -33,7 +35,9 @@ class AdminConfigTests : StringSpec() {
         versionPath = "/custom-version",
         healthCheckPath = "/custom-health",
         threadDumpPath = "/custom-threads",
+        host = "127.0.0.1",
       )
+      config.host shouldBe "127.0.0.1"
       config.enabled shouldBe true
       config.port shouldBe 9090
       config.pingPath shouldBe "/custom-ping"

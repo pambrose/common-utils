@@ -32,16 +32,39 @@ import zipkin2.reporter.okhttp3.OkHttpSender
  * A Guava [GenericIdleService] that manages a Zipkin span reporter lifecycle.
  *
  * Creates an [OkHttpSender] and [AsyncReporter] for sending trace spans to a Zipkin server,
- * and provides a factory method for creating [Tracing] instances bound to this reporter.
+ * and provides a factory method for creating [Tracing] instances bound to this reporter. Stopping the
+ * service sends the spans still queued before closing the reporter.
  *
- * @param url The full URL of the Zipkin collector endpoint.
- * @param initBlock An optional initialization block invoked after the service listener is registered.
+ * @property defaultServiceName The service name [newTracing] uses when none is given.
  */
-class ZipkinReporterService(
+class ZipkinReporterService internal constructor(
   private val url: String,
-  initBlock: (ZipkinReporterService.() -> Unit) = {},
+  val defaultServiceName: String,
+  private val sender: BytesMessageSender,
+  initBlock: ZipkinReporterService.() -> Unit = {},
 ) : GenericIdleService() {
-  private val sender = OkHttpSender.create(url) as BytesMessageSender
+  /**
+   * Creates a reporter that sends spans to the Zipkin collector at [url].
+   *
+   * @param url The full URL of the Zipkin collector endpoint.
+   * @param defaultServiceName The service name [newTracing] uses when none is given. Defaults to Brave's `"unknown"`.
+   * @param initBlock An optional initialization block invoked after the service listener is registered.
+   */
+  constructor(
+    url: String,
+    defaultServiceName: String = DEFAULT_SERVICE_NAME,
+    initBlock: ZipkinReporterService.() -> Unit = {},
+  ) : this(url, defaultServiceName, OkHttpSender.create(url), initBlock)
+
+  @Deprecated(
+    "Binary compatibility with the constructor that predates defaultServiceName",
+    level = DeprecationLevel.HIDDEN,
+  )
+  constructor(
+    url: String,
+    initBlock: ZipkinReporterService.() -> Unit,
+  ) : this(url, DEFAULT_SERVICE_NAME, initBlock)
+
   private val reporter = AsyncReporter.create(sender)
   private val handler = ZipkinSpanHandler.create(reporter)
 
@@ -53,10 +76,11 @@ class ZipkinReporterService(
   /**
    * Creates a new [Tracing] instance configured with the given service name and this reporter's span handler.
    *
-   * @param serviceName The logical name of the service to associate with trace spans.
+   * @param serviceName The logical name of the service to associate with trace spans. Defaults to
+   *   [defaultServiceName].
    * @return A configured [Tracing] instance ready for instrumenting application code.
    */
-  fun newTracing(serviceName: String): Tracing =
+  fun newTracing(serviceName: String = defaultServiceName): Tracing =
     tracing {
       localServiceName(serviceName)
       addSpanHandler(handler)
@@ -68,6 +92,9 @@ class ZipkinReporterService(
 
   override fun shutDown() {
     try {
+      // close() drops the spans still queued, so send them first. flush() already swallows send failures, and a
+      // flush that throws anyway must not stop the reporter and sender from closing.
+      val _ = runCatching { reporter.flush() }
       reporter.close()
     } finally {
       sender.close()
@@ -78,5 +105,8 @@ class ZipkinReporterService(
 
   companion object {
     private val logger = KotlinLogging.logger {}
+
+    // Brave's own default for Tracing.Builder.localServiceName.
+    private const val DEFAULT_SERVICE_NAME = "unknown"
   }
 }
