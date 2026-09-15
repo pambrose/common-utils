@@ -25,14 +25,26 @@ without handling connection failures yourself, and scan keys lazily.
 ### Connection URLs
 
 Every function that creates a client takes a Redis URL such as `redis://user:password@host:port`, or
-`rediss://...` for TLS. It defaults to the `REDIS_URL` environment variable, or `redis://user:none@localhost:6379`
-when that is unset. The user is sent with `AUTH` only when it is a real one: not blank, `default` or `user`, with
-a password other than `none`.
+`rediss://...` for TLS, matched case-insensitively. It defaults to the `REDIS_URL` environment variable, or
+`redis://user:none@localhost:6379` when that is unset.
+
+The whole URL is read, not just the host and port:
+
+| URL part | Effect |
+|----------|--------|
+| `/3` path | selects database 3 |
+| `?protocol=3` | selects the RESP protocol version |
+| userinfo | sent with `AUTH` |
+
+The user is sent only when it is a real one: not blank, `default` or `user`. The placeholder password `none`
+counts as no password and is never sent.
 
 ### Short-lived Clients
 
-The `withRedis` family creates a client, runs the block, and closes the client. When the connection fails,
-`withRedis` passes `null` to the block, while `withNonNullRedis` skips the block and returns `null`.
+The `withRedis` family creates a client, pings the server to verify the connection, runs the block, and closes
+the client. When the connection fails, `withRedis` passes `null` to the block, while `withNonNullRedis` skips the
+block and returns `null`. Building a Jedis client does not connect, so the ping is what makes that promise hold
+for an unreachable server, a pool that cannot lend a connection, or a rejected password.
 
 ```kotlin
 import com.pambrose.common.redis.RedisUtils.withNonNullRedis
@@ -63,8 +75,13 @@ Each pool setting defaults to a system property, and then to a fixed value:
 | `minIdleSize` | `redis.minIdleSize` | 1 |
 | `maxWaitSecs` | `redis.maxWaitSecs` | 1 |
 
-The `withRedisPool` family pings the client first. When that fails, it logs the error, including the stack trace
-when `printStackTrace = true`, and then passes `null` to the block or returns `null`.
+`maxPoolSize` must be positive, or `UNLIMITED_POOL_SIZE` (-1) for no limit; 0 would create a pool that can never
+lend a connection. Pooled connections are validated when they are borrowed and while they sit idle, but not when
+they are returned, which would add a second round-trip to every command.
+
+The `withRedisPool` family pings the client first. When that fails — including pool exhaustion and authentication
+failures, which arrive as a plain `JedisException` — it logs the error, including the stack trace when
+`printStackTrace = true`, and then passes `null` to the block or returns `null`.
 
 ### Scanning Keys
 
@@ -89,7 +106,8 @@ client.scanKeys("user:*").forEach { key -> println(key) }
 - `suspend fun <T> RedisClient.withSuspendingRedisPool(...)` and `withSuspendingNonNullRedisPool(...)`
 - `fun UnifiedJedis.scanKeys(pattern: String, count: Int = 100): Sequence<String>`
 - `class RedisInfo(uri, user, password)` — the parsed URL, with `includeUserInAuth`
-- Constants `REDIS_MAX_POOL_SIZE`, `REDIS_MAX_IDLE_SIZE`, `REDIS_MIN_IDLE_SIZE`, `REDIS_MAX_WAIT_SECS`
+- Constants `REDIS_MAX_POOL_SIZE`, `REDIS_MAX_IDLE_SIZE`, `REDIS_MIN_IDLE_SIZE`, `REDIS_MAX_WAIT_SECS`,
+  `UNLIMITED_POOL_SIZE`
 
 ## Dependencies
 

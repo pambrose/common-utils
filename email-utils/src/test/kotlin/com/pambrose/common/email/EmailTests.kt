@@ -88,5 +88,14 @@ class EmailTests : StringSpec() {
       val params = parametersOf("user", "alice@example.com")
       params.getEmail("missing") shouldBe EMPTY_EMAIL
     }
+
+    // Both paths that produce an Email must normalize, or the same address compares unequal depending on
+    // which one it came from.
+    "Parameters.getEmail normalizes like toResendEmail" {
+      val params = parametersOf("user", "  ALICE@Example.COM  ")
+
+      params.getEmail("user") shouldBe "  ALICE@Example.COM  ".toResendEmail()
+      params.getEmail("user") shouldBe Email("alice@example.com")
+    }
   }
 }

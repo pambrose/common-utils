@@ -54,15 +54,20 @@ class KotlinSqlLogger(
 /**
  * Retrieves a column value from this [ResultRow] by its zero-based field [index].
  *
+ * A column holding SQL NULL returns `null`; only an index with no column at all is an error.
+ *
  * Extension operator on [ResultRow].
  *
  * @param index the zero-based column index
- * @return the value at the given index
+ * @return the value at the given index, or `null` if the column is NULL
  * @throws IllegalArgumentException if no field exists at the given index
  */
-operator fun ResultRow.get(index: Int) =
-  fieldIndex.entries.firstOrNull { it.value == index }?.let { this[it.key] }
-    ?: throw IllegalArgumentException("No value at index $index")
+operator fun ResultRow.get(index: Int): Any? {
+  val expression =
+    fieldIndex.entries.firstOrNull { it.value == index }?.key
+      ?: throw IllegalArgumentException("No value at index $index")
+  return this[expression]
+}
 
 /**
  * Converts this [ResultRow] to a human-readable string by joining each column's string representation
@@ -73,8 +78,7 @@ operator fun ResultRow.get(index: Int) =
  *
  * @return a formatted string of the row's values
  */
-fun ResultRow.toRowString() =
-  fieldIndex.values.map { this[it].toString() }.filter { it.isNotEmpty() }.joinToString(" - ")
+fun ResultRow.toRowString() = fieldIndex.keys.map { this[it].toString() }.filter { it.isNotEmpty() }.joinToString(" - ")
 
 /**
  * Executes a read-only database transaction.

@@ -112,9 +112,10 @@ readonlyTx(db = database) {
 }
 ```
 
-`row[index]` throws `IllegalArgumentException("No value at index N")` when no column occupies that position.
-`toRowString()` joins each column's `toString()` with `" - "` and drops empty strings; a `null` column
-renders as the literal text `"null"` rather than being skipped.
+`row[index]` throws `IllegalArgumentException("No value at index N")` when no column occupies that position. A
+column holding SQL NULL is a value, not a missing column, so it returns `null`. `toRowString()` joins each
+column's `toString()` with `" - "` and drops empty strings; a `null` column renders as the literal text `"null"`
+rather than being skipped.
 
 ### SQL Logging
 
@@ -156,7 +157,19 @@ transaction(database) {
 
 The overload forwards the index's columns as the `keys` of the underlying `ON CONFLICT (...)` clause, so the
 named index definition stays the single source of truth for the conflict columns. It accepts only a unique
-`Index`; to conflict on a single column, declare a single-column `uniqueIndex` and pass that.
+`Index` belonging to the same table, and throws `IllegalArgumentException` otherwise, rather than letting the
+database reject the statement at runtime. To conflict on a single column, declare a single-column `uniqueIndex`
+and pass that.
+
+Exposed's own `onUpdate`, `onUpdateExclude` and `where` options are passed straight through:
+
+```kotlin
+MyTable.upsert(conflictIndex, onUpdateExclude = listOf(MyTable.email)) {
+  it[id] = 1
+  it[email] = "john@example.com"
+  it[name] = "John Doe"
+}
+```
 
 ## API Reference
 
@@ -180,7 +193,9 @@ named index definition stays the single source of truth for the conflict columns
 ### Logging & Upsert
 
 - `class KotlinSqlLogger(logger: KLogger = ...) : SqlLogger`
-- `fun <T : Table> T.upsert(conflictIndex: Index, body: T.(UpsertStatement<Long>) -> Unit): UpsertStatement<Long>`
+- `fun <T : Table> T.upsert(conflictIndex: Index, onUpdate: (UpsertBuilder.(UpdateStatement) -> Unit)? = null,
+  onUpdateExclude: List<Column<*>>? = null, where: (() -> Op<Boolean>)? = null,
+  body: T.(UpsertStatement<Long>) -> Unit): UpsertStatement<Long>`
 
 ## Dependencies
 
@@ -219,7 +234,9 @@ dependencies {
 ## Database Compatibility
 
 `upsert` delegates to Exposed's native `upsert`, so it works on every database Exposed supports that
-statement for — this module's own tests exercise it against H2. It is not PostgreSQL-specific.
+statement for — this module's own tests exercise it against H2. It is not PostgreSQL-specific. How much of
+`onUpdate`, `onUpdateExclude` and `where` each database accepts is dialect-specific: the MERGE-based statement
+H2 uses rejects `where`, for example.
 
 ## Security Considerations
 

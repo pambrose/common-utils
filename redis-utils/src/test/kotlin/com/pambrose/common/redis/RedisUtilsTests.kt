@@ -26,9 +26,10 @@ import java.net.URI
 
 class RedisUtilsTests : StringSpec() {
   init {
+    // -1 is commons-pool2's "unlimited"; anything below that is meaningless.
     "new redis client validation negative pool size" {
       shouldThrow<IllegalArgumentException> {
-        RedisUtils.newRedisClient(maxPoolSize = -1)
+        RedisUtils.newRedisClient(maxPoolSize = -2)
       }
     }
 
