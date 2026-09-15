@@ -25,6 +25,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.prometheus.client.Collector
+import io.prometheus.client.CollectorRegistry
 
 class SamplerGaugeCollectorTests : StringSpec() {
   init {
@@ -101,6 +102,27 @@ class SamplerGaugeCollectorTests : StringSpec() {
       // collect() must not propagate the sampler's exception (that would take down the whole scrape).
       val samples = collector.collect()
       samples[0].samples[0].value.isNaN() shouldBe true
+    }
+
+    "the sampler does not run when the collector is constructed and registered" {
+      var sampled = 0
+      SamplerGaugeCollector(name = "test_sampler_gauge_lazy", help = "lazy sampler") {
+        sampled++
+        7.0
+      }
+      sampled shouldBe 0
+
+      // It is still registered: scraping the default registry runs the sampler.
+      CollectorRegistry.defaultRegistry.getSampleValue("test_sampler_gauge_lazy") shouldBe 7.0
+      sampled shouldBe 1
+    }
+
+    "the collector can register with a given registry instead of the default one" {
+      val registry = CollectorRegistry()
+      SamplerGaugeCollector(name = "test_sampler_gauge_isolated", help = "isolated", registry = registry) { 3.0 }
+
+      registry.getSampleValue("test_sampler_gauge_isolated") shouldBe 3.0
+      CollectorRegistry.defaultRegistry.getSampleValue("test_sampler_gauge_isolated") shouldBe null
     }
   }
 }

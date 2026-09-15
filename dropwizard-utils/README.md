@@ -36,7 +36,7 @@ exception into an unhealthy result.
 ### Ready-made Health Checks
 
 Both factories report **healthy while the observed size is strictly below `size`**, and unhealthy at or
-above it, with a `"Large size: N"` message.
+above it, with a `"Large size: N (threshold: T)"` message. Both read the current size on every `check()`.
 
 ```kotlin
 import com.pambrose.common.util.MetricsUtils.newBacklogHealthCheck
@@ -46,27 +46,14 @@ import com.pambrose.common.util.MetricsUtils.newMapHealthCheck
 val cacheHealthCheck = newMapHealthCheck(map = cache, size = 1000)
 
 // Unhealthy once the backlog reaches 100
-val backlogHealthCheck = newBacklogHealthCheck(backlogSize = queue.size, size = 100)
+val liveBacklogCheck = newBacklogHealthCheck(backlogSize = { queue.size }, size = 100)
 ```
 
-Note the difference between the two, which matters in practice:
+The older `newBacklogHealthCheck(backlogSize: Int, size)` is deprecated: it captures the size once, so the
+check reports the same result forever.
 
-- `newMapHealthCheck` captures the **map reference**, so each `check()` re-reads `map.size` and the result
-  tracks the live map.
-- `newBacklogHealthCheck` captures an **`Int` by value**. The size is sampled once, when the check is
-  created, so the returned check reports the same result forever. To monitor a changing backlog, build the
-  check with `healthCheck { ... }` and read the current size inside the lambda:
-
-```kotlin
-val liveBacklogCheck =
-  healthCheck {
-    val current = queue.size
-    if (current < 100)
-      HealthCheck.Result.healthy()
-    else
-      HealthCheck.Result.unhealthy("Large size: $current")
-  }
-```
+The factories are `@JvmStatic`, so Java calls them as `MetricsUtils.newMapHealthCheck(cache, 1000)` and
+`MetricsDsl.healthCheck(...)`, without `INSTANCE`.
 
 ### Registering Health Checks
 
@@ -93,12 +80,15 @@ healthCheckRegistry.runHealthChecks().forEach { (name, result) ->
 ### `MetricsDsl`
 
 - `healthCheck(block: HealthCheck.() -> HealthCheck.Result): HealthCheck` — creates a `HealthCheck` whose
-  `check()` is the given lambda
+  `check()` is the given lambda; `@JvmStatic`
 
 ### `MetricsUtils`
 
-- `newBacklogHealthCheck(backlogSize: Int, size: Int): HealthCheck` — healthy while `backlogSize < size`;
-  `backlogSize` is captured by value (see above)
+All are `@JvmStatic`.
+
+- `newBacklogHealthCheck(backlogSize: () -> Int, size: Int): HealthCheck` — healthy while `backlogSize() < size`,
+  re-read on every check
+- `newBacklogHealthCheck(backlogSize: Int, size: Int): HealthCheck` — deprecated; `backlogSize` is captured by value
 - `newMapHealthCheck(map: Map<*, *>, size: Int): HealthCheck` — healthy while `map.size < size`, re-read on
   every check
 

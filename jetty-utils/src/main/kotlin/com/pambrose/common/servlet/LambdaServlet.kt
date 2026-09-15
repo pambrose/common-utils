@@ -26,12 +26,14 @@ import java.io.IOException
 /**
  * An [HttpServlet] that serves the result of a lambda function as the HTTP GET response body.
  *
- * Responses include `Cache-Control: must-revalidate,no-cache,no-store` headers.
+ * Responses include `Cache-Control: must-revalidate,no-cache,no-store` headers. The body is encoded as UTF-8
+ * unless [contentType] names a charset. If the lambda throws, the response is left untouched, so the container
+ * reports the error instead of an empty `200`.
  *
  * @param contentType the MIME content type for the response. Defaults to `"text/plain"`.
  * @param block a lambda that produces the response body string.
  */
-class LambdaServlet(
+open class LambdaServlet(
   private val contentType: String,
   private val block: () -> String,
 ) : HttpServlet() {
@@ -42,16 +44,23 @@ class LambdaServlet(
    */
   constructor(block: () -> String) : this("text/plain", block)
 
+  // Final, so a subclass such as VersionServlet keeps the error handling and encoding below.
   @Throws(ServletException::class, IOException::class)
-  override fun doGet(
+  final override fun doGet(
     req: HttpServletRequest,
     resp: HttpServletResponse,
   ) {
+    // Produce the body before touching the response: once a status is set and the writer closed, the response is
+    // committed, and a failure could no longer become a 500.
+    val body = block()
     resp.apply {
       status = HttpServletResponse.SC_OK
       setHeader("Cache-Control", "must-revalidate,no-cache,no-store")
+      // Jetty assumes ISO-8859-1 for text/plain, which turns other characters into '?'. Set before the content
+      // type, so a charset named there still wins.
+      characterEncoding = "UTF-8"
       contentType = this@LambdaServlet.contentType
-      writer.use { it.println(block()) }
+      writer.use { it.println(body) }
     }
   }
 

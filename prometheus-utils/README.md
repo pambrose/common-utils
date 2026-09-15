@@ -23,7 +23,9 @@ sampling gauge collector, an instrumented `ThreadFactory`, and a one-call JVM me
 ### Metrics DSL
 
 Each builder takes the corresponding Prometheus `Builder` as receiver, so you set `name`, `help`,
-`labelNames`, and so on exactly as with the Java client. The metric is registered for you.
+`labelNames`, and so on exactly as with the Java client. The metric is registered for you, with
+`CollectorRegistry.defaultRegistry` unless you pass another registry, such as an isolated one in tests:
+`PrometheusDsl.counter(registry) { ... }`.
 
 ```kotlin
 import com.pambrose.common.dsl.PrometheusDsl
@@ -73,7 +75,8 @@ try {
 ### SamplerGaugeCollector
 
 A gauge backed by a lambda, sampled on every scrape rather than set imperatively. It **registers itself
-with the default registry when constructed**, so simply creating it is enough.
+when constructed**, with the default registry unless you pass `registry`, so simply creating it is enough.
+Registering does not run the lambda; the first scrape does.
 
 ```kotlin
 import com.pambrose.common.metrics.SamplerGaugeCollector
@@ -100,7 +103,10 @@ Mismatched `labelNames` / `labelValues` sizes throw `IllegalArgumentException`.
 
 ### InstrumentedThreadFactory
 
-Wraps an existing `ThreadFactory` and exports counters for threads created, running and terminated.
+Wraps an existing `ThreadFactory` and exports counters for threads created, running and terminated. Pass
+`registry` to register the metrics somewhere other than the default registry; two factories with the same
+`name` need separate registries. When the delegate rejects a thread by returning `null`, `newThread` returns
+`null` too, and the thread is not counted.
 
 ```kotlin
 import com.pambrose.common.concurrent.InstrumentedThreadFactory
@@ -118,8 +124,10 @@ val executor = Executors.newFixedThreadPool(4, factory)
 
 ### JVM Metrics
 
-Every exporter is **off by default** — opt into the ones you want. Repeat calls after the first are
-ignored.
+Every exporter is **off by default** — opt into the ones you want. Calling `initialize` again is safe: an
+exporter registered by an earlier call is skipped, and one requested for the first time is registered. An
+exporter whose metrics are already registered elsewhere, for example by `DefaultExports.initialize()`, is
+skipped with a warning. Pass `registry` to use a registry other than the default one.
 
 ```kotlin
 import com.pambrose.common.metrics.SystemMetrics
@@ -136,7 +144,9 @@ SystemMetrics.initialize(
 
 ### Exposing Metrics
 
-Serving the metrics endpoint is the Prometheus client's job, not this module's:
+Serving the metrics endpoint is the Prometheus client's job, not this module's. `HTTPServer` comes from
+`io.prometheus:simpleclient_httpserver`, which this module does not include, so add it at the same version
+as simpleclient:
 
 ```kotlin
 import io.prometheus.client.exporter.HTTPServer
@@ -148,19 +158,21 @@ val server = HTTPServer(8080)
 
 ### `PrometheusDsl`
 
-- `counter(block: Counter.Builder.() -> Unit): Counter`
-- `gauge(block: Gauge.Builder.() -> Unit): Gauge`
-- `summary(block: Summary.Builder.() -> Unit): Summary`
-- `histogram(block: Histogram.Builder.() -> Unit): Histogram`
+Each takes `registry: CollectorRegistry = CollectorRegistry.defaultRegistry` as its first parameter.
+
+- `counter(registry, block: Counter.Builder.() -> Unit): Counter`
+- `gauge(registry, block: Gauge.Builder.() -> Unit): Gauge`
+- `summary(registry, block: Summary.Builder.() -> Unit): Summary`
+- `histogram(registry, block: Histogram.Builder.() -> Unit): Histogram`
 
 ### Collectors
 
-- `class SamplerGaugeCollector(name: String, help: String, labelNames: List<String> = emptyList(), labelValues: List<String> = emptyList(), data: () -> Double) : Collector`
-- `class InstrumentedThreadFactory(delegate: ThreadFactory, name: String, help: String) : ThreadFactory`
+- `class SamplerGaugeCollector(name: String, help: String, labelNames: List<String> = emptyList(), labelValues: List<String> = emptyList(), registry: CollectorRegistry = CollectorRegistry.defaultRegistry, data: () -> Double) : Collector, Collector.Describable`
+- `class InstrumentedThreadFactory(delegate: ThreadFactory, name: String, help: String, registry: CollectorRegistry = CollectorRegistry.defaultRegistry) : ThreadFactory` — `newThread` returns `Thread?`
 
 ### `SystemMetrics`
 
-- `initialize(enableStandardExports: Boolean = false, enableMemoryPoolsExports: Boolean = false, enableGarbageCollectorExports: Boolean = false, enableThreadExports: Boolean = false, enableClassLoadingExports: Boolean = false, enableVersionInfoExports: Boolean = false)`
+- `initialize(enableStandardExports: Boolean = false, enableMemoryPoolsExports: Boolean = false, enableGarbageCollectorExports: Boolean = false, enableThreadExports: Boolean = false, enableClassLoadingExports: Boolean = false, enableVersionInfoExports: Boolean = false, registry: CollectorRegistry = CollectorRegistry.defaultRegistry)`
 
 ## Dependencies
 

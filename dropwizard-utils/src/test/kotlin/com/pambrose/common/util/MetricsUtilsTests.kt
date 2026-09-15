@@ -14,13 +14,16 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+// DEPRECATION: the Int-snapshot form of newBacklogHealthCheck is still tested until it is removed.
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "DEPRECATION")
 
 package com.pambrose.common.util
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.lang.reflect.Modifier
 
 class MetricsUtilsTests : StringSpec() {
   init {
@@ -64,6 +67,36 @@ class MetricsUtilsTests : StringSpec() {
       val healthCheck = MetricsUtils.newMapHealthCheck(map, size = 1)
       val result = healthCheck.execute()
       result.isHealthy shouldBe true
+    }
+
+    "unhealthy messages state the threshold as well as the size" {
+      MetricsUtils.newBacklogHealthCheck(backlogSize = 15, size = 10).execute().message shouldBe
+        "Large size: 15 (threshold: 10)"
+      MetricsUtils.newMapHealthCheck(mapOf("a" to 1, "b" to 2), size = 2).execute().message shouldBe
+        "Large size: 2 (threshold: 2)"
+    }
+
+    "the factories are static methods, so Java callers need no INSTANCE" {
+      val factories =
+        MetricsUtils::class.java.declaredMethods
+          .filter { Modifier.isPublic(it.modifiers) && it.name.startsWith("new") }
+      factories shouldHaveSize 3
+      factories.all { Modifier.isStatic(it.modifiers) } shouldBe true
+    }
+
+    "a backlog check built from a supplier reads the current size on every check" {
+      var backlog = 5
+      val healthCheck = MetricsUtils.newBacklogHealthCheck(backlogSize = { backlog }, size = 10)
+      healthCheck.execute().isHealthy shouldBe true
+
+      backlog = 10
+      healthCheck.execute().apply {
+        isHealthy shouldBe false
+        message shouldBe "Large size: 10 (threshold: 10)"
+      }
+
+      backlog = 9
+      healthCheck.execute().isHealthy shouldBe true
     }
   }
 }

@@ -22,39 +22,57 @@ import com.pambrose.common.dsl.MetricsDsl
 
 /**
  * Utility object providing factory methods for common [HealthCheck] patterns.
+ *
+ * Unhealthy results read `"Large size: N (threshold: T)"`.
  */
 object MetricsUtils {
   /**
    * Creates a [HealthCheck] that reports unhealthy when the backlog size meets or exceeds the given threshold.
    *
-   * @param backlogSize the current backlog size to evaluate.
+   * @param backlogSize returns the current backlog size; it is called on every check.
    * @param size the threshold at or above which the check is considered unhealthy.
    * @return a [HealthCheck] that monitors backlog size.
    */
+  @JvmStatic
+  fun newBacklogHealthCheck(
+    backlogSize: () -> Int,
+    size: Int,
+  ): HealthCheck =
+    MetricsDsl.healthCheck {
+      val current = backlogSize()
+      if (current < size)
+        HealthCheck.Result.healthy()
+      else
+        HealthCheck.Result.unhealthy("Large size: $current (threshold: $size)")
+    }
+
+  /**
+   * Creates a [HealthCheck] that reports unhealthy when [backlogSize] meets or exceeds the given threshold.
+   *
+   * @param backlogSize the backlog size, captured once when the check is created.
+   * @param size the threshold at or above which the check is considered unhealthy.
+   * @return a [HealthCheck] that always evaluates the captured [backlogSize].
+   */
+  @Deprecated(
+    "The size is captured once, so the check never changes. Pass a () -> Int that reads the current size.",
+    ReplaceWith("newBacklogHealthCheck({ backlogSize }, size)"),
+  )
+  @JvmStatic
   fun newBacklogHealthCheck(
     backlogSize: Int,
     size: Int,
-  ) = MetricsDsl.healthCheck {
-    if (backlogSize < size)
-      HealthCheck.Result.healthy()
-    else
-      HealthCheck.Result.unhealthy("Large size: $backlogSize")
-  }
+  ): HealthCheck = newBacklogHealthCheck({ backlogSize }, size)
 
   /**
    * Creates a [HealthCheck] that reports unhealthy when the map size meets or exceeds the given threshold.
    *
-   * @param map the map whose size is evaluated.
+   * @param map the map whose size is evaluated on every check.
    * @param size the threshold at or above which the check is considered unhealthy.
    * @return a [HealthCheck] that monitors map size.
    */
+  @JvmStatic
   fun newMapHealthCheck(
     map: Map<*, *>,
     size: Int,
-  ) = MetricsDsl.healthCheck {
-    if (map.size < size)
-      HealthCheck.Result.healthy()
-    else
-      HealthCheck.Result.unhealthy("Large size: ${map.size}")
-  }
+  ): HealthCheck = newBacklogHealthCheck({ map.size }, size)
 }

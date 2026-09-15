@@ -17,6 +17,7 @@
 
 package com.pambrose.common.dsl
 
+import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Counter
 import io.prometheus.client.Gauge
 import io.prometheus.client.Histogram
@@ -25,55 +26,59 @@ import io.prometheus.client.Summary
 /**
  * Provides a Kotlin DSL for building and registering Prometheus metric collectors.
  *
- * Each factory function accepts a configuration lambda for the metric's builder and
- * automatically registers the metric with the default Prometheus [io.prometheus.client.CollectorRegistry].
+ * Each factory function accepts a configuration lambda for the metric's builder and registers the metric
+ * with the given [CollectorRegistry], which defaults to [CollectorRegistry.defaultRegistry].
  */
 object PrometheusDsl {
   /**
    * Creates, configures, and registers a Prometheus [Counter].
    *
+   * @param registry the registry to register the counter with.
    * @param block a lambda with [Counter.Builder] as receiver for configuring name, help, and labels.
    * @return the registered [Counter] instance.
    */
-  fun counter(block: Counter.Builder.() -> Unit): Counter =
-    Counter.build().run {
-      block(this)
-      register()
-    }
+  @JvmOverloads
+  fun counter(
+    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    block: Counter.Builder.() -> Unit,
+  ): Counter = Counter.build().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Summary].
    *
+   * @param registry the registry to register the summary with.
    * @param block a lambda with [Summary.Builder] as receiver for configuring name, help, quantiles, and labels.
    * @return the registered [Summary] instance.
    */
-  fun summary(block: Summary.Builder.() -> Unit): Summary =
-    Summary.build().run {
-      block(this)
-      register()
-    }
+  @JvmOverloads
+  fun summary(
+    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    block: Summary.Builder.() -> Unit,
+  ): Summary = Summary.build().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Gauge].
    *
+   * @param registry the registry to register the gauge with.
    * @param block a lambda with [Gauge.Builder] as receiver for configuring name, help, and labels.
    * @return the registered [Gauge] instance.
    */
-  fun gauge(block: Gauge.Builder.() -> Unit): Gauge =
-    Gauge.build().run {
-      block(this)
-      register()
-    }
+  @JvmOverloads
+  fun gauge(
+    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    block: Gauge.Builder.() -> Unit,
+  ): Gauge = Gauge.build().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Histogram].
    *
+   * @param registry the registry to register the histogram with.
    * @param block a lambda with [Histogram.Builder] as receiver for configuring name, help, buckets, and labels.
    * @return the registered [Histogram] instance.
    */
-  fun histogram(block: Histogram.Builder.() -> Unit): Histogram =
-    Histogram.build().run {
-      block(this)
-      register()
-    }
+  @JvmOverloads
+  fun histogram(
+    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    block: Histogram.Builder.() -> Unit,
+  ): Histogram = Histogram.build().apply(block).register(registry)
 }

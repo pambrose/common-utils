@@ -18,6 +18,7 @@
 package com.pambrose.common.concurrent
 
 import com.pambrose.common.dsl.PrometheusDsl
+import io.prometheus.client.CollectorRegistry
 import java.util.concurrent.ThreadFactory
 
 /**
@@ -28,48 +29,54 @@ import java.util.concurrent.ThreadFactory
  * @param delegate the underlying [ThreadFactory] to delegate thread creation to.
  * @param name the base name for the Prometheus metrics (suffixed with `_threads_created`, `_threads_running`, `_threads_terminated`).
  * @param help the base help text for the Prometheus metrics.
+ * @param registry the registry to register the metrics with. Defaults to [CollectorRegistry.defaultRegistry];
+ *   factories with the same [name] need separate registries.
  */
-class InstrumentedThreadFactory(
-  private val delegate: ThreadFactory,
-  name: String,
-  help: String,
-) : ThreadFactory {
-  private val created =
-    PrometheusDsl.counter {
-      name("${name}_threads_created")
-      help("$help threads created")
-    }
-  private val running =
-    PrometheusDsl.gauge {
-      name("${name}_threads_running")
-      help("$help threads running")
-    }
-  private val terminated =
-    PrometheusDsl.counter {
-      name("${name}_threads_terminated")
-      help("$help threads terminated")
-    }
+class InstrumentedThreadFactory
+  @JvmOverloads
+  constructor(
+    private val delegate: ThreadFactory,
+    name: String,
+    help: String,
+    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+  ) : ThreadFactory {
+    private val created =
+      PrometheusDsl.counter(registry) {
+        name("${name}_threads_created")
+        help("$help threads created")
+      }
+    private val running =
+      PrometheusDsl.gauge(registry) {
+        name("${name}_threads_running")
+        help("$help threads running")
+      }
+    private val terminated =
+      PrometheusDsl.counter(registry) {
+        name("${name}_threads_terminated")
+        help("$help threads terminated")
+      }
 
-  override fun newThread(runnable: Runnable): Thread {
-    val wrappedRunnable = InstrumentedRunnable(runnable)
-    val thread = delegate.newThread(wrappedRunnable)
-    created.inc()
-    return thread
-  }
+    /**
+     * Creates a thread through the delegate, counting it as created.
+     *
+     * @return the new thread, or `null` when the delegate rejects the request, which is then not counted.
+     */
+    override fun newThread(runnable: Runnable): Thread? =
+      delegate.newThread(InstrumentedRunnable(runnable))?.also { created.inc() }
 
-  private inner class InstrumentedRunnable(
-    private val runnable: Runnable,
-  ) : Runnable {
-    override fun run() {
-      running.inc()
-      try {
-        runnable.run()
-      } finally {
-        // Increment terminated before decrementing running so a concurrent scrape never
-        // observes a thread as neither running nor terminated (running + terminated < created).
-        terminated.inc()
-        running.dec()
+    private inner class InstrumentedRunnable(
+      private val runnable: Runnable,
+    ) : Runnable {
+      override fun run() {
+        running.inc()
+        try {
+          runnable.run()
+        } finally {
+          // Increment terminated before decrementing running, so a concurrent scrape never sees a finished
+          // thread as neither running nor terminated.
+          terminated.inc()
+          running.dec()
+        }
       }
     }
   }
-}
