@@ -25,6 +25,7 @@ import io.ktor.server.application.Plugin
 import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.header
+import io.ktor.server.request.path
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.util.url
 import io.ktor.util.AttributeKey
@@ -41,9 +42,9 @@ class HerokuHttpsRedirect(
   config: Configuration,
 ) {
   /**
-   * HTTPS host to redirect to
+   * HTTPS host to redirect to, or `null` to keep the host of the incoming request
    */
-  val host: String = config.host
+  val host: String? = config.host
 
   /**
    * HTTPS port to redirect to
@@ -66,9 +67,9 @@ class HerokuHttpsRedirect(
    */
   class Configuration {
     /**
-     * HTTPS host to redirect to
+     * HTTPS host to redirect to. Defaults to `null`, which keeps the host of the incoming request.
      */
-    var host: String = "localhost"
+    var host: String? = null
 
     /**
      * HTTPS port (443 by default) to redirect to
@@ -87,20 +88,22 @@ class HerokuHttpsRedirect(
     val excludePredicates: MutableList<CallPredicate> = []
 
     /**
-     * Exclude calls with paths matching the [pathPrefix] from being redirected to https by this feature.
+     * Exclude calls whose path (not including the query string) starts with [pathPrefix] from being redirected
+     * to https by this feature.
      */
     fun excludePrefix(pathPrefix: String) {
       exclude { call ->
-        call.request.origin.uri.startsWith(pathPrefix)
+        call.request.path().startsWith(pathPrefix)
       }
     }
 
     /**
-     * Exclude calls with paths matching the [pathSuffix] from being redirected to https by this feature.
+     * Exclude calls whose path (not including the query string) ends with [pathSuffix] from being redirected
+     * to https by this feature.
      */
     fun excludeSuffix(pathSuffix: String) {
       exclude { call ->
-        call.request.origin.uri.endsWith(pathSuffix)
+        call.request.path().endsWith(pathSuffix)
       }
     }
 
@@ -139,14 +142,14 @@ class HerokuHttpsRedirect(
           val redirectUrl =
             call.url {
               protocol = URLProtocol.HTTPS
-              host = feature.host
+              feature.host?.let { host = it }
               port = feature.redirectPort
             }
           logger.debug { "Redirecting to: $redirectUrl" }
           call.respondRedirect(redirectUrl, feature.permanent)
           finish()
         } else {
-          logger.trace { "Not redirecting: $scheme://${feature.host}${call.request.origin.uri}" }
+          logger.trace { "Not redirecting: $scheme://${call.request.origin.serverHost}${call.request.origin.uri}" }
         }
       }
       return feature

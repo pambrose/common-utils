@@ -48,7 +48,8 @@ import java.util.*
  * URI, query parameters, headers, and connection metadata through the standard servlet API.
  *
  * Only the subset of methods commonly needed by servlet-based libraries is implemented;
- * all other methods throw [UnsupportedOperationException].
+ * all other methods throw [UnsupportedOperationException]. Parameter names are case-insensitive, unlike in a
+ * servlet container, and [getPathInfo] is always `null` because the servlet is mounted at its exact path.
  *
  * @param request the Ktor [ApplicationRequest] to delegate to
  * @see servlet
@@ -56,9 +57,11 @@ import java.util.*
 class KtorServletRequest(
   private val request: ApplicationRequest,
 ) : HttpServletRequest {
-  // All four parameter accessors read this single, case-insensitive source (Ktor query
-  // parameters are case-insensitive), so they agree on lookups regardless of name casing.
+  // Ktor query parameters are case-insensitive, and names that differ only in case are merged
+  // (?id=1&ID=2 gives getParameterValues("id") == [1, 2]). All four parameter accessors, including
+  // getParameterMap, share that behavior, unlike a servlet container.
   private val params: Parameters by lazy { request.queryParameters }
+  private val attributes = mutableMapOf<String, Any>()
 
   override fun getMethod(): String = request.httpMethod.value
 
@@ -73,7 +76,9 @@ class KtorServletRequest(
   override fun getParameterValues(name: String): Array<String>? = params.getAll(name)?.toTypedArray()
 
   override fun getParameterMap(): Map<String, Array<String>> =
-    params.entries().associate { (key, values) -> key to values.toTypedArray() }
+    TreeMap<String, Array<String>>(String.CASE_INSENSITIVE_ORDER).apply {
+      params.entries().forEach { (key, values) -> put(key, values.toTypedArray()) }
+    }
 
   override fun getHeader(name: String): String? = request.headers[name]
 
@@ -98,6 +103,23 @@ class KtorServletRequest(
 
   override fun getServletPath(): String = request.path()
 
+  override fun getPathInfo(): String? = null
+
+  override fun getAttribute(name: String): Any? = attributes[name]
+
+  override fun getAttributeNames(): Enumeration<String> = Collections.enumeration(attributes.keys)
+
+  override fun setAttribute(
+    name: String,
+    o: Any?,
+  ) {
+    if (o == null) attributes.remove(name) else attributes[name] = o
+  }
+
+  override fun removeAttribute(name: String) {
+    attributes.remove(name)
+  }
+
   // Unsupported methods below
 
   override fun getAuthType(): String = throw UnsupportedOperationException()
@@ -107,8 +129,6 @@ class KtorServletRequest(
   override fun getDateHeader(name: String): Long = throw UnsupportedOperationException()
 
   override fun getIntHeader(name: String): Int = throw UnsupportedOperationException()
-
-  override fun getPathInfo(): String = throw UnsupportedOperationException()
 
   override fun getPathTranslated(): String = throw UnsupportedOperationException()
 
@@ -151,10 +171,6 @@ class KtorServletRequest(
 
   override fun getHttpServletMapping(): HttpServletMapping = throw UnsupportedOperationException()
 
-  override fun getAttribute(name: String): Any = throw UnsupportedOperationException()
-
-  override fun getAttributeNames(): Enumeration<String> = throw UnsupportedOperationException()
-
   override fun getCharacterEncoding(): String = throw UnsupportedOperationException()
 
   override fun setCharacterEncoding(env: String) = throw UnsupportedOperationException()
@@ -191,13 +207,6 @@ class KtorServletRequest(
   override fun getRemoteHost(): String = throw UnsupportedOperationException()
 
   override fun getRemotePort(): Int = throw UnsupportedOperationException()
-
-  override fun setAttribute(
-    name: String,
-    o: Any?,
-  ) = throw UnsupportedOperationException()
-
-  override fun removeAttribute(name: String) = throw UnsupportedOperationException()
 
   override fun getLocale(): Locale = throw UnsupportedOperationException()
 

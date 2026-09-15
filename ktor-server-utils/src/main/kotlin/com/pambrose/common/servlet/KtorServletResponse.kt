@@ -17,12 +17,15 @@
 
 package com.pambrose.common.servlet
 
+import io.ktor.http.ContentType
 import jakarta.servlet.ServletOutputStream
 import jakarta.servlet.WriteListener
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
 import java.io.ByteArrayOutputStream
+import java.io.OutputStreamWriter
 import java.io.PrintWriter
+import java.nio.charset.Charset
 import java.util.*
 
 /**
@@ -48,6 +51,7 @@ class KtorServletResponse : HttpServletResponse {
   private var streamUsed = false
   private var printWriter: PrintWriter? = null
   private var servletOutputStream: ServletOutputStream? = null
+  private var committed = false
 
   internal fun getBodyBytes(): ByteArray {
     printWriter?.flush()
@@ -84,6 +88,8 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun setContentType(type: String) {
     contentTypeValue = type
+    // As in a servlet container, a charset parameter in the content type sets the character encoding.
+    runCatching { ContentType.parse(type).parameter("charset") }.getOrNull()?.let { charEncodingValue = it }
   }
 
   override fun getContentType(): String? = contentTypeValue
@@ -98,7 +104,7 @@ class KtorServletResponse : HttpServletResponse {
     check(!streamUsed) { "getOutputStream() has already been called on this response" }
     writerUsed = true
     if (printWriter == null) {
-      printWriter = PrintWriter(buffer, true)
+      printWriter = PrintWriter(OutputStreamWriter(buffer, Charset.forName(charEncodingValue)), true)
     }
     return printWriter ?: error("PrintWriter is null")
   }
@@ -129,6 +135,46 @@ class KtorServletResponse : HttpServletResponse {
     return servletOutputStream ?: error("ServletOutputStream is null")
   }
 
+  // sendError and sendRedirect behave as in a servlet container: they set the status, discard any buffered
+  // output (for sendRedirect, only when clearBuffer is true), and commit the response.
+
+  override fun sendError(
+    sc: Int,
+    msg: String?,
+  ) {
+    discardBufferedOutput()
+    statusCode = sc
+    committed = true
+    if (!msg.isNullOrEmpty()) {
+      contentTypeValue = "text/plain; charset=UTF-8"
+      charEncodingValue = "UTF-8"
+      buffer.write(msg.encodeToByteArray())
+    }
+  }
+
+  override fun sendError(sc: Int) = sendError(sc, null)
+
+  override fun sendRedirect(location: String) = sendRedirect(location, HttpServletResponse.SC_FOUND, true)
+
+  override fun sendRedirect(
+    location: String,
+    sc: Int,
+    clearBuffer: Boolean,
+  ) {
+    if (clearBuffer)
+      discardBufferedOutput()
+    statusCode = sc
+    setHeader("Location", location)
+    committed = true
+  }
+
+  override fun isCommitted(): Boolean = committed
+
+  private fun discardBufferedOutput() {
+    printWriter?.flush()
+    buffer.reset()
+  }
+
   // Unsupported methods below
 
   override fun addCookie(cookie: Cookie) = throw UnsupportedOperationException()
@@ -136,21 +182,6 @@ class KtorServletResponse : HttpServletResponse {
   override fun encodeURL(url: String): String = throw UnsupportedOperationException()
 
   override fun encodeRedirectURL(url: String): String = throw UnsupportedOperationException()
-
-  override fun sendError(
-    sc: Int,
-    msg: String,
-  ) = throw UnsupportedOperationException()
-
-  override fun sendError(sc: Int) = throw UnsupportedOperationException()
-
-  override fun sendRedirect(location: String) = throw UnsupportedOperationException()
-
-  override fun sendRedirect(
-    location: String,
-    sc: Int,
-    clearBuffer: Boolean,
-  ) = throw UnsupportedOperationException()
 
   override fun setDateHeader(
     name: String,
@@ -183,8 +214,6 @@ class KtorServletResponse : HttpServletResponse {
   override fun flushBuffer() = throw UnsupportedOperationException()
 
   override fun resetBuffer() = throw UnsupportedOperationException()
-
-  override fun isCommitted(): Boolean = throw UnsupportedOperationException()
 
   override fun reset() = throw UnsupportedOperationException()
 

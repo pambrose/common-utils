@@ -81,21 +81,23 @@ get("/whoami") {
 
 ### Heroku HTTPS Redirect
 
-The plugin inspects the `x-forwarded-proto` header. When it is `http`, the request is redirected to the
-configured HTTPS host unless an exclusion predicate matches.
+The plugin inspects the `x-forwarded-proto` header. When it is `http`, the request is redirected to HTTPS
+unless an exclusion predicate matches. The redirect goes to the configured `host`, or to the request's own
+host when `host` is not set, and keeps the path and query string.
 
 ```kotlin
 import com.pambrose.common.features.HerokuHttpsRedirect
 import io.ktor.server.application.install
 
 install(HerokuHttpsRedirect) {
-  host = "myapp.herokuapp.com"
+  host = "myapp.herokuapp.com" // optional; defaults to the request's host
   sslPort = 443              // defaults to the HTTPS default port
   permanentRedirect = true   // 301 instead of 302
 
-  // Exclusions — use these rather than raw path lists
+  // Exclusions match the request path, not the query string
   excludePrefix("/health")
-  excludeSuffix(".well-known")
+  excludePrefix("/.well-known")
+  excludeSuffix(".txt")
   exclude { call -> call.request.headers.contains("X-Skip-Redirect") }
 }
 ```
@@ -107,7 +109,14 @@ Configuration properties are `host`, `sslPort`, `permanentRedirect` and `exclude
 
 `Route.servlet` initializes the servlet once, then translates each Ktor request into a
 `KtorServletRequest`/`KtorServletResponse` pair. Servlet processing runs on `Dispatchers.IO`, and the
-servlet's status, headers and body are forwarded back through the Ktor pipeline.
+servlet's status, headers and body are forwarded back through the Ktor pipeline. The servlet's `destroy()`
+is called when the application stops.
+
+- **Supported:** `sendError` and `sendRedirect`, so an unsupported HTTP method gets `405` from `HttpServlet`'s
+  defaults. Also request attributes, and `getPathInfo()`, which is always `null`.
+- **Character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is used for the
+  body, and it labels a text response that has no explicit charset.
+- **Parameters:** parameter names are case-insensitive, which is Ktor's behavior, unlike a servlet container.
 
 ```kotlin
 import com.pambrose.common.servlet.servlet
@@ -138,8 +147,8 @@ dependencies {
 
 ### Heroku
 
-- `class HerokuHttpsRedirect` — properties `host`, `redirectPort`, `permanent`, `excludePredicates`
-- `HerokuHttpsRedirect.Configuration` — `host`, `sslPort`, `permanentRedirect`, `excludePredicates`,
+- `class HerokuHttpsRedirect` — properties `host` (nullable), `redirectPort`, `permanent`, `excludePredicates`
+- `HerokuHttpsRedirect.Configuration` — `host` (default `null`), `sslPort`, `permanentRedirect`, `excludePredicates`,
   `excludePrefix(pathPrefix)`, `excludeSuffix(pathSuffix)`, `exclude(predicate)`
 - `typealias CallPredicate = (ApplicationCall) -> Boolean`
 
