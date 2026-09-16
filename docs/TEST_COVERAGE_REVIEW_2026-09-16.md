@@ -137,20 +137,20 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — fixed in #187 (the `RedisUtils` catch is left for TC-067)
 
 ### core-utils
-- [ ] **TC-008** `HIGH` · bug — `singleToDoubleQuoted` corrupts input that has surrounding whitespace ([details](#tc-008)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-009** `HIGH` · platform — `commonMain` utilities tested only on the JVM; confirmed JS differences ([details](#tc-009)) — in progress (branch `worktree-core-utils-test-gaps`; JS/wasm/native differences pinned per platform, trimEnds/maxLength now throw everywhere)
-- [ ] **TC-010** `MEDIUM` · bug — `UrlSource` throws for `Duration.INFINITE` or ≥ ~25-day timeouts ([details](#tc-010)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-011** `MEDIUM` · weak — `Short.MAX_VALUE` regression test never uses `MAX_VALUE` ([details](#tc-011)) — in progress (branch `worktree-core-utils-test-gaps`; the original Short counter never looped forever, see details)
-- [ ] **TC-012** `MEDIUM` · weak — `Atomic` concurrency tests can't detect a missing `Mutex` ([details](#tc-012)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-013** `MEDIUM` · gap — `DateUtils`: `localDateNow`/`localDateTimeNow`/`age(tz)` untested; expectations copy the implementation ([details](#tc-013)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-014** `MEDIUM` · gap — `toObjectSecure`: exact-name blocklist and JVM-filter merge never hit; messages unchecked ([details](#tc-014)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-015** `LOW` · gap — `linesBetween` reversed-boundary guard has no test ([details](#tc-015)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-016** `LOW` · gap — `getBanner` missing resource / interior blank lines; null context classloader fallback ([details](#tc-016)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-017** `LOW` · weak — `Version.plainStr` never called; `Version` assertions only check presence ([details](#tc-017)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-018** `LOW` · gap — `criticalSection` flag state and single-assignment thread safety untested ([details](#tc-018)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-019** `LOW` · gap — No DST gap/overlap tests for zone-offset formatting ([details](#tc-019)) — in progress (branch `worktree-core-utils-test-gaps`)
-- [ ] **TC-020** `LOW` · gap — Edge cases: negative years, surrogate pairs, non-ASCII capitalization, checksum boundary, property override order, port-wait retry ([details](#tc-020)) — in progress (branch `worktree-core-utils-test-gaps`; negative lpad and surrogate pairs fixed, invalid port now rejected)
-- [ ] **TC-021** `LOW` · flaky/weak — Wall-clock upper bounds, a real `getLocalHost()` call, and no-op assertions ([details](#tc-021)) — in progress (branch `worktree-core-utils-test-gaps`)
+- [x] **TC-008** `HIGH` · bug — `singleToDoubleQuoted` corrupts input that has surrounding whitespace ([details](#tc-008)) — fixed in #191
+- [x] **TC-009** `HIGH` · platform — `commonMain` utilities tested only on the JVM; confirmed JS differences ([details](#tc-009)) — fixed in #191 (JS/wasm/native differences pinned per platform, trimEnds/maxLength now throw everywhere)
+- [x] **TC-010** `MEDIUM` · bug — `UrlSource` throws for `Duration.INFINITE` or ≥ ~25-day timeouts ([details](#tc-010)) — fixed in #191
+- [x] **TC-011** `MEDIUM` · weak — `Short.MAX_VALUE` regression test never uses `MAX_VALUE` ([details](#tc-011)) — fixed in #191 (the original Short counter never looped forever, see details)
+- [x] **TC-012** `MEDIUM` · weak — `Atomic` concurrency tests can't detect a missing `Mutex` ([details](#tc-012)) — fixed in #191
+- [x] **TC-013** `MEDIUM` · gap — `DateUtils`: `localDateNow`/`localDateTimeNow`/`age(tz)` untested; expectations copy the implementation ([details](#tc-013)) — fixed in #191
+- [x] **TC-014** `MEDIUM` · gap — `toObjectSecure`: exact-name blocklist and JVM-filter merge never hit; messages unchecked ([details](#tc-014)) — fixed in #191
+- [x] **TC-015** `LOW` · gap — `linesBetween` reversed-boundary guard has no test ([details](#tc-015)) — fixed in #191
+- [x] **TC-016** `LOW` · gap — `getBanner` missing resource / interior blank lines; null context classloader fallback ([details](#tc-016)) — fixed in #191
+- [x] **TC-017** `LOW` · weak — `Version.plainStr` never called; `Version` assertions only check presence ([details](#tc-017)) — fixed in #191
+- [x] **TC-018** `LOW` · gap — `criticalSection` flag state and single-assignment thread safety untested ([details](#tc-018)) — fixed in #191
+- [x] **TC-019** `LOW` · gap — No DST gap/overlap tests for zone-offset formatting ([details](#tc-019)) — fixed in #191
+- [x] **TC-020** `LOW` · gap — Edge cases: negative years, surrogate pairs, non-ASCII capitalization, checksum boundary, property override order, port-wait retry ([details](#tc-020)) — fixed in #191 (negative lpad and surrogate pairs fixed, invalid port now rejected)
+- [x] **TC-021** `LOW` · flaky/weak — Wall-clock upper bounds, a real `getLocalHost()` call, and no-op assertions ([details](#tc-021)) — fixed in #191
 
 ### json-utils
 - [ ] **TC-022** `HIGH` · bug — `getByPath` throws instead of returning `null` when the path crosses a non-object ([details](#tc-022))
