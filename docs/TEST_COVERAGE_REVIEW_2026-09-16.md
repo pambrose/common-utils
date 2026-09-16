@@ -134,7 +134,7 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-004** `LOW` · infra — Codecov patch target (70%) is far below the project's level ([details](#tc-004)) — fixed in #187
 - [x] **TC-005** `LOW` · infra — No mutation testing to catch "runs but isn't checked" tests ([details](#tc-005)) — fixed in #187
 - [x] **TC-006** `LOW` · infra — Java-facing API (`@JvmStatic` bridges, `@JvmName` facades) is never exercised or ABI-checked ([details](#tc-006)) — fixed in #187
-- [x] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — fixed in #187 (the `RedisUtils` catch is left for TC-067)
+- [x] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — fixed in #187 (the `RedisUtils` catch was removed by TC-067 in #196)
 
 ### core-utils
 - [x] **TC-008** `HIGH` · bug — `singleToDoubleQuoted` corrupts input that has surrounding whitespace ([details](#tc-008)) — fixed in #191
@@ -212,22 +212,22 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-062** `LOW` · weak — `GuavaFuncsTests` cannot fail ([details](#tc-062))
 
 ### prometheus-utils
-- [ ] **TC-063** `MEDIUM` · gap — `SystemMetrics` retry path untested; repeat-call test cannot fail ([details](#tc-063))
-- [ ] **TC-064** `LOW` · gap — Duplicate registration, throwing runnables, partial registration in `InstrumentedThreadFactory` ([details](#tc-064))
+- [x] **TC-063** `MEDIUM` · gap — `SystemMetrics` retry path untested; repeat-call test cannot fail ([details](#tc-063)) — fixed in #196
+- [x] **TC-064** `LOW` · gap — Duplicate registration, throwing runnables, partial registration in `InstrumentedThreadFactory` ([details](#tc-064)) — fixed in #196
 
 ### dropwizard-utils
-- [ ] **TC-065** `LOW` · weak — Map health check never shown to be live; error message unchecked ([details](#tc-065))
+- [x] **TC-065** `LOW` · weak — Map health check never shown to be live; error message unchecked ([details](#tc-065)) — fixed in #196
 
 ### redis-utils
-- [ ] **TC-066** `HIGH` · gap — Real `withRedis` connect/ping/close path never runs; URL and `close()` never verified ([details](#tc-066))
-- [ ] **TC-067** `MEDIUM` · bug — URL without a port uses port -1; malformed URLs escape the null path ([details](#tc-067))
-- [ ] **TC-068** `LOW` · weak — `shouldNotBe null` on non-null clients; `printStackTrace` effect unverified ([details](#tc-068))
+- [x] **TC-066** `HIGH` · gap — Real `withRedis` connect/ping/close path never runs; URL and `close()` never verified ([details](#tc-066)) — fixed in #196
+- [x] **TC-067** `MEDIUM` · bug — URL without a port uses port -1; malformed URLs escape the null path ([details](#tc-067)) — fixed in #196
+- [x] **TC-068** `LOW` · weak — `shouldNotBe null` on non-null clients; `printStackTrace` effect unverified ([details](#tc-068)) — fixed in #196
 
 ### exposed-utils
-- [ ] **TC-069** `HIGH` · weak — No test proves `upsert` uses the given conflict index ([details](#tc-069))
-- [ ] **TC-070** `MEDIUM` · weak — Transaction helpers' read-only, isolation and rollback behaviour unverified ([details](#tc-070))
-- [ ] **TC-071** `LOW` · gap — `toRowString` empty-value filter; `CustomExpr` never run against H2 ([details](#tc-071))
-- [ ] **TC-072** `LOW` · weak — Null-database tests are weak and order-dependent; stale comment ([details](#tc-072))
+- [x] **TC-069** `HIGH` · weak — No test proves `upsert` uses the given conflict index ([details](#tc-069)) — fixed in #196
+- [x] **TC-070** `MEDIUM` · weak — Transaction helpers' read-only, isolation and rollback behaviour unverified ([details](#tc-070)) — fixed in #196
+- [x] **TC-071** `LOW` · gap — `toRowString` empty-value filter; `CustomExpr` never run against H2 ([details](#tc-071)) — fixed in #196
+- [x] **TC-072** `LOW` · weak — Null-database tests are weak and order-dependent; stale comment ([details](#tc-072)) — fixed in #196
 
 ### script-utils (common / java / kotlin / python)
 - [ ] **TC-073** `HIGH` · bug — `accessibleClass` falls back to `Any` but keeps the type arguments; arrays fail to compile ([details](#tc-073))
