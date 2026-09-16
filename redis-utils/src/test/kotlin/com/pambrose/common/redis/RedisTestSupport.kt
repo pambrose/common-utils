@@ -113,27 +113,32 @@ internal class FakeRedisServer : AutoCloseable {
 
   private fun serve(socket: Socket) {
     try {
-      socket.use {
-        val input = BufferedInputStream(it.getInputStream())
-        val output = it.getOutputStream()
-        while (true) {
-          val command = readCommand(input) ?: break
-          val name = command.firstOrNull().orEmpty()
-          val reply =
-            if (name.equals("PING", ignoreCase = true)) {
-              pings.incrementAndFetch()
-              "+PONG\r\n"
-            } else {
-              "-ERR unknown command '$name'\r\n"
-            }
-          output.write(reply.toByteArray())
-          output.flush()
-        }
-      }
+      socket.use { answerCommands(it) }
     } catch (_: IOException) {
       // The client went away mid-command; that still counts as closing the connection.
     } finally {
       open.decrementAndFetch()
+    }
+  }
+
+  // Answers commands until the client closes its end of the connection.
+  private fun answerCommands(socket: Socket) {
+    val input = BufferedInputStream(socket.getInputStream())
+    val output = socket.getOutputStream()
+    while (true) {
+      val command = readCommand(input) ?: break
+      output.write(replyTo(command).toByteArray())
+      output.flush()
+    }
+  }
+
+  private fun replyTo(command: List<String>): String {
+    val name = command.firstOrNull().orEmpty()
+    return if (name.equals("PING", ignoreCase = true)) {
+      pings.incrementAndFetch()
+      "+PONG\r\n"
+    } else {
+      "-ERR unknown command '$name'\r\n"
     }
   }
 
