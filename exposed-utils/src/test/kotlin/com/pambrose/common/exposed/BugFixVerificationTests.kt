@@ -19,42 +19,51 @@
 package com.pambrose.common.exposed
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.types.shouldNotBeInstanceOf
-import org.jetbrains.exposed.v1.core.Table
-
-private object UpsertTestTable : Table("upsert_test") {
-  val id = integer("id")
-  val email = varchar("email", 255).uniqueIndex()
-  val name = varchar("name", 255)
-}
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldStartWith
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 
 class BugFixVerificationTests : StringSpec() {
   init {
-    // Bug #3: readonlyTx/timedTransaction/timedReadOnlyTx threw NPE when db=null
-    // Before fix: db.transactionManager used non-null assertion on nullable db
-    // After fix: db?.transactionManager?.defaultIsolationLevel ?: TRANSACTION_REPEATABLE_READ
+    // Bug #3: readonlyTx, timedTransaction and timedReadOnlyTx threw NullPointerException when db was null.
+    // Before the fix, the default isolation level was read through db!!.transactionManager.
+    // After the fix, it is db?.transactionManager?.defaultIsolationLevel, which is null for a null db, so Exposed
+    // picks both the database and its isolation level.
 
-    "readonly tx with null db does not throw NPE" {
-      // Should throw an Exposed exception (no database configured), NOT a NullPointerException
-      val exception = shouldThrow<Exception> {
-        readonlyTx(db = null) { }
+    // Exposed resolves a null db to the default database or, failing that, to the last one registered. The
+    // missing-database error below therefore needs every other spec to have unregistered its database, which each
+    // does in afterSpec; this makes that precondition explicit instead of silent.
+    beforeTest {
+      withClue("a database is still registered, so a null db would resolve to it") {
+        TransactionManager.primaryDatabase shouldBe null
       }
-      exception.shouldNotBeInstanceOf<NullPointerException>()
     }
 
-    "timed transaction with null db does not throw NPE" {
-      val exception = shouldThrow<Exception> {
-        timedTransaction(db = null) { }
+    "each helper reports a missing database with Exposed's error rather than a NullPointerException" {
+      listOf<Pair<String, () -> Any?>>(
+        "readonlyTx" to { readonlyTx(db = null) { } },
+        "timedTransaction" to { timedTransaction(db = null) { } },
+        "timedReadOnlyTx" to { timedReadOnlyTx(db = null) { } },
+      ).forEach { (name, call) ->
+        withClue(name) {
+          shouldThrow<IllegalStateException> { call() }.message shouldStartWith "No database specified"
+        }
       }
-      exception.shouldNotBeInstanceOf<NullPointerException>()
     }
 
-    "timed read only tx with null db does not throw NPE" {
-      val exception = shouldThrow<Exception> {
-        timedReadOnlyTx(db = null) { }
+    "a null db resolves to the registered database" {
+      val db = Database.connect("jdbc:h2:mem:null_db_resolution_tests;DB_CLOSE_DELAY=-1", user = "sa")
+      try {
+        readonlyTx(db = null) { this.db } shouldBeSameInstanceAs db
+        timedTransaction(db = null) { this.db }.value shouldBeSameInstanceAs db
+        timedReadOnlyTx(db = null) { this.db }.value shouldBeSameInstanceAs db
+      } finally {
+        TransactionManager.closeAndUnregister(db)
       }
-      exception.shouldNotBeInstanceOf<NullPointerException>()
     }
   }
 }

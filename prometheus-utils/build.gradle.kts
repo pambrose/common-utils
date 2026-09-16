@@ -5,4 +5,6 @@ dependencies {
 
     api(libs.prometheus.core)
     api(libs.prometheus.hotspot)
+
+    testImplementation(libs.mockk)
 }

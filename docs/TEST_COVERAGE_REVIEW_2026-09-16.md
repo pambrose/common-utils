@@ -328,7 +328,7 @@ About 30 of the 114 missed branches are compiler-generated null checks, `COROUTI
 - `KtorServletResponse.kt:120, 146`: `printWriter ?: PrintWriter(…).also { printWriter = it }`.
 - `AtomicDelegates.kt:90`: drop the `= null` default on the private constructor.
 - `RecaptchaService.kt:92`: drop the `= null` default on a non-null `String`.
-- `RedisUtils.kt:158-161`: the `catch` around `createRedisClient` is effectively dead, because building a client never connects. It does, however, catch nothing that malformed URLs throw; see [TC-067](#tc-067) before deleting it.
+- `RedisUtils.kt:158-161`: the `catch` around `createRedisClient` is effectively dead, because building a client never reports a connection failure (jedis 8.0.1 does open a probe connection while building, but swallows its `JedisException`). It does, however, catch nothing that malformed URLs throw; see [TC-067](#tc-067) before deleting it.
 
 The rest need no action. Do **not** add Kover class exclusions to hide them ([TC-030](#tc-030) explains why that backfires for serialization code).
 
@@ -1017,7 +1017,7 @@ The `else` (retry later) arm is never taken. The repeat-call test can't fail: a 
 **Where:** `dropwizard-utils/src/main/kotlin/com/pambrose/common/util/MetricsUtils.kt:77`; test `dropwizard-utils/src/test/kotlin/com/pambrose/common/dsl/MetricsDslTests.kt:49-57`
 
 - **Live map:** the tests use only immutable maps, so nothing shows `newMapHealthCheck` reads the map on every check. **Test:** create the check, mutate the `HashMap`, and assert the next result changes.
-- **Error message:** the throwing-block test doesn't assert the result's `error`.
+- **Error message:** the exception test doesn't assert the result's `error`. Its block returns `unhealthy(exception)` rather than throwing, and no test has a block that throws.
 
 ### redis-utils
 

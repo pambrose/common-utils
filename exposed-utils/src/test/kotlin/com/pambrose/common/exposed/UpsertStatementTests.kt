@@ -23,6 +23,8 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.exceptions.UnsupportedByDialectException
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.deleteAll
@@ -31,13 +33,17 @@ import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 private object UpsertUsersTable : Table("upsert_test_users") {
-  val id = integer("id")
+  // Given no keys, Exposed falls back to the primary key (there is none) and then to the first unique index, which
+  // is this one. The tests conflict on the email index instead, so they fail if the index they pass is dropped.
+  val id = integer("id").uniqueIndex()
   val email = varchar("email", 100).uniqueIndex()
 
   // Indexed but not unique: not a usable conflict target.
   val name = varchar("name", 100).index()
   val nickname = varchar("nickname", 100).nullable()
 }
+
+private val emailIndex get() = UpsertUsersTable.indices.single { it.columns == [UpsertUsersTable.email] }
 
 // A second table, so an index from the wrong table can be passed as a conflict target.
 private object UpsertOtherTable : Table("upsert_test_other") {
@@ -70,7 +76,7 @@ class UpsertStatementTests : StringSpec() {
 
     "upsert with conflict index inserts a new row when no conflict exists" {
       transaction(db) {
-        val conflictIndex = UpsertUsersTable.indices.single { it.unique }
+        val conflictIndex = emailIndex
         UpsertUsersTable.upsert(conflictIndex) {
           it[id] = 1
           it[email] = "alice@example.com"
@@ -86,7 +92,7 @@ class UpsertStatementTests : StringSpec() {
 
     "upsert with conflict index updates the existing row on conflict" {
       transaction(db) {
-        val conflictIndex = UpsertUsersTable.indices.single { it.unique }
+        val conflictIndex = emailIndex
         UpsertUsersTable.upsert(conflictIndex) {
           it[id] = 1
           it[email] = "alice@example.com"
@@ -101,6 +107,42 @@ class UpsertStatementTests : StringSpec() {
         UpsertUsersTable.selectAll().count() shouldBe 1L
         val row = UpsertUsersTable.selectAll().single()
         row[UpsertUsersTable.name] shouldBe "Alice Updated"
+      }
+    }
+
+    // Only the email index matches here. An upsert on the id index, Exposed's fallback, would find no row with id 2,
+    // insert one, and violate the unique email index.
+    "upsert matches rows on the given index, not on the first unique index" {
+      transaction(db) {
+        UpsertUsersTable.upsert(emailIndex) {
+          it[id] = 1
+          it[email] = "alice@example.com"
+          it[name] = "Alice"
+        }
+        UpsertUsersTable.upsert(emailIndex) {
+          it[id] = 2
+          it[email] = "alice@example.com"
+          it[name] = "Alice Renumbered"
+        }
+
+        val row = UpsertUsersTable.selectAll().single()
+        row[UpsertUsersTable.id] shouldBe 2
+        row[UpsertUsersTable.name] shouldBe "Alice Renumbered"
+      }
+    }
+
+    // H2 builds UPSERT from MERGE, which cannot take a WHERE clause, so a forwarded one is rejected.
+    "upsert forwards where to Exposed" {
+      transaction(db) {
+        val exception =
+          shouldThrow<UnsupportedByDialectException> {
+            UpsertUsersTable.upsert(emailIndex, where = { UpsertUsersTable.name eq "Alice" }) {
+              it[id] = 1
+              it[email] = "alice@example.com"
+              it[name] = "Alice"
+            }
+          }
+        exception.message shouldContain "MERGE implementation of UPSERT doesn't support single WHERE clause"
       }
     }
 
@@ -140,7 +182,7 @@ class UpsertStatementTests : StringSpec() {
 
     "upsert forwards onUpdate so only the listed columns change" {
       transaction(db) {
-        val conflictIndex = UpsertUsersTable.indices.single { it.unique }
+        val conflictIndex = emailIndex
         UpsertUsersTable.upsert(conflictIndex) {
           it[id] = 1
           it[email] = "alice@example.com"
@@ -163,7 +205,7 @@ class UpsertStatementTests : StringSpec() {
 
     "upsert forwards onUpdateExclude so the excluded column keeps its value" {
       transaction(db) {
-        val conflictIndex = UpsertUsersTable.indices.single { it.unique }
+        val conflictIndex = emailIndex
         UpsertUsersTable.upsert(conflictIndex) {
           it[id] = 1
           it[email] = "alice@example.com"

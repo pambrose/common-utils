@@ -23,6 +23,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import java.net.URI
+import java.time.Duration
 
 class RedisUtilsTests : StringSpec() {
   init {
@@ -58,36 +59,33 @@ class RedisUtilsTests : StringSpec() {
       RedisUtils.REDIS_MAX_WAIT_SECS shouldBe "redis.maxWaitSecs"
     }
 
-    "redis client creation with valid params" {
-      // This will fail to connect but should create the client object
-      val client = RedisUtils.newRedisClient(
-        redisUrl = "redis://user:pass@localhost:6379",
+    // Port 1 refuses connections, and jedis only reports that on the first command, so these clients are built
+    // without contacting any server.
+    "redis client creation applies the given pool settings" {
+      RedisUtils.newRedisClient(
+        redisUrl = "redis://user:pass@localhost:1",
         maxPoolSize = 5,
         maxIdleSize = 3,
-        minIdleSize = 1,
-        maxWaitSecs = 2,
-      )
-      client shouldNotBe null
-      client.close()
+        minIdleSize = 2,
+        maxWaitSecs = 4,
+      ).use { client ->
+        client.pool.maxTotal shouldBe 5
+        client.pool.maxIdle shouldBe 3
+        client.pool.minIdle shouldBe 2
+        client.pool.maxWaitDuration shouldBe Duration.ofSeconds(4)
+      }
     }
 
-    "redis client creation with ssl url" {
-      // Test that SSL URLs are handled (rediss:// prefix)
-      val client = RedisUtils.newRedisClient(
-        redisUrl = "rediss://user:pass@localhost:6379",
-        maxPoolSize = 1,
-      )
-      client shouldNotBe null
-      client.close()
-    }
-
-    "redis client creation with no password" {
-      val client = RedisUtils.newRedisClient(
-        redisUrl = "redis://localhost:6379",
-        maxPoolSize = 1,
-      )
-      client shouldNotBe null
-      client.close()
+    // "user" is a placeholder name, so only the password is sent.
+    "an ssl url with a placeholder user enables ssl and sends only the password" {
+      RedisUtils.clientConfig("rediss://user:pass@localhost:6379").apply {
+        sslOptions shouldNotBe null
+        user shouldBe null
+        password shouldBe "pass"
+      }
+      RedisUtils.newRedisClient(redisUrl = "rediss://user:pass@localhost:1", maxPoolSize = 1).use { client ->
+        client.pool.maxTotal shouldBe 1
+      }
     }
 
     // RedisInfo.includeUserInAuth decides whether to send the username in AUTH: only when the

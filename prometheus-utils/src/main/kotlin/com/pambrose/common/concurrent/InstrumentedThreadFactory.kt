@@ -18,7 +18,10 @@
 package com.pambrose.common.concurrent
 
 import com.pambrose.common.dsl.PrometheusDsl
+import io.prometheus.client.Collector
 import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.Counter
+import io.prometheus.client.Gauge
 import java.util.concurrent.ThreadFactory
 
 /**
@@ -31,6 +34,8 @@ import java.util.concurrent.ThreadFactory
  * @param help the base help text for the Prometheus metrics.
  * @param registry the registry to register the metrics with. Defaults to [CollectorRegistry.defaultRegistry];
  *   factories with the same [name] need separate registries.
+ * @throws IllegalArgumentException if one of the metric names is already registered in [registry]. None of the
+ *   three metrics is left registered in that case.
  */
 class InstrumentedThreadFactory
   @JvmOverloads
@@ -40,21 +45,40 @@ class InstrumentedThreadFactory
     help: String,
     registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
   ) : ThreadFactory {
-    private val created =
-      PrometheusDsl.counter(registry) {
-        name("${name}_threads_created")
-        help("$help threads created")
+    private val created: Counter
+    private val running: Gauge
+    private val terminated: Counter
+
+    init {
+      // Register all three metrics or none: when a later name is already taken, the metrics registered before it
+      // are removed again, so a failed construction leaves nothing behind in the registry.
+      val registered: MutableList<Collector> = []
+      var complete = false
+      try {
+        created =
+          PrometheusDsl
+            .counter(registry) {
+              name("${name}_threads_created")
+              help("$help threads created")
+            }.also { registered += it }
+        running =
+          PrometheusDsl
+            .gauge(registry) {
+              name("${name}_threads_running")
+              help("$help threads running")
+            }.also { registered += it }
+        terminated =
+          PrometheusDsl
+            .counter(registry) {
+              name("${name}_threads_terminated")
+              help("$help threads terminated")
+            }.also { registered += it }
+        complete = true
+      } finally {
+        if (!complete)
+          registered.forEach { registry.unregister(it) }
       }
-    private val running =
-      PrometheusDsl.gauge(registry) {
-        name("${name}_threads_running")
-        help("$help threads running")
-      }
-    private val terminated =
-      PrometheusDsl.counter(registry) {
-        name("${name}_threads_terminated")
-        help("$help threads terminated")
-      }
+    }
 
     /**
      * Creates a thread through the delegate, counting it as created.

@@ -5,5 +5,6 @@ dependencies {
 
     api(libs.redis)
 
+    testImplementation(libs.logback.classic)
     testImplementation(libs.mockk)
 }

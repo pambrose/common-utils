@@ -18,10 +18,12 @@ package com.pambrose.common.redis
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URI
+import java.net.URISyntaxException
 import java.time.Duration
 import redis.clients.jedis.ConnectionPoolConfig
 import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.Protocol.DEFAULT_PORT
 import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.SslOptions
@@ -35,6 +37,10 @@ import redis.clients.jedis.util.JedisURIHelper
  *
  * Pool sizing and wait time can be configured via system properties or method parameters.
  * The default Redis URL is read from the `REDIS_URL` environment variable.
+ *
+ * A URL without a port uses 6379. A URL that can never work (one that is malformed, has no host, or carries a
+ * non-numeric database index or an unknown `protocol`) is a configuration error: every function that takes a URL
+ * throws [IllegalArgumentException] for it, rather than treating it as a connection failure.
  */
 object RedisUtils {
   private val logger = KotlinLogging.logger {}
@@ -92,11 +98,26 @@ object RedisUtils {
       get() = user.isNotBlank() && user != "default" && user != "user" && hasRealPassword
   }
 
-  private fun urlDetails(redisUrl: String) =
-    URI(redisUrl).let {
-      val userInfo = it.userInfo?.split(":", limit = 2).orEmpty()
-      RedisInfo(it, userInfo.getOrElse(0) { "" }, userInfo.getOrElse(1) { "" })
-    }
+  // A URL that can never work is rejected here, rather than becoming a client whose every connection fails.
+  private fun urlDetails(redisUrl: String): RedisInfo {
+    val uri =
+      try {
+        URI(redisUrl)
+      } catch (e: URISyntaxException) {
+        // The URL, and therefore e's message, can hold a password, so neither is passed on.
+        throw IllegalArgumentException("Malformed Redis URL: ${e.reason} at index ${e.index}")
+      }
+    // Without a host, as in localhost:6379 (read as scheme "localhost"), Jedis would silently connect to loopback.
+    require(!uri.host.isNullOrBlank()) { "Redis URL has no host" }
+    val userInfo = uri.userInfo?.split(":", limit = 2).orEmpty()
+    return RedisInfo(uri, userInfo.getOrElse(0) { "" }, userInfo.getOrElse(1) { "" })
+  }
+
+  // URI reports a missing port as -1, which Jedis would try to connect to.
+  private val URI.hostAndPort: HostAndPort get() = HostAndPort(host, port.takeUnless { it == -1 } ?: DEFAULT_PORT)
+
+  /** The host and port a client built from [redisUrl] connects to; the port defaults to 6379. */
+  internal fun hostAndPort(redisUrl: String): HostAndPort = urlDetails(redisUrl).uri.hostAndPort
 
   // Compared case-insensitively: lowercase() with a Turkish default locale maps REDISS to redıss.
   private val URI.isSslScheme: Boolean get() = scheme.equals("rediss", ignoreCase = true)
@@ -142,25 +163,20 @@ object RedisUtils {
   private fun createRedisClient(redisUrl: String): RedisClient {
     val info = urlDetails(redisUrl)
     return RedisClient.builder()
-      .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
+      .hostAndPort(info.uri.hostAndPort)
       .clientConfig(clientConfig(info))
       .build()
   }
 
-  // Building a client never contacts the server, so ping() is what actually proves the connection works.
+  // Building a client does not report an unreachable server (jedis 8 probes a connection while building, but
+  // ignores the failure), so ping() is what actually proves the connection works. Building throws only for an
+  // invalid URL, which is a configuration error rather than a connection failure, so it is left to propagate.
   // A client that cannot be used is closed here rather than handed to the caller.
   private fun connectOrNull(
     redisUrl: String,
     printStackTrace: Boolean,
   ): RedisClient? {
-    val client =
-      try {
-        createRedisClient(redisUrl)
-      } catch (e: JedisException) {
-        logConnectionFailure(e, printStackTrace)
-        return null
-      }
-
+    val client = createRedisClient(redisUrl)
     return try {
       client.ping()
       client
@@ -199,8 +215,8 @@ object RedisUtils {
    * @param minIdleSize minimum idle connections; defaults to the [REDIS_MIN_IDLE_SIZE] property or 1
    * @param maxWaitSecs seconds to wait when borrowing a connection; defaults to the [REDIS_MAX_WAIT_SECS] property or 1
    * @return a configured [RedisClient] with connection pooling
-   * @throws IllegalArgumentException if a pool setting is negative, or if [maxPoolSize] is 0, which would
-   *   create a pool that can never lend a connection
+   * @throws IllegalArgumentException if a pool setting is negative, if [maxPoolSize] is 0, which would
+   *   create a pool that can never lend a connection, or if [redisUrl] is invalid (see [RedisUtils])
    */
   fun newRedisClient(
     redisUrl: String = defaultRedisUrl,
@@ -238,7 +254,7 @@ object RedisUtils {
     val info = urlDetails(redisUrl)
 
     return RedisClient.builder()
-      .hostAndPort(HostAndPort(info.uri.host, info.uri.port))
+      .hostAndPort(info.uri.hostAndPort)
       .clientConfig(clientConfig(info))
       .poolConfig(poolConfig)
       .build()
@@ -320,6 +336,7 @@ object RedisUtils {
    * @param printStackTrace if `true`, logs the full stack trace on connection failure
    * @param block the operation to execute; receives `null` on connection failure
    * @return the result of [block]
+   * @throws IllegalArgumentException if [redisUrl] is invalid (see [RedisUtils]); [block] is not run
    */
   fun <T> withRedis(
     redisUrl: String = defaultRedisUrl,
@@ -340,6 +357,7 @@ object RedisUtils {
    * @param printStackTrace if `true`, logs the full stack trace on connection failure
    * @param block the operation to execute with a guaranteed non-null client
    * @return the result of [block], or `null` on connection failure
+   * @throws IllegalArgumentException if [redisUrl] is invalid (see [RedisUtils]); [block] is not run
    */
   fun <T> withNonNullRedis(
     redisUrl: String = defaultRedisUrl,
@@ -360,6 +378,7 @@ object RedisUtils {
    * @param printStackTrace if `true`, logs the full stack trace on connection failure
    * @param block the suspending operation to execute; receives `null` on connection failure
    * @return the result of [block]
+   * @throws IllegalArgumentException if [redisUrl] is invalid (see [RedisUtils]); [block] is not run
    */
   suspend fun <T> withSuspendingRedis(
     redisUrl: String = defaultRedisUrl,
@@ -379,6 +398,7 @@ object RedisUtils {
    * @param printStackTrace if `true`, logs the full stack trace on connection failure
    * @param block the suspending operation to execute with a guaranteed non-null client
    * @return the result of [block], or `null` on connection failure
+   * @throws IllegalArgumentException if [redisUrl] is invalid (see [RedisUtils]); [block] is not run
    */
   suspend fun <T> withSuspendingNonNullRedis(
     redisUrl: String = defaultRedisUrl,

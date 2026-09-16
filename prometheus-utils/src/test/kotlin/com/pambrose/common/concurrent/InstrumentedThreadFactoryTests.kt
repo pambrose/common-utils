@@ -2,13 +2,18 @@
 
 package com.pambrose.common.concurrent
 
+import com.pambrose.common.dsl.PrometheusDsl
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.prometheus.client.CollectorRegistry
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
+import kotlin.concurrent.atomics.AtomicReference
 
 class InstrumentedThreadFactoryTests : StringSpec() {
   init {
@@ -161,6 +166,62 @@ class InstrumentedThreadFactoryTests : StringSpec() {
 
       first.getSampleValue("itf_isolated_threads_created_total") shouldBe 1.0
       second.getSampleValue("itf_isolated_threads_created_total") shouldBe 2.0
+    }
+
+    "a second factory with the same name in the same registry is rejected" {
+      val registry = CollectorRegistry()
+      InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_duplicate", "Test", registry).newThread {}
+
+      shouldThrow<IllegalArgumentException> {
+        InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_duplicate", "Test", registry)
+      }.message shouldContain "itf_duplicate_threads_created"
+
+      // The first factory's metrics are untouched.
+      registry.getSampleValue("itf_duplicate_threads_created_total") shouldBe 1.0
+    }
+
+    // Registration is all or nothing. When only a later name is taken, the metrics registered before it are removed
+    // again; left behind, they would make the factory impossible to build even after the conflict was resolved.
+    "a factory whose running or terminated name is taken leaves no metrics behind" {
+      listOf("itf_partial_threads_running", "itf_partial_threads_terminated").forEach { takenName ->
+        val registry = CollectorRegistry()
+        val existing =
+          PrometheusDsl.gauge(registry) {
+            name(takenName)
+            help("Taken")
+          }
+
+        shouldThrow<IllegalArgumentException> {
+          InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_partial", "Test", registry)
+        }.message shouldContain takenName
+
+        // Only the collector that already owned the name is left.
+        registry.metricFamilySamples().toList().map { it.name } shouldBe [takenName]
+
+        // Once the conflict is gone, the factory can be built under the same name.
+        registry.unregister(existing)
+        InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_partial", "Test", registry).newThread {}
+        registry.getSampleValue("itf_partial_threads_created_total") shouldBe 1.0
+      }
+    }
+
+    "a runnable that throws still counts its thread as terminated and no longer running" {
+      val registry = CollectorRegistry()
+      val uncaught = AtomicReference<Throwable?>(null)
+      val delegate =
+        ThreadFactory { runnable ->
+          Thread(runnable).apply { setUncaughtExceptionHandler { _, e -> uncaught.store(e) } }
+        }
+      val factory = InstrumentedThreadFactory(delegate, "itf_throwing", "Test", registry)
+
+      val thread = factory.newThread { throw IllegalStateException("simulated task failure") }.shouldNotBeNull()
+      thread.start()
+      thread.join()
+
+      uncaught.load().shouldBeInstanceOf<IllegalStateException>().message shouldBe "simulated task failure"
+      registry.getSampleValue("itf_throwing_threads_created_total") shouldBe 1.0
+      registry.getSampleValue("itf_throwing_threads_running") shouldBe 0.0
+      registry.getSampleValue("itf_throwing_threads_terminated_total") shouldBe 1.0
     }
   }
 }
