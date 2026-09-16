@@ -89,6 +89,12 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   - **Bindings:** `Regex`, `listOf`, and nested generics bind, variables added after an evaluation are bound, and
     names are validated.
   - **Kotlin scripts:** `System.currentTimeMillis()` and other `java.lang.System` calls work again.
+- **Module fixes (email-utils, recaptcha-utils, redis-utils, exposed-utils)**:
+  - **Webhooks:** Resend's documented payloads decode, bounce classification included.
+  - **Redis:** a URL's database index, protocol and TLS scheme are honored, and an unreachable server takes
+    the documented null path.
+  - **reCAPTCHA:** cancellation is no longer reported as a failed verification, and `remoteip` carries an IP.
+  - **Exposed:** a SQL NULL column reads back as `null`, and `upsert` validates its conflict index.
 
 ### Breaking changes
 
@@ -135,6 +141,9 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - script-utils-kotlin removes `com.pambrose.common.script.System` and `KotlinScript.importDecls`.
 - script-utils generated code and `add` messages use fully-qualified type names, and `add` rejects invalid names.
 - script-utils `AbstractEngine.engine` is deprecated.
+- email-utils `Parameters.getEmail` normalizes addresses, redis-utils rejects `maxPoolSize = 0` and stops
+  sending the placeholder password `none`, recaptcha-utils propagates `CancellationException`, and
+  exposed-utils validates `upsert` conflict indexes and returns `null` for SQL NULL columns.
 
 ---
 

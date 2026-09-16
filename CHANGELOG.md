@@ -116,9 +116,51 @@ All notable changes to Common Utils are documented in this file.
 - script-utils `add` rejects a variable name that is not a valid identifier or is a reserved word of the script
   language, with a `ScriptException`. Before, such a name produced a confusing compile error, or injected code into
   the generated declarations.
+- email-utils `Parameters.getEmail` normalizes the value with `toResendEmail` (lowercase and trim), so an
+  address read from a request compares equal to the same address from any other source. Before, the raw
+  parameter was wrapped as-is.
+- redis-utils `newRedisClient` rejects `maxPoolSize = 0`, which created a pool that could never lend a
+  connection, and accepts `UNLIMITED_POOL_SIZE` (-1), which commons-pool2 reads as no limit. Before, `0` was
+  accepted and `-1` rejected.
+- redis-utils treats the placeholder password `none` as no password, so the default URL
+  `redis://user:none@localhost:6379` no longer sends `AUTH none`.
+- redis-utils `withRedis`, `withNonNullRedis` and their suspending variants ping the server before running the
+  block, so an unreachable server takes the documented null path instead of handing back a client whose first
+  command throws.
+- recaptcha-utils `validateRecaptcha` lets `CancellationException` propagate instead of reporting a cancelled
+  verification as a failed one.
+- exposed-utils `upsert(conflictIndex)` throws `IllegalArgumentException` for a non-unique index, or one that
+  belongs to another table, instead of failing in the database at runtime.
+- exposed-utils `ResultRow.get(index)` returns `null` for a column holding SQL NULL instead of throwing.
 
 ### Bug fixes
 
+- email-utils webhook models decode the payloads Resend documents. `Data` gained `tags`, `broadcast_id`,
+  `message_id` and `template_id`, and `Bounce` gained `subType` and `type`, so a bounce keeps its
+  `Permanent`/`Suppressed` classification. `ResendWebhookMsg.decode(body)` ignores unknown fields, so an event
+  carrying fields these models do not declare still decodes; a default `Json` threw before. The same
+  configured instance is exposed as `ResendWebhookMsg.json`, so a Ktor consumer can register it for
+  `call.receive<ResendWebhookMsg>()`.
+- email-utils ships the default `css/email.css`, so `email { }` works for a consumer of the published jar. The
+  file previously existed only in this module's test resources, and the default threw `IllegalArgumentException`.
+- email-utils `sendEmail` logs recipient counts and the Resend message id at info level, never the addresses
+  themselves, and no longer logs a failure that it rethrows.
+- recaptcha-utils sends `origin.remoteAddress` as `remoteip` instead of `origin.remoteHost`, which can be a
+  reverse-DNS hostname and can block on a lookup.
+- recaptcha-utils logs a warning the first time reCAPTCHA is enabled with a key missing, instead of passing
+  every request silently, and the unreachable inner gate in `verifyRecaptcha` is gone.
+- redis-utils reads the database index (`redis://host:6379/3`) and the `?protocol=` setting from the URL. Both
+  were dropped, so every connection used database 0.
+- redis-utils detects the `rediss://` scheme case-insensitively. Under a Turkish default locale, `REDISS://`
+  lowercased to `redıss://`, so TLS was not enabled and the password went out in the clear.
+- redis-utils pool helpers treat every `JedisException` as a connection failure, so pool exhaustion, borrow
+  validation failures and authentication failures take the documented null path.
+- redis-utils pools no longer validate a connection when it is returned, removing a PING round-trip from every
+  pooled command.
+- exposed-utils `toRowString` renders a row containing SQL NULL instead of throwing, and iterates the row's
+  expressions rather than resolving every index through the O(n) lookup.
+- exposed-utils `upsert(conflictIndex)` forwards Exposed's `onUpdate`, `onUpdateExclude` and `where` options,
+  and its KDoc no longer points at a `PostgresTables.kt` that does not exist.
 - script-utils pools no longer lose instances.
   - **Cancelled borrowers:** a borrower cancelled just as an instance was handed to it dropped that instance, shrinking
     the pool until every borrow waited forever. The instance now goes back into the pool.
@@ -311,6 +353,13 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Add email-utils, recaptcha-utils, redis-utils and exposed-utils regression tests.
+  - **Resend payloads:** the documented `email.bounced` and `email.clicked` payloads decode verbatim.
+  - **Logging:** logback `ListAppender` assertions pin what `sendEmail` and the misconfiguration warning log.
+  - **reCAPTCHA:** cancellation propagation and the `remoteip` value, through a Ktor test application.
+  - **Redis:** URL parsing (database, protocol, TLS scheme under a Turkish locale, placeholder password), pool
+    validation, and the null paths for an unreachable server, an exhausted pool and an auth failure.
+  - **Exposed:** an H2 table with a nullable column, plus upsert index validation and option forwarding.
 - Add script-utils regression tests.
   - **Pools:** a borrower cancelled mid-handoff, invalid sizes, closing, instances returned after close, and a failed
     construction.

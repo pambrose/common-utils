@@ -66,9 +66,12 @@ value class Email(
     /**
      * Extracts an [Email] from Ktor [Parameters] by the given parameter [name].
      *
+     * The value is normalized with [toResendEmail], so an address read from a request compares equal to the
+     * same address from any other source.
+     *
      * @param name the parameter key to look up.
-     * @return the [Email] value, or [EMPTY_EMAIL] if the parameter is absent.
+     * @return the normalized [Email] value, or [EMPTY_EMAIL] if the parameter is absent.
      */
-    fun Parameters.getEmail(name: String) = this[name]?.let { Email(it) } ?: EMPTY_EMAIL
+    fun Parameters.getEmail(name: String) = this[name]?.toResendEmail() ?: EMPTY_EMAIL
   }
 }

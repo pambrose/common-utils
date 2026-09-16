@@ -10,6 +10,8 @@ dependencies {
     api(libs.resend)
     api(libs.kotlinx.html)
     api(libs.ktor.http)
+    api(libs.kotlinx.serialization.json)
 
     testImplementation(libs.mockk)
+    testImplementation(libs.logback.classic)
 }

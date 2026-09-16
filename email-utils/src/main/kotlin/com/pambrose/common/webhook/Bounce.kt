@@ -22,10 +22,18 @@ import kotlinx.serialization.Serializable
 /**
  * Represents a bounce notification from a Resend webhook event.
  *
+ * Resend sends [subType] and [type] in camelCase, unlike the snake_case envelope fields.
+ *
  * @property message the bounce message describing the reason for the bounce.
+ * @property subType the bounce sub-type, such as `Suppressed` or `MessageRejected`, or null if not sent.
+ * @property type the bounce type, such as `Permanent` or `Transient`, or null if not sent.
  */
 @Serializable
 data class Bounce(
   @SerialName("message")
   val message: String,
+  @SerialName("subType")
+  val subType: String? = null,
+  @SerialName("type")
+  val type: String? = null,
 )

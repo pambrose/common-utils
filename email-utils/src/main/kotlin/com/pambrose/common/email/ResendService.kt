@@ -34,13 +34,17 @@ class ResendService(
   /**
    * Sends an email via the Resend API.
    *
+   * A successful send is logged at info level with the recipient counts and the Resend message id.
+   * Recipient addresses are not logged, since they are personal data. A failure is thrown rather than logged,
+   * so the caller decides how to report it.
+   *
    * @param from the sender email address.
    * @param to the list of recipient email addresses.
    * @param cc the list of CC recipient email addresses. Defaults to empty.
    * @param bcc the list of BCC recipient email addresses. Defaults to empty.
    * @param subject the email subject line.
    * @param html the HTML body content of the email.
-   * @throws Exception if the Resend API call fails.
+   * @throws com.resend.core.exception.ResendException if the Resend API call fails.
    */
   fun sendEmail(
     from: Email,
@@ -50,26 +54,19 @@ class ResendService(
     subject: String,
     html: String,
   ) {
-    runCatching {
-      val request =
-        CreateEmailOptions.builder().run {
-          from(from.value)
-          to(to.map { it.value })
-          cc(cc.map { it.value })
-          bcc(bcc.map { it.value })
-          subject(subject)
-          html(html)
-          build()
-        }
-      val response: CreateEmailResponse = resend.emails().send(request)
+    val request =
+      CreateEmailOptions.builder().run {
+        from(from.value)
+        to(to.map { it.value })
+        cc(cc.map { it.value })
+        bcc(bcc.map { it.value })
+        subject(subject)
+        html(html)
+        build()
+      }
+    val response: CreateEmailResponse = resend.emails().send(request)
 
-      val toStr = to.joinToString(", ").ifBlank { "None" }
-      val ccStr = cc.joinToString(", ").ifBlank { "None" }
-      val bccStr = bcc.joinToString(", ").ifBlank { "None" }
-      logger.info { "Sent email to: $toStr cc: $ccStr bcc: $bccStr [${response.id}]" }
-    }.onFailure { e ->
-      logger.error(e) { "sendEmail() error: ${e.message}" }
-    }.getOrThrow()
+    logger.info { "Sent email [${response.id}] to ${to.size} to, ${cc.size} cc, and ${bcc.size} bcc recipients" }
   }
 
   companion object {

@@ -37,6 +37,9 @@ private object ExposedUtilsTestTable : Table("exposed_utils_test_users") {
   val id = integer("id")
   val email = varchar("email", 100)
   val name = varchar("name", 100)
+
+  // Holds SQL NULL in the seeded row: a null value is a value, not a missing column.
+  val note = varchar("note", 100).nullable()
 }
 
 class ExposedUtilsTests : StringSpec() {
@@ -51,6 +54,7 @@ class ExposedUtilsTests : StringSpec() {
           it[id] = 1
           it[email] = "alice@example.com"
           it[name] = "Alice"
+          it[note] = null
         }
       }
     }
@@ -75,6 +79,18 @@ class ExposedUtilsTests : StringSpec() {
       }
     }
 
+    "a null column value is returned by index rather than throwing" {
+      readonlyTx(db = db) {
+        val row =
+          ExposedUtilsTestTable
+            .select(ExposedUtilsTestTable.id, ExposedUtilsTestTable.note)
+            .where { ExposedUtilsTestTable.id eq 1 }
+            .single()
+        row[0] shouldBe 1
+        row[1] shouldBe null
+      }
+    }
+
     "result row get with unknown index throws IllegalArgumentException" {
       readonlyTx(db = db) {
         val row = ExposedUtilsTestTable.selectAll().single()
@@ -91,6 +107,13 @@ class ExposedUtilsTests : StringSpec() {
             .where { ExposedUtilsTestTable.id eq 1 }
             .single()
         row.toRowString() shouldBe "1 - alice@example.com - Alice"
+      }
+    }
+
+    "toRowString renders a null column as null" {
+      readonlyTx(db = db) {
+        val row = ExposedUtilsTestTable.selectAll().single()
+        row.toRowString() shouldBe "1 - alice@example.com - Alice - null"
       }
     }
 

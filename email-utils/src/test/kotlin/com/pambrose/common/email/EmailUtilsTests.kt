@@ -82,6 +82,13 @@ class EmailUtilsTests : StringSpec() {
       html shouldContain "<h1>Hello</h1>"
     }
 
+    // The default cssFilename has to resolve for a consumer of the published jar, not just for this module's
+    // own tests. Gradle puts main resources in build/resources/main and test resources in build/resources/test.
+    "the default stylesheet ships in the module's main resources" {
+      val url = requireNotNull(EmailUtils::class.java.getResource("/css/email.css")) { "css/email.css is missing" }
+      url.path shouldContain "resources/main"
+    }
+
     "email() throws when the css resource cannot be found" {
       shouldThrow<IllegalArgumentException> {
         email(cssFilename = "css/does-not-exist.css") {

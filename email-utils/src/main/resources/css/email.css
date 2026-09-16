@@ -1,0 +1,14 @@
+/* Default stylesheet embedded by EmailUtils.email(). Pass a cssFilename to use your own instead. */
+body { font-family: sans-serif; color: #222; line-height: 1.5; margin: 0; padding: 16px; }
+
+h1, h2, h3 { color: #111; line-height: 1.25; }
+
+a { color: #1a5fb4; }
+
+p { margin: 0 0 16px; }
+
+table { border-collapse: collapse; }
+
+td, th { padding: 4px 8px; text-align: left; }
+
+.footer { color: #666; font-size: 12px; }

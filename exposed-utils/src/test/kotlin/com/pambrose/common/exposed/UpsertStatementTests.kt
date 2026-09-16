@@ -18,8 +18,10 @@
 
 package com.pambrose.common.exposed
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -31,7 +33,15 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 private object UpsertUsersTable : Table("upsert_test_users") {
   val id = integer("id")
   val email = varchar("email", 100).uniqueIndex()
-  val name = varchar("name", 100)
+
+  // Indexed but not unique: not a usable conflict target.
+  val name = varchar("name", 100).index()
+  val nickname = varchar("nickname", 100).nullable()
+}
+
+// A second table, so an index from the wrong table can be passed as a conflict target.
+private object UpsertOtherTable : Table("upsert_test_other") {
+  val code = varchar("code", 50).uniqueIndex()
 }
 
 class UpsertStatementTests : StringSpec() {
@@ -41,7 +51,7 @@ class UpsertStatementTests : StringSpec() {
     beforeSpec {
       db = Database.connect("jdbc:h2:mem:upsert_statement_tests;DB_CLOSE_DELAY=-1", user = "sa")
       transaction(db) {
-        SchemaUtils.create(UpsertUsersTable)
+        SchemaUtils.create(UpsertUsersTable, UpsertOtherTable)
       }
     }
 
@@ -53,7 +63,7 @@ class UpsertStatementTests : StringSpec() {
 
     afterSpec {
       transaction(db) {
-        SchemaUtils.drop(UpsertUsersTable)
+        SchemaUtils.drop(UpsertUsersTable, UpsertOtherTable)
       }
       TransactionManager.closeAndUnregister(db)
     }
@@ -91,6 +101,86 @@ class UpsertStatementTests : StringSpec() {
         UpsertUsersTable.selectAll().count() shouldBe 1L
         val row = UpsertUsersTable.selectAll().single()
         row[UpsertUsersTable.name] shouldBe "Alice Updated"
+      }
+    }
+
+    // A non-unique index, or one from another table, is a conflict target the database rejects at runtime.
+
+    "upsert rejects a non-unique index" {
+      transaction(db) {
+        val nonUnique = UpsertUsersTable.indices.single { !it.unique }
+
+        val exception =
+          shouldThrow<IllegalArgumentException> {
+            UpsertUsersTable.upsert(nonUnique) {
+              it[id] = 1
+              it[email] = "alice@example.com"
+              it[name] = "Alice"
+            }
+          }
+        exception.message shouldContain "unique"
+      }
+    }
+
+    "upsert rejects an index belonging to another table" {
+      transaction(db) {
+        val otherTableIndex = UpsertOtherTable.indices.single { it.unique }
+
+        val exception =
+          shouldThrow<IllegalArgumentException> {
+            UpsertUsersTable.upsert(otherTableIndex) {
+              it[id] = 1
+              it[email] = "alice@example.com"
+              it[name] = "Alice"
+            }
+          }
+        exception.message shouldContain "upsert_test_users"
+      }
+    }
+
+    "upsert forwards onUpdate so only the listed columns change" {
+      transaction(db) {
+        val conflictIndex = UpsertUsersTable.indices.single { it.unique }
+        UpsertUsersTable.upsert(conflictIndex) {
+          it[id] = 1
+          it[email] = "alice@example.com"
+          it[name] = "Alice"
+          it[nickname] = "Al"
+        }
+
+        UpsertUsersTable.upsert(conflictIndex, onUpdate = { it[UpsertUsersTable.nickname] = "Updated" }) {
+          it[id] = 1
+          it[email] = "alice@example.com"
+          it[name] = "Ignored"
+          it[nickname] = "Ignored"
+        }
+
+        val row = UpsertUsersTable.selectAll().single()
+        row[UpsertUsersTable.nickname] shouldBe "Updated"
+        row[UpsertUsersTable.name] shouldBe "Alice"
+      }
+    }
+
+    "upsert forwards onUpdateExclude so the excluded column keeps its value" {
+      transaction(db) {
+        val conflictIndex = UpsertUsersTable.indices.single { it.unique }
+        UpsertUsersTable.upsert(conflictIndex) {
+          it[id] = 1
+          it[email] = "alice@example.com"
+          it[name] = "Alice"
+          it[nickname] = "Al"
+        }
+
+        UpsertUsersTable.upsert(conflictIndex, onUpdateExclude = [UpsertUsersTable.nickname]) {
+          it[id] = 1
+          it[email] = "alice@example.com"
+          it[name] = "Alice Updated"
+          it[nickname] = "Ignored"
+        }
+
+        val row = UpsertUsersTable.selectAll().single()
+        row[UpsertUsersTable.name] shouldBe "Alice Updated"
+        row[UpsertUsersTable.nickname] shouldBe "Al"
       }
     }
   }
