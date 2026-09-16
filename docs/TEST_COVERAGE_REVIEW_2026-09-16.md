@@ -171,10 +171,10 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-033** `LOW` · weak — `shouldContain "2"` log assertion always passes ([details](#tc-033))
 
 ### recaptcha-utils
-- [ ] **TC-034** `HIGH` · gap — Malformed or non-2xx siteverify responses (fail-closed path) never tested ([details](#tc-034)) — in progress (#193)
-- [ ] **TC-035** `MEDIUM` · weak — Tests copy the production `Json` config instead of using it ([details](#tc-035)) — in progress (#193)
-- [ ] **TC-036** `MEDIUM` · weak — Widget test never checks the site key (or that the secret is absent) ([details](#tc-036)) — in progress (#193)
-- [ ] **TC-037** `LOW` · gap — Empty `remoteip`, use after `close()`, config re-reads; specs that test only themselves ([details](#tc-037)) — in progress (#193)
+- [x] **TC-034** `HIGH` · gap — Malformed or non-2xx siteverify responses (fail-closed path) never tested ([details](#tc-034)) — fixed in #193
+- [x] **TC-035** `MEDIUM` · weak — Tests copy the production `Json` config instead of using it ([details](#tc-035)) — fixed in #193
+- [x] **TC-036** `MEDIUM` · weak — Widget test never checks the site key (or that the secret is absent) ([details](#tc-036)) — fixed in #193
+- [x] **TC-037** `LOW` · gap — Empty `remoteip`, use after `close()`, config re-reads; specs that test only themselves ([details](#tc-037)) — fixed in #193
 
 ### ktor-server-utils
 - [ ] **TC-038** `HIGH` · bug — Malformed servlet content type turns a successful response into a 500; throwing servlet untested ([details](#tc-038))
