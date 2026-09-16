@@ -226,25 +226,25 @@ These follow the per-area batching used for #118–#136. The order within the li
 
 ### Build & publishing
 - [x] **CR-124** `HIGH` · publishing — service-utils exposes `implementation` dependency types in its public API ([details](#cr-124)) — fixed in #174
-- [ ] **CR-125** `MEDIUM` · publishing — grpc-utils (Netty `SslContext`) and script-utils-java (`Isolation`) leak `implementation` types ([details](#cr-125)) — in progress (#185)
-- [ ] **CR-126** `LOW` · deps — Catalog `kotlin` entry also pins `kotlin-reflect`; POMs mix 2.4.10 / 2.4.20 ([details](#cr-126)) — in progress (#185)
-- [ ] **CR-127** `LOW` · deps — Redundant/unused dependency declarations ([details](#cr-127)) — in progress (#185)
-- [ ] **CR-128** `LOW` · build — `make build` ("without tests") still runs KMP `jvmTest` via Kover ([details](#cr-128)) — in progress (#185)
-- [ ] **CR-129** `LOW` · build — `coverage-clean` misses JVM-module test results; build cache restores them ([details](#cr-129)) — in progress (#185)
-- [ ] **CR-130** `LOW` · build — `ksp` plugin not declared in root `plugins {}` ([details](#cr-130)) — in progress (#185)
-- [ ] **CR-131** `LOW` · publishing — Signing skipped unless in-memory key present; POM `developerConnection` lacks `git@` ([details](#cr-131)) — in progress (#185)
+- [x] **CR-125** `MEDIUM` · publishing — grpc-utils (Netty `SslContext`) and script-utils-java (`Isolation`) leak `implementation` types ([details](#cr-125)) — fixed in #185
+- [x] **CR-126** `LOW` · deps — Catalog `kotlin` entry also pins `kotlin-reflect`; POMs mix 2.4.10 / 2.4.20 ([details](#cr-126)) — fixed in #185
+- [x] **CR-127** `LOW` · deps — Redundant/unused dependency declarations ([details](#cr-127)) — fixed in #185
+- [x] **CR-128** `LOW` · build — `make build` ("without tests") still runs KMP `jvmTest` via Kover ([details](#cr-128)) — fixed in #185
+- [x] **CR-129** `LOW` · build — `coverage-clean` misses JVM-module test results; build cache restores them ([details](#cr-129)) — fixed in #185
+- [x] **CR-130** `LOW` · build — `ksp` plugin not declared in root `plugins {}` ([details](#cr-130)) — fixed in #185
+- [x] **CR-131** `LOW` · publishing — Signing skipped unless in-memory key present; POM `developerConnection` lacks `git@` ([details](#cr-131)) — fixed in #185
 
 ### CI
-- [ ] **CR-132** `MEDIUM` · security — `test.yml` has no `permissions` block; repo default token is write ([details](#cr-132)) — in progress (#185)
-- [ ] **CR-133** `LOW` · security — `kdocs.yml` grants `pages`/`id-token` write to the PR build job ([details](#cr-133)) — in progress (#185)
-- [ ] **CR-134** `LOW` · ci — Redundant Lint step; Apple targets never built in CI ([details](#cr-134)) — in progress (#185)
-- [ ] **CR-135** `LOW` · ci — No concurrency cancellation; actions pinned by mutable tags ([details](#cr-135)) — in progress (#185)
+- [x] **CR-132** `MEDIUM` · security — `test.yml` has no `permissions` block; repo default token is write ([details](#cr-132)) — fixed in #185
+- [x] **CR-133** `LOW` · security — `kdocs.yml` grants `pages`/`id-token` write to the PR build job ([details](#cr-133)) — fixed in #185
+- [x] **CR-134** `LOW` · ci — Redundant Lint step; Apple targets never built in CI ([details](#cr-134)) — fixed in #185
+- [x] **CR-135** `LOW` · ci — No concurrency cancellation; actions pinned by mutable tags ([details](#cr-135)) — fixed in #185
 
 ### Project documentation
-- [ ] **CR-136** `MEDIUM` · docs — llms.txt misdescribes several modules ([details](#cr-136)) — in progress (#185)
-- [ ] **CR-137** `LOW` · docs — CLAUDE.md format command skips KMP modules ([details](#cr-137)) — in progress (#185)
-- [ ] **CR-138** `LOW` · docs — Other CLAUDE.md drift (Dokka location, return-value checker, Dependabot ignores) ([details](#cr-138)) — in progress (#185)
-- [ ] **CR-139** `LOW` · cleanup — Stale/duplicated top-level files (old reviews, `.codeclimate.yml`, `system.properties`, `.wercker/`) ([details](#cr-139)) — in progress (#185)
+- [x] **CR-136** `MEDIUM` · docs — llms.txt misdescribes several modules ([details](#cr-136)) — fixed in #185
+- [x] **CR-137** `LOW` · docs — CLAUDE.md format command skips KMP modules ([details](#cr-137)) — fixed in #185
+- [x] **CR-138** `LOW` · docs — Other CLAUDE.md drift (Dokka location, return-value checker, Dependabot ignores) ([details](#cr-138)) — fixed in #185
+- [x] **CR-139** `LOW` · cleanup — Stale/duplicated top-level files (old reviews, `.codeclimate.yml`, `system.properties`, `.wercker/`) ([details](#cr-139)) — fixed in #185
 
 ---
 
