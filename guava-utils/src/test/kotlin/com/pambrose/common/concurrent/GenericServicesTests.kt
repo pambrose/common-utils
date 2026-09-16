@@ -91,10 +91,14 @@ private class SlowStoppingIdleService : GenericIdleService() {
 }
 
 private class SlowStoppingExecutionThreadService : GenericExecutionThreadService() {
+  val running = CountDownLatch(1)
   val release = CountDownLatch(1)
 
   // triggerShutdown is left as the no-op default, so run ignores the stop request until released.
-  override fun run() = release.await()
+  override fun run() {
+    running.countDown()
+    release.await()
+  }
 }
 
 class GenericServicesTests : StringSpec() {
@@ -124,6 +128,9 @@ class GenericServicesTests : StringSpec() {
 
       val executing = SlowStoppingExecutionThreadService()
       executing.startSync()
+      // startSync returns once the service reports RUNNING, before its thread calls run(). A stop request in that gap
+      // makes Guava skip run() entirely, and the service would then stop at once.
+      executing.running.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
       shouldThrow<TimeoutException> { executing.stopSync(timeout = 50.milliseconds) }
       executing.state() shouldBe Service.State.STOPPING
       executing.release.countDown()
