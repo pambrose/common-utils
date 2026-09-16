@@ -24,9 +24,8 @@ import com.pambrose.common.util.Version.Companion.buildString
 import com.pambrose.common.util.Version.Companion.version
 import com.pambrose.common.util.Version.Companion.versionDesc
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
+import kotlinx.datetime.LocalDateTime
 
 @Version(version = "9.9.9", releaseDate = "2026-04-01", buildTime = 1_711_929_600_000)
 private class Annotated
@@ -43,26 +42,23 @@ class VersionTests : StringSpec() {
       Bare::class.version() shouldBe "Unknown"
     }
 
-    "buildDateTime() is non-null when annotated and null otherwise" {
-      Annotated::class.buildDateTime().shouldNotBeNull()
+    // buildTime is 2024-04-01T00:00:00Z, which is 17:00 the day before in America/Los_Angeles (PDT, UTC-7).
+    "buildDateTime() is the build time in Los Angeles when annotated and null otherwise" {
+      Annotated::class.buildDateTime() shouldBe LocalDateTime(2024, 3, 31, 17, 0)
       Bare::class.buildDateTime() shouldBe null
     }
 
     "buildString() returns formatted timestamp when annotated" {
-      val s = Annotated::class.buildString()
-      // buildTime is fixed, so toFullDateString is deterministic in the America/Los_Angeles zone.
-      s shouldContain "Sun 03/31/24 17:00:00"
+      Annotated::class.buildString() shouldBe "Sun 03/31/24 17:00:00"
     }
 
     "buildString() returns Unknown when annotation is missing" {
       Bare::class.buildString() shouldBe "Unknown"
     }
 
-    "versionDesc plain text contains version and release date" {
-      val desc = Annotated::class.versionDesc(asJson = false)
-      desc shouldContain "Version: 9.9.9"
-      desc shouldContain "Release Date: 2026-04-01"
-      desc shouldContain "Build Date:"
+    "versionDesc plain text contains version, release date and build date" {
+      Annotated::class.versionDesc(asJson = false) shouldBe
+        "Version: 9.9.9 Release Date: 2026-04-01 Build Date: Sun 03/31/24 17:00:00"
     }
 
     "versionDesc plain text falls back to Unknown for bare class" {
@@ -70,11 +66,9 @@ class VersionTests : StringSpec() {
       Bare::class.versionDesc(asJson = false) shouldBe "Version: Unknown Release Date: Unknown Build Date: Unknown"
     }
 
-    "versionDesc JSON contains version and release_date keys" {
-      val json = Annotated::class.versionDesc(asJson = true)
-      json shouldContain "\"version\":\"9.9.9\""
-      json shouldContain "\"release_date\":\"2026-04-01\""
-      json shouldContain "\"build_time\""
+    "versionDesc JSON contains version, release_date and build_time" {
+      Annotated::class.versionDesc(asJson = true) shouldBe
+        """{"version":"9.9.9","release_date":"2026-04-01","build_time":"Sun 03/31/24 17:00:00"}"""
     }
 
     "versionDesc JSON falls back for bare class" {
@@ -83,11 +77,17 @@ class VersionTests : StringSpec() {
     }
 
     "versionDesc defaults to plain text output" {
-      val desc = Annotated::class.versionDesc()
-      desc shouldBe Annotated::class.versionDesc(asJson = false)
-      desc shouldContain "Version: 9.9.9"
+      Annotated::class.versionDesc() shouldBe
+        "Version: 9.9.9 Release Date: 2026-04-01 Build Date: Sun 03/31/24 17:00:00"
+      Bare::class.versionDesc() shouldBe "Version: Unknown Release Date: Unknown Build Date: Unknown"
+    }
 
-      Bare::class.versionDesc() shouldContain "Version: Unknown"
+    // The same formats, for callers that have the values rather than an annotated class.
+    "plainStr and jsonStr format the given values" {
+      Version.plainStr("1.0", "2025-01-01", 1_711_929_600_000) shouldBe
+        "Version: 1.0 Release Date: 2025-01-01 Build Date: Sun 03/31/24 17:00:00"
+      Version.jsonStr("1.0", "2025-01-01", 1_711_929_600_000) shouldBe
+        """{"version":"1.0","release_date":"2025-01-01","build_time":"Sun 03/31/24 17:00:00"}"""
     }
   }
 }
