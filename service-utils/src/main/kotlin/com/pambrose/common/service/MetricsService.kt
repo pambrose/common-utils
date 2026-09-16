@@ -59,6 +59,14 @@ class MetricsService(
         HealthCheck.Result.unhealthy("Jetty server not running")
     }
 
+  /**
+   * Visible for testing: the port the server listens on, which the OS chooses when [port] is 0. It is updated when
+   * the service starts and keeps that value after it stops.
+   */
+  @Volatile
+  internal var boundPort = port
+    private set
+
   init {
     addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
     initBlock(this)
@@ -71,7 +79,10 @@ class MetricsService(
     initBlock: MetricsService.() -> Unit,
   ) : this(port, path, null, initBlock)
 
-  override fun startUp() = server.start()
+  override fun startUp() {
+    server.start()
+    boundPort = server.localPort
+  }
 
   override fun shutDown() = server.stop()
 

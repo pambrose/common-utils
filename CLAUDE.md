@@ -188,6 +188,17 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
 - `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
   MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
+- service-utils tests configure admin and metrics servers with port 0 and read the port the OS chose from
+  the `internal` `boundPort` test seam on `MetricsService`, `ServletService` and `KtorServletService`.
+  Don't pick a free port by opening and closing a `ServerSocket(0)`: another test JVM
+  (`org.gradle.parallel=true`) can take it before the server binds. `boundPort` is set when the server
+  starts and keeps its value after it stops, so a test can check the port was released.
+- Any server those tests send requests to binds to `127.0.0.1` (`LOOPBACK` in `ServiceTestSupport.kt`),
+  never to every interface. On macOS, `SO_REUSEADDR` lets another app (seen with a local desktop app) bind
+  `127.0.0.1` to the same port as a wildcard listener. That more specific listener then takes the test's
+  loopback connections, which fail with `HTTP/1.1 header parser received no bytes`. For the same reason, a
+  socket that holds a port or checks that one is free (`occupiedLoopbackPort()`, `shouldBeReleased()`) must
+  bind the same address as the server.
 - `script-utils-kotlin` runs the Kotlin compiler **in-process** (the JSR-223 engine compiles every
   snippet), so its test task sets `maxHeapSize = "2g"` in the module's own `build.gradle.kts`; nothing
   else sets a test heap, so every other module uses Gradle's 512m default. Leave that setting in place.
