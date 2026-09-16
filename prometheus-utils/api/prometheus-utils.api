@@ -1,0 +1,50 @@
+public final class com/pambrose/common/concurrent/InstrumentedThreadFactory : java/util/concurrent/ThreadFactory {
+	public fun <init> (Ljava/util/concurrent/ThreadFactory;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/util/concurrent/ThreadFactory;Ljava/lang/String;Ljava/lang/String;Lio/prometheus/client/CollectorRegistry;)V
+	public synthetic fun <init> (Ljava/util/concurrent/ThreadFactory;Ljava/lang/String;Ljava/lang/String;Lio/prometheus/client/CollectorRegistry;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun newThread (Ljava/lang/Runnable;)Ljava/lang/Thread;
+}
+
+public final class com/pambrose/common/dsl/PrometheusDsl {
+	public static final field INSTANCE Lcom/pambrose/common/dsl/PrometheusDsl;
+	public final fun counter (Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Counter;
+	public final fun counter (Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Counter;
+	public static synthetic fun counter$default (Lcom/pambrose/common/dsl/PrometheusDsl;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/prometheus/client/Counter;
+	public final fun gauge (Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Gauge;
+	public final fun gauge (Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Gauge;
+	public static synthetic fun gauge$default (Lcom/pambrose/common/dsl/PrometheusDsl;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/prometheus/client/Gauge;
+	public final fun histogram (Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Histogram;
+	public final fun histogram (Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Histogram;
+	public static synthetic fun histogram$default (Lcom/pambrose/common/dsl/PrometheusDsl;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/prometheus/client/Histogram;
+	public final fun summary (Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Summary;
+	public final fun summary (Lkotlin/jvm/functions/Function1;)Lio/prometheus/client/Summary;
+	public static synthetic fun summary$default (Lcom/pambrose/common/dsl/PrometheusDsl;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/prometheus/client/Summary;
+}
+
+public final class com/pambrose/common/metrics/SamplerGaugeCollector : io/prometheus/client/Collector, io/prometheus/client/Collector$Describable {
+	public static final field Companion Lcom/pambrose/common/metrics/SamplerGaugeCollector$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public fun collect ()Ljava/util/List;
+	public fun describe ()Ljava/util/List;
+}
+
+public final class com/pambrose/common/metrics/SamplerGaugeCollector$Companion {
+}
+
+public final class com/pambrose/common/metrics/SystemMetrics {
+	public static final field INSTANCE Lcom/pambrose/common/metrics/SystemMetrics;
+	public final fun initialize ()V
+	public final fun initialize (Z)V
+	public final fun initialize (ZZ)V
+	public final fun initialize (ZZZ)V
+	public final fun initialize (ZZZZ)V
+	public final fun initialize (ZZZZZ)V
+	public final fun initialize (ZZZZZZ)V
+	public final fun initialize (ZZZZZZLio/prometheus/client/CollectorRegistry;)V
+	public static synthetic fun initialize$default (Lcom/pambrose/common/metrics/SystemMetrics;ZZZZZZLio/prometheus/client/CollectorRegistry;ILjava/lang/Object;)V
+}
+

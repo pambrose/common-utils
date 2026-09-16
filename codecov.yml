@@ -4,12 +4,94 @@ coverage:
       default:
         target: auto
         threshold: 1%
+    # The project sits at ~98% line coverage; a PR's new code should come close to that.
     patch:
       default:
-        target: 70%
+        target: 90%
         threshold: 1%
 
+# One component per module, so the PR comment shows which module gained or lost coverage. Codecov maps the
+# Kover report's package paths back to <module>/src/... files, which is what these globs match.
+component_management:
+  individual_components:
+    - component_id: core_utils
+      name: core-utils
+      paths:
+        - core-utils/**
+    - component_id: json_utils
+      name: json-utils
+      paths:
+        - json-utils/**
+    - component_id: ktor_client_utils
+      name: ktor-client-utils
+      paths:
+        - ktor-client-utils/**
+    - component_id: ktor_server_utils
+      name: ktor-server-utils
+      paths:
+        - ktor-server-utils/**
+    - component_id: service_utils
+      name: service-utils
+      paths:
+        - service-utils/**
+    - component_id: jetty_utils
+      name: jetty-utils
+      paths:
+        - jetty-utils/**
+    - component_id: grpc_utils
+      name: grpc-utils
+      paths:
+        - grpc-utils/**
+    - component_id: guava_utils
+      name: guava-utils
+      paths:
+        - guava-utils/**
+    - component_id: prometheus_utils
+      name: prometheus-utils
+      paths:
+        - prometheus-utils/**
+    - component_id: dropwizard_utils
+      name: dropwizard-utils
+      paths:
+        - dropwizard-utils/**
+    - component_id: zipkin_utils
+      name: zipkin-utils
+      paths:
+        - zipkin-utils/**
+    - component_id: redis_utils
+      name: redis-utils
+      paths:
+        - redis-utils/**
+    - component_id: exposed_utils
+      name: exposed-utils
+      paths:
+        - exposed-utils/**
+    - component_id: email_utils
+      name: email-utils
+      paths:
+        - email-utils/**
+    - component_id: recaptcha_utils
+      name: recaptcha-utils
+      paths:
+        - recaptcha-utils/**
+    - component_id: script_utils_common
+      name: script-utils-common
+      paths:
+        - script-utils-common/**
+    - component_id: script_utils_java
+      name: script-utils-java
+      paths:
+        - script-utils-java/**
+    - component_id: script_utils_kotlin
+      name: script-utils-kotlin
+      paths:
+        - script-utils-kotlin/**
+    - component_id: script_utils_python
+      name: script-utils-python
+      paths:
+        - script-utils-python/**
+
 comment:
-  layout: "reach, diff, flags, files"
+  layout: "reach, diff, flags, components, files"
   behavior: default
   require_changes: true

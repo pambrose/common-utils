@@ -32,6 +32,20 @@ Run `make help` for a self-documenting list of every target.
 - `./gradlew formatKotlin` - Auto-format code. Use the aggregate task: KMP modules name their kotlinter
   tasks per source set (`formatKotlinCommonMain`, `formatKotlinJvmTest`, …), so
   `formatKotlinMain formatKotlinTest` silently skips core-utils, json-utils and ktor-client-utils.
+- `make mutation` - PIT mutation testing (`./gradlew pitest`) for the modules in the root script's
+  `mutationModuleNames` (currently exposed-utils and guava-utils). On demand only, not part of `check`; guava-utils
+  alone takes a couple of minutes. Reports: `<module>/build/reports/pitest/index.html`.
+
+### API compatibility
+
+- Every module has KGP's built-in ABI validation enabled (`abiValidation()`, experimental). `check` runs
+  `checkKotlinAbi` against the dumps committed under `<module>/api/` (`<module>.api` for the JVM, plus
+  `<module>.klib.api` for the KMP modules' other targets).
+- After an intended public API change, run `make abi-update` (`./gradlew updateKotlinAbi`) and commit the
+  changed dumps with the change. Do it on macOS: a host that cannot compile some native target copies that
+  target's declarations from the committed dump instead of regenerating them.
+- The DSL is the 2.4 one (`abiValidation()` is a function; 2.2's `enabled` property is gone). Because the
+  compiler version comes from the convention plugins (see below), a convention-plugin bump can change it.
 
 ### Publishing
 
@@ -50,6 +64,9 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 - `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
+- `configurePitest()` - applies `info.solidsoft.pitest` and the Kotest PIT plugin to the modules in
+  `mutationModuleNames`. `targetTests` is widened to `com.pambrose.*` because some specs live outside
+  `com.pambrose.common`
 
 The `kmpModuleNames` set in the root build script decides which modules build with `kotlin("multiplatform")`; everything else gets `kotlin("jvm")`.
 
@@ -109,7 +126,8 @@ These opt-ins are enabled globally:
 
 Additionally, the experimental `-Xcollection-literals` compiler flag is enabled on every compilation
 (JVM and KMP, main and test) so `[...]` collection-literal syntax can be used in place of `listOf(...)` /
-`mutableListOf(...)`. The flag is experimental in Kotlin 2.4 and may need revisiting on a future Kotlin
+`mutableListOf(...)`. It does not reach the Gradle build scripts (`*.gradle.kts`), which must keep using
+`listOf(...)`. The flag is experimental in Kotlin 2.4 and may need revisiting on a future Kotlin
 upgrade (if the syntax changes or the feature stabilizes and the flag can be dropped).
 
 The `-Xreturn-value-checker=check` flag is applied to **production compilations only** — `compileKotlin` on
@@ -154,6 +172,10 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   (and therefore the published JVM ABI) are unchanged.
 - watchOS/tvOS simulator test tasks are disabled (host Xcode lacks those simulator runtimes); Apple coverage
   comes from macOS and iOS simulator test tasks.
+- CI (`.github/workflows/test.yml`) runs the native tests on three hosts. The `test` job (ubuntu) runs
+  `linuxX64Test` through `build`. `native-apple` (macos-latest) runs `macosArm64Test iosSimulatorArm64Test`.
+  `native-windows` runs `mingwX64Test`. `iosX64Test` is skipped on arm64 hosts, and `linuxArm64` has no test
+  task at all.
 - core-utils bundles no IANA time-zone database: `DateUtils` resolves only `TimeZone.currentSystemDefault()`
   and UTC, so named zones (which need the `@js-joda/timezone` npm package on JS/wasm) stay a consumer
   concern. Keep new common code zone-neutral to preserve this — a hardcoded named zone would force the tz
@@ -177,16 +199,40 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
 
 ### Coverage
 
-Kover verification rules live in the root `build.gradle.kts` and require **90% line** and **80% branch**
-coverage across the aggregated report. They are floors, not targets: the project currently sits at 98.3%
-line and 89.1% branch, and the bounds are set below the weakest package (line 96.0% in `concurrent`, branch
-50.0% in `response`, 74.5% in `webhook`) so that a genuine regression trips them while ordinary drift does
-not. Raise them only after lifting the weakest packages, or the next unrelated PR goes red.
+Kover verification rules live in the root `build.gradle.kts`:
+
+- **Project-wide rule:** 90% line and 80% branch across the aggregated report.
+- **Per-package rule:** 90% line in every package.
+
+They are floors, not targets. The project sits at 98.8% line and 89.3% branch, and the weakest package is
+`script` at 96.1% line.
+
+- **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
+  service-utils, ktor-server-utils and guava-utils) could lose all its coverage without failing the aggregate.
+- **Why no per-package branch floor:** `response` has only four branches, two of them compiler-generated and
+  unreachable, so it sits at 50%.
+- Raise any floor only after lifting the weakest packages, or the next unrelated PR goes red.
+- Packages span modules (`com.pambrose.common.dsl` lives in six), so the per-package rule is not a
+  per-module guarantee.
 
 `koverVerify` runs as part of `check`, so `./gradlew build` and CI enforce the floors. `make build` passes
-`-x koverVerify` on purpose, since that target is documented as building without tests, and `koverVerify`
-depends on the instrumented test tasks. Use `make coverage-packages` for the per-package table that shows
-where branch coverage is actually weak.
+`-x koverVerify` on purpose: that target is documented as building without tests, and `koverVerify` depends on
+the instrumented test tasks.
+
+Tables, both sorted weakest branch coverage first:
+
+- `make coverage-packages`: line and branch coverage per package.
+- `make coverage-modules`: the same per module. It maps each report source file back to its module.
+
+`docs/TEST_COVERAGE_REVIEW_2026-09-16.md` tracks the known test gaps (`TC-001`…`TC-083`). Update its tracker as
+items are fixed, as with the code review doc.
+
+Codecov (`codecov.yml`):
+
+- It gets the same Kover XML report.
+- Its patch target is 90%.
+- It defines one component per module, so its `component_management` list must be kept in step with
+  `settings.gradle.kts` when a module is added or removed.
 
 ### Package Structure
 

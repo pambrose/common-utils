@@ -87,7 +87,7 @@ object AtomicDelegates {
 }
 
 private class NonNullableAtomicReferenceDelegate<T : Any>(
-  initValue: T? = null,
+  initValue: T?,
 ) : ReadWriteProperty<Any?, T> {
   private val atomicVal = AtomicReference(initValue)
 

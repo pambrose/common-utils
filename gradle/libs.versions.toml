@@ -10,6 +10,7 @@ gradlePlugins = "1.1.5"
 kotlinter = "5.7.0"
 kover = "0.9.9"
 mavenPublish = "0.37.0"
+pitestPlugin = "1.19.0"
 versions = "0.61.0"
 
 # Kotlin & kotlinx
@@ -153,6 +154,8 @@ kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.
 kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+# PIT test plugin for Kotest specs; the mutation-tested modules add it (see mutationModuleNames)
+kotest-extensions-pitest = { module = "io.kotest:kotest-extensions-pitest", version.ref = "kotest" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 
@@ -212,6 +215,7 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+pitest = { id = "info.solidsoft.pitest", version.ref = "pitestPlugin" }
 
 # Publishing
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }

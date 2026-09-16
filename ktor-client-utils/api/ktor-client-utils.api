@@ -1,0 +1,19 @@
+public final class com/pambrose/common/dsl/KtorDsl {
+	public static final field INSTANCE Lcom/pambrose/common/dsl/KtorDsl;
+	public final fun get (Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun get$default (Lcom/pambrose/common/dsl/KtorDsl;Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun httpClient (Lio/ktor/client/HttpClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun httpClient$default (Lcom/pambrose/common/dsl/KtorDsl;Lio/ktor/client/HttpClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun newHttpClient (Z)Lio/ktor/client/HttpClient;
+	public static synthetic fun newHttpClient$default (Lcom/pambrose/common/dsl/KtorDsl;ZILjava/lang/Object;)Lio/ktor/client/HttpClient;
+	public final fun withHttpClient (Lio/ktor/client/HttpClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun withHttpClient$default (Lcom/pambrose/common/dsl/KtorDsl;Lio/ktor/client/HttpClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/pambrose/common/dsl/KtorDslJvmKt {
+	public static final fun blockingGet (Lcom/pambrose/common/dsl/KtorDsl;Ljava/lang/String;Lio/ktor/client/HttpClient;ZLkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+	public static final synthetic fun blockingGet (Lcom/pambrose/common/dsl/KtorDsl;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+	public static synthetic fun blockingGet$default (Lcom/pambrose/common/dsl/KtorDsl;Ljava/lang/String;Lio/ktor/client/HttpClient;ZLkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun blockingGet$default (Lcom/pambrose/common/dsl/KtorDsl;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ljava/lang/Object;
+}
+

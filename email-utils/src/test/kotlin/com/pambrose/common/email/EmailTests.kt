@@ -97,5 +97,11 @@ class EmailTests : StringSpec() {
       params.getEmail("user") shouldBe "  ALICE@Example.COM  ".toResendEmail()
       params.getEmail("user") shouldBe Email("alice@example.com")
     }
+
+    // Java sees the value class boxed, and reads the address through the box's getValue() accessor.
+    "a boxed Email exposes its address to Java through getValue" {
+      val boxed: Any = Email("alice@example.com")
+      boxed.javaClass.getMethod("getValue").invoke(boxed) shouldBe "alice@example.com"
+    }
   }
 }
