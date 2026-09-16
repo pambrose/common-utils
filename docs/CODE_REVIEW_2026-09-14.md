@@ -188,28 +188,28 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-098** `LOW` · tests — Misleading guard tests; missing coverage for the defects above ([details](#cr-098)) — fixed in #182
 
 ### email-utils
-- [ ] **CR-099** `MEDIUM` · bug — Webhook models can't decode real Resend payloads with a default `Json` ([details](#cr-099)) — in progress (#183)
-- [ ] **CR-100** `LOW` · API — Default `email()` stylesheet exists only in test resources ([details](#cr-100)) — in progress (#183)
-- [ ] **CR-101** `LOW` · API — `Parameters.getEmail` doesn't normalize (carried over) ([details](#cr-101)) — in progress (#183)
-- [ ] **CR-102** `LOW` · logging — `sendEmail` logs-then-rethrows; logs recipient addresses at INFO (partly carried over) ([details](#cr-102)) — in progress (#183)
+- [x] **CR-099** `MEDIUM` · bug — Webhook models can't decode real Resend payloads with a default `Json` ([details](#cr-099)) — fixed in #183
+- [x] **CR-100** `LOW` · API — Default `email()` stylesheet exists only in test resources ([details](#cr-100)) — fixed in #183
+- [x] **CR-101** `LOW` · API — `Parameters.getEmail` doesn't normalize (carried over) ([details](#cr-101)) — fixed in #183
+- [x] **CR-102** `LOW` · logging — `sendEmail` logs-then-rethrows; logs recipient addresses at INFO (partly carried over) ([details](#cr-102)) — fixed in #183
 
 ### recaptcha-utils
-- [ ] **CR-103** `MEDIUM` · concurrency — `verifyRecaptcha` swallows `CancellationException` ([details](#cr-103)) — in progress (#183)
-- [ ] **CR-104** `LOW` · bug — `remoteip` sends a reverse-DNS hostname ([details](#cr-104)) — in progress (#183)
-- [ ] **CR-105** `LOW` · security — Enabled-but-misconfigured fails open silently; duplicated dead gate (carried over) ([details](#cr-105)) — in progress (#183)
+- [x] **CR-103** `MEDIUM` · concurrency — `verifyRecaptcha` swallows `CancellationException` ([details](#cr-103)) — fixed in #183
+- [x] **CR-104** `LOW` · bug — `remoteip` sends a reverse-DNS hostname ([details](#cr-104)) — fixed in #183
+- [x] **CR-105** `LOW` · security — Enabled-but-misconfigured fails open silently; duplicated dead gate (carried over) ([details](#cr-105)) — fixed in #183
 
 ### redis-utils
-- [ ] **CR-106** `MEDIUM` · bug — `withRedis` family never takes its documented connection-failure path ([details](#cr-106)) — in progress (#183)
-- [ ] **CR-107** `MEDIUM` · bug — URL parsing drops the database index and protocol ([details](#cr-107)) — in progress (#183)
-- [ ] **CR-108** `LOW` · bug — `"none"` placeholder password still sent as AUTH (carried over) ([details](#cr-108)) — in progress (#183)
-- [ ] **CR-109** `LOW` · error handling — Pool helpers catch only `JedisConnectionException` ([details](#cr-109)) — in progress (#183)
-- [ ] **CR-110** `LOW` · performance — `testOnBorrow` + `testOnReturn` add two PINGs per command ([details](#cr-110)) — in progress (#183)
-- [ ] **CR-111** `LOW` · security — SSL scheme detection uses default-locale `lowercase` ([details](#cr-111)) — in progress (#183)
-- [ ] **CR-112** `LOW` · API — Pool-size validation rejects `-1`, accepts `0` ([details](#cr-112)) — in progress (#183)
+- [x] **CR-106** `MEDIUM` · bug — `withRedis` family never takes its documented connection-failure path ([details](#cr-106)) — fixed in #183
+- [x] **CR-107** `MEDIUM` · bug — URL parsing drops the database index and protocol ([details](#cr-107)) — fixed in #183
+- [x] **CR-108** `LOW` · bug — `"none"` placeholder password still sent as AUTH (carried over) ([details](#cr-108)) — fixed in #183
+- [x] **CR-109** `LOW` · error handling — Pool helpers catch only `JedisConnectionException` ([details](#cr-109)) — fixed in #183
+- [x] **CR-110** `LOW` · performance — `testOnBorrow` + `testOnReturn` add two PINGs per command ([details](#cr-110)) — fixed in #183
+- [x] **CR-111** `LOW` · security — SSL scheme detection uses default-locale `lowercase` ([details](#cr-111)) — fixed in #183
+- [x] **CR-112** `LOW` · API — Pool-size validation rejects `-1`, accepts `0` ([details](#cr-112)) — fixed in #183
 
 ### exposed-utils
-- [ ] **CR-113** `MEDIUM` · bug — `ResultRow.get(index)` / `toRowString()` throw on SQL NULL ([details](#cr-113)) — in progress (#183)
-- [ ] **CR-114** `LOW` · API — `upsert(conflictIndex)` doesn't validate the index; hides native options; stale KDoc ([details](#cr-114)) — in progress (#183)
+- [x] **CR-113** `MEDIUM` · bug — `ResultRow.get(index)` / `toRowString()` throw on SQL NULL ([details](#cr-113)) — fixed in #183
+- [x] **CR-114** `LOW` · API — `upsert(conflictIndex)` doesn't validate the index; hides native options; stale KDoc ([details](#cr-114)) — fixed in #183
 
 ### grpc-utils
 - [ ] **CR-115** `MEDIUM` · bug — `serverTlsContext()` returns a builder without ALPN, which gRPC's Netty server rejects ([details](#cr-115))
