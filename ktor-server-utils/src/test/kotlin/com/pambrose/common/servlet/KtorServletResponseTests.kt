@@ -194,6 +194,51 @@ class KtorServletResponseTests : StringSpec() {
       permanent.getHeader("Location") shouldBe "/moved"
     }
 
+    "sendRedirect discards a buffered body by default" {
+      val response = KtorServletResponse()
+      response.writer.print("partial output")
+      response.sendRedirect("/elsewhere")
+      response.getBodyBytes().size shouldBe 0
+    }
+
+    "sendRedirect with clearBuffer false keeps the buffered body" {
+      val response = KtorServletResponse()
+      response.writer.print("see other")
+      response.sendRedirect("/elsewhere", HttpServletResponse.SC_SEE_OTHER, false)
+      response.status shouldBe HttpServletResponse.SC_SEE_OTHER
+      response.getHeader("Location") shouldBe "/elsewhere"
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "see other"
+    }
+
+    "a malformed content type is kept verbatim and leaves the character encoding alone" {
+      val response = KtorServletResponse()
+      response.characterEncoding = "ISO-8859-1"
+      response.setContentType("bogus")
+      response.characterEncoding shouldBe "ISO-8859-1"
+      // The charset cannot be added to a value that does not parse, so the value is reported as given.
+      response.contentType shouldBe "bogus"
+      response.writer
+      response.contentType shouldBe "bogus"
+    }
+
+    "a Content-Type header, in any casing, is the content type rather than a separate header" {
+      val response = KtorServletResponse()
+      response.containsHeader("Content-Type") shouldBe false
+      response.getHeader("Content-Type") shouldBe null
+
+      response.setHeader("content-type", "text/html; charset=ISO-8859-1")
+      response.contentType shouldBe "text/html; charset=ISO-8859-1"
+      response.characterEncoding shouldBe "ISO-8859-1"
+      response.containsHeader("Content-Type") shouldBe true
+      response.getHeader("CONTENT-TYPE") shouldBe "text/html; charset=ISO-8859-1"
+      response.getHeaders("Content-Type").toList() shouldBe ["text/html; charset=ISO-8859-1"]
+      response.headerNames.toList() shouldBe emptyList()
+
+      response.addHeader("Content-Type", "application/json")
+      response.getHeaders("Content-Type").toList() shouldBe ["application/json; charset=ISO-8859-1"]
+      response.headerNames.toList() shouldBe emptyList()
+    }
+
     "setContentType with a charset parameter sets the character encoding the writer uses" {
       val response = KtorServletResponse()
       response.setContentType("text/html; charset=ISO-8859-1")

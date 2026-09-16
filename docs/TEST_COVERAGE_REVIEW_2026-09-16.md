@@ -153,11 +153,11 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-021** `LOW` · flaky/weak — Wall-clock upper bounds, a real `getLocalHost()` call, and no-op assertions ([details](#tc-021)) — fixed in #191
 
 ### json-utils
-- [ ] **TC-022** `HIGH` · bug — `getByPath` throws instead of returning `null` when the path crosses a non-object ([details](#tc-022))
-- [ ] **TC-023** `MEDIUM` · weak — `jsonObjectValueOrNull` / `jsonElementListOrNull` are only ever tested for `null` ([details](#tc-023))
-- [ ] **TC-024** `MEDIUM` · platform — Number parsing (`doubleValue*`, `isNumber`, `toMap`) differs across platforms and is untested there ([details](#tc-024))
-- [ ] **TC-025** `MEDIUM` · platform — `JsonIntegrationTest` is JVM-only just for `System.currentTimeMillis`; has a wall-clock assertion ([details](#tc-025))
-- [ ] **TC-026** `LOW` · gap — Wrong-type receivers, `forEachJsonObject` skipping, `deepCopy` identity, Long overflow ([details](#tc-026))
+- [x] **TC-022** `HIGH` · bug — `getByPath` throws instead of returning `null` when the path crosses a non-object ([details](#tc-022)) — fixed in #190
+- [x] **TC-023** `MEDIUM` · weak — `jsonObjectValueOrNull` / `jsonElementListOrNull` are only ever tested for `null` ([details](#tc-023)) — fixed in #190
+- [x] **TC-024** `MEDIUM` · platform — Number parsing (`doubleValue*`, `isNumber`, `toMap`) differs across platforms and is untested there ([details](#tc-024)) — fixed in #190
+- [x] **TC-025** `MEDIUM` · platform — `JsonIntegrationTest` is JVM-only just for `System.currentTimeMillis`; has a wall-clock assertion ([details](#tc-025)) — fixed in #190
+- [x] **TC-026** `LOW` · gap — Wrong-type receivers, `forEachJsonObject` skipping, `deepCopy` identity, Long overflow ([details](#tc-026)) — fixed in #190
 
 ### ktor-client-utils
 - [ ] **TC-027** `MEDIUM` · platform — Client-creating paths tested only on the JVM; native has no engine ([details](#tc-027))
@@ -165,10 +165,10 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-029** `LOW` · weak — Common tests never check the request method/URL; no-op assertion ([details](#tc-029))
 
 ### email-utils
-- [ ] **TC-030** `MEDIUM` · gap — Webhook branch misses are generated code, but `decode`'s error contract and new serial names are untested ([details](#tc-030))
-- [ ] **TC-031** `MEDIUM` · gap — The documented IPv4-literal branch of `isValidEmail` is never tested ([details](#tc-031))
-- [ ] **TC-032** `LOW` · gap — `Email`'s serialized form is never tested ([details](#tc-032))
-- [ ] **TC-033** `LOW` · weak — `shouldContain "2"` log assertion always passes ([details](#tc-033))
+- [x] **TC-030** `MEDIUM` · gap — Webhook branch misses are generated code, but `decode`'s error contract and new serial names are untested ([details](#tc-030)) — fixed in #188
+- [x] **TC-031** `MEDIUM` · gap — The documented IPv4-literal branch of `isValidEmail` is never tested ([details](#tc-031)) — fixed in #188
+- [x] **TC-032** `LOW` · gap — `Email`'s serialized form is never tested ([details](#tc-032)) — fixed in #188
+- [x] **TC-033** `LOW` · weak — `shouldContain "2"` log assertion always passes ([details](#tc-033)) — fixed in #188
 
 ### recaptcha-utils
 - [ ] **TC-034** `HIGH` · gap — Malformed or non-2xx siteverify responses (fail-closed path) never tested ([details](#tc-034))
@@ -177,10 +177,10 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-037** `LOW` · gap — Empty `remoteip`, use after `close()`, config re-reads; specs that test only themselves ([details](#tc-037))
 
 ### ktor-server-utils
-- [ ] **TC-038** `HIGH` · bug — Malformed servlet content type turns a successful response into a 500; throwing servlet untested ([details](#tc-038))
-- [ ] **TC-039** `LOW` · gap — `sendRedirect(clearBuffer = false)` and the buffer discard are unverified ([details](#tc-039))
-- [ ] **TC-040** `LOW` · gap — `HerokuHttpsRedirect` `sslPort` and non-matching excludes untested ([details](#tc-040))
-- [ ] **TC-041** `LOW` · gap — Multi-valued headers and `Content-Type` set via `setHeader` untested end to end ([details](#tc-041))
+- [x] **TC-038** `HIGH` · bug — Malformed servlet content type turns a successful response into a 500; throwing servlet untested ([details](#tc-038)) — fixed in #189
+- [x] **TC-039** `LOW` · gap — `sendRedirect(clearBuffer = false)` and the buffer discard are unverified ([details](#tc-039)) — fixed in #189
+- [x] **TC-040** `LOW` · gap — `HerokuHttpsRedirect` `sslPort` and non-matching excludes untested ([details](#tc-040)) — fixed in #189
+- [x] **TC-041** `LOW` · gap — Multi-valued headers and `Content-Type` set via `setHeader` untested end to end ([details](#tc-041)) — fixed in #189 (fixed rather than pinned: a `Content-Type` header now sets the content type and charset, and the bridge no longer duplicates `Content-Length`)
 
 ### service-utils
 - [ ] **TC-042** `HIGH` · gap — Health check never shown to detect a sub-service that stopped while running ([details](#tc-042))
