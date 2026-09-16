@@ -212,17 +212,17 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-114** `LOW` · API — `upsert(conflictIndex)` doesn't validate the index; hides native options; stale KDoc ([details](#cr-114)) — fixed in #183
 
 ### grpc-utils
-- [ ] **CR-115** `MEDIUM` · bug — `serverTlsContext()` returns a builder without ALPN, which gRPC's Netty server rejects ([details](#cr-115)) — in progress (branch `fix-review-items-cr115-cr123`)
-- [ ] **CR-116** `LOW` · bug — `enableRetry = false` doesn't disable retries (carried over, re-diagnosed) ([details](#cr-116)) — in progress (branch `fix-review-items-cr115-cr123`)
-- [ ] **CR-117** `LOW` · robustness — `shutdownWithJvm` validates its timeout only inside the hook ([details](#cr-117)) — in progress (branch `fix-review-items-cr115-cr123`)
-- [ ] **CR-118** `LOW` · docs — README says all client TLS paths are optional; trust path is required ([details](#cr-118)) — in progress (branch `fix-review-items-cr115-cr123`)
-- [ ] **CR-119** `LOW` · API — `channel()` has no `tlsContext` default (carried over) ([details](#cr-119)) — in progress (branch `fix-review-items-cr115-cr123`)
-- [ ] **CR-120** `LOW` · API — `streamObserver` exposes helper type and set-once callbacks (carried over) ([details](#cr-120)) — in progress (branch `fix-review-items-cr115-cr123`)
+- [ ] **CR-115** `MEDIUM` · bug — `serverTlsContext()` returns a builder without ALPN, which gRPC's Netty server rejects ([details](#cr-115)) — in progress (#184)
+- [ ] **CR-116** `LOW` · bug — `enableRetry = false` doesn't disable retries (carried over, re-diagnosed) ([details](#cr-116)) — in progress (#184)
+- [ ] **CR-117** `LOW` · robustness — `shutdownWithJvm` validates its timeout only inside the hook ([details](#cr-117)) — in progress (#184)
+- [ ] **CR-118** `LOW` · docs — README says all client TLS paths are optional; trust path is required ([details](#cr-118)) — in progress (#184)
+- [ ] **CR-119** `LOW` · API — `channel()` has no `tlsContext` default (carried over) ([details](#cr-119)) — in progress (#184)
+- [ ] **CR-120** `LOW` · API — `streamObserver` exposes helper type and set-once callbacks (carried over) ([details](#cr-120)) — in progress (#184)
 
 ### Cross-module test-scaffolding
-- [ ] **CR-121** `LOW` · tests — ktor-server `ServletRoute` lacks init/405/non-ASCII tests ([details](#cr-121)) — in progress (branch `fix-review-items-cr115-cr123`)
-- [ ] **CR-122** `LOW` · tests — Redis null-path tests mock a private function the real code never exercises ([details](#cr-122)) — in progress (branch `fix-review-items-cr115-cr123`)
-- [ ] **CR-123** `LOW` · tests — grpc TLS/retry tests assert only `authority()` / `isServer` ([details](#cr-123)) — in progress (branch `fix-review-items-cr115-cr123`)
+- [ ] **CR-121** `LOW` · tests — ktor-server `ServletRoute` lacks init/405/non-ASCII tests ([details](#cr-121)) — in progress (#184)
+- [ ] **CR-122** `LOW` · tests — Redis null-path tests mock a private function the real code never exercises ([details](#cr-122)) — in progress (#184)
+- [ ] **CR-123** `LOW` · tests — grpc TLS/retry tests assert only `authority()` / `isServer` ([details](#cr-123)) — in progress (#184)
 
 ### Build & publishing
 - [x] **CR-124** `HIGH` · publishing — service-utils exposes `implementation` dependency types in its public API ([details](#cr-124)) — fixed in #174
