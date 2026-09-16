@@ -170,6 +170,19 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   `maxHeapSize` is not part of Gradle's build-cache key, so a cached result can be served straight
   across a heap change; use `--rerun-tasks` when verifying anything heap-related.
 
+### Coverage
+
+Kover verification rules live in the root `build.gradle.kts` and require **90% line** and **80% branch**
+coverage across the aggregated report. They are floors, not targets: the project currently sits at 98.3%
+line and 89.1% branch, and the bounds are set below the weakest package (line 96.0% in `concurrent`, branch
+50.0% in `response`, 74.5% in `webhook`) so that a genuine regression trips them while ordinary drift does
+not. Raise them only after lifting the weakest packages, or the next unrelated PR goes red.
+
+`koverVerify` runs as part of `check`, so `./gradlew build` and CI enforce the floors. `make build` passes
+`-x koverVerify` on purpose, since that target is documented as building without tests, and `koverVerify`
+depends on the instrumented test tasks. Use `make coverage-packages` for the per-package table that shows
+where branch coverage is actually weak.
+
 ### Package Structure
 
 All modules use: `com.pambrose.common.*`

@@ -164,6 +164,13 @@ All notable changes to Common Utils are documented in this file.
 
 ### Bug fixes
 
+- `koverVerify` now enforces coverage floors instead of passing unconditionally: no verification rules were
+  configured, so the `coverage-verify` target and the `check` lifecycle verified nothing. The rule requires
+  90% line and 80% branch coverage, set below the weakest package (line 96.0% in `concurrent`, branch 50.0%
+  in `response`) rather than at the project's current 98.3% / 89.1%, so a regression such as an untested
+  module trips it while ordinary drift does not. `make build` still passes `-x koverVerify`, being documented
+  as a build without tests.
+
 - `make build`, documented as "without tests", no longer runs the KMP modules' `jvmTest`: `check` pulls in
   `koverVerify`, which depends on the instrumented test tasks, and `-x test -x allTests` does not cover it.
 - `make coverage-clean` cleans the JVM modules' test results too (`cleanTest` alongside `cleanAllTests`,

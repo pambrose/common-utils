@@ -10,6 +10,8 @@ import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.DetektCreateBaselineTask
 import dev.detekt.gradle.extensions.DetektExtension
 import io.kotest.framework.gradle.KotestGradleExtension
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
@@ -90,6 +92,30 @@ fun DokkaExtension.configureHtml() {
 dokka {
     moduleName.set(projectName)
     configureHtml()
+}
+
+// Coverage floors, enforced through `check` (and so through CI's `./gradlew build`). They sit a few points
+// below the weakest package rather than at the project's current figures — line 98.3% overall but 96.0% in
+// `concurrent`; branch 89.1% overall but 50.0% in `response` and 74.5% in `webhook` — so a real regression,
+// such as a module arriving without tests, trips them while ordinary drift does not. `make build` passes
+// -x koverVerify, since that target is documented as building without tests.
+kover {
+    reports {
+        verify {
+            rule {
+                bound {
+                    minValue = 90
+                    coverageUnits = CoverageUnit.LINE
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
+                bound {
+                    minValue = 80
+                    coverageUnits = CoverageUnit.BRANCH
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
+            }
+        }
+    }
 }
 
 // Force patched versions of vulnerable transitive npm packages in the JS/wasmJs test
