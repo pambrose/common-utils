@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
 
 package com.pambrose.common.dsl
 
@@ -45,14 +44,16 @@ object GrpcDsl {
   /**
    * Builds a [ManagedChannel] using either a Netty transport or an in-process transport.
    *
-   * When [inProcessServerName] is non-empty, an in-process channel is created (ignoring host/port/TLS).
-   * Otherwise a Netty channel is created for the given [hostName] and [port].
+   * When [inProcessServerName] is non-empty, an in-process channel is created, ignoring [hostName], [port]
+   * and [tlsContext]. The retry and authority options apply to both transports.
    *
    * @param hostName the target server hostname (Netty transport only)
    * @param port the target server port (Netty transport only)
-   * @param enableRetry whether to enable gRPC retry on the channel
-   * @param maxRetryAttempts the maximum number of retry attempts per RPC
-   * @param tlsContext the TLS configuration for the channel
+   * @param enableRetry whether to enable gRPC retry on the channel. grpc-java enables retry by default, so
+   *   `false` disables it explicitly rather than leaving that default in place.
+   * @param maxRetryAttempts the maximum number of retry attempts per RPC; a negative value leaves grpc's own
+   *   default in place
+   * @param tlsContext the TLS configuration for the channel; defaults to [PLAINTEXT_CONTEXT]
    * @param overrideAuthority overrides the authority used for TLS hostname verification
    * @param inProcessServerName if non-empty, creates an in-process channel with this name
    * @param block a configuration block applied to the channel builder before building
@@ -63,21 +64,46 @@ object GrpcDsl {
     port: Int = -1,
     enableRetry: Boolean = false,
     maxRetryAttempts: Int = 5,
-    tlsContext: TlsContext,
+    tlsContext: TlsContext = PLAINTEXT_CONTEXT,
     overrideAuthority: String = "",
     inProcessServerName: String = "",
     block: ManagedChannelBuilder<*>.() -> Unit,
   ): ManagedChannel {
     val channelBuilder =
       if (inProcessServerName.isEmpty())
-        createNettyChannel(hostName, port, tlsContext, overrideAuthority, enableRetry, maxRetryAttempts)
+        createNettyChannel(hostName, port, tlsContext)
       else
         createInProcessChannel(inProcessServerName)
 
     return channelBuilder.run {
+      applyChannelOptions(this, overrideAuthority, enableRetry, maxRetryAttempts)
       block(this)
       build()
     }
+  }
+
+  // Every option here lives on ManagedChannelBuilder itself, so it is applied to whichever transport was
+  // chosen; setting them in the Netty branch alone is what left the in-process channel ignoring them.
+  private fun applyChannelOptions(
+    builder: ManagedChannelBuilder<*>,
+    overrideAuthority: String,
+    enableRetry: Boolean,
+    maxRetryAttempts: Int,
+  ) {
+    val override = overrideAuthority.trim()
+    if (override.isNotEmpty()) {
+      logger.info { "Assigning overrideAuthority: ${override.toDoubleQuoted()}" }
+      builder.overrideAuthority(override)
+    }
+
+    // grpc-java turns retry on by default, so the flag has to say so in both directions.
+    if (enableRetry)
+      builder.enableRetry()
+    else
+      builder.disableRetry()
+
+    if (maxRetryAttempts > -1)
+      builder.maxRetryAttempts(maxRetryAttempts)
   }
 
   private fun createInProcessChannel(inProcessServerName: String): InProcessChannelBuilder {
@@ -91,30 +117,15 @@ object GrpcDsl {
     hostName: String,
     port: Int,
     tlsContext: TlsContext,
-    overrideAuthority: String,
-    enableRetry: Boolean,
-    maxRetryAttempts: Int,
   ): NettyChannelBuilder {
     logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
     return NettyChannelBuilder
       .forAddress(hostName, port)
       .also { builder ->
-        val override = overrideAuthority.trim()
-        if (override.isNotEmpty()) {
-          logger.info { "Assigning overrideAuthority: ${override.toDoubleQuoted()}" }
-          builder.overrideAuthority(override)
-        }
-
         if (tlsContext.sslContext.isNotNull())
           builder.sslContext(tlsContext.sslContext)
         else
           builder.usePlaintext()
-
-        if (enableRetry)
-          builder.enableRetry()
-
-        if (maxRetryAttempts > -1)
-          builder.maxRetryAttempts(maxRetryAttempts)
       }
   }
 
@@ -181,15 +192,23 @@ object GrpcDsl {
   /**
    * Creates a [StreamObserver] using a DSL-style builder.
    *
+   * Every callback is optional, and each one may be registered **at most once**: a second
+   * [StreamObserverHelper.onNext], [StreamObserverHelper.onError] or [StreamObserverHelper.onCompleted] in the
+   * same block throws [IllegalStateException].
+   *
    * @param T the response element type
    * @param init a configuration block for registering [StreamObserverHelper.onNext], [StreamObserverHelper.onError],
    *   and [StreamObserverHelper.onCompleted] callbacks
-   * @return a configured [StreamObserverHelper] implementing [StreamObserver]
+   * @return a [StreamObserver] that delegates to the registered callbacks
    */
-  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit) = StreamObserverHelper<T>().apply { init() }
+  fun <T> streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserver<T> =
+    StreamObserverHelper<T>().apply { init() }
 
   /**
    * A DSL-friendly [StreamObserver] implementation that delegates to user-supplied lambda callbacks.
+   *
+   * Each callback is single-assignment; registering one twice throws [IllegalStateException]. An unregistered
+   * callback does nothing.
    *
    * @param T the response element type
    */
@@ -210,17 +229,17 @@ object GrpcDsl {
       completedBlock?.invoke()
     }
 
-    /** Registers a callback invoked for each response element. */
+    /** Registers a callback invoked for each response element. Can be called only once. */
     fun onNext(block: (T) -> Unit) {
       onNextBlock = block
     }
 
-    /** Registers a callback invoked when the stream encounters an error. */
+    /** Registers a callback invoked when the stream encounters an error. Can be called only once. */
     fun onError(block: (Throwable) -> Unit) {
       onErrorBlock = block
     }
 
-    /** Registers a callback invoked when the stream completes successfully. */
+    /** Registers a callback invoked when the stream completes successfully. Can be called only once. */
     fun onCompleted(block: () -> Unit) {
       completedBlock = block
     }

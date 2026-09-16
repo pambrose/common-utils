@@ -23,20 +23,22 @@ import kotlin.time.Duration
 /**
  * Registers a JVM shutdown hook that gracefully shuts down this gRPC [Server].
  *
+ * The hook runs [shutdownGracefully], which waits up to [maxWaitTime] for in-flight RPCs and then forces the
+ * server down. Because the hook runs as the JVM exits, with no caller left to report to, a failure is
+ * swallowed — the server is stopped either way.
+ *
  * Extension function on [Server].
  *
  * @param maxWaitTime the maximum duration to wait for in-flight RPCs to complete before forcing shutdown
+ * @throws IllegalArgumentException if [maxWaitTime] is under a millisecond, the resolution
+ *   [shutdownGracefully] works in. This is checked here, when the hook is registered, rather than at JVM
+ *   exit, where it would stop the shutdown from running at all.
  */
 fun Server.shutdownWithJvm(maxWaitTime: Duration) {
+  require(maxWaitTime.inWholeMilliseconds > 0) { "maxWaitTime must be at least 1ms, but was $maxWaitTime" }
   Runtime.getRuntime().addShutdownHook(
     Thread {
-      try {
-        shutdownGracefully(maxWaitTime)
-      } catch (e: InterruptedException) {
-        // Intentionally not restoring the interrupt flag: this runs in a JVM shutdown-hook
-        // thread that terminates as soon as this block returns, so there is no caller higher
-        // up that could observe a restored flag.
-      }
+      val _ = runCatching { shutdownGracefully(maxWaitTime) }
     },
   )
 }
@@ -56,8 +58,9 @@ fun Server.shutdownGracefully(maxWaitTime: Duration) =
 /**
  * Gracefully shuts down this gRPC [Server], waiting up to the specified [timeout] for termination.
  *
- * Extension function on [Server]. Calls [Server.shutdown], then [Server.awaitTermination], and
- * finally [Server.shutdownNow] in a `finally` block to ensure the server is fully stopped.
+ * Extension function on [Server]. Calls [Server.shutdown], then [Server.awaitTermination], with
+ * [Server.shutdownNow] in a `finally` block so the server is stopped however those calls end — including
+ * when [Server.shutdown] itself throws, for example on an already-terminated server.
  *
  * @param timeout the maximum time to wait for graceful termination
  * @param unit the time unit of the [timeout] argument
@@ -69,8 +72,8 @@ fun Server.shutdownGracefully(
   unit: TimeUnit,
 ) {
   require(timeout > 0) { "timeout must be greater than 0" }
-  shutdown()
   try {
+    shutdown()
     awaitTermination(timeout, unit)
   } finally {
     shutdownNow()

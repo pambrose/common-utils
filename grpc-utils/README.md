@@ -129,7 +129,8 @@ val observer =
 ```kotlin
 import com.pambrose.common.utils.TlsUtils
 
-// Client context; all three paths are optional
+// Client context; every path is optional. With no trust path, the JVM's default trust store is used,
+// which is what a server holding a public-CA certificate needs.
 val clientContext =
   TlsUtils.buildClientTlsContext(
     certChainFilePath = "client.crt",
@@ -148,6 +149,16 @@ val serverContext =
 println(serverContext.desc())
 ```
 
+`buildClientTlsContext` and `buildServerTlsContext` return a `TlsContext` ready to hand to `channel` or
+`server`. The `clientTlsContextBuilder` and `serverTlsContext` variants return a `TlsContextBuilder` whose
+`builder` you can customize before calling `build()` yourself. Both carry gRPC's ALPN configuration, which
+`NettyServerBuilder.sslContext` rejects a context without, so a hand-built context works as well as the
+ready-made one.
+
+Supplying `trustCertCollectionFilePath` pins the servers you trust to that CA; supplying a client
+`certChainFilePath` and `privateKeyFilePath` together enables mutual auth. On the server side, a
+`trustCertCollectionFilePath` requires a client certificate.
+
 ### Graceful Shutdown
 
 ```kotlin
@@ -163,17 +174,23 @@ server.shutdownGracefully(maxWaitTime = 10.seconds)
 ```
 
 `shutdownGracefully` calls `shutdown()`, waits up to the timeout via `awaitTermination`, and then calls
-`shutdownNow()` in a `finally` block so the server always stops. It throws `InterruptedException` if the
-waiting thread is interrupted.
+`shutdownNow()` in a `finally` block so the server always stops — including when `shutdown()` itself throws,
+as it does on an already-terminated server. It throws `InterruptedException` if the waiting thread is
+interrupted.
+
+`shutdownWithJvm` runs the same sequence from a JVM shutdown hook, swallowing any failure since nothing can
+observe it at that point. It rejects a timeout under a millisecond when the hook is registered, rather than
+failing at JVM exit where it would skip the shutdown entirely.
 
 ## API Reference
 
 ### `GrpcDsl`
 
-- `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = false, maxRetryAttempts: Int = 5, tlsContext: TlsContext, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
+- `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = false, maxRetryAttempts: Int = 5, tlsContext: TlsContext = PLAINTEXT_CONTEXT, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
 - `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", block: ServerBuilder<*>.() -> Unit): Server`
 - `attributes(block: Attributes.Builder.() -> Unit): Attributes`
-- `streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserverHelper<T>`
+- `streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserver<T>` — each callback may be
+  registered at most once; a second registration throws `IllegalStateException`
 
 ### `TlsUtils`
 

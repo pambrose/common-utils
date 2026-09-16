@@ -212,17 +212,17 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-114** `LOW` · API — `upsert(conflictIndex)` doesn't validate the index; hides native options; stale KDoc ([details](#cr-114)) — fixed in #183
 
 ### grpc-utils
-- [ ] **CR-115** `MEDIUM` · bug — `serverTlsContext()` returns a builder without ALPN, which gRPC's Netty server rejects ([details](#cr-115))
-- [ ] **CR-116** `LOW` · bug — `enableRetry = false` doesn't disable retries (carried over, re-diagnosed) ([details](#cr-116))
-- [ ] **CR-117** `LOW` · robustness — `shutdownWithJvm` validates its timeout only inside the hook ([details](#cr-117))
-- [ ] **CR-118** `LOW` · docs — README says all client TLS paths are optional; trust path is required ([details](#cr-118))
-- [ ] **CR-119** `LOW` · API — `channel()` has no `tlsContext` default (carried over) ([details](#cr-119))
-- [ ] **CR-120** `LOW` · API — `streamObserver` exposes helper type and set-once callbacks (carried over) ([details](#cr-120))
+- [x] **CR-115** `MEDIUM` · bug — `serverTlsContext()` returns a builder without ALPN, which gRPC's Netty server rejects ([details](#cr-115)) — fixed in #184
+- [x] **CR-116** `LOW` · bug — `enableRetry = false` doesn't disable retries (carried over, re-diagnosed) ([details](#cr-116)) — fixed in #184
+- [x] **CR-117** `LOW` · robustness — `shutdownWithJvm` validates its timeout only inside the hook ([details](#cr-117)) — fixed in #184
+- [x] **CR-118** `LOW` · docs — README says all client TLS paths are optional; trust path is required ([details](#cr-118)) — fixed in #184
+- [x] **CR-119** `LOW` · API — `channel()` has no `tlsContext` default (carried over) ([details](#cr-119)) — fixed in #184
+- [x] **CR-120** `LOW` · API — `streamObserver` exposes helper type and set-once callbacks (carried over) ([details](#cr-120)) — fixed in #184
 
 ### Cross-module test-scaffolding
-- [ ] **CR-121** `LOW` · tests — ktor-server `ServletRoute` lacks init/405/non-ASCII tests ([details](#cr-121))
-- [ ] **CR-122** `LOW` · tests — Redis null-path tests mock a private function the real code never exercises ([details](#cr-122))
-- [ ] **CR-123** `LOW` · tests — grpc TLS/retry tests assert only `authority()` / `isServer` ([details](#cr-123))
+- [x] **CR-121** `LOW` · tests — ktor-server `ServletRoute` lacks init/405/non-ASCII tests ([details](#cr-121)) — fixed in #184
+- [x] **CR-122** `LOW` · tests — Redis null-path tests mock a private function the real code never exercises ([details](#cr-122)) — fixed in #184
+- [x] **CR-123** `LOW` · tests — grpc TLS/retry tests assert only `authority()` / `isServer` ([details](#cr-123)) — fixed in #184
 
 ### Build & publishing
 - [x] **CR-124** `HIGH` · publishing — service-utils exposes `implementation` dependency types in its public API ([details](#cr-124)) — fixed in #174
