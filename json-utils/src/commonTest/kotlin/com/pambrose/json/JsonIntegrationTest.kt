@@ -20,6 +20,7 @@ import com.pambrose.common.json.booleanValue
 import com.pambrose.common.json.doubleValue
 import com.pambrose.common.json.getOrNull
 import com.pambrose.common.json.intValue
+import com.pambrose.common.json.intValueOrNull
 import com.pambrose.common.json.jsonElementList
 import com.pambrose.common.json.jsonElementListOrNull
 import com.pambrose.common.json.jsonObjectValueOrNull
@@ -27,14 +28,15 @@ import com.pambrose.common.json.stringValue
 import com.pambrose.common.json.stringValueOrNull
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.time.Clock
 
 /**
  * Integration tests that test the interaction between JsonElementUtils and JsonContentUtils
@@ -47,7 +49,7 @@ data class ApiResponse<T>(
   val data: T? = null,
   val error: String? = null,
   val metadata: Map<String, String> = emptyMap(),
-  val timestamp: Long = System.currentTimeMillis(),
+  val timestamp: Long = Clock.System.now().toEpochMilliseconds(),
 )
 
 @Serializable
@@ -136,7 +138,6 @@ class JsonIntegrationTest : StringSpec() {
     "complete API response serialization and parsing" {
       // Serialize to JSON
       val json = successResponse.toJsonString(prettyPrint = true)
-      json shouldNotBe null
       json.contains("success") shouldBe true
       json.contains("johndoe") shouldBe true
 
@@ -150,8 +151,12 @@ class JsonIntegrationTest : StringSpec() {
       jsonElement.stringValue("metadata.requestId") shouldBe "req-123"
       jsonElement.stringValue("metadata.server") shouldBe "api-01"
 
+      // A millisecond timestamp overflows Int, and there is no Long accessor, so it is read as a string.
+      jsonElement.intValueOrNull("timestamp") shouldBe null
+      jsonElement.stringValue("timestamp").toLong() shouldBe successResponse.timestamp
+
       // Test deeply nested user data
-      jsonElement.intValue("data.id").toLong() shouldBe 12345L
+      jsonElement.intValue("data.id") shouldBe 12345
       jsonElement.stringValue("data.username") shouldBe "johndoe"
       jsonElement.stringValue("data.email") shouldBe "john.doe@example.com"
 
@@ -240,7 +245,8 @@ class JsonIntegrationTest : StringSpec() {
                     }
                 },
                 "requestId": "api-req-789",
-                "timestamp": 1701429600
+                "timestamp": 1701429600,
+                "timestampMillis": 1701429600000
             }
         """.trimIndent()
 
@@ -250,7 +256,11 @@ class JsonIntegrationTest : StringSpec() {
       jsonElement.stringValue("status") shouldBe "success"
       jsonElement.intValue("code") shouldBe 200
       jsonElement.stringValue("requestId") shouldBe "api-req-789"
-      jsonElement.intValue("timestamp").toLong() shouldBe 1701429600L
+      jsonElement.intValue("timestamp") shouldBe 1701429600
+      shouldThrow<NumberFormatException> { jsonElement.intValue("timestampMillis") }
+      jsonElement.intValueOrNull("timestampMillis") shouldBe null
+      jsonElement.stringValue("timestampMillis").toLong() shouldBe 1_701_429_600_000L
+      jsonElement.doubleValue("timestampMillis") shouldBe 1.7014296E12
 
       // Test users array
       val users = jsonElement.jsonElementList("data.users")
@@ -426,14 +436,13 @@ class JsonIntegrationTest : StringSpec() {
       }
     }
 
-    "performance with complex nested structures" {
-      // Create a more complex structure for performance testing
+    "navigating a large nested structure" {
       val complexStructure = buildJsonObject {
         put(
           "meta",
           buildJsonObject {
             put("version", "2.0")
-            put("generated", System.currentTimeMillis())
+            put("generated", Clock.System.now().toEpochMilliseconds())
             put(
               "config",
               buildJsonObject {
@@ -474,10 +483,6 @@ class JsonIntegrationTest : StringSpec() {
         )
       }
 
-      // Measure basic operations
-      val startTime = System.currentTimeMillis()
-
-      // Test various operations
       complexStructure.stringValue("meta.version") shouldBe "2.0"
       complexStructure.stringValue("meta.config.setting10") shouldBe "value10"
 
@@ -492,11 +497,6 @@ class JsonIntegrationTest : StringSpec() {
       val tags = users[10].jsonElementList("data.tags")
       tags.size shouldBe 5
       tags[2].stringValue shouldBe "tag2"
-
-      val endTime = System.currentTimeMillis()
-
-      // Should complete reasonably quickly (less than 1 second for this test)
-      (endTime - startTime < 1000) shouldBe true
     }
   }
 }

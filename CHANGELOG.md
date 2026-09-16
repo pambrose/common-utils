@@ -4,6 +4,34 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+### Bug fixes
+
+- json-utils `getByPath` returns `null` when the path runs into a value that is not an object, as its KDoc
+  promised. `getByPath("a/b")` on `{"a": 1}` or `{"a": null}` threw `IllegalArgumentException`, while
+  `getOrNull("a.b")` returned `null` for the same input.
+- json-utils `doubleValue`, `doubleValueOrNull` and `isNumber` accept only JSON number syntax, plus `NaN`,
+  `Infinity` and `-Infinity`, so they give the same answer on every platform. They used the platform's own
+  parser, and each platform accepted different extra text:
+  - **JVM and Apple native:** `1.5f`, `1.5d` and hex floats such as `0x1p3`.
+  - **JS:** `0x10`, `0b101` and `nan`.
+  - **Every platform:** surrounding whitespace, a leading `+`, `.5`, `5.` and `01`.
+
+  For such text, `doubleValue` now throws `NumberFormatException`, `doubleValueOrNull` returns `null` and
+  `isNumber` is `false`. A quoted JSON number such as `"2.5"` is still read by `doubleValue`.
+
+### Tests
+
+- json-utils `JsonIntegrationTest` moves from `jvmTest` to `commonTest`, so it also runs on JS, wasmJs and
+  native. It needed the JVM only for `System.currentTimeMillis`, now `kotlin.time.Clock`. Its assertion that the
+  lookups finish in under a second is gone: it could flake on a slow runner and checked nothing about the
+  results.
+- New json-utils specs cover the cases the existing ones missed:
+  - `jsonObjectValueOrNull` and `jsonElementListOrNull` returning a value, not just `null`
+  - `isString`, `isNumber` and the `OrNull` accessors on an object or array
+  - `forEachJsonObject` skipping non-object elements and rejecting a primitive
+  - `deepCopy` building new objects and arrays rather than returning the same instances
+  - a millisecond timestamp overflowing `intValue`
+
 ## [4.0.0] - 2026-09-15
 
 ### Breaking changes
