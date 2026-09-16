@@ -95,7 +95,8 @@ import com.pambrose.common.json.getByPath
 val email = json.getByPath("user/profile/email")   // JsonElement?
 ```
 
-Leading and repeated slashes are ignored, and the result is `null` if the path does not resolve.
+Leading and repeated slashes are ignored. The result is `null` if a key is missing or the path runs into a value
+that is not an object, and `JsonNull` if the last key is present with a `null` value.
 
 ### Arrays
 
@@ -254,10 +255,15 @@ Maven consumers must depend on the `-jvm` artifact, since this is a multiplatfor
 - The typed accessors (`stringValue`, `intValue`, `doubleValue`, `booleanValue`) throw
   `IllegalArgumentException` when the value is JSON `null` or has the wrong type. `booleanValue` accepts only
   `true` and `false`.
+- `doubleValue`, `doubleValueOrNull` and `isNumber` accept only JSON number syntax, plus `NaN`, `Infinity` and
+  `-Infinity`, so every platform gives the same answer. Text such as `1.5f`, `0x10`, ` 1.5 ` or `.5` is not a
+  number. A quoted number such as `"2.5"` is still read by `doubleValue`, but `isNumber` is `false` for it.
 - The `OrNull` accessors never throw for a missing key, JSON `null`, or a type mismatch; they return `null`.
   Prefer them for untrusted input.
 - `size` works on objects and arrays and throws for primitives. `isEmpty()` is `true` for JSON `null`.
-- `toMap()` throws `IllegalArgumentException` unless the element is a `JsonObject`.
+- `toMap()` throws `IllegalArgumentException` unless the element is a `JsonObject`. It returns each primitive's
+  content, which for parsed JSON is the source text. A number built in code carries the platform's rendering:
+  `JsonPrimitive(1.0)` becomes `"1.0"` on the JVM but `"1"` on JS.
 - To reformat a JSON **string**, call `reformatJson()`. On a `String`, `toJsonString(prettyPrint = …)` serializes
   the string itself as a JSON string literal.
 
