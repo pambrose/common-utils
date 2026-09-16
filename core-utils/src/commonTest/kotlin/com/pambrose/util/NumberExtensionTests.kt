@@ -19,6 +19,7 @@
 package com.pambrose.util
 
 import com.pambrose.common.util.random
+import com.pambrose.common.util.repeat
 import com.pambrose.common.util.times
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -68,6 +69,44 @@ class NumberExtensionTests : StringSpec() {
       }
       // An upper bound of 1 leaves only one possible value
       repeat(100) { 1.random() shouldBe 0 }
+    }
+
+    // Short.MAX_VALUE is where an off-by-one loop (<= instead of <) with a Short counter wraps to -32768 and never
+    // ends. A test timeout cannot stop a loop that never suspends, so the block itself fails past the limit.
+    // (The "Bug #22" counter change was not needed for this: with <, a Short counter stops at 32767.)
+    "Short.MAX_VALUE times runs exactly Short.MAX_VALUE iterations" {
+      var count = 0
+      var last: Short = -1
+      Short.MAX_VALUE times { i ->
+        if (++count > 32_767) error("Looped past Short.MAX_VALUE iterations")
+        last = i
+      }
+      count shouldBe 32_767
+      last shouldBe 32_766.toShort()
+    }
+
+    "Short times passes each index in order" {
+      val indices: MutableList<Short> = []
+      5.toShort() times { indices += it }
+      indices shouldBe [0, 1, 2, 3, 4]
+    }
+
+    "zero or a negative count runs no iterations" {
+      var calls = 0
+      0.toShort() times { calls++ }
+      (-3).toShort() times { calls++ }
+      0 times { calls++ }
+      (-3) times { calls++ }
+      0L times { calls++ }
+      (-3L) times { calls++ }
+      0 repeat { calls++ }
+      calls shouldBe 0
+    }
+
+    "Int repeat passes each index in order" {
+      val indices: MutableList<Int> = []
+      4 repeat { indices += it }
+      indices shouldBe [0, 1, 2, 3]
     }
 
     "long random test" {

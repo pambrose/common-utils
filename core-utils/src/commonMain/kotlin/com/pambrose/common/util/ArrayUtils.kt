@@ -72,7 +72,10 @@ object ArrayUtils {
   @JvmStatic
   fun arrayPrint(vals: FloatArray) = println(asString(vals))
 
-  /** Returns a bracketed string representation of a [FloatArray]. */
+  /**
+   * Returns a bracketed string representation of a [FloatArray]. Elements use the platform's `toString`, so on JS a
+   * whole number prints without `.0` (`[1]` rather than `[1.0]`).
+   */
   @JvmStatic
   fun asString(vals: FloatArray) = vals.joinToString().asBracketed()
 
@@ -80,7 +83,10 @@ object ArrayUtils {
   @JvmStatic
   fun arrayPrint(vals: DoubleArray) = println(asString(vals))
 
-  /** Returns a bracketed string representation of a [DoubleArray]. */
+  /**
+   * Returns a bracketed string representation of a [DoubleArray]. Elements use the platform's `toString`, so on JS a
+   * whole number prints without `.0` (`[1]` rather than `[1.0]`).
+   */
   @JvmStatic
   fun asString(vals: DoubleArray) = vals.joinToString().asBracketed()
 

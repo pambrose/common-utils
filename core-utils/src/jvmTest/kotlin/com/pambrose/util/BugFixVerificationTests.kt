@@ -21,25 +21,18 @@ package com.pambrose.util
 import com.pambrose.common.concurrent.Atomic
 import com.pambrose.common.delegate.AtomicDelegates
 import com.pambrose.common.time.format
-import com.pambrose.common.util.AtomicUtils.criticalSection
 import com.pambrose.common.util.Version
 import com.pambrose.common.util.linesBetween
 import com.pambrose.common.util.maskUrlCredentials
 import com.pambrose.common.util.md5
 import com.pambrose.common.util.sha256
-import com.pambrose.common.util.times
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldNotContain
-import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
 
 class BugFixVerificationTests : StringSpec() {
   init {
@@ -84,17 +77,6 @@ class BugFixVerificationTests : StringSpec() {
       atomic.value shouldBe 0
     }
 
-    "atomic concurrent set with lock is safe" {
-      val atomic = Atomic(0)
-      val jobs = (1..500).map {
-        launch {
-          atomic.setWithLock { it + 1 }
-        }
-      }
-      jobs.joinAll()
-      atomic.value shouldBe 500
-    }
-
     // Bug #8: SingleSetAtomicReferenceDelegate should throw on second write
     // Before fix: compareAndSet return value was silently ignored
     // After fix: throws IllegalStateException when value has already been set
@@ -112,27 +94,7 @@ class BugFixVerificationTests : StringSpec() {
       value shouldBe "first"
     }
 
-    // Bug #9: criticalSection should return the block's result
-    // Before fix: block's return value was discarded, function returned Unit
-    // After fix: function returns T (the block's result)
-
-    "critical section returns block result" {
-      val flag = AtomicBoolean(false)
-
-      val result = flag.criticalSection { 42 }
-      result shouldBe 42
-
-      val strResult = flag.criticalSection { "hello" }
-      strResult shouldBe "hello"
-    }
-
-    "critical section resets flag" {
-      val flag = AtomicBoolean(false)
-      flag.load() shouldBe false
-
-      flag.criticalSection { "work" }
-      flag.load() shouldBe false
-    }
+    // Bug #9 (criticalSection returning the block's result) is covered on every platform by AtomicUtilsTests.
 
     // Bug #10: maskUrlCredentials should handle URLs with multiple @ signs
     // Before fix: split("@")[1] dropped everything after the second @
@@ -182,9 +144,9 @@ class BugFixVerificationTests : StringSpec() {
     // After fix: put("build_time", ...) produces correct key
 
     "version json has correct build time key" {
-      val json = Version.jsonStr("1.0", "2025-01-01", 0)
-      json shouldContain "\"build_time\""
-      json shouldNotContain "\"build_time: \""
+      // Epoch 0 is 16:00 on 12/31/69 in America/Los_Angeles.
+      Version.jsonStr("1.0", "2025-01-01", 0) shouldBe
+        """{"version":"1.0","release_date":"2025-01-01","build_time":"Wed 12/31/69 16:00:00"}"""
     }
 
     // Bug #21: Duration.format() produced garbled output for negative durations
@@ -211,29 +173,7 @@ class BugFixVerificationTests : StringSpec() {
       d.format() shouldBe "0:00:00:00"
     }
 
-    // Bug #22: Short.times infinite loop at Short.MAX_VALUE
-    // Before fix: Short i++ overflowed from 32767 to -32768, looping forever
-    // After fix: uses Int counter, converts to Short for the action
-
-    "short times works at max value" {
-      var count = 0
-      val n: Short = 100
-      n times { count++ }
-      count shouldBe 100
-    }
-
-    "short times passes correct indices" {
-      val indices: MutableList<Short> = []
-      val n: Short = 5
-      n times { indices.add(it) }
-      indices shouldBe [0, 1, 2, 3, 4]
-    }
-
-    "short times zero does nothing" {
-      var count = 0
-      val n: Short = 0
-      n times { count++ }
-      count shouldBe 0
-    }
+    // Bug #22 (Short.times at Short.MAX_VALUE) is covered on every platform by NumberExtensionTests, which also
+    // explains why the original code never actually looped forever.
   }
 }

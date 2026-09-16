@@ -4,8 +4,37 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- core-utils `String.trimEnds(len)` and `String.maxLength(len)` throw `IllegalArgumentException` for a length
+  that does not fit. They threw `StringIndexOutOfBoundsException` on the JVM and Native, and returned a wrong
+  result on JS, whose native `substring` swaps or clamps bad indices.
+- core-utils `MiscFuncs.waitForPortAvailable` throws `IllegalArgumentException` for a port outside `0..65535`,
+  instead of retrying it like a busy port and returning `false`. Only I/O failures now count as "busy".
+- core-utils `UrlSource` rejects a negative timeout when it is constructed.
+
 ### Bug fixes
 
+- core-utils `String.singleToDoubleQuoted()` drops surrounding whitespace before removing the quotes
+  (`"  'x'  "` became `"\" 'x' \""`), and escapes backslashes as well as double quotes.
+- core-utils `UrlSource` accepts `Duration.INFINITE` and timeouts longer than `Int.MAX_VALUE` milliseconds
+  (about 24.8 days), which it used to convert to a negative `Int` that `URLConnection` rejects. A
+  sub-millisecond timeout is rounded up instead of becoming 0, which `URLConnection` treats as no timeout.
+- core-utils `Int.lpad` zero-pads a negative number after its sign, as `"%0Nd"` does (`(-1).lpad(4)` is
+  `"-001"`, not `"00-1"`). `toMMDDYYYY()` and `toDashedYYYYMMDD()` format negative years accordingly.
+- core-utils `String.maxLength` and `String.obfuscate` no longer split a surrogate pair (such as an emoji).
+- json-utils `getByPath` returns `null` when the path runs into a value that is not an object, as its KDoc
+  promised. `getByPath("a/b")` on `{"a": 1}` or `{"a": null}` threw `IllegalArgumentException`, while
+  `getOrNull("a.b")` returned `null` for the same input.
+- json-utils `doubleValue`, `doubleValueOrNull` and `isNumber` accept only JSON number syntax, plus `NaN`,
+  `Infinity` and `-Infinity`, so they give the same answer on every platform. They used the platform's own
+  parser, and each platform accepted different extra text:
+  - **JVM and Apple native:** `1.5f`, `1.5d` and hex floats such as `0x1p3`.
+  - **JS:** `0x10`, `0b101` and `nan`.
+  - **Every platform:** surrounding whitespace, a leading `+`, `.5`, `5.` and `01`.
+
+  For such text, `doubleValue` now throws `NumberFormatException`, `doubleValueOrNull` returns `null` and
+  `isNumber` is `false`. A quoted JSON number such as `"2.5"` is still read by `doubleValue`.
 - recaptcha-utils rejects a siteverify reply with a non-2xx status. Before, the status was ignored, so an error
   or redirect whose body parsed as `{"success": true}` passed verification.
 - recaptcha-utils `validateRecaptcha` responds `400 reCAPTCHA verification failed` after
@@ -15,8 +44,31 @@ All notable changes to Common Utils are documented in this file.
   could pass the "fully configured" gate and then throw `IllegalArgumentException` from `validateRecaptcha` or
   `recaptchaWidget`.
 
-### Tests
+### Documentation
 
+- core-utils `isFloat`/`isDouble` and `ArrayUtils.asString(FloatArray/DoubleArray)` document where the
+  platforms disagree: number parsing (a trailing `f`/`d`, hexadecimal literals) and whole-number formatting
+  (`1.0` prints as `1` on JS).
+
+### Build and tests
+
+- Coverage tooling (#187): a per-package Kover line floor, CI jobs for the macOS/iOS and Windows native tests,
+  line/branch coverage tables (`make coverage-packages`, `make coverage-modules`), Codecov per-module
+  components and a 90% patch target, on-demand PIT mutation testing (`make mutation`), and Kotlin ABI dumps
+  checked by `check` (`make abi-update`).
+- core-utils specs for common code now run in `commonTest`, so they cover JS, wasmJs and Native as well as the
+  JVM, with the results the platforms legitimately disagree on pinned per platform. See
+  `docs/TEST_COVERAGE_REVIEW_2026-09-16.md` (TC-008 to TC-021).
+- json-utils `JsonIntegrationTest` moves from `jvmTest` to `commonTest`, so it also runs on JS, wasmJs and
+  native. It needed the JVM only for `System.currentTimeMillis`, now `kotlin.time.Clock`. Its assertion that the
+  lookups finish in under a second is gone: it could flake on a slow runner and checked nothing about the
+  results.
+- New json-utils specs cover the cases the existing ones missed:
+  - `jsonObjectValueOrNull` and `jsonElementListOrNull` returning a value, not just `null`
+  - `isString`, `isNumber` and the `OrNull` accessors on an object or array
+  - `forEachJsonObject` skipping non-object elements and rejecting a primitive
+  - `deepCopy` building new objects and arrays rather than returning the same instances
+  - a millisecond timestamp overflowing `intValue`
 - recaptcha-utils tests build their MockEngine client with the production configuration instead of a copy of
   it. New cases cover malformed and non-2xx siteverify replies, v3 fields and a `null` `error-codes`, the site
   key in the widget (and the secret key's absence), a blank `remoteip`, use after `close()`, and how often the

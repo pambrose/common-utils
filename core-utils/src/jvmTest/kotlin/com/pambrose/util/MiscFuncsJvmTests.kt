@@ -19,34 +19,49 @@
 package com.pambrose.util
 
 import com.pambrose.common.util.HostInfo
-import com.pambrose.common.util.capitalizeFirstChar
 import com.pambrose.common.util.captureStdout
 import com.pambrose.common.util.hostInfo
-import com.pambrose.common.util.isNotNull
-import com.pambrose.common.util.isNull
-import com.pambrose.common.util.lpad
 import com.pambrose.common.util.randomId
 import com.pambrose.common.util.repeatWithSleep
-import com.pambrose.common.util.rpad
+import com.pambrose.common.util.resolveHostInfo
 import com.pambrose.common.util.sleep
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
-import io.kotest.matchers.longs.shouldBeLessThan
+import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
+import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldHaveLength
 import io.kotest.matchers.string.shouldMatch
 import java.net.InetAddress
+import java.net.UnknownHostException
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
-class MiscFuncsTests : StringSpec() {
+// The common helpers (isNull, lpad, rpad, capitalizeFirstChar) are covered on every platform by MiscFuncsTests.
+class MiscFuncsJvmTests : StringSpec() {
   init {
-    "host info test" {
-      hostInfo shouldNotBe null
-      hostInfo.hostName shouldNotBe null
-      hostInfo.ipAddress shouldNotBe null
+    "resolveHostInfo reports the looked-up host's name and address from a single lookup" {
+      var lookups = 0
+      val info =
+        resolveHostInfo {
+          lookups++
+          InetAddress.getByAddress("build-box", byteArrayOf(10, 0, 0, 7))
+        }
+      info shouldBe HostInfo("build-box", "10.0.0.7")
+      lookups shouldBe 1
+    }
+
+    // Sandboxed hosts often cannot resolve their own name.
+    "resolveHostInfo falls back to Unknown when the local host name does not resolve" {
+      resolveHostInfo { throw UnknownHostException("no such host") } shouldBe HostInfo("Unknown", "Unknown")
+    }
+
+    // Compared with a second resolution rather than InetAddress.getLocalHost(), which throws on such hosts.
+    "hostInfo is the resolved local host" {
+      hostInfo shouldBe resolveHostInfo()
     }
 
     "random id default test" {
@@ -72,41 +87,6 @@ class MiscFuncsTests : StringSpec() {
     "random id uniqueness test" {
       val ids = (1..100).map { randomId() }.toSet()
       ids.size shouldBeGreaterThan 95 // Should be mostly unique
-    }
-
-    "is null test" {
-      val nullValue: String? = null
-      val nonNullValue = "test"
-
-      nullValue.isNull() shouldBe true
-      nonNullValue.isNull() shouldBe false
-
-      nullValue.isNotNull() shouldBe false
-      nonNullValue.isNotNull() shouldBe true
-    }
-
-    "lpad test" {
-      1.lpad(3) shouldBe "001"
-      42.lpad(5) shouldBe "00042"
-      123.lpad(2) shouldBe "123" // When number is longer, no padding
-      0.lpad(3) shouldBe "000"
-      1.lpad(3, ' ') shouldBe "  1"
-    }
-
-    "rpad test" {
-      1.rpad(3) shouldBe "100"
-      42.rpad(5) shouldBe "42000"
-      123.rpad(2) shouldBe "123" // When number is longer, no padding
-      0.rpad(3) shouldBe "000"
-      1.rpad(3, ' ') shouldBe "1  "
-    }
-
-    "capitalize first char test" {
-      "hello".capitalizeFirstChar() shouldBe "Hello"
-      "Hello".capitalizeFirstChar() shouldBe "Hello"
-      "h".capitalizeFirstChar() shouldBe "H"
-      "".capitalizeFirstChar() shouldBe ""
-      "123abc".capitalizeFirstChar() shouldBe "123abc"
     }
 
     "sleep blocks for at least the requested duration" {
@@ -152,22 +132,19 @@ class MiscFuncsTests : StringSpec() {
       System.out shouldBe originalOut
     }
 
-    "repeatWithSleep does not sleep after the last iteration" {
-      val start = System.currentTimeMillis()
-      repeatWithSleep(iterations = 3, sleepTime = 300.milliseconds) { _, _ -> }
-      val elapsed = System.currentTimeMillis() - start
-      // Two sleeps separate three iterations (600ms); a third sleep after the last one would take 900ms.
-      elapsed shouldBeGreaterThanOrEqual 590L
-      elapsed shouldBeLessThan 850L
-    }
+    // Measured from the last iteration rather than as a total, so scheduling delays on a busy runner cannot
+    // push a correct run over the bound: a trailing sleep would add a full second here.
+    "repeatWithSleep sleeps between iterations but not after the last one" {
+      val iterationTimes: MutableList<Long> = []
+      repeatWithSleep(iterations = 2, sleepTime = 1.seconds) { _, _ -> iterationTimes += System.nanoTime() }
+      val returned = System.nanoTime()
 
-    "hostInfo reports the local host's name and address from a single lookup" {
-      val localHost = InetAddress.getLocalHost()
-      hostInfo shouldBe HostInfo(localHost.hostName, localHost.hostAddress)
+      (iterationTimes[1] - iterationTimes[0]).nanoseconds shouldBeGreaterThanOrEqualTo 1.seconds
+      (returned - iterationTimes[1]).nanoseconds shouldBeLessThan 500.milliseconds
     }
 
     "captureStdout decodes captured output as UTF-8" {
-      captureStdout { print("h\u00e9llo \u2713") } shouldBe "h\u00e9llo \u2713"
+      captureStdout { print("h\u00E9llo \u2713") } shouldBe "h\u00E9llo \u2713"
     }
   }
 }
