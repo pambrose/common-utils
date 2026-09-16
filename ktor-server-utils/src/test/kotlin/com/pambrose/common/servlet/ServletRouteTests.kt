@@ -18,6 +18,7 @@ package com.pambrose.common.servlet
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -30,10 +31,12 @@ import io.ktor.http.charset
 import io.ktor.http.contentType
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.config.MapApplicationConfig
 import io.ktor.server.routing.application
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import jakarta.servlet.ServletConfig
+import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -199,6 +202,9 @@ class ServletRouteTests : StringSpec() {
           contentType = "text/plain"
           characterEncoding = "ISO-8859-1"
         },
+        // As in a servlet container, a Content-Type header is the content type, whatever its casing.
+        "setHeader" to { setHeader("Content-Type", "text/plain; charset=ISO-8859-1") },
+        "addHeader" to { addHeader("content-type", "text/plain; charset=ISO-8859-1") },
       )
     encodingSetups.forEach { (method, setEncoding) ->
       "servlet output honors the charset given through $method and labels the Content-Type with it" {
@@ -210,6 +216,61 @@ class ServletRouteTests : StringSpec() {
             bodyAsBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
             contentType()?.charset() shouldBe Charsets.ISO_8859_1
           }
+        }
+      }
+    }
+
+    "a malformed servlet content type falls back to application/octet-stream instead of a 500" {
+      testApplication {
+        routing {
+          servlet("/bogus", BogusContentTypeServlet())
+        }
+        client.get("/bogus").apply {
+          status shouldBe HttpStatusCode.OK
+          contentType() shouldBe ContentType.Application.OctetStream
+          bodyAsText() shouldBe "x"
+        }
+      }
+    }
+
+    "a servlet that throws produces a 500 without its partial output or headers" {
+      testApplication {
+        // Respond with a 500, as a production engine does, rather than rethrowing into the test.
+        environment { config = MapApplicationConfig("ktor.test.throwOnException" to "false") }
+        routing {
+          servlet("/throws", ThrowingServlet())
+        }
+        client.get("/throws").apply {
+          status shouldBe HttpStatusCode.InternalServerError
+          bodyAsText() shouldNotContain "partial output"
+          headers["X-Partial"] shouldBe null
+        }
+      }
+    }
+
+    "every value of a multi-valued response header reaches the client" {
+      testApplication {
+        routing {
+          servlet("/multi", MultiHeaderServlet())
+        }
+        client.get("/multi").apply {
+          status shouldBe HttpStatusCode.OK
+          headers.getAll("X-Multi") shouldBe ["a", "b"]
+          bodyAsText() shouldBe "ok"
+        }
+      }
+    }
+
+    "the servlet's Content-Length and Transfer-Encoding headers give way to the body actually sent" {
+      testApplication {
+        routing {
+          servlet("/framing", FramingHeaderServlet())
+        }
+        client.get("/framing").apply {
+          status shouldBe HttpStatusCode.OK
+          headers.getAll(HttpHeaders.ContentLength) shouldBe ["2"]
+          headers[HttpHeaders.TransferEncoding] shouldBe null
+          bodyAsText() shouldBe "ok"
         }
       }
     }
@@ -361,6 +422,52 @@ class ServletRouteTests : StringSpec() {
       resp: HttpServletResponse,
     ) {
       resp.sendRedirect("/new")
+    }
+  }
+
+  private class BogusContentTypeServlet : HttpServlet() {
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      resp.contentType = "bogus"
+      resp.writer.print("x")
+    }
+  }
+
+  private class ThrowingServlet : HttpServlet() {
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      resp.setHeader("X-Partial", "true")
+      resp.contentType = "text/plain"
+      resp.writer.print("partial output")
+      throw ServletException("servlet failed")
+    }
+  }
+
+  private class MultiHeaderServlet : HttpServlet() {
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      resp.addHeader("X-Multi", "a")
+      resp.addHeader("X-Multi", "b")
+      resp.contentType = "text/plain"
+      resp.writer.print("ok")
+    }
+  }
+
+  private class FramingHeaderServlet : HttpServlet() {
+    override fun doGet(
+      req: HttpServletRequest,
+      resp: HttpServletResponse,
+    ) {
+      resp.setHeader("content-length", "5")
+      resp.setHeader(HttpHeaders.TransferEncoding, "chunked")
+      resp.contentType = "text/plain"
+      resp.writer.print("ok")
     }
   }
 
