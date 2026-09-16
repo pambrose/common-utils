@@ -38,8 +38,6 @@ import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
 import java.time.Duration
-import kotlin.concurrent.atomics.AtomicInt
-import kotlin.concurrent.atomics.incrementAndFetch
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -50,11 +48,6 @@ import redis.clients.jedis.resps.ScanResult
 // Hermetic tests for RedisUtils built on MockK. No live Redis server is required:
 // Jedis clients are either mocked outright or merely constructed (construction never connects).
 class RedisUtilsMockTests : StringSpec() {
-  private fun failingCreateRedisClient() {
-    mockkObject(RedisUtils, recordPrivateCalls = true)
-    every { RedisUtils["createRedisClient"](any<String>()) } throws JedisConnectionException("simulated create failure")
-  }
-
   // Stubs the private connect-and-ping step, so a success path runs without a Redis server.
   private fun stubConnectedRedisClient(client: RedisClient) {
     mockkObject(RedisUtils, recordPrivateCalls = true)
@@ -167,74 +160,9 @@ class RedisUtilsMockTests : StringSpec() {
       result shouldBe "null-branch"
     }
 
-    // Client-creation failure paths of the withRedis family, simulated by stubbing the
-    // private createRedisClient() factory on the RedisUtils object
-
-    "withRedis passes null to block when client creation fails" {
-      val callCount = AtomicInt(0)
-      failingCreateRedisClient()
-      try {
-        val result =
-          withRedis(redisUrl = "redis://localhost:6379", printStackTrace = true) { c ->
-            callCount.incrementAndFetch()
-            c shouldBe null
-            "created-null-branch"
-          }
-        result shouldBe "created-null-branch"
-        callCount.load() shouldBe 1
-      } finally {
-        unmockkObject(RedisUtils)
-      }
-    }
-
-    "withNonNullRedis returns null without invoking block when client creation fails" {
-      val callCount = AtomicInt(0)
-      failingCreateRedisClient()
-      try {
-        val result =
-          withNonNullRedis(redisUrl = "redis://localhost:6379") { _ ->
-            callCount.incrementAndFetch()
-            "should-not-reach"
-          }
-        result shouldBe null
-        callCount.load() shouldBe 0
-      } finally {
-        unmockkObject(RedisUtils)
-      }
-    }
-
-    "withSuspendingRedis passes null to block when client creation fails" {
-      val callCount = AtomicInt(0)
-      failingCreateRedisClient()
-      try {
-        val result =
-          withSuspendingRedis(redisUrl = "redis://localhost:6379") { c ->
-            callCount.incrementAndFetch()
-            c shouldBe null
-            "suspending-null-branch"
-          }
-        result shouldBe "suspending-null-branch"
-        callCount.load() shouldBe 1
-      } finally {
-        unmockkObject(RedisUtils)
-      }
-    }
-
-    "withSuspendingNonNullRedis returns null without invoking block when client creation fails" {
-      val callCount = AtomicInt(0)
-      failingCreateRedisClient()
-      try {
-        val result =
-          withSuspendingNonNullRedis(redisUrl = "redis://localhost:6379") { _ ->
-            callCount.incrementAndFetch()
-            "should-not-reach"
-          }
-        result shouldBe null
-        callCount.load() shouldBe 0
-      } finally {
-        unmockkObject(RedisUtils)
-      }
-    }
+    // The connection-failure paths are exercised against a real unreachable port, an exhausted pool and a
+    // rejected password in RedisConfigTests. Forcing the private factory to throw, as this spec used to,
+    // tested a path production code cannot reach: building a client never contacts the server.
 
     // Success paths of the withRedis family. Each function now pings before handing the client over, so a
     // connected client is stubbed in; without one, an absent server would take the null path.

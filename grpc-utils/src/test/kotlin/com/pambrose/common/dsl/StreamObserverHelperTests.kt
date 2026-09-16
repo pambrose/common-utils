@@ -18,8 +18,12 @@
 
 package com.pambrose.common.dsl
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldStartWith
+import kotlin.reflect.full.functions
 
 class StreamObserverHelperTests : StringSpec() {
   init {
@@ -101,6 +105,31 @@ class StreamObserverHelperTests : StringSpec() {
       observer.onError(RuntimeException("error"))
       observer.onCompleted()
       // No exception means test passes
+    }
+
+    // The DSL hands back a StreamObserver; the helper class is an implementation detail callers should not
+    // have to name.
+    "streamObserver is declared to return StreamObserver, not the helper type" {
+      val returnType =
+        GrpcDsl::class
+          .functions
+          .single { it.name == "streamObserver" }
+          .returnType
+          .toString()
+
+      returnType shouldStartWith "io.grpc.stub.StreamObserver"
+    }
+
+    // Each callback is single-assignment, which the KDoc now states outright.
+    "registering the same callback twice fails" {
+      val exception =
+        shouldThrow<IllegalStateException> {
+          GrpcDsl.streamObserver<String> {
+            onNext { }
+            onNext { }
+          }
+        }
+      exception.message shouldContain "cannot be assigned more than once"
     }
   }
 }

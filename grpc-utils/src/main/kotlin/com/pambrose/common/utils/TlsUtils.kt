@@ -29,6 +29,9 @@ import javax.net.ssl.SSLException
 /**
  * Wraps an [SslContextBuilder] together with a flag indicating whether mutual authentication is configured.
  *
+ * The builder already carries gRPC's ALPN configuration, so a context built from it is accepted by
+ * `NettyServerBuilder.sslContext` and `NettyChannelBuilder.sslContext`.
+ *
  * @property builder the Netty [SslContextBuilder] being configured
  * @property mutualAuth `true` if mutual (client + server) authentication is enabled
  */
@@ -73,9 +76,12 @@ object TlsUtils {
   /**
    * Builds a complete client-side [TlsContext] ready for use with a gRPC channel.
    *
+   * Every path is optional; see [clientTlsContextBuilder] for what each one does.
+   *
    * @param certChainFilePath path to the client certificate chain file (for mutual auth)
    * @param privateKeyFilePath path to the client private key file (for mutual auth)
-   * @param trustCertCollectionFilePath path to the trusted CA certificates file (required)
+   * @param trustCertCollectionFilePath path to the trusted CA certificates file; when empty, the JVM's
+   *   default trust store is used
    * @return a [TlsContext] containing the built [SslContext]
    * @throws SSLException if SSL context creation fails
    */
@@ -93,11 +99,18 @@ object TlsUtils {
   /**
    * Creates a client-side [TlsContextBuilder] that can be further customized before building.
    *
+   * Supplying [trustCertCollectionFilePath] pins the servers to trust to that CA; leaving it empty keeps
+   * Netty's default trust manager, which verifies against the JVM trust store, as a server with a public-CA
+   * certificate needs. Supplying [certChainFilePath] and [privateKeyFilePath] together enables mutual auth;
+   * neither one is valid without the other.
+   *
    * @param certChainFilePath path to the client certificate chain file (for mutual auth)
    * @param privateKeyFilePath path to the client private key file (for mutual auth)
-   * @param trustCertCollectionFilePath path to the trusted CA certificates file (required)
+   * @param trustCertCollectionFilePath path to the trusted CA certificates file; when empty, the JVM's
+   *   default trust store is used
    * @return a [TlsContextBuilder] wrapping the configured [SslContextBuilder]
    * @throws SSLException if SSL context builder creation fails
+   * @throws IllegalArgumentException if a given file does not exist, or only one of the cert/key pair is given
    */
   @Throws(SSLException::class)
   fun clientTlsContextBuilder(
@@ -111,14 +124,16 @@ object TlsUtils {
         val keyPath = privateKeyFilePath.trim()
         val trustPath = trustCertCollectionFilePath.trim()
 
-        require(trustPath.isNotEmpty()) { "Client trustCertCollectionFilePath is required for TLS" }
-
-        File(trustPath)
-          .also { file ->
-            require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
-            logger.info { "Reading trustCertCollectionFilePath: ${trustPath.toDoubleQuoted()}" }
-            builder.trustManager(file)
-          }
+        if (trustPath.isNotEmpty()) {
+          File(trustPath)
+            .also { file ->
+              require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
+              logger.info { "Reading trustCertCollectionFilePath: ${trustPath.toDoubleQuoted()}" }
+              builder.trustManager(file)
+            }
+        } else {
+          logger.info { "No trustCertCollectionFilePath given; using the JVM default trust store" }
+        }
 
         if (certPath.isNotEmpty())
           require(keyPath.isNotEmpty()) {
@@ -162,7 +177,7 @@ object TlsUtils {
   ): TlsContext =
     serverTlsContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath)
       .run {
-        TlsContext(GrpcSslContexts.configure(builder).build(), mutualAuth)
+        TlsContext(builder.build(), mutualAuth)
       }
 
   /**
@@ -170,11 +185,16 @@ object TlsUtils {
    *
    * If [trustCertCollectionFilePath] is provided, mutual authentication (client cert required) is enabled.
    *
+   * The builder comes from [GrpcSslContexts], so it already has the ALPN configuration that
+   * `NettyServerBuilder.sslContext` requires: a context built straight from it is accepted by
+   * [com.pambrose.common.dsl.GrpcDsl.server].
+   *
    * @param certChainFilePath path to the server certificate chain file (required)
    * @param privateKeyFilePath path to the server private key file (required)
    * @param trustCertCollectionFilePath path to the trusted client CA certificates (enables mutual auth)
    * @return a [TlsContextBuilder] wrapping the configured [SslContextBuilder]
    * @throws SSLException if SSL context builder creation fails
+   * @throws IllegalArgumentException if a required path is empty, or a given file does not exist
    */
   @Throws(SSLException::class)
   fun serverTlsContext(
@@ -196,7 +216,7 @@ object TlsUtils {
     logger.info { "Reading certChainFilePath: ${certPath.toDoubleQuoted()}" }
     logger.info { "Reading privateKeyFilePath: ${keyPath.toDoubleQuoted()}" }
 
-    return SslContextBuilder.forServer(certFile, keyFile)
+    return GrpcSslContexts.forServer(certFile, keyFile)
       .let { builder ->
         if (trustPath.isNotEmpty()) {
           File(trustPath)

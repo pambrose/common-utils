@@ -95,6 +95,13 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
     the documented null path.
   - **reCAPTCHA:** cancellation is no longer reported as a failed verification, and `remoteip` carries an IP.
   - **Exposed:** a SQL NULL column reads back as `null`, and `upsert` validates its conflict index.
+- **gRPC fixes (grpc-utils)**:
+  - **TLS:** a server context built from `serverTlsContext` carries ALPN, so gRPC's Netty server accepts it.
+  - **Retry:** `enableRetry = false` actually disables retry, which grpc-java turns on by default, and the
+    in-process transport honors the retry and authority options.
+  - **Shutdown:** a non-positive `shutdownWithJvm` timeout fails when the hook is registered, and the hook
+    forces the server down even when the graceful path throws.
+  - **Client TLS:** the trust path is optional, falling back to the JVM trust store.
 
 ### Breaking changes
 
@@ -144,6 +151,8 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 - email-utils `Parameters.getEmail` normalizes addresses, redis-utils rejects `maxPoolSize = 0` and stops
   sending the placeholder password `none`, recaptcha-utils propagates `CancellationException`, and
   exposed-utils validates `upsert` conflict indexes and returns `null` for SQL NULL columns.
+- grpc-utils `serverTlsContext` carries ALPN, the client trust path is optional, `enableRetry = false`
+  disables retry, and `streamObserver` is declared to return `StreamObserver<T>`.
 
 ---
 

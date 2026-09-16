@@ -20,6 +20,7 @@ package com.pambrose.common.utils
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -27,11 +28,12 @@ import java.io.File
 
 class TlsUtilsTests : StringSpec() {
   init {
-    "buildClientTlsContext requires non-empty trustCertCollectionFilePath" {
-      val ex = shouldThrow<IllegalArgumentException> {
-        TlsUtils.buildClientTlsContext()
-      }
-      ex.message shouldContain "trustCertCollectionFilePath is required"
+    // An omitted trust path leaves Netty's default trust manager in place, so a server with a public-CA
+    // certificate verifies against the JVM trust store.
+    "buildClientTlsContext without a trust path uses the JVM default trust store" {
+      val context = TlsUtils.buildClientTlsContext()
+      context.sslContext.shouldNotBeNull().isClient shouldBe true
+      context.mutualAuth shouldBe false
     }
 
     "buildClientTlsContext rejects missing trust file" {
@@ -42,11 +44,20 @@ class TlsUtilsTests : StringSpec() {
       ex.message shouldContain "does not exist"
     }
 
-    "clientTlsContextBuilder requires non-empty trustCertCollectionFilePath" {
-      val ex = shouldThrow<IllegalArgumentException> {
-        TlsUtils.clientTlsContextBuilder()
-      }
-      ex.message shouldContain "trustCertCollectionFilePath is required"
+    "clientTlsContextBuilder without a trust path still yields a buildable client builder" {
+      val result = TlsUtils.clientTlsContextBuilder()
+      result.mutualAuth shouldBe false
+      result.builder.build().isClient shouldBe true
+    }
+
+    "a client cert and key without a trust path still enable mutual auth" {
+      val context =
+        TlsUtils.buildClientTlsContext(
+          certChainFilePath = tlsResourcePath("client-cert.pem"),
+          privateKeyFilePath = tlsResourcePath("client-key.pem"),
+        )
+      context.sslContext.shouldNotBeNull().isClient shouldBe true
+      context.mutualAuth shouldBe true
     }
 
     "buildServerTlsContext requires certChainFilePath" {
@@ -192,6 +203,28 @@ class TlsUtilsTests : StringSpec() {
       )
       result.mutualAuth shouldBe false
       result.builder.build().isServer shouldBe true
+    }
+
+    // gRPC's Netty server rejects a context without ALPN, so the builder handed to callers must already
+    // carry gRPC's ALPN configuration rather than only the one buildServerTlsContext applies.
+    "serverTlsContext configures ALPN with h2 on the builder it returns" {
+      val sslContext =
+        TlsUtils.serverTlsContext(
+          certChainFilePath = tlsResourcePath("server-cert.pem"),
+          privateKeyFilePath = tlsResourcePath("server-key.pem"),
+        ).builder.build()
+
+      sslContext.applicationProtocolNegotiator().protocols() shouldContain "h2"
+    }
+
+    "buildServerTlsContext also carries ALPN" {
+      val context =
+        TlsUtils.buildServerTlsContext(
+          certChainFilePath = tlsResourcePath("server-cert.pem"),
+          privateKeyFilePath = tlsResourcePath("server-key.pem"),
+        )
+
+      context.sslContext.shouldNotBeNull().applicationProtocolNegotiator().protocols() shouldContain "h2"
     }
 
     "serverTlsContext rejects missing privateKey file" {

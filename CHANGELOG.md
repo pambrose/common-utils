@@ -132,9 +132,28 @@ All notable changes to Common Utils are documented in this file.
 - exposed-utils `upsert(conflictIndex)` throws `IllegalArgumentException` for a non-unique index, or one that
   belongs to another table, instead of failing in the database at runtime.
 - exposed-utils `ResultRow.get(index)` returns `null` for a column holding SQL NULL instead of throwing.
+- grpc-utils `TlsUtils.serverTlsContext` builds on `GrpcSslContexts.forServer`, so the builder it hands back
+  already carries gRPC's ALPN configuration. `NettyServerBuilder.sslContext` rejects a context without ALPN, so
+  a context a caller built from that builder was unusable. `buildServerTlsContext` no longer applies
+  `GrpcSslContexts.configure` a second time.
+- grpc-utils client TLS no longer requires `trustCertCollectionFilePath`. An empty path keeps Netty's default
+  trust manager, which verifies against the JVM trust store, so a server with a public-CA certificate works.
+  Before, it threw `IllegalArgumentException`, contradicting the README.
+- grpc-utils `GrpcDsl.channel` disables retry when `enableRetry = false`. grpc-java enables retry by default
+  and the DSL never called `disableRetry()`, so the flag did nothing. The retry, `maxRetryAttempts` and
+  `overrideAuthority` options now apply to the in-process transport as well, which ignored them.
+- grpc-utils `GrpcDsl.streamObserver` is declared to return `StreamObserver<T>` rather than the
+  `StreamObserverHelper<T>` implementation type. Code that named the helper type explicitly must change; DSL
+  usage is unaffected.
+- grpc-utils `GrpcDsl.channel`'s `tlsContext` defaults to `PLAINTEXT_CONTEXT`, matching `server()`.
+- grpc-utils `Server.shutdownWithJvm` rejects a non-positive timeout when the hook is registered. Before, the
+  check ran inside the hook at JVM exit, where it threw before `shutdown()` and left the server running.
 
 ### Bug fixes
 
+- grpc-utils `shutdownWithJvm`'s hook forces `shutdownNow()` whatever the graceful path does. Only
+  `InterruptedException` was handled before, so a failure such as an already-terminated server escaped the
+  hook and left the server up.
 - email-utils webhook models decode the payloads Resend documents. `Data` gained `tags`, `broadcast_id`,
   `message_id` and `template_id`, and `Bounce` gained `subType` and `type`, so a bounce keeps its
   `Permanent`/`Suppressed` classification. `ResendWebhookMsg.decode(body)` ignores unknown fields, so an event
@@ -353,6 +372,17 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- Add grpc-utils regression tests that would have caught the fixes above: a hand-built server context passed
+  to `GrpcDsl.server`, ALPN assertions on both server paths, retry verification on the Netty and in-process
+  transports, timeout validation and forced shutdown in the JVM hook, the declared `streamObserver` return
+  type, and the single-assignment callbacks. The TLS and retry specs previously asserted only `isServer` and
+  `authority()`, which neither bug would have broken.
+- redis-utils drops the null-path specs that forced the private client factory to throw, a path production
+  code cannot reach now that building a client never connects. `RedisConfigTests` covers the real failure
+  modes: an unreachable port, an exhausted pool and a rejected password.
+- ktor-server-utils `ServletRouteTests` was already covering `init(ServletConfig)`, a 405 from a GET-only
+  servlet, non-ASCII output and `destroy()` on application stop, added with the earlier servlet fixes; this
+  was verified rather than duplicated.
 - Add email-utils, recaptcha-utils, redis-utils and exposed-utils regression tests.
   - **Resend payloads:** the documented `email.bounced` and `email.clicked` payloads decode verbatim.
   - **Logging:** logback `ListAppender` assertions pin what `sendEmail` and the misconfiguration warning log.

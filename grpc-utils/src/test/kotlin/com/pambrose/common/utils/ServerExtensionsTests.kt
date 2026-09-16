@@ -33,8 +33,29 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+
+// Captures the shutdown hook that shutdownWithJvm registers, with Runtime stubbed so nothing is really
+// registered with the JVM. Returns the captured thread, or null when no hook was registered.
+private fun registerHook(
+  server: Server,
+  maxWaitTime: Duration,
+): Thread? {
+  val hookSlot = slot<Thread>()
+  val runtime = mockk<Runtime>(relaxed = true)
+  every { runtime.addShutdownHook(capture(hookSlot)) } just Runs
+
+  mockkStatic(Runtime::class)
+  try {
+    every { Runtime.getRuntime() } returns runtime
+    server.shutdownWithJvm(maxWaitTime)
+  } finally {
+    unmockkStatic(Runtime::class)
+  }
+  return if (hookSlot.isCaptured) hookSlot.captured else null
+}
 
 class ServerExtensionsTests : StringSpec() {
   init {
@@ -93,20 +114,10 @@ class ServerExtensionsTests : StringSpec() {
       val server = mockk<Server>(relaxed = true)
       every { server.awaitTermination(any(), any()) } returns true
 
-      val hookSlot = slot<Thread>()
-      val runtime = mockk<Runtime>(relaxed = true)
-      every { runtime.addShutdownHook(capture(hookSlot)) } just Runs
+      val hook = requireNotNull(registerHook(server, 2.seconds))
 
-      mockkStatic(Runtime::class)
-      try {
-        every { Runtime.getRuntime() } returns runtime
-        server.shutdownWithJvm(2.seconds)
-      } finally {
-        unmockkStatic(Runtime::class)
-      }
-
-      hookSlot.isCaptured shouldBe true
-      hookSlot.captured.run()
+      hook.isAlive shouldBe false
+      hook.run()
 
       verifyOrder {
         server.shutdown()
@@ -119,23 +130,42 @@ class ServerExtensionsTests : StringSpec() {
       val server = mockk<Server>(relaxed = true)
       every { server.awaitTermination(any(), any()) } throws InterruptedException("interrupted")
 
-      val hookSlot = slot<Thread>()
+      val hook = requireNotNull(registerHook(server, 1.seconds))
+
+      shouldNotThrowAny {
+        hook.run()
+      }
+      verify(exactly = 1) { server.shutdown() }
+      verify(exactly = 1) { server.shutdownNow() }
+    }
+
+    // A bad timeout used to surface only at JVM exit, inside the hook, where it stopped the shutdown from
+    // running at all.
+    "shutdownWithJvm rejects a non-positive timeout when the hook is registered" {
+      val server = mockk<Server>(relaxed = true)
       val runtime = mockk<Runtime>(relaxed = true)
-      every { runtime.addShutdownHook(capture(hookSlot)) } just Runs
 
       mockkStatic(Runtime::class)
       try {
         every { Runtime.getRuntime() } returns runtime
-        server.shutdownWithJvm(1.seconds)
+        shouldThrow<IllegalArgumentException> { server.shutdownWithJvm(Duration.ZERO) }
       } finally {
         unmockkStatic(Runtime::class)
       }
 
-      hookSlot.isCaptured shouldBe true
+      verify(exactly = 0) { runtime.addShutdownHook(any()) }
+    }
+
+    // The hook is the last chance to stop the server, so an unexpected failure must not skip shutdownNow().
+    "shutdownWithJvm hook still forces shutdown when the graceful path throws" {
+      val server = mockk<Server>(relaxed = true)
+      every { server.shutdown() } throws IllegalStateException("already terminated")
+
+      val hook = requireNotNull(registerHook(server, 1.seconds))
+
       shouldNotThrowAny {
-        hookSlot.captured.run()
+        hook.run()
       }
-      verify(exactly = 1) { server.shutdown() }
       verify(exactly = 1) { server.shutdownNow() }
     }
   }

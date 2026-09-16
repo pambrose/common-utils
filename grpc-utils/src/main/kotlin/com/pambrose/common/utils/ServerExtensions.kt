@@ -23,20 +23,28 @@ import kotlin.time.Duration
 /**
  * Registers a JVM shutdown hook that gracefully shuts down this gRPC [Server].
  *
+ * The hook waits up to [maxWaitTime] for in-flight RPCs, then forces the server down. Because it runs as the
+ * JVM exits, with no caller left to report to, a failure on the graceful path is swallowed rather than
+ * propagated — but the server is still stopped.
+ *
  * Extension function on [Server].
  *
  * @param maxWaitTime the maximum duration to wait for in-flight RPCs to complete before forcing shutdown
+ * @throws IllegalArgumentException if [maxWaitTime] is not positive. This is checked here, when the hook is
+ *   registered, rather than at JVM exit, where it would stop the shutdown from running at all.
  */
 fun Server.shutdownWithJvm(maxWaitTime: Duration) {
+  require(maxWaitTime.isPositive()) { "maxWaitTime must be greater than 0" }
   Runtime.getRuntime().addShutdownHook(
     Thread {
-      try {
-        shutdownGracefully(maxWaitTime)
-      } catch (e: InterruptedException) {
-        // Intentionally not restoring the interrupt flag: this runs in a JVM shutdown-hook
-        // thread that terminates as soon as this block returns, so there is no caller higher
-        // up that could observe a restored flag.
-      }
+      // Whatever the graceful path does, including an InterruptedException from awaitTermination or a server
+      // that is already terminated, shutdownNow() still runs exactly once.
+      val _ =
+        runCatching {
+          shutdown()
+          awaitTermination(maxWaitTime.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        }
+      shutdownNow()
     },
   )
 }
