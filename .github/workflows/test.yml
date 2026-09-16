@@ -46,3 +46,56 @@ jobs:
           files: build/reports/kover/report.xml
           fail_ci_if_error: false
           verbose: true
+
+  # The Linux job above runs the KMP modules' jvm, js, wasmJs and linuxX64 tests. A Linux host cannot run the
+  # Apple or mingw test executables, so these jobs cover them. The task names are unqualified, so every KMP
+  # module's tests run. The watchOS/tvOS simulator test tasks are disabled in the build, and Gradle skips
+  # iosX64Test on the arm64 runner.
+  native-apple:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain. The catalog pins the Kotlin plugin
+      # (through the convention plugins), so its hash is a good cache key.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      - name: Run macOS and iOS simulator tests
+        run: ./gradlew macosArm64Test iosSimulatorArm64Test
+
+  native-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      - name: Run mingwX64 tests
+        shell: bash
+        run: ./gradlew mingwX64Test

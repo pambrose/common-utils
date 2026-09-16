@@ -1,0 +1,81 @@
+public abstract class com/pambrose/common/script/AbstractEngine : java/io/Closeable {
+	public static final field Companion Lcom/pambrose/common/script/AbstractEngine$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	protected fun checkCode (Ljava/lang/String;)V
+	public fun close ()V
+	public final fun getEngine ()Ljavax/script/ScriptEngine;
+	protected final fun getScriptEngine ()Ljavax/script/ScriptEngine;
+}
+
+public final class com/pambrose/common/script/AbstractEngine$Companion {
+}
+
+public abstract class com/pambrose/common/script/AbstractEnginePool : java/io/Closeable {
+	public fun <init> (I)V
+	public fun close ()V
+	protected final fun getChannel ()Lkotlinx/coroutines/channels/Channel;
+	public final fun getSize ()I
+	public final fun isEmpty ()Z
+	protected final fun populate (Lkotlin/jvm/functions/Function0;)V
+	protected abstract fun reset (Lcom/pambrose/common/script/AbstractEngine;)V
+	protected final fun withInstance (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract class com/pambrose/common/script/AbstractExprEvaluator : com/pambrose/common/script/AbstractEngine {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun compute (Ljava/lang/String;)Ljava/lang/Object;
+	public final fun eval (Ljava/lang/String;)Z
+	public final fun resetContext (Z)V
+	public static synthetic fun resetContext$default (Lcom/pambrose/common/script/AbstractExprEvaluator;ZILjava/lang/Object;)V
+}
+
+public abstract class com/pambrose/common/script/AbstractExprEvaluatorPool : com/pambrose/common/script/AbstractEnginePool {
+	public fun <init> (I)V
+	public final fun blockingEval (Ljava/lang/String;)Z
+	public final fun eval (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public synthetic fun reset (Lcom/pambrose/common/script/AbstractEngine;)V
+	protected fun reset (Lcom/pambrose/common/script/AbstractExprEvaluator;)V
+}
+
+public abstract class com/pambrose/common/script/AbstractScript : com/pambrose/common/script/AbstractEngine {
+	public fun <init> (Ljava/lang/String;Z)V
+	protected final fun accessibleClass (Ljava/lang/String;Ljava/lang/Object;)Lkotlin/reflect/KClass;
+	public fun add (Ljava/lang/String;Ljava/lang/Object;[Lkotlin/reflect/KType;)V
+	protected fun bindVariables (Ljava/util/Map;)V
+	protected final fun checkName (Ljava/lang/String;)V
+	protected final fun getInitialized ()Z
+	protected final fun getValueMap ()Ljava/util/Map;
+	protected fun isReserved (Ljava/lang/String;)Z
+	public fun params (Ljava/lang/String;[Lkotlin/reflect/KType;)Ljava/lang/String;
+	public static synthetic fun params$default (Lcom/pambrose/common/script/AbstractScript;Ljava/lang/String;[Lkotlin/reflect/KType;ILjava/lang/Object;)Ljava/lang/String;
+	protected final fun prepare (Ljava/lang/String;)V
+	protected final fun register (Ljava/lang/String;Ljava/lang/Object;[Lkotlin/reflect/KType;)V
+	public static synthetic fun register$default (Lcom/pambrose/common/script/AbstractScript;Ljava/lang/String;Ljava/lang/Object;[Lkotlin/reflect/KType;ILjava/lang/Object;)V
+	protected fun renderType (Lkotlin/reflect/KType;)Ljava/lang/String;
+	public final fun resetContext (Z)V
+	public fun resetForReuse (Z)V
+	protected final fun setInitialized (Z)V
+}
+
+public abstract class com/pambrose/common/script/AbstractScriptPool : com/pambrose/common/script/AbstractEnginePool {
+	public fun <init> (IZ)V
+	public final fun eval (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public synthetic fun reset (Lcom/pambrose/common/script/AbstractEngine;)V
+	protected fun reset (Lcom/pambrose/common/script/AbstractScript;)V
+}
+
+public final class com/pambrose/common/script/ScriptGuards {
+	public static final field INSTANCE Lcom/pambrose/common/script/ScriptGuards;
+	public final fun checkNoJvmExit ([Ljava/lang/String;)V
+}
+
+public final class com/pambrose/common/script/ScriptUtils {
+	public static final field INSTANCE Lcom/pambrose/common/script/ScriptUtils;
+	public final fun bindings (Ljavax/script/ScriptEngine;I)Ljavax/script/Bindings;
+	public static synthetic fun bindings$default (Lcom/pambrose/common/script/ScriptUtils;Ljavax/script/ScriptEngine;IILjava/lang/Object;)Ljavax/script/Bindings;
+	public final fun getEngineBindings (Ljavax/script/ScriptEngine;)Ljavax/script/Bindings;
+	public final fun getGlobalBindings (Ljavax/script/ScriptEngine;)Ljavax/script/Bindings;
+	public final fun resetContext (Ljavax/script/ScriptEngine;Z)V
+	public static synthetic fun resetContext$default (Lcom/pambrose/common/script/ScriptUtils;Ljavax/script/ScriptEngine;ZILjava/lang/Object;)V
+}
+

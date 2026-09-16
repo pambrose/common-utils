@@ -1,0 +1,14 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, js, linuxArm64, linuxX64, macosArm64, mingwX64, tvosArm64, tvosSimulatorArm64, wasmJs, watchosArm32, watchosArm64, watchosDeviceArm64, watchosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.pambrose.common-utils:ktor-client-utils>
+final object com.pambrose.common.dsl/KtorDsl { // com.pambrose.common.dsl/KtorDsl|null[0]
+    final fun newHttpClient(kotlin/Boolean = ...): io.ktor.client/HttpClient // com.pambrose.common.dsl/KtorDsl.newHttpClient|newHttpClient(kotlin.Boolean){}[0]
+    final suspend fun <#A1: kotlin/Any?> (io.ktor.client/HttpClient).get(kotlin/String, kotlin/Function1<io.ktor.client.request/HttpRequestBuilder, kotlin/Unit> = ..., kotlin.coroutines/SuspendFunction1<io.ktor.client.statement/HttpResponse, #A1>): #A1 // com.pambrose.common.dsl/KtorDsl.get|get@io.ktor.client.HttpClient(kotlin.String;kotlin.Function1<io.ktor.client.request.HttpRequestBuilder,kotlin.Unit>;kotlin.coroutines.SuspendFunction1<io.ktor.client.statement.HttpResponse,0:0>){0§<kotlin.Any?>}[0]
+    final suspend fun <#A1: kotlin/Any?> httpClient(io.ktor.client/HttpClient? = ..., kotlin/Boolean = ..., kotlin.coroutines/SuspendFunction1<io.ktor.client/HttpClient, #A1>): #A1 // com.pambrose.common.dsl/KtorDsl.httpClient|httpClient(io.ktor.client.HttpClient?;kotlin.Boolean;kotlin.coroutines.SuspendFunction1<io.ktor.client.HttpClient,0:0>){0§<kotlin.Any?>}[0]
+    final suspend fun <#A1: kotlin/Any?> withHttpClient(io.ktor.client/HttpClient? = ..., kotlin/Boolean = ..., kotlin.coroutines/SuspendFunction1<io.ktor.client/HttpClient, #A1>): #A1 // com.pambrose.common.dsl/KtorDsl.withHttpClient|withHttpClient(io.ktor.client.HttpClient?;kotlin.Boolean;kotlin.coroutines.SuspendFunction1<io.ktor.client.HttpClient,0:0>){0§<kotlin.Any?>}[0]
+}

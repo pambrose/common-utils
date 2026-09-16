@@ -1,0 +1,48 @@
+public abstract interface class com/pambrose/common/recaptcha/RecaptchaConfig {
+	public abstract fun getRecaptchaSecretKey ()Ljava/lang/String;
+	public abstract fun getRecaptchaSiteKey ()Ljava/lang/String;
+	public abstract fun isRecaptchaEnabled ()Z
+}
+
+public final class com/pambrose/common/recaptcha/RecaptchaService : java/io/Closeable {
+	public static final field INSTANCE Lcom/pambrose/common/recaptcha/RecaptchaService;
+	public fun close ()V
+	public final fun loadRecaptchaScript (Lkotlinx/html/HEAD;Lcom/pambrose/common/recaptcha/RecaptchaConfig;)V
+	public final fun recaptchaWidget (Lkotlinx/html/FlowContent;Lcom/pambrose/common/recaptcha/RecaptchaConfig;)V
+	public final fun validateRecaptcha (Lio/ktor/server/routing/RoutingContext;Lcom/pambrose/common/recaptcha/RecaptchaConfig;Lio/ktor/http/Parameters;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse {
+	public static final field Companion Lcom/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse$Companion;
+	public fun <init> (ZLjava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (ZLjava/util/List;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (ZLjava/util/List;Ljava/lang/String;Ljava/lang/String;)Lcom/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse;
+	public static synthetic fun copy$default (Lcom/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse;ZLjava/util/List;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChallengeTs ()Ljava/lang/String;
+	public final fun getErrorCodes ()Ljava/util/List;
+	public final fun getHostname ()Ljava/lang/String;
+	public final fun getSuccess ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class com/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pambrose/common/recaptcha/RecaptchaService$RecaptchaResponse$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+

@@ -1,0 +1,12 @@
+public final class com/pambrose/common/dsl/MetricsDsl {
+	public static final field INSTANCE Lcom/pambrose/common/dsl/MetricsDsl;
+	public static final fun healthCheck (Lkotlin/jvm/functions/Function1;)Lcom/codahale/metrics/health/HealthCheck;
+}
+
+public final class com/pambrose/common/util/MetricsUtils {
+	public static final field INSTANCE Lcom/pambrose/common/util/MetricsUtils;
+	public static final fun newBacklogHealthCheck (II)Lcom/codahale/metrics/health/HealthCheck;
+	public static final fun newBacklogHealthCheck (Lkotlin/jvm/functions/Function0;I)Lcom/codahale/metrics/health/HealthCheck;
+	public static final fun newMapHealthCheck (Ljava/util/Map;I)Lcom/codahale/metrics/health/HealthCheck;
+}
+

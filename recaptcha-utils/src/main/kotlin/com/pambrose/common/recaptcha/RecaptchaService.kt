@@ -89,7 +89,7 @@ object RecaptchaService : Closeable {
   private suspend fun verifyRecaptcha(
     config: RecaptchaConfig,
     recaptchaResponse: String,
-    remoteIp: String? = null,
+    remoteIp: String,
   ): Boolean {
     // isRecaptchaConfigured already guaranteed a non-blank secret key; assert the invariant explicitly.
     val secretKey = requireNotNull(config.recaptchaSecretKey) { "reCAPTCHA secret key must be configured" }
@@ -99,7 +99,7 @@ object RecaptchaService : Closeable {
         Parameters.build {
           append("secret", secretKey)
           append("response", recaptchaResponse)
-          if (!remoteIp.isNullOrBlank()) {
+          if (remoteIp.isNotBlank()) {
             append("remoteip", remoteIp)
           }
         }

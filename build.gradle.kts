@@ -1,4 +1,7 @@
-@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+@file:OptIn(
+    org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class,
+    org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class,
+)
 
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import com.vanniktech.maven.publish.JavadocJar
@@ -9,9 +12,11 @@ import com.vanniktech.maven.publish.SourcesJar
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.DetektCreateBaselineTask
 import dev.detekt.gradle.extensions.DetektExtension
+import info.solidsoft.gradle.pitest.PitestPluginExtension
 import io.kotest.framework.gradle.KotestGradleExtension
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
@@ -55,6 +60,7 @@ plugins {
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
     alias(libs.plugins.maven.publish) apply false
+    alias(libs.plugins.pitest) apply false
 }
 
 // version/group are set in gradle.properties; -PoverrideVersion overrides version
@@ -95,14 +101,18 @@ dokka {
 }
 
 // Coverage floors, enforced through `check` (and so through CI's `./gradlew build`). They sit a few points
-// below the weakest package rather than at the project's current figures — line 98.3% overall but 96.0% in
-// `concurrent`; branch 89.1% overall but 50.0% in `response` and 74.5% in `webhook` — so a real regression,
-// such as a module arriving without tests, trips them while ordinary drift does not. `make build` passes
-// -x koverVerify, since that target is documented as building without tests.
+// below the current figures (line 98.8%, branch 89.3%) so that ordinary drift does not trip them. `make build`
+// passes -x koverVerify, since that target is documented as building without tests.
+//
+// The project-wide rule alone has a lot of slack: every module except core-utils, service-utils,
+// ktor-server-utils and guava-utils is small enough to lose all of its coverage without pulling the aggregate
+// under 90%. The per-package line rule closes most of that gap (the weakest package, `script`, is at 96.1%).
+// It stops at lines on purpose: `response` has four branches, two of them compiler-generated and unreachable,
+// so a per-package branch floor would fail for no reason.
 kover {
     reports {
         verify {
-            rule {
+            rule("project-wide line and branch floors") {
                 bound {
                     minValue = 90
                     coverageUnits = CoverageUnit.LINE
@@ -111,6 +121,14 @@ kover {
                 bound {
                     minValue = 80
                     coverageUnits = CoverageUnit.BRANCH
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
+            }
+            rule("per-package line floor") {
+                groupBy = GroupingEntityType.PACKAGE
+                bound {
+                    minValue = 90
+                    coverageUnits = CoverageUnit.LINE
                     aggregationForGroup = AggregationType.COVERED_PERCENTAGE
                 }
             }
@@ -198,6 +216,15 @@ val kmpPluginIds = listOf(
     libs.plugins.kotlinter,
 ).map { it.get().pluginId }
 
+// JVM modules that get on-demand mutation testing (`make mutation`). Start with the modules whose tests
+// mostly run code without checking its result; add others once their reports are worth reading.
+val mutationModuleNames = setOf(
+    "exposed-utils",
+    "guava-utils",
+)
+val pitestPluginId = libs.plugins.pitest.get().pluginId
+val kotestPitest = libs.kotest.extensions.pitest
+
 val sharedPluginIds = listOf(
     libs.plugins.ben.manes.versions,
     libs.plugins.detekt,
@@ -231,6 +258,9 @@ subprojects {
         configurePublishing(isKmp = false)
     }
 
+    if (name in mutationModuleNames)
+        configurePitest()
+
     configureDetekt()
     configureDokka()
     configureVersions()
@@ -242,6 +272,12 @@ subprojects {
 fun Project.configureKotlinJvm() {
     extensions.configure<KotlinJvmProjectExtension> {
         jvmToolchain(jvmTargetVersion.toInt())
+
+        // KGP's ABI validation (experimental, API as of 2.4): `check` runs checkKotlinAbi against the dumps
+        // committed under <module>/api, and `./gradlew updateKotlinAbi` rewrites them after an intended API
+        // change. It guards the Java-facing surface (the @JvmName/@JvmMultifileClass facades and the @JvmStatic
+        // bridges), which Kotlin callers never touch.
+        abiValidation()
 
         sourceSets.all {
             experimentalOptIns.forEach {
@@ -270,6 +306,11 @@ fun Project.configureKotlinJvm() {
 fun Project.configureKotlinMultiplatform() {
     extensions.configure<KotlinMultiplatformExtension> {
         jvmToolchain(jvmTargetVersion.toInt())
+
+        // As in configureKotlinJvm(), plus a klib dump for the non-JVM targets. A host that cannot compile some
+        // target keeps that target's declarations from the committed dump (keepLocallyUnsupportedTargets is on
+        // by default), so regenerate the dumps on macOS, which compiles every target.
+        abiValidation()
 
         jvm()
         js { nodejs() }
@@ -352,6 +393,23 @@ fun Project.configureKotlinterForKmp() {
     val buildDirFile = layout.buildDirectory.get().asFile
     tasks.withType<ConfigurableKtLintTask>().configureEach {
         exclude { it.file.startsWith(buildDirFile) }
+    }
+}
+
+// PIT mutation testing for the modules in mutationModuleNames. It runs only when asked for (`make mutation` or
+// `./gradlew pitest`): the plugin does not hook pitest into `check`, and a run takes minutes. Kotest specs need
+// the Kotest PIT plugin on the test classpath. Reports go to <module>/build/reports/pitest/index.html.
+fun Project.configurePitest() {
+    pluginManager.apply(pitestPluginId)
+    dependencies.add("testImplementation", kotestPitest)
+    extensions.configure<PitestPluginExtension> {
+        targetClasses.set(listOf("com.pambrose.common.*"))
+        // Some specs live outside com.pambrose.common (e.g. com.pambrose.util.ZipExtensionTests), and PIT
+        // otherwise looks for tests only in the targetClasses packages.
+        targetTests.set(listOf("com.pambrose.*"))
+        threads.set(4)
+        outputFormats.set(listOf("HTML", "XML"))
+        timestampedReports.set(false)
     }
 }
 

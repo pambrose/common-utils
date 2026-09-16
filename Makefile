@@ -1,5 +1,5 @@
 .PHONY: default help clean stop build lint detekt detekt-baseline refresh tests tree depends versions kdocs \
-	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-clean \
+	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-modules coverage-clean mutation abi-check abi-update \
 	publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper \
 	_check-gpg-env _require-version _require-gradle-version
 
@@ -54,8 +54,22 @@ coverage-verify: ## Run Kover coverage verification rules
 coverage-open: coverage-html ## Generate and open the HTML coverage report
 	open build/reports/kover/html/index.html
 
-coverage-packages: coverage-xml ## Print per-package coverage table from the XML report
+coverage-packages: coverage-xml ## Print per-package line/branch coverage, weakest branch coverage first
 	@python3 scripts/coverage-packages.py
+
+coverage-modules: coverage-xml ## Print per-module line/branch coverage, weakest branch coverage first
+	@python3 scripts/coverage-packages.py --by-module
+
+# PIT runs only in the modules listed in mutationModuleNames (root build.gradle.kts), and takes minutes.
+mutation: ## Run PIT mutation testing (reports in <module>/build/reports/pitest)
+	./gradlew pitest
+
+abi-check: ## Check the public ABI against the committed <module>/api dumps (also part of check)
+	./gradlew checkKotlinAbi
+
+# Run on macOS: other hosts cannot compile every native target and reuse the committed klib declarations.
+abi-update: ## Rewrite the <module>/api dumps after an intended public API change
+	./gradlew updateKotlinAbi
 
 # cleanAllTests exists only in the KMP modules; cleanTest covers the JVM ones. With the build cache on,
 # a cleaned test task can still come back FROM-CACHE, so re-run coverage with --rerun-tasks.

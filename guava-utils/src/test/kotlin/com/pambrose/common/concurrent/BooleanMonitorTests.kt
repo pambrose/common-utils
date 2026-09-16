@@ -21,6 +21,7 @@ package com.pambrose.common.concurrent
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.lang.reflect.Modifier
 import kotlin.time.Duration.Companion.milliseconds
 
 class BooleanMonitorTests : StringSpec() {
@@ -90,6 +91,21 @@ class BooleanMonitorTests : StringSpec() {
       BooleanMonitor.info("info-str").invoke() shouldBe true
       BooleanMonitor.warn("warn-str").invoke() shouldBe true
       BooleanMonitor.error("err-str").invoke() shouldBe true
+    }
+
+    // Java callers reach the factories through the @JvmStatic bridges on BooleanMonitor itself, which Kotlin
+    // code never calls. The ABI dump pins that the bridges exist; this checks that they work.
+    "BooleanMonitor log-action factories are static methods for Java callers" {
+      val arguments: List<Pair<Class<*>, Any>> = [String::class.java to "str", Function0::class.java to { "lambda" }]
+      for (name in ["debug", "info", "warn", "error"]) {
+        for ((type, argument) in arguments) {
+          val bridge = BooleanMonitor::class.java.getMethod(name, type)
+          Modifier.isStatic(bridge.modifiers) shouldBe true
+          @Suppress("UNCHECKED_CAST")
+          val action = bridge.invoke(null, argument) as MonitorAction
+          action() shouldBe true
+        }
+      }
     }
   }
 }

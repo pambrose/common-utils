@@ -114,36 +114,32 @@ class KtorServletResponse : HttpServletResponse {
   override fun getWriter(): PrintWriter {
     check(!streamUsed) { "getOutputStream() has already been called on this response" }
     writerUsed = true
-    if (printWriter == null) {
-      printWriter = PrintWriter(OutputStreamWriter(buffer, Charset.forName(characterEncoding)), true)
-    }
-    return printWriter ?: error("PrintWriter is null")
+    return printWriter
+      ?: PrintWriter(OutputStreamWriter(buffer, Charset.forName(characterEncoding)), true)
+        .also { printWriter = it }
   }
 
   override fun getOutputStream(): ServletOutputStream {
     check(!writerUsed) { "getWriter() has already been called on this response" }
     streamUsed = true
-    if (servletOutputStream == null) {
-      servletOutputStream =
-        object : ServletOutputStream() {
-          override fun write(b: Int) {
-            buffer.write(b)
-          }
-
-          override fun write(
-            b: ByteArray,
-            off: Int,
-            len: Int,
-          ) {
-            buffer.write(b, off, len)
-          }
-
-          override fun isReady(): Boolean = true
-
-          override fun setWriteListener(writeListener: WriteListener) = Unit
+    return servletOutputStream
+      ?: object : ServletOutputStream() {
+        override fun write(b: Int) {
+          buffer.write(b)
         }
-    }
-    return servletOutputStream ?: error("ServletOutputStream is null")
+
+        override fun write(
+          b: ByteArray,
+          off: Int,
+          len: Int,
+        ) {
+          buffer.write(b, off, len)
+        }
+
+        override fun isReady(): Boolean = true
+
+        override fun setWriteListener(writeListener: WriteListener) = Unit
+      }.also { servletOutputStream = it }
   }
 
   // sendError and sendRedirect behave as in a servlet container: they set the status, discard any buffered

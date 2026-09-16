@@ -1,0 +1,37 @@
+public final class com/pambrose/common/redis/RedisUtils {
+	public static final field INSTANCE Lcom/pambrose/common/redis/RedisUtils;
+	public static final field REDIS_MAX_IDLE_SIZE Ljava/lang/String;
+	public static final field REDIS_MAX_POOL_SIZE Ljava/lang/String;
+	public static final field REDIS_MAX_WAIT_SECS Ljava/lang/String;
+	public static final field REDIS_MIN_IDLE_SIZE Ljava/lang/String;
+	public static final field UNLIMITED_POOL_SIZE I
+	public final fun newRedisClient (Ljava/lang/String;IIIJ)Lredis/clients/jedis/RedisClient;
+	public static synthetic fun newRedisClient$default (Lcom/pambrose/common/redis/RedisUtils;Ljava/lang/String;IIIJILjava/lang/Object;)Lredis/clients/jedis/RedisClient;
+	public final fun scanKeys (Lredis/clients/jedis/UnifiedJedis;Ljava/lang/String;I)Lkotlin/sequences/Sequence;
+	public static synthetic fun scanKeys$default (Lcom/pambrose/common/redis/RedisUtils;Lredis/clients/jedis/UnifiedJedis;Ljava/lang/String;IILjava/lang/Object;)Lkotlin/sequences/Sequence;
+	public final fun withNonNullRedis (Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withNonNullRedis$default (Lcom/pambrose/common/redis/RedisUtils;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun withNonNullRedisPool (Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withNonNullRedisPool$default (Lcom/pambrose/common/redis/RedisUtils;Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun withRedis (Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withRedis$default (Lcom/pambrose/common/redis/RedisUtils;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun withRedisPool (Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withRedisPool$default (Lcom/pambrose/common/redis/RedisUtils;Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun withSuspendingNonNullRedis (Ljava/lang/String;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun withSuspendingNonNullRedis$default (Lcom/pambrose/common/redis/RedisUtils;Ljava/lang/String;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun withSuspendingNonNullRedisPool (Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun withSuspendingNonNullRedisPool$default (Lcom/pambrose/common/redis/RedisUtils;Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun withSuspendingRedis (Ljava/lang/String;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun withSuspendingRedis$default (Lcom/pambrose/common/redis/RedisUtils;Ljava/lang/String;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun withSuspendingRedisPool (Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun withSuspendingRedisPool$default (Lcom/pambrose/common/redis/RedisUtils;Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/pambrose/common/redis/RedisUtils$RedisInfo {
+	public fun <init> (Ljava/net/URI;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getIncludeUserInAuth ()Z
+	public final fun getPassword ()Ljava/lang/String;
+	public final fun getUri ()Ljava/net/URI;
+	public final fun getUser ()Ljava/lang/String;
+}
+

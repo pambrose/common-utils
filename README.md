@@ -276,6 +276,16 @@ make detekt
 
 # Aggregated Kover coverage reports (HTML + XML)
 make coverage
+
+# Line/branch coverage tables, weakest first
+make coverage-packages
+make coverage-modules
+
+# PIT mutation testing (on demand; see mutationModuleNames in build.gradle.kts)
+make mutation
+
+# Rewrite the committed public-API dumps after an intended API change
+make abi-update
 ```
 
 ### Code Quality
@@ -284,7 +294,11 @@ This project maintains high code quality standards:
 
 - **Linting**: Kotlinter (ktlint) and Detekt (config in `config/detekt/`)
 - **Testing**: Comprehensive test coverage with Kotest
-- **Coverage**: Kotlinx Kover with aggregated HTML/XML reports and Codecov upload from CI
+- **Coverage**: Kotlinx Kover with aggregated HTML/XML reports, project-wide and per-package floors enforced by
+  `check`, and Codecov upload from CI
+- **Mutation testing**: PIT with the Kotest plugin, run on demand for selected modules
+- **API compatibility**: Kotlin ABI dumps committed under each module's `api/` directory and checked by `check`
+- **Platforms**: CI runs the multiplatform tests on Linux, macOS (macOS and iOS simulator) and Windows (mingwX64)
 - **Security**: Regular dependency updates and security reviews
 - **Documentation**: Comprehensive module documentation
 

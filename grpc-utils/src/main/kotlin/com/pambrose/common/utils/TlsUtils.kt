@@ -148,7 +148,8 @@ object TlsUtils {
         "certChainFilePath required if privateKeyFilePath specified"
       }
 
-    val mutualAuth = certPath.isNotEmpty() && keyPath.isNotEmpty()
+    // The two checks above make the paths all-or-nothing, so a cert path implies a key path.
+    val mutualAuth = certPath.isNotEmpty()
     if (mutualAuth)
       builder.keyManager(
         existingFile(certPath, "certChainFilePath"),

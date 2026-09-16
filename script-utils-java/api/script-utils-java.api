@@ -1,0 +1,18 @@
+public final class com/pambrose/common/script/JavaScript : com/pambrose/common/script/AbstractScript {
+	public fun <init> ()V
+	public final fun assignIsolation (Lch/obermuhlner/scriptengine/java/Isolation;)V
+	public final fun eval (Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/Object;
+	public static synthetic fun eval$default (Lcom/pambrose/common/script/JavaScript;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/Object;
+	public final fun evalScript (Ljava/lang/String;Z)Ljava/lang/Object;
+	public static synthetic fun evalScript$default (Lcom/pambrose/common/script/JavaScript;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/Object;
+	public final fun getImportDecls ()Ljava/lang/String;
+	public final fun getVarDecls ()Ljava/lang/String;
+	public final fun import (Ljava/lang/Class;)V
+	public fun resetForReuse (Z)V
+}
+
+public final class com/pambrose/common/script/JavaScriptPool : com/pambrose/common/script/AbstractScriptPool {
+	public fun <init> (IZ)V
+	public synthetic fun <init> (IZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+

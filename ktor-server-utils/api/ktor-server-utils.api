@@ -1,0 +1,174 @@
+public final class com/pambrose/common/features/HerokuHttpsRedirect {
+	public static final field Feature Lcom/pambrose/common/features/HerokuHttpsRedirect$Feature;
+	public fun <init> (Lcom/pambrose/common/features/HerokuHttpsRedirect$Configuration;)V
+	public final fun getExcludePredicates ()Ljava/util/List;
+	public final fun getHost ()Ljava/lang/String;
+	public final fun getPermanent ()Z
+	public final fun getRedirectPort ()I
+}
+
+public final class com/pambrose/common/features/HerokuHttpsRedirect$Configuration {
+	public fun <init> ()V
+	public final fun exclude (Lkotlin/jvm/functions/Function1;)V
+	public final fun excludePrefix (Ljava/lang/String;)V
+	public final fun excludeSuffix (Ljava/lang/String;)V
+	public final fun getExcludePredicates ()Ljava/util/List;
+	public final fun getHost ()Ljava/lang/String;
+	public final fun getPermanentRedirect ()Z
+	public final fun getSslPort ()I
+	public final fun setHost (Ljava/lang/String;)V
+	public final fun setPermanentRedirect (Z)V
+	public final fun setSslPort (I)V
+}
+
+public final class com/pambrose/common/features/HerokuHttpsRedirect$Feature : io/ktor/server/application/Plugin {
+	public fun getKey ()Lio/ktor/util/AttributeKey;
+	public fun install (Lio/ktor/server/application/ApplicationCallPipeline;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/common/features/HerokuHttpsRedirect;
+	public synthetic fun install (Lio/ktor/util/pipeline/Pipeline;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public final class com/pambrose/common/response/ResponseUtilsKt {
+	public static final fun getUriPrefix (Lio/ktor/http/RequestConnectionPoint;)Ljava/lang/String;
+	public static final fun redirectTo (Lio/ktor/server/application/ApplicationCall;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun redirectTo (Lio/ktor/server/routing/RoutingContext;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun redirectTo$default (Lio/ktor/server/application/ApplicationCall;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun redirectTo$default (Lio/ktor/server/routing/RoutingContext;ZLkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun respondWith (Lio/ktor/server/application/ApplicationCall;Lio/ktor/http/ContentType;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun respondWith (Lio/ktor/server/routing/RoutingContext;Lio/ktor/http/ContentType;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun respondWith$default (Lio/ktor/server/application/ApplicationCall;Lio/ktor/http/ContentType;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun respondWith$default (Lio/ktor/server/routing/RoutingContext;Lio/ktor/http/ContentType;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/pambrose/common/servlet/KtorServletRequest : jakarta/servlet/http/HttpServletRequest {
+	public fun <init> (Lio/ktor/server/request/ApplicationRequest;)V
+	public fun authenticate (Ljakarta/servlet/http/HttpServletResponse;)Z
+	public fun changeSessionId ()Ljava/lang/String;
+	public fun getAsyncContext ()Ljakarta/servlet/AsyncContext;
+	public fun getAttribute (Ljava/lang/String;)Ljava/lang/Object;
+	public fun getAttributeNames ()Ljava/util/Enumeration;
+	public fun getAuthType ()Ljava/lang/String;
+	public fun getCharacterEncoding ()Ljava/lang/String;
+	public fun getContentLength ()I
+	public fun getContentLengthLong ()J
+	public fun getContentType ()Ljava/lang/String;
+	public fun getContextPath ()Ljava/lang/String;
+	public fun getCookies ()[Ljakarta/servlet/http/Cookie;
+	public fun getDateHeader (Ljava/lang/String;)J
+	public fun getDispatcherType ()Ljakarta/servlet/DispatcherType;
+	public fun getHeader (Ljava/lang/String;)Ljava/lang/String;
+	public fun getHeaderNames ()Ljava/util/Enumeration;
+	public fun getHeaders (Ljava/lang/String;)Ljava/util/Enumeration;
+	public fun getHttpServletMapping ()Ljakarta/servlet/http/HttpServletMapping;
+	public fun getInputStream ()Ljakarta/servlet/ServletInputStream;
+	public fun getIntHeader (Ljava/lang/String;)I
+	public fun getLocalAddr ()Ljava/lang/String;
+	public fun getLocalName ()Ljava/lang/String;
+	public fun getLocalPort ()I
+	public fun getLocale ()Ljava/util/Locale;
+	public fun getLocales ()Ljava/util/Enumeration;
+	public fun getMethod ()Ljava/lang/String;
+	public fun getParameter (Ljava/lang/String;)Ljava/lang/String;
+	public fun getParameterMap ()Ljava/util/Map;
+	public fun getParameterNames ()Ljava/util/Enumeration;
+	public fun getParameterValues (Ljava/lang/String;)[Ljava/lang/String;
+	public fun getPart (Ljava/lang/String;)Ljakarta/servlet/http/Part;
+	public fun getParts ()Ljava/util/Collection;
+	public fun getPathInfo ()Ljava/lang/String;
+	public fun getPathTranslated ()Ljava/lang/String;
+	public fun getProtocol ()Ljava/lang/String;
+	public fun getProtocolRequestId ()Ljava/lang/String;
+	public fun getQueryString ()Ljava/lang/String;
+	public fun getReader ()Ljava/io/BufferedReader;
+	public fun getRemoteAddr ()Ljava/lang/String;
+	public fun getRemoteHost ()Ljava/lang/String;
+	public fun getRemotePort ()I
+	public fun getRemoteUser ()Ljava/lang/String;
+	public fun getRequestDispatcher (Ljava/lang/String;)Ljakarta/servlet/RequestDispatcher;
+	public fun getRequestId ()Ljava/lang/String;
+	public fun getRequestURI ()Ljava/lang/String;
+	public fun getRequestURL ()Ljava/lang/StringBuffer;
+	public fun getRequestedSessionId ()Ljava/lang/String;
+	public fun getScheme ()Ljava/lang/String;
+	public fun getServerName ()Ljava/lang/String;
+	public fun getServerPort ()I
+	public fun getServletConnection ()Ljakarta/servlet/ServletConnection;
+	public fun getServletContext ()Ljakarta/servlet/ServletContext;
+	public fun getServletPath ()Ljava/lang/String;
+	public fun getSession ()Ljakarta/servlet/http/HttpSession;
+	public fun getSession (Z)Ljakarta/servlet/http/HttpSession;
+	public fun getUserPrincipal ()Ljava/security/Principal;
+	public fun isAsyncStarted ()Z
+	public fun isAsyncSupported ()Z
+	public fun isRequestedSessionIdFromCookie ()Z
+	public fun isRequestedSessionIdFromURL ()Z
+	public fun isRequestedSessionIdValid ()Z
+	public fun isSecure ()Z
+	public fun isUserInRole (Ljava/lang/String;)Z
+	public fun login (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Void;
+	public synthetic fun login (Ljava/lang/String;Ljava/lang/String;)V
+	public fun logout ()Ljava/lang/Void;
+	public synthetic fun logout ()V
+	public fun removeAttribute (Ljava/lang/String;)V
+	public fun setAttribute (Ljava/lang/String;Ljava/lang/Object;)V
+	public fun setCharacterEncoding (Ljava/lang/String;)Ljava/lang/Void;
+	public synthetic fun setCharacterEncoding (Ljava/lang/String;)V
+	public fun startAsync ()Ljakarta/servlet/AsyncContext;
+	public fun startAsync (Ljakarta/servlet/ServletRequest;Ljakarta/servlet/ServletResponse;)Ljakarta/servlet/AsyncContext;
+	public fun upgrade (Ljava/lang/Class;)Ljakarta/servlet/http/HttpUpgradeHandler;
+}
+
+public final class com/pambrose/common/servlet/KtorServletResponse : jakarta/servlet/http/HttpServletResponse {
+	public fun <init> ()V
+	public fun addCookie (Ljakarta/servlet/http/Cookie;)Ljava/lang/Void;
+	public synthetic fun addCookie (Ljakarta/servlet/http/Cookie;)V
+	public fun addDateHeader (Ljava/lang/String;J)Ljava/lang/Void;
+	public synthetic fun addDateHeader (Ljava/lang/String;J)V
+	public fun addHeader (Ljava/lang/String;Ljava/lang/String;)V
+	public fun addIntHeader (Ljava/lang/String;I)Ljava/lang/Void;
+	public synthetic fun addIntHeader (Ljava/lang/String;I)V
+	public fun containsHeader (Ljava/lang/String;)Z
+	public fun encodeRedirectURL (Ljava/lang/String;)Ljava/lang/String;
+	public fun encodeURL (Ljava/lang/String;)Ljava/lang/String;
+	public fun flushBuffer ()Ljava/lang/Void;
+	public synthetic fun flushBuffer ()V
+	public fun getBufferSize ()I
+	public fun getCharacterEncoding ()Ljava/lang/String;
+	public fun getContentType ()Ljava/lang/String;
+	public fun getHeader (Ljava/lang/String;)Ljava/lang/String;
+	public fun getHeaderNames ()Ljava/util/Collection;
+	public fun getHeaders (Ljava/lang/String;)Ljava/util/Collection;
+	public fun getLocale ()Ljava/util/Locale;
+	public fun getOutputStream ()Ljakarta/servlet/ServletOutputStream;
+	public fun getStatus ()I
+	public fun getWriter ()Ljava/io/PrintWriter;
+	public fun isCommitted ()Z
+	public fun reset ()Ljava/lang/Void;
+	public synthetic fun reset ()V
+	public fun resetBuffer ()Ljava/lang/Void;
+	public synthetic fun resetBuffer ()V
+	public fun sendError (I)V
+	public fun sendError (ILjava/lang/String;)V
+	public fun sendRedirect (Ljava/lang/String;)V
+	public fun sendRedirect (Ljava/lang/String;IZ)V
+	public fun setBufferSize (I)Ljava/lang/Void;
+	public synthetic fun setBufferSize (I)V
+	public fun setCharacterEncoding (Ljava/lang/String;)V
+	public fun setContentLength (I)Ljava/lang/Void;
+	public synthetic fun setContentLength (I)V
+	public fun setContentLengthLong (J)Ljava/lang/Void;
+	public synthetic fun setContentLengthLong (J)V
+	public fun setContentType (Ljava/lang/String;)V
+	public fun setDateHeader (Ljava/lang/String;J)Ljava/lang/Void;
+	public synthetic fun setDateHeader (Ljava/lang/String;J)V
+	public fun setHeader (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setIntHeader (Ljava/lang/String;I)Ljava/lang/Void;
+	public synthetic fun setIntHeader (Ljava/lang/String;I)V
+	public fun setLocale (Ljava/util/Locale;)Ljava/lang/Void;
+	public synthetic fun setLocale (Ljava/util/Locale;)V
+	public fun setStatus (I)V
+}
+
+public final class com/pambrose/common/servlet/ServletRouteKt {
+	public static final fun servlet (Lio/ktor/server/routing/Route;Ljava/lang/String;Ljakarta/servlet/http/HttpServlet;)V
+}
+
