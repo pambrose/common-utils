@@ -21,8 +21,13 @@ package com.pambrose.common.concurrent
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import java.net.URLClassLoader
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -118,6 +123,70 @@ class ConcurrentExtensionsTests : StringSpec() {
 
       threadExecuted shouldBe true
       latch.isFinished shouldBe true
+    }
+
+    "thread with latch starts the thread by default, as a non-daemon" {
+      val latch = CountDownLatch(1)
+      val ran = AtomicBoolean(false)
+
+      val t = thread(latch) { ran.store(true) }
+
+      t.isDaemon shouldBe false
+      latch.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
+      ran.load() shouldBe true
+    }
+
+    "thread with latch applies its options and waits for start when start is false" {
+      val latch = CountDownLatch(1)
+      val loader = URLClassLoader(arrayOf(), null)
+
+      val t =
+        thread(
+          latch,
+          start = false,
+          isDaemon = true,
+          contextClassLoader = loader,
+          name = "latched-worker",
+          priority = Thread.MIN_PRIORITY,
+        ) {}
+
+      t.state shouldBe Thread.State.NEW
+      t.name shouldBe "latched-worker"
+      t.isDaemon shouldBe true
+      t.contextClassLoader shouldBe loader
+      t.priority shouldBe Thread.MIN_PRIORITY
+      latch.count shouldBe 1L
+
+      t.start()
+      latch.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
+    }
+
+    "thread with latch counts down even when the block throws" {
+      val latch = CountDownLatch(1)
+      val uncaught = CompletableFuture<Throwable>()
+
+      val t = thread(latch, start = false) { error("boom") }
+      t.setUncaughtExceptionHandler { _, e -> uncaught.complete(e) }
+      t.start()
+
+      latch.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
+      uncaught.getGuarded().message shouldBe "boom"
+    }
+
+    // An interrupted acquire throws before the permit is taken, so withLock must not release one it never held.
+    "semaphore with lock leaves the permits alone when the acquire is interrupted" {
+      val semaphore = Semaphore(1)
+      val blockRan = AtomicBoolean(false)
+
+      val (_, outcome) =
+        inDaemonThread {
+          Thread.currentThread().interrupt()
+          runCatching { semaphore.withLock { blockRan.store(true) } }
+        }
+
+      outcome.getGuarded().exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
+      blockRan.load() shouldBe false
+      semaphore.availablePermits() shouldBe 1
     }
 
     "count down latch await with a sub-millisecond duration waits for it instead of returning at once" {

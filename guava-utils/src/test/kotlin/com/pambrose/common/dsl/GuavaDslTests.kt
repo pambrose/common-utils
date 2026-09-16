@@ -18,16 +18,95 @@
 
 package com.pambrose.common.dsl
 
+import com.google.common.util.concurrent.AbstractIdleService
+import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.Service
+import com.google.common.util.concurrent.ServiceManager
 import com.pambrose.common.dsl.GuavaDsl.toStringElements
 import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.mockk
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+private const val WAIT_SECONDS = 30L
+
+private fun idleService(onStartUp: () -> Unit = {}): Service =
+  object : AbstractIdleService() {
+    override fun startUp() = onStartUp()
+
+    override fun shutDown() = Unit
+  }
+
+// What a ServiceManager listener built with the DSL was told.
+private class ManagerEvents {
+  val healthyCalls = CountDownLatch(1)
+  val stoppedCalls = CountDownLatch(1)
+  val failureCalls = CountDownLatch(1)
+  val failures: MutableList<Service> = CopyOnWriteArrayList()
+
+  val listener =
+    GuavaDsl.serviceManagerListener {
+      healthy { healthyCalls.countDown() }
+      stopped { stoppedCalls.countDown() }
+      failure {
+        failures += it
+        failureCalls.countDown()
+      }
+    }
+}
 
 class GuavaDslTests : StringSpec() {
   init {
+    "serviceManager applies its block to the manager, whose listener hears healthy and then stopped" {
+      val services: List<Service> = [idleService(), idleService()]
+      val events = ManagerEvents()
+      var configured: ServiceManager? = null
+
+      val manager =
+        GuavaDsl.serviceManager(services) {
+          configured = this
+          addListener(events.listener, MoreExecutors.directExecutor())
+        }
+
+      configured shouldBeSameInstanceAs manager
+      manager.servicesByState().values().toSet() shouldBe services.toSet()
+
+      manager.startAsync().awaitHealthy(WAIT_SECONDS, TimeUnit.SECONDS)
+      events.healthyCalls.await(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe true
+      events.stoppedCalls.count shouldBe 1L
+
+      manager.stopAsync().awaitStopped(WAIT_SECONDS, TimeUnit.SECONDS)
+      events.stoppedCalls.await(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe true
+      events.failures.shouldBeEmpty()
+    }
+
+    "serviceManager reports a service that fails to start, and never reports healthy" {
+      val failing = idleService { error("cannot start") }
+      val events = ManagerEvents()
+      val manager =
+        GuavaDsl.serviceManager([idleService(), failing]) {
+          addListener(events.listener, MoreExecutors.directExecutor())
+        }
+
+      manager.startAsync()
+      shouldThrow<IllegalStateException> { manager.awaitHealthy(WAIT_SECONDS, TimeUnit.SECONDS) }
+      events.failureCalls.await(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe true
+      events.failures shouldBe [failing]
+      failing.failureCause().message shouldBe "cannot start"
+
+      // A failed service counts as stopped once the others have been stopped too.
+      manager.stopAsync().awaitStopped(WAIT_SECONDS, TimeUnit.SECONDS)
+      events.stoppedCalls.await(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe true
+      events.healthyCalls.count shouldBe 1L
+    }
+
     "to string elements simple" {
       val testObj = object {
         override fun toString() =

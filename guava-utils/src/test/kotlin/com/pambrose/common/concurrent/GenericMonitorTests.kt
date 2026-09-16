@@ -5,11 +5,12 @@ package com.pambrose.common.concurrent
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.delay
+import io.kotest.matchers.types.shouldBeInstanceOf
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -35,38 +36,53 @@ private class CountingMonitor(
   fun increment() = mutate { ++count }
 }
 
+// A BooleanMonitor that also reports whether any thread holds its monitor.
+private class InspectableMonitor : GenericMonitor() {
+  @Volatile
+  private var value = false
+
+  override val monitorSatisfied get() = value
+
+  val isOccupied get() = monitor.isOccupied
+
+  fun set(newValue: Boolean) = mutate { value = newValue }
+}
+
+// What a wait on another thread ended with: its result or exception, and whether the thread was left interrupted.
+private class WaitOutcome<T>(
+  val result: Result<T>,
+  val interruptedAfter: Boolean,
+)
+
+private fun <T> waitOnDaemonThread(
+  interruptFirst: Boolean = false,
+  wait: () -> T,
+) = inDaemonThread {
+  if (interruptFirst) Thread.currentThread().interrupt()
+  val result = runCatching(wait)
+  WaitOutcome(result, Thread.currentThread().isInterrupted)
+}
+
 class GenericMonitorTests : StringSpec() {
   init {
     "waitUntilTrue returns when condition becomes true" {
       val monitor = BooleanMonitor(false)
-      var completed = false
+      val (waiter, done) = inDaemonThread { monitor.waitUntilTrue() }
 
-      val t = thread {
-        monitor.waitUntilTrue()
-        completed = true
-      }
-
-      delay(50.milliseconds)
-      completed shouldBe false
+      waiter.awaitParked()
+      done.isDone shouldBe false
       monitor.set(true)
-      t.join(1000)
-      completed shouldBe true
+      done.getGuarded()
     }
 
     "waitUntilFalse returns when condition becomes false" {
       val monitor = BooleanMonitor(true)
-      var completed = false
+      val (waiter, done) = inDaemonThread { monitor.waitUntilFalse() }
 
-      val t = thread {
-        monitor.waitUntilFalse()
-        completed = true
-      }
-
-      delay(50.milliseconds)
-      completed shouldBe false
+      waiter.awaitParked()
+      done.isDone shouldBe false
       monitor.set(false)
-      t.join(1000)
-      completed shouldBe true
+      done.getGuarded()
     }
 
     "waitUntilTrue with timeout returns true when condition met" {
@@ -166,6 +182,59 @@ class GenericMonitorTests : StringSpec() {
       t.interrupt()
       interrupted.await(5, TimeUnit.SECONDS) shouldBe true
       t.join(5000)
+    }
+
+    // The thread is interrupted before it waits, so an interruptible wait would throw at once. An uninterruptible
+    // one blocks anyway, returns only once the condition holds, and then restores the interrupt.
+    "the uninterruptible waits ignore an interrupt and restore it on return" {
+      val waits: List<Pair<Boolean, BooleanMonitor.() -> Boolean>> =
+        [
+          false to {
+            waitUntilTrue()
+            true
+          },
+          true to {
+            waitUntilFalse()
+            true
+          },
+          false to { waitUntilTrue(1.hours) },
+          true to { waitUntilFalse(1.hours) },
+          false to { waitUntilTrue(timeout = 1.hours, maxWait = Duration.INFINITE, block = null) },
+          true to { waitUntilFalse(timeout = 1.hours, maxWait = Duration.INFINITE, block = null) },
+        ]
+
+      for ((initValue, waitFor) in waits) {
+        val monitor = BooleanMonitor(initValue)
+        val (waiter, outcome) = waitOnDaemonThread(interruptFirst = true) { monitor.waitFor() }
+
+        waiter.awaitParked()
+        outcome.isDone shouldBe false
+        monitor.set(!initValue)
+
+        val finished = outcome.getGuarded()
+        finished.result.getOrThrow() shouldBe true
+        finished.interruptedAfter shouldBe true
+      }
+    }
+
+    "the timed interruptible waits throw InterruptedException when interrupted while waiting" {
+      val waits: List<InspectableMonitor.() -> Boolean> =
+        [
+          { waitUntilTrueWithInterruption(1.hours) },
+          { waitUntilTrueWithInterruption(timeout = 1.hours, maxWait = Duration.INFINITE, block = null) },
+          { waitUntilTrueWithInterruption(1.hours) { true } },
+        ]
+
+      for (waitFor in waits) {
+        val monitor = InspectableMonitor()
+        val (waiter, outcome) = waitOnDaemonThread { monitor.waitFor() }
+
+        waiter.awaitParked()
+        waiter.interrupt()
+
+        outcome.getGuarded().result.exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
+        monitor.isOccupied shouldBe false
+      }
     }
 
     "waitUntilTrueWithInterruption with timeout returns true when condition met" {
@@ -284,6 +353,31 @@ class GenericMonitorTests : StringSpec() {
       monitor.isHeldByCurrentThread shouldBe false
     }
 
+    "a guard that throws surfaces its own exception from the timed waits" {
+      val monitor = ThrowingMonitor()
+      val waits: List<ThrowingMonitor.() -> Boolean> =
+        [
+          { waitUntilTrue(1.hours) },
+          { waitUntilTrueWithInterruption(1.hours) },
+          { waitUntilFalse(1.hours) },
+          { waitUntilTrue(timeout = 1.hours, maxWait = Duration.INFINITE, block = null) },
+        ]
+
+      for (waitFor in waits) {
+        shouldThrow<IllegalStateException> { monitor.waitFor() }.message shouldBe "guard failed"
+        monitor.isHeldByCurrentThread shouldBe false
+      }
+
+      // Nor does a timed wait release a monitor the caller already holds.
+      monitor.holding {
+        for (waitFor in waits) {
+          shouldThrow<IllegalStateException> { monitor.waitFor() }.message shouldBe "guard failed"
+          monitor.isHeldByCurrentThread shouldBe true
+        }
+      }
+      monitor.isHeldByCurrentThread shouldBe false
+    }
+
     "a throwing guard does not release a monitor the caller already holds" {
       val monitor = ThrowingMonitor()
       monitor.holding {
@@ -293,24 +387,23 @@ class GenericMonitorTests : StringSpec() {
       monitor.isHeldByCurrentThread shouldBe false
     }
 
+    // Each attempt would wait an hour, so the wait returns within the hang guard only if maxWait cuts it short.
     "retrying waits stop at maxWait even when each attempt is longer" {
-      fun stopsAtMaxWait(
-        initValue: Boolean,
-        attempt: BooleanMonitor.() -> Boolean,
-      ) {
+      val waits: List<Pair<Boolean, BooleanMonitor.() -> Boolean>> =
+        [
+          false to { waitUntilTrue(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
+          false to { waitUntilTrueWithInterruption(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
+          true to { waitUntilFalse(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
+        ]
+
+      for ((initValue, waitFor) in waits) {
         val monitor = BooleanMonitor(initValue)
         val mark = TimeSource.Monotonic.markNow()
-        monitor.attempt() shouldBe false
-        val elapsed = mark.elapsedNow()
-        (elapsed >= 200.milliseconds) shouldBe true
-        (elapsed < 1.seconds) shouldBe true
-      }
+        val (_, outcome) = inDaemonThread { monitor.waitFor() }
 
-      stopsAtMaxWait(false) { waitUntilTrue(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) }
-      stopsAtMaxWait(false) {
-        waitUntilTrueWithInterruption(timeout = 2.seconds, maxWait = 200.milliseconds, block = null)
+        outcome.getGuarded() shouldBe false
+        (mark.elapsedNow() >= 200.milliseconds) shouldBe true
       }
-      stopsAtMaxWait(true) { waitUntilFalse(timeout = 2.seconds, maxWait = 200.milliseconds, block = null) }
     }
 
     "a zero maxWait checks once instead of waiting without limit" {
@@ -334,41 +427,28 @@ class GenericMonitorTests : StringSpec() {
       }
     }
 
-    "a thread blocked in a timed wait is woken by set well before the timeout" {
+    // The wait lasts an hour unless set wakes it, so returning within the hang guard shows set woke it.
+    "a thread blocked in a timed wait is woken by set long before the timeout" {
       val monitor = BooleanMonitor(false)
-      val started = CountDownLatch(1)
-      var result: Boolean? = null
-      val mark = TimeSource.Monotonic.markNow()
-      val t =
-        thread {
-          started.countDown()
-          result = monitor.waitUntilTrue(5.seconds)
-        }
+      val (waiter, outcome) = inDaemonThread { monitor.waitUntilTrue(1.hours) }
 
-      started.await(5, TimeUnit.SECONDS) shouldBe true
-      delay(50.milliseconds)
+      waiter.awaitParked()
       monitor.set(true)
-      t.join(5000)
 
-      result shouldBe true
-      (mark.elapsedNow() < 2.seconds) shouldBe true
+      outcome.getGuarded() shouldBe true
     }
 
     "state changed through mutate wakes waiting threads" {
       val monitor = CountingMonitor(target = 3)
-      val done = CountDownLatch(1)
-      val t =
-        thread {
-          monitor.waitUntilTrue()
-          done.countDown()
-        }
+      val (waiter, done) = inDaemonThread { monitor.waitUntilTrue() }
 
-      delay(50.milliseconds)
-      done.count shouldBe 1L
-      repeat(3) { monitor.increment() }
+      waiter.awaitParked()
+      monitor.increment()
+      monitor.increment()
+      done.isDone shouldBe false
+      monitor.increment()
 
-      done.await(5, TimeUnit.SECONDS) shouldBe true
-      t.join(5000)
+      done.getGuarded()
     }
   }
 }

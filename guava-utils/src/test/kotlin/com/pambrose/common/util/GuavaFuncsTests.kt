@@ -19,16 +19,23 @@
 package com.pambrose.common.util
 
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.types.shouldBeTypeOf
+import io.kotest.matchers.shouldBe
+import java.io.File
 
 class GuavaFuncsTests : StringSpec() {
   init {
-    "is windows type" {
-      isWindows.shouldBeTypeOf<Boolean>()
+    // The file separator is a second, independent sign of Windows.
+    "isWindows matches the os.name property and the file separator" {
+      isWindows shouldBe System.getProperty("os.name").startsWith("Windows")
+      isWindows shouldBe (File.separatorChar == '\\')
     }
 
-    "is mac type" {
-      isMac.shouldBeTypeOf<Boolean>()
+    "isMac matches the os.name property" {
+      isMac shouldBe (System.getProperty("os.name") == "Mac OS X")
+    }
+
+    "no host is both Windows and a Mac" {
+      (isWindows && isMac) shouldBe false
     }
   }
 }

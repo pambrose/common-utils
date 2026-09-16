@@ -196,20 +196,20 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-050** `LOW` · weak — `LambdaServlet` error handling checked only with mocks; no-op assertions ([details](#tc-050)) — fixed in #195
 
 ### grpc-utils
-- [ ] **TC-051** `HIGH` · gap — No test completes a TLS or mutual-TLS handshake ([details](#tc-051))
-- [ ] **TC-052** `MEDIUM` · gap — TLS files that exist but are invalid are never tested ([details](#tc-052))
-- [ ] **TC-053** `MEDIUM` · weak — Builder selection, streaming observer and graceful shutdown checked only shallowly ([details](#tc-053))
-- [ ] **TC-054** `LOW` · weak — Misnamed "mutual auth" test; stream-observer test with no assertion ([details](#tc-054))
+- [x] **TC-051** `HIGH` · gap — No test completes a TLS or mutual-TLS handshake ([details](#tc-051)) — fixed in #199
+- [x] **TC-052** `MEDIUM` · gap — TLS files that exist but are invalid are never tested ([details](#tc-052)) — fixed in #199
+- [x] **TC-053** `MEDIUM` · weak — Builder selection, streaming observer and graceful shutdown checked only shallowly ([details](#tc-053)) — fixed in #199
+- [x] **TC-054** `LOW` · weak — Misnamed "mutual auth" test; stream-observer test with no assertion ([details](#tc-054)) — fixed in #199
 
 ### guava-utils
-- [ ] **TC-055** `MEDIUM` · gap — `GenericValueWaiter`: non-satisfying update, timeout/set race, cancel with finite timeout ([details](#tc-055))
-- [ ] **TC-056** `MEDIUM` · weak — `BooleanMonitor` log helpers: levels unchecked, `@JvmStatic` bridges uncovered ([details](#tc-056)) — `@JvmStatic` bridge half fixed in #187 (with TC-006); log-level assertions still open
-- [ ] **TC-057** `MEDIUM` · gap — `GenericMonitor` interruption and timed-guard-failure paths untested ([details](#tc-057))
-- [ ] **TC-058** `MEDIUM` · gap — Service failure paths and `GuavaDsl.serviceManager` untested in this module ([details](#tc-058))
-- [ ] **TC-059** `MEDIUM` · flaky — Wall-clock bounds, unsynchronized flags after short joins, delay-based waiter registration ([details](#tc-059))
-- [ ] **TC-060** `LOW` · gap — `ZipExtensions` near-miss magic, negative `maxBytes`, bad CRC, truncated body ([details](#tc-060))
-- [ ] **TC-061** `LOW` · gap — `thread(latch)` defaults / throwing block; interrupted `withLock` and latch await ([details](#tc-061))
-- [ ] **TC-062** `LOW` · weak — `GuavaFuncsTests` cannot fail ([details](#tc-062))
+- [x] **TC-055** `MEDIUM` · gap — `GenericValueWaiter`: non-satisfying update, timeout/set race, cancel with finite timeout ([details](#tc-055)) — fixed in #199
+- [x] **TC-056** `MEDIUM` · weak — `BooleanMonitor` log helpers: levels unchecked, `@JvmStatic` bridges uncovered ([details](#tc-056)) — fixed in #199 (the `@JvmStatic` bridge half in #187, with TC-006)
+- [x] **TC-057** `MEDIUM` · gap — `GenericMonitor` interruption and timed-guard-failure paths untested ([details](#tc-057)) — fixed in #199
+- [x] **TC-058** `MEDIUM` · gap — Service failure paths and `GuavaDsl.serviceManager` untested in this module ([details](#tc-058)) — fixed in #199
+- [x] **TC-059** `MEDIUM` · flaky — Wall-clock bounds, unsynchronized flags after short joins, delay-based waiter registration ([details](#tc-059)) — fixed in #199
+- [x] **TC-060** `LOW` · gap — `ZipExtensions` near-miss magic, negative `maxBytes`, bad CRC, truncated body ([details](#tc-060)) — fixed in #199
+- [x] **TC-061** `LOW` · gap — `thread(latch)` defaults / throwing block; interrupted `withLock` and latch await ([details](#tc-061)) — fixed in #199
+- [x] **TC-062** `LOW` · weak — `GuavaFuncsTests` cannot fail ([details](#tc-062)) — fixed in #199
 
 ### prometheus-utils
 - [x] **TC-063** `MEDIUM` · gap — `SystemMetrics` retry path untested; repeat-call test cannot fail ([details](#tc-063)) — fixed in #196
