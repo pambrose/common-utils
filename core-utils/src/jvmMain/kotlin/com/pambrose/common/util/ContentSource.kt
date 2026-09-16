@@ -18,8 +18,10 @@ package com.pambrose.common.util
 
 import java.io.File
 import java.net.URI
+import kotlin.math.ceil
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 /**
  * Root abstraction for a content location, either a local directory or a remote repository.
@@ -219,27 +221,45 @@ open class GitLabFile(
  *
  * [content] is fetched from [source] on every access; it is not cached.
  *
+ * The timeouts are applied in whole milliseconds, as [java.net.URLConnection] requires. A positive timeout is
+ * rounded up and capped at [Int.MAX_VALUE] milliseconds; [Duration.INFINITE] or [Duration.ZERO] means no
+ * timeout.
+ *
  * @param source the URL to read content from
  * @param connectTimeout the maximum time to wait for a connection (default 10 seconds)
  * @param readTimeout the maximum time to wait for data once connected (default 30 seconds)
+ * @throws IllegalArgumentException if either timeout is negative.
  */
 open class UrlSource(
   override val source: String,
-  private val connectTimeout: Duration = DEFAULT_CONNECT_TIMEOUT,
-  private val readTimeout: Duration = DEFAULT_READ_TIMEOUT,
+  connectTimeout: Duration = DEFAULT_CONNECT_TIMEOUT,
+  readTimeout: Duration = DEFAULT_READ_TIMEOUT,
 ) : ContentSource {
   /** Creates a [UrlSource] with the default timeouts. */
   constructor(source: String) : this(source, DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT)
 
+  private val connectTimeoutMillis = connectTimeout.toTimeoutMillis("connectTimeout")
+  private val readTimeoutMillis = readTimeout.toTimeoutMillis("readTimeout")
+
   override val content: String
     get() =
       URI(source).toURL().openConnection().let { connection ->
-        connection.connectTimeout = connectTimeout.inWholeMilliseconds.toInt()
-        connection.readTimeout = readTimeout.inWholeMilliseconds.toInt()
+        connection.connectTimeout = connectTimeoutMillis
+        connection.readTimeout = readTimeoutMillis
         connection.getInputStream().use { it.readBytes().decodeToString() }
       }
 
   override val remote = true
+}
+
+// URLConnection takes an Int of milliseconds and treats 0 as no timeout. Rounding up keeps a sub-millisecond
+// timeout from becoming 0, and the cap keeps a long one from wrapping around to a negative Int.
+private fun Duration.toTimeoutMillis(name: String): Int {
+  require(!isNegative()) { "$name must not be negative but was $this" }
+  return when {
+    isInfinite() -> 0
+    else -> ceil(toDouble(DurationUnit.MILLISECONDS)).coerceAtMost(Int.MAX_VALUE.toDouble()).toInt()
+  }
 }
 
 /**

@@ -139,6 +139,16 @@ class PropertyFunctionsTests : StringSpec() {
       System.getProperty("${KEY_PREFIX}second") shouldBe "2"
     }
 
+    "readProperties lets a later file override an earlier one" {
+      val base = writePropsFile("${KEY_PREFIX}shared=base\n${KEY_PREFIX}only_base=kept")
+      val override = writePropsFile("${KEY_PREFIX}shared=override")
+
+      readProperties(base.absolutePath, override.absolutePath)
+
+      System.getProperty("${KEY_PREFIX}shared") shouldBe "override"
+      System.getProperty("${KEY_PREFIX}only_base") shouldBe "kept"
+    }
+
     "readProperties throws when a file does not exist" {
       val missing = File("does-not-exist-${KEY_PREFIX}.properties")
 

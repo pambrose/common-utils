@@ -76,6 +76,36 @@ class HerokuHttpsRedirectTests : StringSpec() {
       }
     }
 
+    "redirect goes to a configured sslPort" {
+      testApplication {
+        helloApp { sslPort = 8443 }.get("/hello") {
+          header(HttpHeaders.Host, "myapp.example.com")
+          header(HttpHeaders.XForwardedProto, "http")
+        }.apply {
+          status shouldBe HttpStatusCode.MovedPermanently
+          headers[HttpHeaders.Location] shouldBe "https://myapp.example.com:8443/hello"
+        }
+      }
+    }
+
+    "a path matching none of the configured excludes is still redirected" {
+      testApplication {
+        val client =
+          helloApp {
+            excludePrefix("/health")
+            excludeSuffix(".txt")
+            exclude { false }
+          }
+        client.get("/hello.html") {
+          header(HttpHeaders.Host, "myapp.example.com")
+          header(HttpHeaders.XForwardedProto, "http")
+        }.apply {
+          status shouldBe HttpStatusCode.MovedPermanently
+          headers[HttpHeaders.Location] shouldBe "https://myapp.example.com/hello.html"
+        }
+      }
+    }
+
     "excluded prefix paths are not redirected, whatever the query string" {
       testApplication {
         helloApp { excludePrefix("/health") }.get("/healthcheck?v=2") {

@@ -18,8 +18,11 @@
 
 package com.pambrose.common.webhook
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 /**
@@ -130,6 +133,18 @@ class ResendPayloadTests : StringSpec() {
 
       msg.type shouldBe "email.opened"
       msg.data.emailId shouldBe "56761188-7520-42d8-8898-ff6fc54ce618"
+    }
+
+    // decode documents SerializationException, so a handler can catch that one type for every bad body.
+    "decode throws SerializationException when the envelope lacks a required field" {
+      val payload = bouncedPayload.replace(""""created_at": "2026-11-22T23:41:12.126Z",""", "")
+      payload shouldNotContain "23:41:12.126Z"
+
+      shouldThrow<SerializationException> { ResendWebhookMsg.decode(payload) }
+    }
+
+    "decode throws SerializationException for a body that is not JSON" {
+      shouldThrow<SerializationException> { ResendWebhookMsg.decode("not json") }
     }
   }
 }

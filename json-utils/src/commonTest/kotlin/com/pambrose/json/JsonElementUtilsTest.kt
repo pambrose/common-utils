@@ -23,6 +23,7 @@ import com.pambrose.common.json.deepCopy
 import com.pambrose.common.json.doubleValue
 import com.pambrose.common.json.doubleValueOrNull
 import com.pambrose.common.json.forEachJsonObject
+import com.pambrose.common.json.get
 import com.pambrose.common.json.getByPath
 import com.pambrose.common.json.getOrNull
 import com.pambrose.common.json.intValue
@@ -46,13 +47,18 @@ import com.pambrose.common.json.stringValueOrNull
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonUnquotedLiteral
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -619,6 +625,124 @@ class JsonElementUtilsTest : StringSpec() {
       @Suppress("DEPRECATION")
       val formatted = """{"a":1}""".toJsonString()
       formatted shouldBe "{\n  \"a\": 1\n}"
+    }
+
+    "getByPath returns null when the path crosses a non-object" {
+      """{"a": 1}""".toJsonElement().getByPath("a/b") shouldBe null
+      """{"a": null}""".toJsonElement().getByPath("a/b") shouldBe null
+      """{"a": [{"b": 1}]}""".toJsonElement().getByPath("a/b") shouldBe null
+      JsonPrimitive("x").getByPath("a") shouldBe null
+    }
+
+    "getByPath returns JsonNull for a key that is present but null" {
+      """{"a": {"b": null}}""".toJsonElement().getByPath("a/b") shouldBe JsonNull
+    }
+
+    "OrNull accessors return the value when the type matches" {
+      val json = """{"obj": {"k": 1}, "list": [1, "two"]}""".toJsonElement()
+      json.jsonObjectValueOrNull("obj") shouldBe JsonObject(mapOf("k" to JsonPrimitive(1)))
+      json.jsonObjectValueOrNull("obj")?.intValue("k") shouldBe 1
+      json.jsonElementListOrNull("list") shouldBe [JsonPrimitive(1), JsonPrimitive("two")]
+    }
+
+    "number accessors accept every form of JSON number" {
+      val json = """{"int": -12, "zero": 0, "frac": 3.25, "exp": 1e3, "negExp": 25E-1, "posExp": 1.5e+2}"""
+        .toJsonElement()
+      json.doubleValue("int") shouldBe -12.0
+      json.doubleValue("zero") shouldBe 0.0
+      json.doubleValue("frac") shouldBe 3.25
+      json.doubleValue("exp") shouldBe 1000.0
+      json.doubleValue("negExp") shouldBe 2.5
+      json.doubleValue("posExp") shouldBe 150.0
+      for (key in json.keys) {
+        withClue(key) {
+          json[key].isNumber shouldBe true
+          json.doubleValueOrNull(key) shouldBe json.doubleValue(key)
+        }
+      }
+      // -0.0 == 0.0, so check the sign through the infinity it divides into.
+      1 / JsonUnquotedLiteral("-0").doubleValue shouldBe Double.NEGATIVE_INFINITY
+    }
+
+    "number accessors accept the non-finite values kotlinx writes" {
+      val nonFinite: List<JsonElement> =
+        [JsonPrimitive(Double.NaN), JsonPrimitive(Double.POSITIVE_INFINITY), JsonPrimitive(Double.NEGATIVE_INFINITY)]
+      nonFinite.map { it.isNumber } shouldBe [true, true, true]
+      nonFinite[0].doubleValue.isNaN() shouldBe true
+      nonFinite[1].doubleValue shouldBe Double.POSITIVE_INFINITY
+      nonFinite[2].doubleValueOrNull() shouldBe Double.NEGATIVE_INFINITY
+    }
+
+    // Each platform's own parser accepts some of these. All of them take a leading "+" or zero, ".5", "5." and
+    // surrounding whitespace; the JVM and Apple native targets also take a float suffix and hex floats, and JS takes
+    // hex and binary integers and any case of "nan". The accessors must reject all of them everywhere. The text is
+    // read from the element itself, since a key containing "." is a path.
+    "number accessors reject text that is not a JSON number on every platform" {
+      val notNumbers = ["1.5f", "1.5d", "0x1p3", "0x10", "0b101", " 1.5 ", "+1.5", ".5", "5.", "01", "1e", "nan", ""]
+      for (text in notNumbers) {
+        withClue("\"$text\"") {
+          JsonUnquotedLiteral(text).isNumber shouldBe false
+          JsonPrimitive(text).doubleValueOrNull() shouldBe null
+          shouldThrow<NumberFormatException> { JsonPrimitive(text).doubleValue }
+        }
+      }
+    }
+
+    "a quoted JSON number is still read by the number accessors but is not isNumber" {
+      val json = """{"n": "2.5"}""".toJsonElement()
+      json.doubleValue("n") shouldBe 2.5
+      json.doubleValueOrNull("n") shouldBe 2.5
+      json["n"].isNumber shouldBe false
+    }
+
+    "toMap keeps the source text of a parsed number" {
+      val map = """{"a": 1.0, "b": 1e3, "c": -0}""".toJsonElement().toMap()
+      map shouldBe mapOf("a" to "1.0", "b" to "1e3", "c" to "-0")
+    }
+
+    "type checks and OrNull accessors are false or null for objects and arrays" {
+      val nonPrimitives: List<JsonElement> = [JsonObject(emptyMap()), JsonArray([])]
+      for (element in nonPrimitives) {
+        withClue(element) {
+          element.isString shouldBe false
+          element.isNumber shouldBe false
+          element.stringValueOrNull() shouldBe null
+          element.intValueOrNull() shouldBe null
+          element.doubleValueOrNull() shouldBe null
+          element.booleanValueOrNull() shouldBe null
+        }
+      }
+      val json = """{"obj": {"k": 1}, "list": [true]}""".toJsonElement()
+      json.intValueOrNull("list") shouldBe null
+      json.doubleValueOrNull("obj") shouldBe null
+      json.booleanValueOrNull("list") shouldBe null
+    }
+
+    "forEachJsonObject skips array elements that are not objects without recursing" {
+      val seen: MutableList<JsonObject> = []
+      """[{"a": 1}, 2, "x", null, [{"b": 2}], {"c": 3}]""".toJsonElement().forEachJsonObject { seen += it }
+      seen.map { it.keys } shouldBe [setOf("a"), setOf("c")]
+    }
+
+    "forEachJsonObject rejects a primitive or JSON null" {
+      val primitives: List<JsonElement> = [JsonPrimitive(1), JsonPrimitive("x"), JsonNull]
+      for (element in primitives) {
+        shouldThrow<IllegalArgumentException> {
+          element.forEachJsonObject { error("action must not run for $element") }
+        }.message shouldBe "Not an object or array"
+      }
+    }
+
+    "deepCopy rebuilds every object and array and shares the primitives" {
+      val original = """{"obj": {"list": [{"k": 1}]}, "s": "x"}""".toJsonElement()
+      val copy = original.deepCopy()
+
+      copy shouldBe original
+      copy shouldNotBeSameInstanceAs original
+      copy["obj"] shouldNotBeSameInstanceAs original["obj"]
+      copy["obj.list"] shouldNotBeSameInstanceAs original["obj.list"]
+      copy.jsonElementList("obj.list")[0] shouldNotBeSameInstanceAs original.jsonElementList("obj.list")[0]
+      copy["s"] shouldBeSameInstanceAs original["s"]
     }
   }
 }

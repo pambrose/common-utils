@@ -21,6 +21,7 @@ package com.pambrose.common.util
 
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.PrintStream
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -44,13 +45,15 @@ data class HostInfo(
  * Lazily resolved [HostInfo] for the local machine.
  * Returns `"Unknown"` for both fields if the hostname cannot be determined.
  */
-val hostInfo by lazy {
+val hostInfo by lazy { resolveHostInfo() }
+
+// The lookup is a parameter so tests can stand in for a host whose name does not resolve.
+internal fun resolveHostInfo(lookup: () -> InetAddress = InetAddress::getLocalHost): HostInfo =
   try {
-    InetAddress.getLocalHost().let { HostInfo(it.hostName, it.hostAddress) }
+    lookup().let { HostInfo(it.hostName, it.hostAddress) }
   } catch (_: UnknownHostException) {
     HostInfo("Unknown", "Unknown")
   }
-}
 
 /**
  * Suspends the current thread for the specified [Duration].
@@ -121,6 +124,7 @@ fun captureStdout(block: () -> Unit): String {
 
 /** Miscellaneous utility functions. */
 object MiscFuncs {
+  private const val MAX_PORT = 65_535
   private val logger = logger {}
 
   /**
@@ -130,16 +134,19 @@ object MiscFuncs {
    * @param maxAttempts the maximum number of attempts (default 50)
    * @param delayMs the delay in milliseconds between attempts (default 200)
    * @return `true` once the port is available, or `false` if it was still in use after [maxAttempts] attempts
+   * @throws IllegalArgumentException if [port] is outside `0..65535`
    */
   fun waitForPortAvailable(
     port: Int,
     maxAttempts: Int = 50,
     delayMs: Long = 200,
   ): Boolean {
+    // An invalid port can never be bound, so waiting for it would only report it as busy.
+    require(port in 0..MAX_PORT) { "port must be in 0..$MAX_PORT but was $port" }
     repeat(maxAttempts) {
       try {
         ServerSocket(port).use { return true }
-      } catch (_: Exception) {
+      } catch (_: IOException) {
         Thread.sleep(delayMs)
       }
     }

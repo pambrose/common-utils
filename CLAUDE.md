@@ -172,6 +172,12 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   (and therefore the published JVM ABI) are unchanged.
 - watchOS/tvOS simulator test tasks are disabled (host Xcode lacks those simulator runtimes); Apple coverage
   comes from macOS and iOS simulator test tasks.
+- Put specs for `commonMain` code in `commonTest`, so they run on every platform, not only in `jvmTest`. The
+  platforms really do differ in places (JS prints `1.0` as `1`, parses numbers with unary `+`, and its
+  `substring` clamps bad indices instead of throwing). core-utils' `commonTest` has a `testPlatform` value
+  (`expect` in `TestPlatform.kt`, `actual` in `jvmTest`, `jsTest`, `wasmJsTest` and `nativeTest`) for pinning
+  such results per platform. When a spec moves, the JVM-only remainder keeps the `…JvmTests` name, because a
+  class name cannot appear in both `commonTest` and `jvmTest`.
 - CI (`.github/workflows/test.yml`) runs the native tests on three hosts. The `test` job (ubuntu) runs
   `linuxX64Test` through `build`. `native-apple` (macos-latest) runs `macosArm64Test iosSimulatorArm64Test`.
   `native-windows` runs `mingwX64Test`. `iosX64Test` is skipped on arm64 hosts, and `linuxArm64` has no test
@@ -188,6 +194,11 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
 - `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
   MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
+- ktor-client-utils declares no client engine, so its client-creating `commonTest` specs are gated on the
+  `hasDefaultEngine` expect/actual flag. They run on the JVM (CIO is a `jvmTest` dependency) and on js/wasmJs
+  (ktor-client-core bundles a Js engine). On native they are disabled, and `KtorDslNativeTests` pins the
+  missing-engine failure instead. Keep that the only native test that creates a client: Kotlin/Native caches the
+  failed file initialization, so a second attempt throws without Ktor's `IllegalStateException` as the cause.
 - service-utils tests configure admin and metrics servers with port 0 and read the port the OS chose from
   the `internal` `boundPort` test seam on `MetricsService`, `ServletService` and `KtorServletService`.
   Don't pick a free port by opening and closing a `ServerSocket(0)`: another test JVM

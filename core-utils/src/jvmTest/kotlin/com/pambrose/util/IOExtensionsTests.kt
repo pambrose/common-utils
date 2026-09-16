@@ -28,11 +28,13 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import java.io.File
 import java.io.InvalidClassException
 import java.io.Serializable
 import java.nio.ByteBuffer
 import java.security.BasicPermission
 import java.security.Permission
+import java.util.concurrent.TimeUnit
 import javax.management.ObjectName
 
 class IOExtensionsTests : StringSpec() {
@@ -107,12 +109,41 @@ class IOExtensionsTests : StringSpec() {
 
       // ArrayList is Serializable and goes through resolveClass; restricting the whitelist
       // to a different class should trip the SecurityException branch.
-      shouldThrow<SecurityException> {
-        bytes.toObjectSecure(
-          expectedClass = ArrayList::class.java,
-          allowedClasses = setOf(Int::class.javaObjectType),
-        )
+      val ex =
+        shouldThrow<SecurityException> {
+          bytes.toObjectSecure(
+            expectedClass = ArrayList::class.java,
+            allowedClasses = setOf(Int::class.javaObjectType),
+          )
+        }
+      // The size check and the blocklist throw SecurityException too.
+      ex.message shouldBe "Class not in whitelist: java.util.ArrayList"
+    }
+
+    // Runtime and Process are not Serializable, so no genuine stream names them; an Integer stream is patched
+    // instead (both names are as long as java.lang.Integer). Without the exact-name check, allow-listing them
+    // would get past resolveClass, and the stream would fail later with an InvalidClassException.
+    "secure deserialization blocks the exact-name classes even when allow-listed" {
+      for (blocked in [Runtime::class.java, Process::class.java]) {
+        val bytes = (42 as Serializable).toByteArraySecure().replaceAscii("java.lang.Integer", blocked.name)
+        shouldThrow<SecurityException> {
+          bytes.toObjectSecure(Serializable::class.java, setOf(blocked, Number::class.java))
+        }
       }
+    }
+
+    // jdk.serialFilter is read once, at JVM startup, so the probe runs in a child JVM. The stream's own
+    // limits are merged with that JVM-wide filter rather than replacing it, so its rejection still applies.
+    "secure deserialization keeps applying a JVM-wide serial filter" {
+      runSerialFilterProbe() shouldBe "OK"
+      runSerialFilterProbe("-Djdk.serialFilter=!java.util.ArrayList") shouldBe InvalidClassException::class.java.name
+    }
+
+    "checksum verification needs the whole 32-byte checksum" {
+      // Exactly 32 bytes is a valid checksum of no data.
+      ByteArray(0).withChecksum().verifyChecksum() shouldBe ByteArray(0)
+      shouldThrow<SecurityException> { ByteArray(31).verifyChecksum() }.message shouldBe
+        "Invalid data: too short for checksum"
     }
 
     "secure deserialization rejects oversized payloads" {
@@ -227,4 +258,39 @@ class IOExtensionsTests : StringSpec() {
 
   private fun nestedLists(depth: Int): ArrayList<Any> =
     if (depth == 0) arrayListOf() else arrayListOf(nestedLists(depth - 1))
+
+  // ISO-8859-1 maps every byte to one char and back, so the rest of the stream is untouched.
+  private fun ByteArray.replaceAscii(
+    old: String,
+    new: String,
+  ): ByteArray {
+    require(old.length == new.length) { "Replacement must keep the stream length" }
+    val text = String(this, Charsets.ISO_8859_1)
+    require(old in text) { "\"$old\" is not in the stream" }
+    return text.replace(old, new).toByteArray(Charsets.ISO_8859_1)
+  }
+
+  private fun runSerialFilterProbe(vararg jvmArgs: String): String {
+    val java = File(System.getProperty("java.home"), "bin/java").path
+    val classpath = System.getProperty("java.class.path")
+    val command = listOf(java, *jvmArgs, "-cp", classpath, SerialFilterProbe::class.java.name)
+    val process = ProcessBuilder(command).redirectErrorStream(true).start()
+    val output = process.inputStream.bufferedReader().use { it.readText() }
+    check(process.waitFor(30, TimeUnit.SECONDS)) { "Probe did not finish: $output" }
+    check(process.exitValue() == 0) { "Probe failed: $output" }
+    return output.trim().lines().last()
+  }
+}
+
+/**
+ * Run by [IOExtensionsTests] in a child JVM, where `jdk.serialFilter` can be set at startup. Prints the class name
+ * of the exception thrown when deserializing an allow-listed `ArrayList`, or `OK`.
+ */
+object SerialFilterProbe {
+  @JvmStatic
+  fun main(args: Array<String>) {
+    val bytes = (arrayListOf("x") as Serializable).toByteArraySecure()
+    val outcome = runCatching { bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java)) }
+    println(outcome.exceptionOrNull()?.javaClass?.name ?: "OK")
+  }
 }

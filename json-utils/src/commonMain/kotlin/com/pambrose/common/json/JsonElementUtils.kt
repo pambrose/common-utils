@@ -56,9 +56,15 @@ val JsonElement.intValue get() = nonNullContent.toInt()
 /**
  * Returns the double value of this [JsonElement]'s primitive content. Extension property on [JsonElement].
  *
+ * The content, quoted or not, must follow JSON number syntax or be `NaN`, `Infinity` or `-Infinity`, so every
+ * platform gives the same answer.
+ *
  * @throws IllegalArgumentException if this element is JSON `null`, not a primitive, or not a number
  */
-val JsonElement.doubleValue get() = nonNullContent.toDouble()
+val JsonElement.doubleValue: Double
+  get() = nonNullContent.let {
+    it.toJsonDoubleOrNull() ?: throw NumberFormatException("JSON value \"$it\" is not a number")
+  }
 
 /**
  * Returns the boolean value of this [JsonElement]'s primitive content. Extension property on [JsonElement].
@@ -74,6 +80,14 @@ private val JsonElement.nonNullContent: String
 
 private val JsonElement.primitiveContentOrNull: String?
   get() = (this as? JsonPrimitive)?.contentOrNull
+
+// The JSON number grammar (RFC 8259, section 6), plus the tokens kotlinx writes for non-finite doubles. Each
+// platform's toDouble accepts more than this, and not the same more: all of them take " 1.5 ", "+1" and ".5", the
+// JVM and Apple native targets also take "1.5f" and hex floats, and JS takes "0x10". Screening first makes every
+// platform agree.
+private val jsonNumber = Regex("""-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?|NaN|-?Infinity""")
+
+private fun String.toJsonDoubleOrNull(): Double? = if (jsonNumber.matches(this)) toDouble() else null
 
 // Json object values
 
@@ -95,9 +109,10 @@ val JsonElement.isString get() = this is JsonPrimitive && jsonPrimitive.isString
 /**
  * Returns `true` if this [JsonElement] is an unquoted numeric [JsonPrimitive]. Extension property on [JsonElement].
  *
- * A quoted numeric string such as `"42"` is a string, not a number, and JSON `null` is neither.
+ * A quoted numeric string such as `"42"` is a string, not a number, and JSON `null` is neither. The content must
+ * follow JSON number syntax or be `NaN`, `Infinity` or `-Infinity`, so every platform gives the same answer.
  */
-val JsonElement.isNumber get() = this is JsonPrimitive && !isString && content.toDoubleOrNull() != null
+val JsonElement.isNumber get() = this is JsonPrimitive && !isString && jsonNumber.matches(content)
 
 // Paths are split on [separator]; empty segments (from "a..b", a leading or trailing separator, or "") are ignored.
 private fun pathSegments(
@@ -105,15 +120,17 @@ private fun pathSegments(
   separator: Char = '.',
 ) = paths.flatMap { it.split(separator) }.filter { it.isNotEmpty() }
 
-// Walks the dot-separated path, returning null as soon as a segment is missing or a non-object is reached. A JSON
-// null at the end is returned as JsonNull, so callers can tell "present but null" from "missing".
-private fun JsonElement.findOrNull(keys: Array<out String>): JsonElement? {
+// Walks the path, returning null as soon as a segment is missing or a non-object is reached. A JSON null at the end
+// is returned as JsonNull, so callers can tell "present but null" from "missing".
+private fun JsonElement.findOrNull(segments: List<String>): JsonElement? {
   var current: JsonElement = this
-  for (key in pathSegments(keys)) {
+  for (key in segments) {
     current = (current as? JsonObject)?.get(key) ?: return null
   }
   return current
 }
+
+private fun JsonElement.findOrNull(keys: Array<out String>) = findOrNull(pathSegments(keys))
 
 /**
  * Traverses this [JsonElement] using a slash-delimited path (e.g., `"a/b/c"`).
@@ -122,11 +139,10 @@ private fun JsonElement.findOrNull(keys: Array<out String>): JsonElement? {
  * also reaches keys that contain a dot.
  *
  * @param path a `/`-separated path of object keys
- * @return the [JsonElement] at the given path, or `null` if any key is missing
+ * @return the [JsonElement] at the given path, or `null` if any key is missing or the path runs into a value that is
+ *   not an object. A key that is present with a JSON `null` value is returned as [JsonNull].
  */
-fun JsonElement.getByPath(path: String): JsonElement? =
-  pathSegments(arrayOf(path), separator = '/')
-    .fold(this as JsonElement?) { acc, key -> acc?.jsonObject?.get(key) }
+fun JsonElement.getByPath(path: String): JsonElement? = findOrNull(pathSegments(arrayOf(path), separator = '/'))
 
 /**
  * Navigates into nested [JsonObject] children using dot-separated key strings.
@@ -179,7 +195,7 @@ fun JsonElement.doubleValue(vararg keys: String) = get(*keys).doubleValue
  * Navigates to the nested element at [keys] and returns its double value, or `null` if it is missing, JSON `null`,
  * or not a number. Extension function on [JsonElement].
  */
-fun JsonElement.doubleValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull?.toDoubleOrNull()
+fun JsonElement.doubleValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull?.toJsonDoubleOrNull()
 
 /** Navigates to the nested element at [keys] and returns its boolean value. Extension function on [JsonElement]. */
 fun JsonElement.booleanValue(vararg keys: String) = get(*keys).booleanValue
@@ -373,6 +389,9 @@ fun JsonElement.toJsonElementList() = jsonArray.toList()
  *
  * Extension function on [JsonElement]. Primitives become strings, nested objects become nested maps,
  * arrays become lists, and [JsonNull] becomes `null`.
+ *
+ * A primitive's string is its content. For parsed JSON that is the source text, so `1.0` stays `"1.0"`. A number
+ * built in code carries the platform's rendering instead: `JsonPrimitive(1.0)` is `"1.0"` on the JVM but `"1"` on JS.
  *
  * @return a [Map] representation of this JSON object
  * @throws IllegalArgumentException if this element is not a [JsonObject]

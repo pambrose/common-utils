@@ -30,7 +30,6 @@ import com.resend.services.emails.model.CreateEmailResponse
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.mockk.CapturingSlot
 import io.mockk.every
@@ -135,8 +134,7 @@ class ResendServiceTests : StringSpec() {
         }
 
       val message = events.single { it.level == Level.INFO }.formattedMessage
-      message shouldContain "id-123"
-      message shouldContain "2"
+      message shouldBe "Sent email [id-123] to 2 to, 1 cc, and 1 bcc recipients"
       message shouldNotContain "@example.com"
     }
 
