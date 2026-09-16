@@ -177,10 +177,10 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-037** `LOW` · gap — Empty `remoteip`, use after `close()`, config re-reads; specs that test only themselves ([details](#tc-037))
 
 ### ktor-server-utils
-- [ ] **TC-038** `HIGH` · bug — Malformed servlet content type turns a successful response into a 500; throwing servlet untested ([details](#tc-038)) — in progress
-- [ ] **TC-039** `LOW` · gap — `sendRedirect(clearBuffer = false)` and the buffer discard are unverified ([details](#tc-039)) — in progress
-- [ ] **TC-040** `LOW` · gap — `HerokuHttpsRedirect` `sslPort` and non-matching excludes untested ([details](#tc-040)) — in progress
-- [ ] **TC-041** `LOW` · gap — Multi-valued headers and `Content-Type` set via `setHeader` untested end to end ([details](#tc-041)) — in progress (fixed rather than pinned: a `Content-Type` header now sets the content type and charset, and the bridge no longer duplicates `Content-Length`)
+- [ ] **TC-038** `HIGH` · bug — Malformed servlet content type turns a successful response into a 500; throwing servlet untested ([details](#tc-038)) — in progress (#189)
+- [ ] **TC-039** `LOW` · gap — `sendRedirect(clearBuffer = false)` and the buffer discard are unverified ([details](#tc-039)) — in progress (#189)
+- [ ] **TC-040** `LOW` · gap — `HerokuHttpsRedirect` `sslPort` and non-matching excludes untested ([details](#tc-040)) — in progress (#189)
+- [ ] **TC-041** `LOW` · gap — Multi-valued headers and `Content-Type` set via `setHeader` untested end to end ([details](#tc-041)) — in progress (#189; fixed rather than pinned: a `Content-Type` header now sets the content type and charset, and the bridge no longer duplicates `Content-Length`)
 
 ### service-utils
 - [ ] **TC-042** `HIGH` · gap — Health check never shown to detect a sub-service that stopped while running ([details](#tc-042))
