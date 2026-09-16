@@ -25,6 +25,9 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.html.body
 import kotlinx.html.stream.createHTML
 import kotlinx.serialization.json.Json
@@ -32,16 +35,6 @@ import kotlinx.serialization.json.Json
 class RecaptchaTests : StringSpec() {
   init {
     val jsonParser = Json { ignoreUnknownKeys = true }
-
-    fun config(
-      enabled: Boolean,
-      siteKey: String?,
-      secretKey: String?,
-    ) = object : RecaptchaConfig {
-      override val isRecaptchaEnabled = enabled
-      override val recaptchaSiteKey = siteKey
-      override val recaptchaSecretKey = secretKey
-    }
 
     fun renderWidget(config: RecaptchaConfig): String =
       with(RecaptchaService) {
@@ -52,40 +45,38 @@ class RecaptchaTests : StringSpec() {
     // the secret key. A missing secret key therefore rendered a widget whose response was never
     // validated (fail-open). Rendering and validation now share the same "fully configured" gate.
 
-    "widget renders when fully configured" {
-      renderWidget(config(enabled = true, siteKey = "site", secretKey = "secret")) shouldContain "g-recaptcha"
+    "widget renders the site key, and never the secret key, when fully configured" {
+      val html = renderWidget(recaptchaConfig(enabled = true, siteKey = "site-key-123", secretKey = "secret-key-456"))
+
+      html shouldContain """class="g-recaptcha""""
+      html shouldContain """data-sitekey="site-key-123""""
+      html shouldNotContain "secret-key-456"
     }
 
     "widget is not rendered when secret key is missing" {
-      renderWidget(config(enabled = true, siteKey = "site", secretKey = null)) shouldNotContain "g-recaptcha"
-      renderWidget(config(enabled = true, siteKey = "site", secretKey = "")) shouldNotContain "g-recaptcha"
+      renderWidget(recaptchaConfig(enabled = true, siteKey = "site", secretKey = null)) shouldNotContain "g-recaptcha"
+      renderWidget(recaptchaConfig(enabled = true, siteKey = "site", secretKey = "")) shouldNotContain "g-recaptcha"
     }
 
     "widget is not rendered when disabled or site key is missing" {
-      renderWidget(config(enabled = false, siteKey = "site", secretKey = "secret")) shouldNotContain "g-recaptcha"
-      renderWidget(config(enabled = true, siteKey = null, secretKey = "secret")) shouldNotContain "g-recaptcha"
+      renderWidget(recaptchaConfig(enabled = false, siteKey = "site", secretKey = "secret")) shouldNotContain
+        "g-recaptcha"
+      renderWidget(recaptchaConfig(enabled = true, siteKey = null, secretKey = "secret")) shouldNotContain
+        "g-recaptcha"
     }
 
-    "recaptcha config enabled" {
-      val config = object : RecaptchaConfig {
-        override val isRecaptchaEnabled = true
-        override val recaptchaSiteKey = "test-site-key"
-        override val recaptchaSecretKey = "test-secret-key"
-      }
-      config.isRecaptchaEnabled shouldBe true
-      config.recaptchaSiteKey shouldBe "test-site-key"
-      config.recaptchaSecretKey shouldBe "test-secret-key"
-    }
+    // The gate and the widget must use the same read of the site key; a second read could return null.
+    "widget reads the site key once" {
+      val config =
+        mockk<RecaptchaConfig> {
+          every { isRecaptchaEnabled } returns true
+          every { recaptchaSiteKey } returnsMany ["site", null]
+          every { recaptchaSecretKey } returns "secret"
+        }
 
-    "recaptcha config disabled" {
-      val config = object : RecaptchaConfig {
-        override val isRecaptchaEnabled = false
-        override val recaptchaSiteKey: String? = null
-        override val recaptchaSecretKey: String? = null
-      }
-      config.isRecaptchaEnabled shouldBe false
-      config.recaptchaSiteKey shouldBe null
-      config.recaptchaSecretKey shouldBe null
+      renderWidget(config) shouldContain """data-sitekey="site""""
+
+      verify(exactly = 1) { config.recaptchaSiteKey }
     }
 
     "recaptcha response deserialization success" {
@@ -232,17 +223,6 @@ class RecaptchaTests : StringSpec() {
       changed shouldNotBe original
       changed.hashCode() shouldBe changed.copy().hashCode()
       original.toString() shouldContain "hostname=localhost"
-    }
-
-    "recaptcha config partial keys" {
-      val config = object : RecaptchaConfig {
-        override val isRecaptchaEnabled = true
-        override val recaptchaSiteKey = "site-key-only"
-        override val recaptchaSecretKey: String? = null
-      }
-      config.isRecaptchaEnabled shouldBe true
-      config.recaptchaSiteKey shouldNotBe null
-      config.recaptchaSecretKey shouldBe null
     }
 
     // Bug #9: the singleton's HttpClient was never closed. close() now releases it; verify it runs
