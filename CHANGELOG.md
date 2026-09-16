@@ -35,6 +35,14 @@ All notable changes to Common Utils are documented in this file.
 
   For such text, `doubleValue` now throws `NumberFormatException`, `doubleValueOrNull` returns `null` and
   `isNumber` is `false`. A quoted JSON number such as `"2.5"` is still read by `doubleValue`.
+- recaptcha-utils rejects a siteverify reply with a non-2xx status. Before, the status was ignored, so an error
+  or redirect whose body parsed as `{"success": true}` passed verification.
+- recaptcha-utils `validateRecaptcha` responds `400 reCAPTCHA verification failed` after
+  `RecaptchaService.close()`, and logs an error. Before, the closed client's `CancellationException` escaped as
+  if the call had been cancelled.
+- recaptcha-utils reads each `RecaptchaConfig` key once per call. A config whose getters changed between reads
+  could pass the "fully configured" gate and then throw `IllegalArgumentException` from `validateRecaptcha` or
+  `recaptchaWidget`.
 
 ### Documentation
 
@@ -61,6 +69,10 @@ All notable changes to Common Utils are documented in this file.
   - `forEachJsonObject` skipping non-object elements and rejecting a primitive
   - `deepCopy` building new objects and arrays rather than returning the same instances
   - a millisecond timestamp overflowing `intValue`
+- recaptcha-utils tests build their MockEngine client with the production configuration instead of a copy of
+  it. New cases cover malformed and non-2xx siteverify replies, v3 fields and a `null` `error-codes`, the site
+  key in the widget (and the secret key's absence), a blank `remoteip`, use after `close()`, and how often the
+  config is read. Specs that exercised only their own `RecaptchaConfig` literals are removed.
 
 ## [4.0.0] - 2026-09-15
 
