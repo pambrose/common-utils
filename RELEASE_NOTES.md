@@ -9,6 +9,14 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ### Highlights
 
+- **Publishing, build and CI hygiene**:
+  - **POM scopes:** grpc-netty and java-scriptengine are `api`, so consumers can compile against the Netty
+    and `Isolation` types these modules expose; `kotlin-reflect` aligns with the 2.4.20 compiler.
+  - **Publishing:** a Central publish without a signing key fails before upload, and the SCM
+    `developerConnection` carries the `git@` user.
+  - **CI:** least-privilege tokens, superseded PR runs cancelled, and Pages rights confined to the deploy job.
+  - **Docs:** llms.txt and CLAUDE.md corrected, and stale top-level files removed.
+
 - **Deserialization hardening (core-utils)**: `toObjectSecure` no longer allows every class by default.
   Before this change, omitting `allowedClasses` switched the allow-list off, leaving only a short blocklist
   against gadget chains. The README nonetheless recommended the function for untrusted data. The

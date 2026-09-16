@@ -47,6 +47,9 @@ plugins {
     alias(libs.plugins.kotlinter) apply false
     alias(libs.plugins.kotest) apply false
     alias(libs.plugins.detekt) apply false
+    // Declared here, like every other module plugin, so it resolves in one classloader rather than
+    // separately in each KMP module that applies it.
+    alias(libs.plugins.ksp) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
     alias(libs.plugins.maven.publish) apply false
@@ -398,14 +401,29 @@ fun Project.configurePublishing(isKmp: Boolean) {
             }
             scm {
                 connection.set("scm:git:https://$scmHost.git")
-                developerConnection.set("scm:git:ssh://$scmHost.git")
+                developerConnection.set("scm:git:ssh://git@$scmHost.git")
                 url.set(projectHomepage)
             }
         }
 
         publishToMavenCentral(automaticRelease = true)
-        if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+
+        // Signing needs an in-memory key, which the Makefile's publish targets export. Calling
+        // signAllPublications() unconditionally would break `make publish-local`, since that publishes the
+        // release version with no key and the signing task then fails with "No configured signatory".
+        // The risk worth catching is an *unsigned upload to Central*, which Central rejects only after the
+        // fact, so guard that path explicitly instead.
+        val hasSigningKey = providers.gradleProperty("signingInMemoryKey").isPresent
+        if (hasSigningKey) {
             signAllPublications()
+        }
+        tasks.matching { it.name.contains("MavenCentral") }.configureEach {
+            doFirst {
+                require(hasSigningKey) {
+                    "Publishing to Maven Central requires a signing key: set ORG_GRADLE_PROJECT_signingInMemoryKey, " +
+                        "as `make publish-snapshot` and `make publish-maven-central` do."
+                }
+            }
         }
     }
 }

@@ -6,12 +6,24 @@ on:
   pull_request:
     branches: [master]
 
+# The repository's default workflow token is write-scoped; this build only needs to read the checkout.
+permissions:
+  contents: read
+
+# Cancel superseded PR runs (JS, wasm, native and detekt all run here), but let master runs finish.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Nothing here pushes, so keep the token out of .git/config.
+          persist-credentials: false
 
       - uses: actions/setup-java@v6
         with:
@@ -20,13 +32,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      # `build` runs lintKotlin and detekt through `check`, so there is no separate lint step.
       - name: Build and test
         run: ./gradlew build
-
-      - name: Lint
-        # KMP modules have per-source-set lint tasks (lintKotlinCommonMain, ...) rather
-        # than lintKotlinMain/lintKotlinTest, so run the aggregate task.
-        run: ./gradlew lintKotlin
 
       - name: Generate Kover XML coverage report
         run: ./gradlew koverXmlReport

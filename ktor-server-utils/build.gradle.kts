@@ -7,7 +7,6 @@ description = "Ktor server framework extension utilities"
 dependencies {
     api(project(":core-utils"))
 
-    implementation(libs.kotlin.reflect)
     api(libs.ktor.server.core)
 
     compileOnlyApi(libs.jakarta.servlet.api)

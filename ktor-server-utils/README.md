@@ -164,7 +164,6 @@ This module depends on:
 - Kotlin Standard Library
 - core-utils
 - Ktor Server Core
-- Kotlin Reflect
 - Jakarta Servlet API (`compileOnlyApi` — supply it yourself if you use `Route.servlet`)
 
 ## Installation

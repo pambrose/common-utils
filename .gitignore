@@ -1,6 +1,5 @@
 .idea/
 .gradle/
-.wercker/
 target/
 build/
 .kotlin/

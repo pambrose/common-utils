@@ -29,7 +29,9 @@ Run `make help` for a self-documenting list of every target.
 
 ### Code Quality
 
-- `./gradlew formatKotlinMain formatKotlinTest` - Auto-format code
+- `./gradlew formatKotlin` - Auto-format code. Use the aggregate task: KMP modules name their kotlinter
+  tasks per source set (`formatKotlinCommonMain`, `formatKotlinJvmTest`, …), so
+  `formatKotlinMain formatKotlinTest` silently skips core-utils, json-utils and ktor-client-utils.
 
 ### Publishing
 
@@ -45,7 +47,8 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 
 - `configureKotlinJvm()` - JVM 17 target, experimental opt-ins (kotlin/jvm modules)
 - `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
-- `configurePublishing(isKmp)` - Maven publication setup (vanniktech maven-publish, `KotlinJvm` or `KotlinMultiplatform` platform) and per-module Dokka configuration
+- `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and unconditional `signAllPublications()` (vanniktech requires a signature only for non-SNAPSHOT versions)
+- `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
 
 The `kmpModuleNames` set in the root build script decides which modules build with `kotlin("multiplatform")`; everything else gets `kotlin("jvm")`.
@@ -78,7 +81,12 @@ therefore change the compiler, and the resolved JS toolchain npm versions, witho
 Dependabot (`.github/dependabot.yml`) opens weekly version-update PRs for the Gradle ecosystem (catalog
 libraries and plugins, plus the Gradle wrapper) and for GitHub Actions. Because of the Kotlin hold, Kotlin
 updates get their own group: expect that PR to fail `:script-utils-kotlin:test` in CI until the regression
-is fixed, and don't merge it red. The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
+is fixed, and don't merge it red. Two `ignore` rules back that up: `io.netty:netty-tcnative-boringssl-static`
+gets no automatic PR at all, because it must match the version grpc-java pins for the grpc release in use
+(bump it by hand alongside grpc, and note the rule suppresses security-update PRs too, though alerts still
+fire); and Kotlin `2.4.20` is ignored by exact version, so Dependabot stops re-proposing the release that
+broke the JSR-223 REPL while later releases (2.4.21, 2.4.30, …) still arrive in the kotlin group. Remove
+the four Kotlin entries once the hold is lifted. The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
 Dependabot only proposes candidates carrying the same suffix — and it must be kept, since
 `exposed-kotlin-datetime` links against the deprecated `kotlinx.datetime.Instant` that only the compat
 artifacts ship. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
@@ -98,6 +106,12 @@ Additionally, the experimental `-Xcollection-literals` compiler flag is enabled 
 (JVM and KMP, main and test) so `[...]` collection-literal syntax can be used in place of `listOf(...)` /
 `mutableListOf(...)`. The flag is experimental in Kotlin 2.4 and may need revisiting on a future Kotlin
 upgrade (if the syntax changes or the feature stabilizes and the flag can be dropped).
+
+The `-Xreturn-value-checker=check` flag is applied to **production compilations only** — `compileKotlin` on
+the JVM modules, and each target's `main` compilation on the KMP ones — so discarding a non-Unit result is
+reported as a warning. Test sources are excluded deliberately: Kotest's assertion DSL returns its receiver
+and tests discard it, which would yield nothing but false positives. When a result really is meant to be
+ignored, consume it with `val _ = ...` rather than turning the flag off.
 
 Atomics come from `kotlin.concurrent.atomics` (`AtomicInt`, `AtomicLong`, `AtomicBoolean`,
 `AtomicReference`) everywhere — `src` and `test`, JVM-only modules included. Use the

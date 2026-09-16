@@ -6,6 +6,17 @@ All notable changes to Common Utils are documented in this file.
 
 ### Breaking changes
 
+- grpc-utils publishes `grpc-netty` as `api`, and script-utils-java publishes `java-scriptengine` as `api`.
+  Both leaked into the public API — `TlsContext.sslContext`/`TlsContextBuilder.builder` are Netty types, and
+  `JavaScript.assignIsolation` takes java-scriptengine's `Isolation` — while the POMs listed them at runtime
+  scope, so a consumer touching those members could not compile without adding the dependency itself.
+- `kotlin-reflect` has its own catalog version (2.4.20), aligned with the compiler, instead of riding the
+  `kotlin` entry held at 2.4.10 for the scripting artifacts. core-utils exports reflect as `api`, so its POM
+  previously paired stdlib 2.4.20 with reflect 2.4.10.
+- The three script-utils engine modules no longer re-declare `api(project(":core-utils"))`, which
+  script-utils-common already exports, and ktor-server-utils drops an `implementation(libs.kotlin.reflect)`
+  its sources never used.
+
 - `ByteArray.toObjectSecure` (core-utils) requires an explicit, non-empty `allowedClasses`. The parameter
   used to default to `emptySet()`, which switched the allow-list off entirely and left only a 7-entry
   blocklist between untrusted bytes and known deserialization gadget chains.
@@ -152,6 +163,18 @@ All notable changes to Common Utils are documented in this file.
   there.
 
 ### Bug fixes
+
+- `make build`, documented as "without tests", no longer runs the KMP modules' `jvmTest`: `check` pulls in
+  `koverVerify`, which depends on the instrumented test tasks, and `-x test -x allTests` does not cover it.
+- `make coverage-clean` cleans the JVM modules' test results too (`cleanTest` alongside `cleanAllTests`,
+  which exists only in the KMP modules), and documents that the build cache can restore cleaned results.
+- Publishing to Maven Central without a signing key now fails before the upload rather than after Central
+  rejects the unsigned artifacts. Signing itself stays conditional on the key being present: making
+  `signAllPublications()` unconditional, as first tried, breaks `make publish-local`, which publishes the
+  release version with no key and then fails with "No configured signatory".
+- The POM's `developerConnection` is `scm:git:ssh://git@github.com/...`, which was missing the `git@` user.
+- The `ksp` plugin is declared in the root `plugins {}` block with `apply false`, like every other module
+  plugin, so it resolves in one classloader instead of separately in each KMP module.
 
 - grpc-utils `Server.shutdownGracefully` calls `shutdown()` inside its `try`, so `shutdownNow()` in the
   `finally` runs even when `shutdown()` itself throws, as it does on an already-terminated server. Its KDoc
@@ -375,6 +398,11 @@ All notable changes to Common Utils are documented in this file.
 
 ### Tests
 
+- The build, publishing, CI and documentation fixes in this release carry no new automated specs; they were
+  verified by running the real thing: a full `build` (646 tests, lint and detekt, 0 failures), the generated
+  POMs for the scope and version changes, the `make build` task graph for the excluded test tasks, a publish
+  to the local repository with and without a signing key, and a YAML parse of both workflows.
+
 - Add grpc-utils regression tests that would have caught the fixes above: a hand-built server context passed
   to `GrpcDsl.server`, ALPN assertions on both server paths, retry verification on the Netty and in-process
   transports, timeout validation and forced shutdown in the JVM hook, the declared `streamObserver` return
@@ -441,6 +469,29 @@ All notable changes to Common Utils are documented in this file.
   assertions to exact output.
 
 ### Documentation
+
+- CI hardening: `test.yml` declares `permissions: contents: read` (the repository's default token is
+  write-scoped), checks out with `persist-credentials: false`, and cancels superseded PR runs through a
+  `concurrency` group. Its redundant Lint step is gone, since `build` already runs lintKotlin and detekt
+  through `check`. `kdocs.yml` keeps `pages: write` and `id-token: write` on the `deploy` job alone, so the
+  job that builds PR code holds only `contents: read`.
+- llms.txt, which exists for AI coding tools, no longer misdescribes modules: five modules labelled
+  "Standalone" all declare `api(project(":core-utils"))`; script-utils-java compiles Java, not JavaScript;
+  dropwizard-utils has no JMX integration; service-utils depends on six sibling modules, not core-utils
+  alone; `getByPath` splits on `/` while `get` takes dot-notation; and guava-utils ships GZIP helpers rather
+  than ZIP archiving, with its service lifecycle classes named `GenericIdleService` and
+  `GenericExecutionThreadService`.
+- CLAUDE.md: the format command is `./gradlew formatKotlin` (the per-source-set names mean
+  `formatKotlinMain formatKotlinTest` silently skips all three KMP modules); Dokka HTML setup is attributed
+  to `configureDokka()` rather than `configurePublishing`; the `-Xreturn-value-checker=check` flag and its
+  production-only scope are documented; and the Dependabot section covers the netty-tcnative and Kotlin
+  2.4.20 ignore rules.
+- README and llms.txt state Kotlin 2.4.20 with the scripting artifacts pinned to 2.4.10, instead of
+  advertising 2.4.10 as the project's Kotlin version.
+- Removed stale top-level files: two superseded review documents (`code-review.md` and
+  `docs/CODE_REVIEW.md`, the latter dated 2026-03-01 against v2.6.3), `.codeclimate.yml` (checkstyle for a
+  single Java file, while the badge is Codacy), `system.properties` (a Heroku buildpack file in an
+  undeployed library), and the `.wercker/` entry in `.gitignore` for a directory that no longer exists.
 
 - Add READMEs for zipkin-utils and redis-utils, which llms.txt already linked to.
 - Correct the guava-utils README.
