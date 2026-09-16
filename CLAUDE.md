@@ -194,6 +194,11 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
 - `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
   MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
+- ktor-client-utils declares no client engine, so its client-creating `commonTest` specs are gated on the
+  `hasDefaultEngine` expect/actual flag. They run on the JVM (CIO is a `jvmTest` dependency) and on js/wasmJs
+  (ktor-client-core bundles a Js engine). On native they are disabled, and `KtorDslNativeTests` pins the
+  missing-engine failure instead. Keep that the only native test that creates a client: Kotlin/Native caches the
+  failed file initialization, so a second attempt throws without Ktor's `IllegalStateException` as the cause.
 - `script-utils-kotlin` runs the Kotlin compiler **in-process** (the JSR-223 engine compiles every
   snippet), so its test task sets `maxHeapSize = "2g"` in the module's own `build.gradle.kts`; nothing
   else sets a test heap, so every other module uses Gradle's 512m default. Leave that setting in place.

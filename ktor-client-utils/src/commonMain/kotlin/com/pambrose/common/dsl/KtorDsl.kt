@@ -35,6 +35,12 @@ object KtorDsl {
   /**
    * Creates a new [HttpClient] configured with [HttpTimeout] support.
    *
+   * The client uses whichever engine Ktor finds among the consumer's dependencies; this module declares none. On js
+   * and wasmJs, ktor-client-core falls back to its bundled Js engine. On the JVM and Kotlin/Native, add one (for
+   * example CIO, Darwin, Curl or WinHttp), or this call fails. The failure is Ktor's [IllegalStateException] wrapped
+   * in the platform's initialization error (`ExceptionInInitializerError` on the JVM), and only the first call
+   * carries it as the cause. The same applies to [withHttpClient] and [httpClient] when no client is passed.
+   *
    * @param expectSuccess if `true`, non-2xx responses will throw exceptions
    * @return a new [HttpClient] instance
    */
