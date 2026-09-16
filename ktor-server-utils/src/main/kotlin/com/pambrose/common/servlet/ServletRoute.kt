@@ -17,7 +17,9 @@
 
 package com.pambrose.common.servlet
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.response.respondBytes
@@ -29,6 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.withContext
 
+private val logger = KotlinLogging.logger {}
+
 /**
  * Mounts a Jakarta [HttpServlet] at the given [path] within a Ktor [Route].
  *
@@ -38,7 +42,9 @@ import kotlinx.coroutines.withContext
  * dynamic registration. Each incoming request is translated into a
  * [KtorServletRequest]/[KtorServletResponse] pair. The servlet's response headers, status code, and
  * body are then forwarded back through the Ktor response pipeline, with the character encoding the servlet
- * used included in the `Content-Type`. Servlet processing runs on
+ * used included in the `Content-Type`. A content type that does not parse is logged and replaced by
+ * `application/octet-stream`. `Content-Length` comes from the body actually sent, and the servlet's
+ * `Content-Length`, `Transfer-Encoding` and `Upgrade` headers are dropped. Servlet processing runs on
  * [kotlinx.coroutines.Dispatchers.IO]. The servlet's `destroy()` is called when the application stops.
  *
  * @param path the URL path at which the servlet should be mounted
@@ -68,13 +74,21 @@ fun Route.servlet(
       val response = KtorServletResponse()
       @Suppress("InjectDispatcher")
       withContext(Dispatchers.IO) { servlet.service(request, response) }
-      response.getHeaderNames().forEach { name ->
-        response.getHeaders(name).forEach { value ->
-          call.response.headers.append(name, value)
+      response.getHeaderNames()
+        // Ktor sets Content-Length from the body it sends and rejects the unsafe headers (Transfer-Encoding,
+        // Upgrade), so the servlet's values would be sent twice or fail the call.
+        .filterNot { it.equals(HttpHeaders.ContentLength, ignoreCase = true) || HttpHeaders.isUnsafe(it) }
+        .forEach { name ->
+          response.getHeaders(name).forEach { value ->
+            call.response.headers.append(name, value)
+          }
         }
-      }
       val contentType =
-        response.getContentType()?.let { ContentType.parse(it) } ?: ContentType.Application.OctetStream
+        response.getContentType()?.let { type ->
+          runCatching { ContentType.parse(type) }
+            .onFailure { logger.warn { "Servlet ${servlet.javaClass.name} set a malformed content type: $type" } }
+            .getOrNull()
+        } ?: ContentType.Application.OctetStream
       call.response.status(HttpStatusCode.fromValue(response.status))
       call.respondBytes(response.getBodyBytes(), contentType)
     }
