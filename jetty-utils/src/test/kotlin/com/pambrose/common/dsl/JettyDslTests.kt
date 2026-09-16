@@ -20,18 +20,15 @@ package com.pambrose.common.dsl
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import org.eclipse.jetty.server.ServerConnector
 
 class JettyDslTests : StringSpec() {
   init {
-    "server creation" {
-      val server =
-        JettyDsl.server(8080) {
-          // Configuration block
-        }
+    "server creation configures the port without starting the server" {
+      val server = JettyDsl.server(8080)
 
-      server shouldNotBe null
-      // Server is created but not started
+      server.connectors.single().shouldBeInstanceOf<ServerConnector>().port shouldBe 8080
       server.isStarted shouldBe false
     }
 
@@ -41,7 +38,6 @@ class JettyDslTests : StringSpec() {
           contextPath = "/api"
         }
 
-      handler shouldNotBe null
       handler.contextPath shouldBe "/api"
     }
 
