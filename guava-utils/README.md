@@ -66,7 +66,8 @@ keep waiting, which helps diagnose stuck waits:
 ```kotlin
 monitor.waitUntilTrue(5.seconds, BooleanMonitor.info("Still waiting for the monitor"))
 
-// Give up after a minute overall. maxWait defaults to Duration.INFINITE, and Duration.ZERO checks once.
+// Give up after a minute overall. The two-argument overload passes Duration.INFINITE for maxWait;
+// Duration.ZERO checks the condition once, and a negative value means no limit.
 monitor.waitUntilTrue(timeout = 5.seconds, maxWait = 1.minutes, block = null)
 ```
 
@@ -253,8 +254,10 @@ val original = compressed.unzip()            // String
 val bounded = compressed.unzip(maxBytes = 10_000_000)
 ```
 
-`unzip` throws `IllegalArgumentException` when the content is larger than `maxBytes`, and an `IOException` such
-as `ZipException` or `EOFException` when gzip data is corrupt.
+`unzip` throws `IllegalArgumentException` when the content is larger than `maxBytes` or when `maxBytes` is
+negative, and an `IOException` such as `ZipException` or `EOFException` when gzip data is corrupt. Empty input
+returns an empty string, and input without the GZIP magic header is returned decoded as UTF-8. It is annotated
+`@JvmOverloads`, so Java callers get both the no-arg and the `maxBytes` form.
 
 ### Platform Checks
 
@@ -269,10 +272,10 @@ import com.pambrose.common.util.isWindows
 
 - `abstract class GenericMonitor` — `waitUntilTrue()`, `waitUntilTrue(waitTime: Duration): Boolean`,
   `waitUntilFalse()`, `waitUntilFalse(waitTime: Duration): Boolean`, `waitUntilTrueWithInterruption(...)`,
-  `waitUntil(value: Boolean)`, the retrying overloads `(timeout, maxWait = INFINITE, block)`, and the protected
-  `mutate(block)`
+  `waitUntil(value: Boolean)`, `waitUntil(value: Boolean, waitTime: Duration): Boolean`, the retrying overloads
+  `(timeout, block)` and `(timeout, maxWait, block)`, and the protected `mutate(block)`
 - `class BooleanMonitor(initValue: Boolean) : GenericMonitor` — `get()`, `set(value: Boolean)`, and the companion
-  `debug`/`info`/`warn`/`error` `MonitorAction` factories
+  `debug`/`info`/`warn`/`error` `MonitorAction` factories, each taking either a `String` or a message lambda
 
 ### Conditional Values
 
@@ -280,8 +283,12 @@ import com.pambrose.common.util.isWindows
   `suspend waitUntil(timeoutDuration: Duration = INFINITE, predicate: (T) -> Boolean): Boolean`
 - `class ConditionalBoolean(initValue: Boolean) : ConditionalValue<Boolean>` — `suspend waitUntilTrue(...)`,
   `suspend waitUntilFalse(...)`
-- `abstract class GenericValueWaiter<T>(initValue: T)` / `class BooleanWaiter(initValue: Boolean)` —
-  `setValue(value)`, `suspend waitUntilTrue(...)`, `suspend waitUntilFalse(...)`
+- `abstract class GenericValueWaiter<T>(initValue: T)` — `checkCondition(value: T)` sets the value and resumes
+  every waiter whose predicate now holds; the protected `suspend waitForCondition(predicate, timeoutDuration)` is
+  what typed subclasses expose. `currValue` is `@Volatile protected` with a private setter, so only
+  `checkCondition` changes it
+- `class BooleanWaiter(initValue: Boolean) : GenericValueWaiter<Boolean>` — `setValue(value: Boolean)`,
+  `suspend waitUntilTrue(timeoutDuration: Duration = INFINITE): Boolean`, `suspend waitUntilFalse(...)`
 
 ### Services
 
@@ -292,7 +299,7 @@ import com.pambrose.common.util.isWindows
 - `GuavaDsl.serviceManager(services: List<Service>, block: ServiceManager.() -> Unit): ServiceManager`
 - `GuavaDsl.serviceListener(init: ServiceListenerHelper.() -> Unit)`
 - `GuavaDsl.serviceManagerListener(init: ServiceManagerListenerHelper.() -> Unit)`
-- `GuavaDsl.toStringElements(block: MoreObjects.ToStringHelper.() -> Unit)`
+- `Any.toStringElements(block: MoreObjects.ToStringHelper.() -> Unit): String` — an extension declared in `GuavaDsl`
 
 ### Concurrency & Compression
 
@@ -337,11 +344,11 @@ dependencies {
 
 ## Choosing a Waiting Primitive
 
-| Need | Use |
-|------|-----|
-| Blocking wait on a thread | `BooleanMonitor` / `GenericMonitor` |
-| Suspending wait, value observed as a flow | `ConditionalBoolean` / `ConditionalValue` |
-| Suspending wait, value set from non-suspending code | `BooleanWaiter` / `GenericValueWaiter` |
+| Need                                                | Use                                       |
+|-----------------------------------------------------|-------------------------------------------|
+| Blocking wait on a thread                           | `BooleanMonitor` / `GenericMonitor`       |
+| Suspending wait, value observed as a flow           | `ConditionalBoolean` / `ConditionalValue` |
+| Suspending wait, value set from non-suspending code | `BooleanWaiter` / `GenericValueWaiter`    |
 
 ## Thread Safety
 

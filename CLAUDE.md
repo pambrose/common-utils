@@ -47,7 +47,7 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 
 - `configureKotlinJvm()` - JVM 17 target, experimental opt-ins (kotlin/jvm modules)
 - `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
-- `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and unconditional `signAllPublications()` (vanniktech requires a signature only for non-SNAPSHOT versions)
+- `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
 
@@ -72,7 +72,12 @@ class is a generic Java class (`ArrayList`, `LinkedHashMap`, `HashMap`) via `Scr
 every subsequent `eval()` fail to compile, including snippets that never reference the binding. Do not
 bump it without re-running `:script-utils-kotlin:test` and confirming that suite still passes.
 
-That entry only governs the `kotlin-scripting-*` artifacts, **not the compiler**: `pambrose-gradle-plugins`
+That entry governs the `kotlin-scripting-*` artifacts and nothing else. `kotlin-reflect` deliberately has its
+own `kotlinReflect` catalog version, aligned with the compiler rather than the hold: core-utils exports reflect
+as `api`, so riding the held version would publish a POM pairing stdlib 2.4.20 with reflect 2.4.10. Keep the two
+in step when the compiler moves.
+
+The hold does **not** cover the compiler either: `pambrose-gradle-plugins`
 pulls a `kotlin-gradle-plugin` of its own, which wins on the buildscript classpath, so the project is
 compiled by a newer Kotlin than the catalog names. Run `./gradlew buildEnvironment` to see the version
 actually in use rather than assuming the catalog value — and be aware that a convention-plugin bump can

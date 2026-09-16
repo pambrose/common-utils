@@ -92,7 +92,7 @@ import io.ktor.server.application.install
 install(HerokuHttpsRedirect) {
   host = "myapp.herokuapp.com" // optional; defaults to the request's host
   sslPort = 443              // defaults to the HTTPS default port
-  permanentRedirect = true   // 301 instead of 302
+  permanentRedirect = true   // the default: 301; set false for a 302
 
   // Exclusions match the request path, not the query string
   excludePrefix("/health")
@@ -107,15 +107,20 @@ Configuration properties are `host`, `sslPort`, `permanentRedirect` and `exclude
 
 ### Mounting a Servlet
 
-`Route.servlet` initializes the servlet once, then translates each Ktor request into a
-`KtorServletRequest`/`KtorServletResponse` pair. Servlet processing runs on `Dispatchers.IO`, and the
-servlet's status, headers and body are forwarded back through the Ktor pipeline. The servlet's `destroy()`
-is called when the application stops.
+`Route.servlet` initializes the servlet once through `init(ServletConfig)`, the way a container does, then
+translates each Ktor request into a `KtorServletRequest`/`KtorServletResponse` pair. Servlet processing runs
+on `Dispatchers.IO`, and the servlet's status, headers and body are forwarded back through the Ktor pipeline.
+The servlet's `destroy()` is called when the application stops.
 
+- **Initialization:** the `ServletConfig` is named after the servlet's class and has no init parameters, so
+  servlets that do their setup in `init(ServletConfig)` rather than the no-arg `init()` work. Its
+  `ServletContext` supports attributes and logging and reports no init parameters, resources or dispatchers;
+  container features such as dynamic registration and sessions throw `UnsupportedOperationException`.
 - **Supported:** `sendError` and `sendRedirect`, so an unsupported HTTP method gets `405` from `HttpServlet`'s
   defaults. Also request attributes, and `getPathInfo()`, which is always `null`.
 - **Character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is used for the
   body and included in the `Content-Type`, as a servlet container reports it. It can't change after `getWriter()`.
+  A servlet that sets no content type at all is answered as `application/octet-stream`.
 - **Parameters:** parameter names are case-insensitive, which is Ktor's behavior, unlike a servlet container.
 
 ```kotlin
@@ -148,8 +153,9 @@ dependencies {
 ### Heroku
 
 - `class HerokuHttpsRedirect` — properties `host` (nullable), `redirectPort`, `permanent`, `excludePredicates`
-- `HerokuHttpsRedirect.Configuration` — `host` (default `null`), `sslPort`, `permanentRedirect`, `excludePredicates`,
-  `excludePrefix(pathPrefix)`, `excludeSuffix(pathSuffix)`, `exclude(predicate)`
+- `HerokuHttpsRedirect.Configuration` — `host` (default `null`), `sslPort` (default 443),
+  `permanentRedirect` (default `true`), `excludePredicates`, `excludePrefix(pathPrefix)`,
+  `excludeSuffix(pathSuffix)`, `exclude(predicate)`
 - `typealias CallPredicate = (ApplicationCall) -> Boolean`
 
 ### Servlet Bridge
@@ -162,7 +168,7 @@ dependencies {
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
+- kotlin-logging (`implementation`)
 - Ktor Server Core
 - Jakarta Servlet API (`compileOnlyApi` — supply it yourself if you use `Route.servlet`)
 

@@ -85,7 +85,8 @@ val timedRead = timedReadOnlyTx(db = database) { MyTable.selectAll().count() }
 println("${timedRead.value} rows in ${timedRead.duration}")
 ```
 
-Each helper also accepts `transactionIsolation`, defaulting to the database's configured isolation level.
+Each helper also accepts `transactionIsolation`, defaulting to the isolation level configured on the `db` you
+pass, or to Exposed's own default when `db` is omitted.
 
 ### ResultRow Extensions
 

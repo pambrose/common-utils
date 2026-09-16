@@ -30,21 +30,23 @@ Every function that creates a client takes a Redis URL such as `redis://user:pas
 
 The whole URL is read, not just the host and port:
 
-| URL part | Effect |
-|----------|--------|
-| `/3` path | selects database 3 |
+| URL part      | Effect                            |
+|---------------|-----------------------------------|
+| `/3` path     | selects database 3                |
 | `?protocol=3` | selects the RESP protocol version |
-| userinfo | sent with `AUTH` |
+| userinfo      | sent with `AUTH`                  |
 
-The user is sent only when it is a real one: not blank, `default` or `user`. The placeholder password `none`
-counts as no password and is never sent.
+The password is sent only when it is a real one: a blank password and the placeholder `none` both count as no
+password. The user is sent only alongside a real password, and only when the name itself is a real one — not
+blank, `default` or `user`.
 
 ### Short-lived Clients
 
 The `withRedis` family creates a client, pings the server to verify the connection, runs the block, and closes
 the client. When the connection fails, `withRedis` passes `null` to the block, while `withNonNullRedis` skips the
 block and returns `null`. Building a Jedis client does not connect, so the ping is what makes that promise hold
-for an unreachable server, a pool that cannot lend a connection, or a rejected password.
+for an unreachable server, a pool that cannot lend a connection, or a rejected password. A client that fails
+the ping is closed rather than handed to the block.
 
 ```kotlin
 import com.pambrose.common.redis.RedisUtils.withNonNullRedis
@@ -68,12 +70,12 @@ client.withNonNullRedisPool { redis -> redis.set("status", "ready") }
 
 Each pool setting defaults to a system property, and then to a fixed value:
 
-| Parameter | System property | Default |
-|-----------|-----------------|---------|
-| `maxPoolSize` | `redis.maxPoolSize` | 10 |
-| `maxIdleSize` | `redis.maxIdleSize` | 5 |
-| `minIdleSize` | `redis.minIdleSize` | 1 |
-| `maxWaitSecs` | `redis.maxWaitSecs` | 1 |
+| Parameter     | System property     | Default |
+|---------------|---------------------|---------|
+| `maxPoolSize` | `redis.maxPoolSize` | 10      |
+| `maxIdleSize` | `redis.maxIdleSize` | 5       |
+| `minIdleSize` | `redis.minIdleSize` | 1       |
+| `maxWaitSecs` | `redis.maxWaitSecs` | 1       |
 
 `maxPoolSize` must be positive, or `UNLIMITED_POOL_SIZE` (-1) for no limit; 0 would create a pool that can never
 lend a connection. Pooled connections are validated when they are borrowed and while they sit idle, but not when

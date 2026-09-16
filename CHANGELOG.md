@@ -4,6 +4,8 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-09-15
+
 ### Breaking changes
 
 - grpc-utils publishes `grpc-netty` as `api`, and script-utils-java publishes `java-scriptengine` as `api`.
@@ -16,6 +18,12 @@ All notable changes to Common Utils are documented in this file.
 - The three script-utils engine modules no longer re-declare `api(project(":core-utils"))`, which
   script-utils-common already exports, and ktor-server-utils drops an `implementation(libs.kotlin.reflect)`
   its sources never used.
+- ktor-server-utils no longer publishes `core-utils` as a dependency. It used none of core-utils' own code,
+  reaching it only for the `kotlin-logging` facade that core-utils re-exports as `api`; kotlin-logging is now
+  declared directly as `implementation`. The POM therefore drops `core-utils-jvm` from `compile` scope and
+  lists `kotlin-logging` at runtime scope. Consumers that relied on reaching core-utils transitively through
+  ktor-server-utils must now declare `com.pambrose.common-utils:core-utils` themselves. Nothing inside the
+  project relied on that path: service-utils, the only dependent, already declares core-utils directly.
 
 - `ByteArray.toObjectSecure` (core-utils) requires an explicit, non-empty `allowedClasses`. The parameter
   used to default to `emptySet()`, which switched the allow-list off entirely and left only a 7-entry
@@ -514,6 +522,7 @@ All notable changes to Common Utils are documented in this file.
   required allow-list and stream limits.
 - Add `docs/CODE_REVIEW_2026-09-14.md`, a full-repo code review with 139 enumerated, trackable action items.
   CR-001, CR-038, and CR-124 are the three fixes above.
+- Bump project version to 4.0.0
 
 ## [3.2.3] - 2026-09-07
 

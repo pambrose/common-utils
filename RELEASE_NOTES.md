@@ -5,13 +5,16 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## Unreleased
+## v4.0.0 — 2026-09-15
 
 ### Highlights
 
 - **Publishing, build and CI hygiene**:
   - **POM scopes:** grpc-netty and java-scriptengine are `api`, so consumers can compile against the Netty
-    and `Isolation` types these modules expose; `kotlin-reflect` aligns with the 2.4.20 compiler.
+    and `Isolation` types these modules expose; `kotlin-reflect` aligns with the 2.4.20 compiler; and
+    ktor-server-utils no longer publishes `core-utils`, which it used only to reach the kotlin-logging
+    facade — now a direct `implementation` dependency. Declare core-utils yourself if you were picking it
+    up through that module.
   - **Publishing:** a Central publish without a signing key fails before upload, and the SCM
     `developerConnection` carries the `git@` user.
   - **CI:** least-privilege tokens, superseded PR runs cancelled, and Pages rights confined to the deploy job.
@@ -161,6 +164,8 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
   exposed-utils validates `upsert` conflict indexes and returns `null` for SQL NULL columns.
 - grpc-utils `serverTlsContext` carries ALPN, the client trust path is optional, `enableRetry = false`
   disables retry, and `streamObserver` is declared to return `StreamObserver<T>`.
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/3.2.3...4.0.0
 
 ---
 

@@ -294,7 +294,7 @@ class StringExtensionTests : StringSpec() {
       "a+b" shouldMatch "a+b".asRegex()
       "aab" shouldNotMatch "a+b".asRegex()
       "[abc" shouldMatch "[abc".asRegex()
-      "a\$b^c{1}|d\\e" shouldMatch "a\$b^c{1}|d\\e".asRegex()
+      $$"a$b^c{1}|d\\e" shouldMatch $$"a$b^c{1}|d\\e".asRegex()
       "a__SINGLE__DOT__b".toPattern shouldBe "^a__SINGLE__DOT__b$"
     }
 

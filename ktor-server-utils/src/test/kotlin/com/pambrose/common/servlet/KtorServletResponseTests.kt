@@ -108,7 +108,7 @@ class KtorServletResponseTests : StringSpec() {
       val response = KtorServletResponse()
       response.characterEncoding shouldBe "UTF-8"
 
-      response.setCharacterEncoding("ISO-8859-1")
+      response.characterEncoding = "ISO-8859-1"
       response.characterEncoding shouldBe "ISO-8859-1"
     }
 
@@ -206,7 +206,7 @@ class KtorServletResponseTests : StringSpec() {
       val specified = KtorServletResponse()
       specified.setContentType("application/json")
       specified.contentType shouldBe "application/json"
-      specified.setCharacterEncoding("ISO-8859-1")
+      specified.characterEncoding = "ISO-8859-1"
       specified.contentType shouldBe "application/json; charset=ISO-8859-1"
 
       val written = KtorServletResponse()
@@ -219,7 +219,7 @@ class KtorServletResponseTests : StringSpec() {
       val response = KtorServletResponse()
       response.setContentType("text/plain; charset=ISO-8859-1")
       response.writer.print("caf\u00e9")
-      response.setCharacterEncoding("UTF-8")
+      response.characterEncoding = "UTF-8"
       response.setContentType("text/html; charset=UTF-8")
       response.characterEncoding shouldBe "ISO-8859-1"
       response.contentType shouldBe "text/html; charset=ISO-8859-1"

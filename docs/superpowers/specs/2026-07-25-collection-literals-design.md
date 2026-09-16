@@ -71,12 +71,12 @@ source sets (unlike the return-value checker, which is deliberately main-only).
 
 ### 2. Conversion rules
 
-| From | To | Notes |
-|------|----|----|
-| `listOf(a, b, c)` | `[a, b, c]` | Direct. |
-| `mutableListOf(x)` | `[x]` **+ explicit `MutableList<T>` on the variable** | The type declaration is load-bearing: without it the literal infers `List` and silently drops mutability. |
-| `emptyList()` | *(unchanged)* | Out of scope by decision. |
-| Empty `listOf()` (no args) | `[]` only where an expected type exists | None currently exist in the repo; rule stated for completeness. |
+| From                       | To                                                    | Notes                                                                                                     |
+|----------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `listOf(a, b, c)`          | `[a, b, c]`                                           | Direct.                                                                                                   |
+| `mutableListOf(x)`         | `[x]` **+ explicit `MutableList<T>` on the variable** | The type declaration is load-bearing: without it the literal infers `List` and silently drops mutability. |
+| `emptyList()`              | *(unchanged)*                                         | Out of scope by decision.                                                                                 |
+| Empty `listOf()` (no args) | `[]` only where an expected type exists               | None currently exist in the repo; rule stated for completeness.                                           |
 
 For `mutableListOf` conversions, the explicit type goes on the *variable declaration*:
 

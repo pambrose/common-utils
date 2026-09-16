@@ -92,10 +92,8 @@ class RedisConfigTests : StringSpec() {
 
     "a pool size of -1 means unlimited and is accepted" {
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = -1)
-      try {
+      client.use { client ->
         client.pool.maxTotal shouldBe -1
-      } finally {
-        client.close()
       }
     }
 

@@ -79,7 +79,7 @@ class RedisUtilsMockTests : StringSpec() {
       every { jedis.scan(SCAN_POINTER_START, capture(paramsSlot)) } returns
         ScanResult(SCAN_POINTER_START, emptyList())
 
-      jedis.scanKeys("missing:*").toList() shouldBe emptyList<String>()
+      jedis.scanKeys("missing:*").toList() shouldBe emptyList()
 
       paramsSlot.captured shouldBe ScanParams().match("missing:*").count(100)
       verify(exactly = 1) { jedis.scan(any<String>(), any<ScanParams>()) }
@@ -207,7 +207,7 @@ class RedisUtilsMockTests : StringSpec() {
       System.setProperty(RedisUtils.REDIS_MAX_WAIT_SECS, "3")
       try {
         val client = RedisUtils.newRedisClient(redisUrl = "redis://localhost:6379")
-        try {
+        client.use { client ->
           client.pool.maxTotal shouldBe 7
           client.pool.maxIdle shouldBe 4
           client.pool.minIdle shouldBe 2
@@ -216,8 +216,6 @@ class RedisUtilsMockTests : StringSpec() {
           // testOnReturn would add a second PING to every pooled command; testWhileIdle covers idle ones.
           client.pool.testOnReturn shouldBe false
           client.pool.testWhileIdle shouldBe true
-        } finally {
-          client.close()
         }
       } finally {
         System.clearProperty(RedisUtils.REDIS_MAX_POOL_SIZE)

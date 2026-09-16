@@ -28,6 +28,7 @@ import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.milliseconds
 
 class IncClass(
   var i: Int = 0,
@@ -296,7 +297,7 @@ class JavaScriptTests : StringSpec() {
     }
 
     "a pooled instance does not keep the previous borrower's imports or isolation" {
-      withTimeout(60_000) {
+      withTimeout(60_000.milliseconds) {
         val pool = JavaScriptPool(1)
         pool.eval {
           import(ArrayList::class.java)

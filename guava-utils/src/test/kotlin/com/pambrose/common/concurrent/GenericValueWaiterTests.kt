@@ -8,6 +8,7 @@ import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.lang.reflect.Modifier
@@ -79,7 +80,7 @@ class GenericValueWaiterTests : StringSpec() {
 
       delay(100.milliseconds)
       waiter.setValue(true)
-      jobs.forEach { it.join() }
+      jobs.joinAll()
 
       // Every waiter must be resumed with true; the old single-slot callback resumed only the last.
       results.size shouldBe 3

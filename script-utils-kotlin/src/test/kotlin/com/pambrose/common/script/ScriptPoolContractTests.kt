@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.milliseconds
 
 // A pool of one evaluator that the test can inspect after it is returned.
 private class ProbeEvaluatorPool : AbstractExprEvaluatorPool<KotlinExprEvaluator>(1) {
@@ -86,7 +87,7 @@ private class ClosingEvaluatorPool(
 class ScriptPoolContractTests : StringSpec() {
   init {
     "script pool of size 1 can be reused repeatedly (recycle on success)" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
         repeat(5) { i ->
           pool.eval { eval("$i + 1") } shouldBe i + 1
@@ -95,7 +96,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "script pool recycles the instance and resets context when the eval block throws" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
 
         shouldThrow<RuntimeException> {
@@ -114,7 +115,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "script pool resets context between borrows (a var added in one eval is gone in the next)" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
 
         pool.eval {
@@ -129,7 +130,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "script pool isEmpty is true while borrowed and false after recycle" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
         pool.isEmpty shouldBe false
 
@@ -143,7 +144,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "expr pool of size 1 can be reused repeatedly (recycle on success)" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinExprEvaluatorPool(size = 1)
         repeat(5) {
           pool.eval("1 > 0") shouldBe true
@@ -152,7 +153,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "expr pool still recycles the evaluator when eval throws" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinExprEvaluatorPool(size = 1)
 
         // A non-boolean result -> AbstractExprEvaluator.eval throws IllegalArgumentException.
@@ -169,8 +170,8 @@ class ScriptPoolContractTests : StringSpec() {
     "a borrower cancelled just as an instance is recycled does not shrink the pool" {
       val waiterThread = Executors.newSingleThreadExecutor()
       val waiterDispatcher = waiterThread.asCoroutineDispatcher()
-      try {
-        withTimeout(TIMEOUT_MS) {
+      waiterDispatcher.use { waiterDispatcher ->
+        withTimeout(TIMEOUT_MS.milliseconds) {
           val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
           val borrowed = CountDownLatch(1)
           val release = CountDownLatch(1)
@@ -184,7 +185,7 @@ class ScriptPoolContractTests : StringSpec() {
           withContext(Dispatchers.IO) { borrowed.await() }
 
           val waiter = launch(waiterDispatcher) { pool.eval { } }
-          delay(200) // the waiter is now suspended, waiting for the only instance
+          delay(200.milliseconds) // the waiter is now suspended, waiting for the only instance
 
           // Occupy the waiter's only thread, so its resumption is queued instead of run.
           val busy = CountDownLatch(1)
@@ -196,9 +197,7 @@ class ScriptPoolContractTests : StringSpec() {
           waiter.join()
 
           pool.eval { eval("1 + 1") } shouldBe 2
-        }
-      } finally {
-        waiterDispatcher.close()
+          }
       }
     }
 
@@ -208,7 +207,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "expr pool resets an evaluator's context when it is returned" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = ProbeEvaluatorPool()
         val before = pool.evaluator.engine.context
         pool.eval("1 > 0") shouldBe true
@@ -217,7 +216,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "closing a pool closes its instances and fails later borrows" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val evaluators = ClosingEvaluatorPool(size = 2)
         evaluators.close()
         evaluators.created.map { it.closed } shouldBe [true, true]
@@ -230,7 +229,7 @@ class ScriptPoolContractTests : StringSpec() {
     }
 
     "an instance returned after its pool is closed is closed" {
-      withTimeout(TIMEOUT_MS) {
+      withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = ClosingEvaluatorPool(size = 1)
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
