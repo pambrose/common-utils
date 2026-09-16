@@ -68,25 +68,29 @@ class KtorServletResponse : HttpServletResponse {
     statusCode = sc
   }
 
+  // As in a servlet container, a Content-Type header is the content type: setting it sets the character encoding
+  // too, reading it returns getContentType(), and it is not listed in getHeaderNames().
+
   override fun setHeader(
     name: String,
     value: String,
   ) {
-    headers[name] = [value]
+    if (name.isContentType()) setContentType(value) else headers[name] = [value]
   }
 
   override fun addHeader(
     name: String,
     value: String,
   ) {
-    headers.getOrPut(name) { [] }.add(value)
+    if (name.isContentType()) setContentType(value) else headers.getOrPut(name) { [] }.add(value)
   }
 
-  override fun containsHeader(name: String): Boolean = headers.containsKey(name)
+  override fun containsHeader(name: String): Boolean = getHeaders(name).isNotEmpty()
 
-  override fun getHeader(name: String): String? = headers[name]?.firstOrNull()
+  override fun getHeader(name: String): String? = getHeaders(name).firstOrNull()
 
-  override fun getHeaders(name: String): Collection<String> = headers[name].orEmpty()
+  override fun getHeaders(name: String): Collection<String> =
+    if (name.isContentType()) listOfNotNull(contentType) else headers[name].orEmpty()
 
   override fun getHeaderNames(): Collection<String> = headers.keys
 
@@ -229,6 +233,8 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun getLocale(): Locale = throw UnsupportedOperationException()
 }
+
+private fun String.isContentType() = equals(HttpHeaders.ContentType, ignoreCase = true)
 
 // ContentType.withCharset would add a second charset parameter, so any existing one is replaced instead.
 private fun String.withCharset(charset: String): String =
