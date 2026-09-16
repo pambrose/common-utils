@@ -73,6 +73,16 @@ object TlsUtils {
 
   private fun String.doesNotExistMsg() = "File ${toDoubleQuoted()} does not exist"
 
+  // Resolves a configured path to a file that has to exist, naming the setting it came from in the log line.
+  private fun existingFile(
+    path: String,
+    setting: String,
+  ): File =
+    File(path).also {
+      require(it.exists() && it.isFile) { path.doesNotExistMsg() }
+      logger.info { "Reading $setting: ${path.toDoubleQuoted()}" }
+    }
+
   /**
    * Builds a complete client-side [TlsContext] ready for use with a gRPC channel.
    *
@@ -117,48 +127,36 @@ object TlsUtils {
     certChainFilePath: String = "",
     privateKeyFilePath: String = "",
     trustCertCollectionFilePath: String = "",
-  ): TlsContextBuilder =
-    GrpcSslContexts.forClient()
-      .let { builder ->
-        val certPath = certChainFilePath.trim()
-        val keyPath = privateKeyFilePath.trim()
-        val trustPath = trustCertCollectionFilePath.trim()
+  ): TlsContextBuilder {
+    val certPath = certChainFilePath.trim()
+    val keyPath = privateKeyFilePath.trim()
+    val trustPath = trustCertCollectionFilePath.trim()
+    val builder = GrpcSslContexts.forClient()
 
-        if (trustPath.isNotEmpty()) {
-          File(trustPath)
-            .also { file ->
-              require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
-              logger.info { "Reading trustCertCollectionFilePath: ${trustPath.toDoubleQuoted()}" }
-              builder.trustManager(file)
-            }
-        } else {
-          logger.info { "No trustCertCollectionFilePath given; using the JVM default trust store" }
-        }
+    if (trustPath.isNotEmpty())
+      builder.trustManager(existingFile(trustPath, "trustCertCollectionFilePath"))
+    else
+      logger.info { "No trustCertCollectionFilePath given; using the JVM default trust store" }
 
-        if (certPath.isNotEmpty())
-          require(keyPath.isNotEmpty()) {
-            "privateKeyFilePath required if certChainFilePath specified"
-          }
-
-        if (keyPath.isNotEmpty())
-          require(certPath.isNotEmpty()) {
-            "certChainFilePath required if privateKeyFilePath specified"
-          }
-
-        if (certPath.isNotEmpty() && keyPath.isNotEmpty()) {
-          val certFile =
-            File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
-          val keyFile =
-            File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
-
-          logger.info { "Reading certChainFilePath: ${certPath.toDoubleQuoted()}" }
-          logger.info { "Reading privateKeyFilePath: ${keyPath.toDoubleQuoted()}" }
-
-          builder.keyManager(certFile, keyFile)
-        }
-
-        TlsContextBuilder(builder, certPath.isNotEmpty() && keyPath.isNotEmpty())
+    if (certPath.isNotEmpty())
+      require(keyPath.isNotEmpty()) {
+        "privateKeyFilePath required if certChainFilePath specified"
       }
+
+    if (keyPath.isNotEmpty())
+      require(certPath.isNotEmpty()) {
+        "certChainFilePath required if privateKeyFilePath specified"
+      }
+
+    val mutualAuth = certPath.isNotEmpty() && keyPath.isNotEmpty()
+    if (mutualAuth)
+      builder.keyManager(
+        existingFile(certPath, "certChainFilePath"),
+        existingFile(keyPath, "privateKeyFilePath"),
+      )
+
+    return TlsContextBuilder(builder, mutualAuth)
+  }
 
   /**
    * Builds a complete server-side [TlsContext] ready for use with a gRPC server.
@@ -209,25 +207,17 @@ object TlsUtils {
     require(certPath.isNotEmpty()) { "Server certChainFilePath is required for TLS" }
     require(keyPath.isNotEmpty()) { "Server privateKeyFilePath is required for TLS" }
 
-    val certFile =
-      File(certPath).apply { require(exists() && isFile) { certPath.doesNotExistMsg() } }
-    val keyFile = File(keyPath).apply { require(exists() && isFile) { keyPath.doesNotExistMsg() } }
+    val builder =
+      GrpcSslContexts.forServer(
+        existingFile(certPath, "certChainFilePath"),
+        existingFile(keyPath, "privateKeyFilePath"),
+      )
 
-    logger.info { "Reading certChainFilePath: ${certPath.toDoubleQuoted()}" }
-    logger.info { "Reading privateKeyFilePath: ${keyPath.toDoubleQuoted()}" }
+    if (trustPath.isNotEmpty()) {
+      builder.trustManager(existingFile(trustPath, "trustCertCollectionFilePath"))
+      builder.clientAuth(ClientAuth.REQUIRE)
+    }
 
-    return GrpcSslContexts.forServer(certFile, keyFile)
-      .let { builder ->
-        if (trustPath.isNotEmpty()) {
-          File(trustPath)
-            .also { file ->
-              require(file.exists() && file.isFile) { trustPath.doesNotExistMsg() }
-              logger.info { "Reading trustCertCollectionFilePath: ${trustPath.toDoubleQuoted()}" }
-              builder.trustManager(file)
-              builder.clientAuth(ClientAuth.REQUIRE)
-            }
-        }
-        TlsContextBuilder(builder, trustPath.isNotEmpty())
-      }
+    return TlsContextBuilder(builder, trustPath.isNotEmpty())
   }
 }

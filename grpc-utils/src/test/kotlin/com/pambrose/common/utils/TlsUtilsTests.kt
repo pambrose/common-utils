@@ -276,9 +276,3 @@ class TlsUtilsTests : StringSpec() {
 }
 
 private fun stubSslContext(): io.netty.handler.ssl.SslContext = io.mockk.mockk(relaxed = true)
-
-private fun tlsResourcePath(name: String): String {
-  val url = TlsUtilsTests::class.java.classLoader.getResource("tls/$name")
-    ?: error("Missing test resource: tls/$name")
-  return File(url.toURI()).absolutePath
-}

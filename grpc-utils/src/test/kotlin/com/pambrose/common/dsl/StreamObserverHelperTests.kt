@@ -21,8 +21,8 @@ package com.pambrose.common.dsl
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.grpc.stub.StreamObserver
 import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldStartWith
 import kotlin.reflect.full.functions
 
 class StreamObserverHelperTests : StringSpec() {
@@ -115,9 +115,8 @@ class StreamObserverHelperTests : StringSpec() {
           .functions
           .single { it.name == "streamObserver" }
           .returnType
-          .toString()
 
-      returnType shouldStartWith "io.grpc.stub.StreamObserver"
+      returnType.classifier shouldBe StreamObserver::class
     }
 
     // Each callback is single-assignment, which the KDoc now states outright.

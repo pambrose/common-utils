@@ -146,14 +146,17 @@ All notable changes to Common Utils are documented in this file.
   `StreamObserverHelper<T>` implementation type. Code that named the helper type explicitly must change; DSL
   usage is unaffected.
 - grpc-utils `GrpcDsl.channel`'s `tlsContext` defaults to `PLAINTEXT_CONTEXT`, matching `server()`.
-- grpc-utils `Server.shutdownWithJvm` rejects a non-positive timeout when the hook is registered. Before, the
-  check ran inside the hook at JVM exit, where it threw before `shutdown()` and left the server running.
+- grpc-utils `Server.shutdownWithJvm` rejects a timeout below a millisecond, the resolution it works in, when
+  the hook is registered. Before, the check ran inside the hook at JVM exit, where it threw before
+  `shutdown()` and left the server running, and a sub-millisecond duration passed registration only to fail
+  there.
 
 ### Bug fixes
 
-- grpc-utils `shutdownWithJvm`'s hook forces `shutdownNow()` whatever the graceful path does. Only
-  `InterruptedException` was handled before, so a failure such as an already-terminated server escaped the
-  hook and left the server up.
+- grpc-utils `Server.shutdownGracefully` calls `shutdown()` inside its `try`, so `shutdownNow()` in the
+  `finally` runs even when `shutdown()` itself throws, as it does on an already-terminated server. Its KDoc
+  promised that; the sequence did not. Every caller benefits, and the JVM shutdown hook installed by
+  `shutdownWithJvm` now simply delegates to it, swallowing the failure that nothing at JVM exit could observe.
 - email-utils webhook models decode the payloads Resend documents. `Data` gained `tags`, `broadcast_id`,
   `message_id` and `template_id`, and `Bounce` gained `subType` and `type`, so a bounce keeps its
   `Permanent`/`Suppressed` classification. `ResendWebhookMsg.decode(body)` ignores unknown fields, so an event

@@ -21,9 +21,11 @@ package com.pambrose.common.dsl
 import com.pambrose.common.utils.TlsContext
 import com.pambrose.common.utils.TlsContext.Companion.PLAINTEXT_CONTEXT
 import com.pambrose.common.utils.TlsUtils
+import com.pambrose.common.utils.tlsResourcePath
 import io.grpc.Attributes
 import io.grpc.CallOptions
 import io.grpc.ManagedChannel
+import io.grpc.ManagedChannelBuilder
 import io.grpc.MethodDescriptor
 import io.grpc.ServerServiceDefinition
 import io.grpc.inprocess.InProcessChannelBuilder
@@ -41,8 +43,26 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.io.ByteArrayInputStream
-import java.io.File
 import java.io.InputStream
+import kotlin.reflect.KClass
+
+// A built ManagedChannel exposes no way to read its retry configuration back, so the transport's builder is
+// stubbed in and the calls are verified on it. stubFactory runs once the statics are mocked.
+private fun <T : ManagedChannelBuilder<*>> withStubbedBuilder(
+  transport: KClass<*>,
+  builder: T,
+  stubFactory: () -> Unit,
+  block: (T) -> Unit,
+) {
+  every { builder.build() } returns mockk<ManagedChannel>(relaxed = true)
+  mockkStatic(transport)
+  try {
+    stubFactory()
+    block(builder)
+  } finally {
+    unmockkStatic(transport)
+  }
+}
 
 class GrpcDslTests : StringSpec() {
   init {
@@ -128,22 +148,14 @@ class GrpcDslTests : StringSpec() {
       }
     }
 
-    // grpc-java turns retry on by default, so only an explicit disableRetry() switches it off. The builder is
-    // stubbed because a built ManagedChannel exposes no way to read its retry configuration back.
-    fun withStubbedNettyBuilder(block: (NettyChannelBuilder) -> Unit) {
-      val builder = mockk<NettyChannelBuilder>(relaxed = true)
-      every { builder.build() } returns mockk<ManagedChannel>(relaxed = true)
-      mockkStatic(NettyChannelBuilder::class)
-      try {
-        every { NettyChannelBuilder.forAddress(any<String>(), any<Int>()) } returns builder
-        block(builder)
-      } finally {
-        unmockkStatic(NettyChannelBuilder::class)
-      }
-    }
-
+    // grpc-java turns retry on by default, so only an explicit disableRetry() switches it off.
     "enableRetry = false disables retry rather than leaving grpc's default on" {
-      withStubbedNettyBuilder { builder ->
+      val builder = mockk<NettyChannelBuilder>(relaxed = true)
+      withStubbedBuilder(
+        NettyChannelBuilder::class,
+        builder,
+        { every { NettyChannelBuilder.forAddress(any<String>(), any<Int>()) } returns builder },
+      ) {
         GrpcDsl.channel(
           hostName = "localhost",
           port = 15553,
@@ -157,7 +169,12 @@ class GrpcDslTests : StringSpec() {
     }
 
     "enableRetry = true enables retry" {
-      withStubbedNettyBuilder { builder ->
+      val builder = mockk<NettyChannelBuilder>(relaxed = true)
+      withStubbedBuilder(
+        NettyChannelBuilder::class,
+        builder,
+        { every { NettyChannelBuilder.forAddress(any<String>(), any<Int>()) } returns builder },
+      ) {
         GrpcDsl.channel(
           hostName = "localhost",
           port = 15554,
@@ -174,11 +191,11 @@ class GrpcDslTests : StringSpec() {
 
     "the in-process transport applies the retry and authority options too" {
       val builder = mockk<InProcessChannelBuilder>(relaxed = true)
-      every { builder.build() } returns mockk<ManagedChannel>(relaxed = true)
-      mockkStatic(InProcessChannelBuilder::class)
-      try {
-        every { InProcessChannelBuilder.forName(any<String>()) } returns builder
-
+      withStubbedBuilder(
+        InProcessChannelBuilder::class,
+        builder,
+        { every { InProcessChannelBuilder.forName(any<String>()) } returns builder },
+      ) {
         GrpcDsl.channel(
           enableRetry = true,
           maxRetryAttempts = 2,
@@ -189,8 +206,6 @@ class GrpcDslTests : StringSpec() {
         verify(exactly = 1) { builder.enableRetry() }
         verify(exactly = 1) { builder.maxRetryAttempts(2) }
         verify(exactly = 1) { builder.overrideAuthority("override.example.com") }
-      } finally {
-        unmockkStatic(InProcessChannelBuilder::class)
       }
     }
 
@@ -220,13 +235,12 @@ class GrpcDslTests : StringSpec() {
     // NettyServerBuilder.sslContext() rejects a context without ALPN, so a builder handed to callers for
     // customization has to carry gRPC's ALPN configuration already.
     "a server context built by hand from serverTlsContext is accepted by server()" {
-      val builder =
+      val sslContext =
         TlsUtils.serverTlsContext(
           certChainFilePath = tlsResourcePath("server-cert.pem"),
           privateKeyFilePath = tlsResourcePath("server-key.pem"),
-        ).builder
+        ).builder.build()
 
-      val sslContext = builder.build()
       sslContext.applicationProtocolNegotiator().protocols() shouldContain "h2"
 
       val server = GrpcDsl.server(port = 0, tlsContext = TlsContext(sslContext, false)) {}
@@ -260,9 +274,3 @@ private fun echoService(): ServerServiceDefinition =
       },
     )
     .build()
-
-private fun tlsResourcePath(name: String): String {
-  val url = GrpcDslTests::class.java.classLoader.getResource("tls/$name")
-    ?: error("Missing test resource: tls/$name")
-  return File(url.toURI()).absolutePath
-}

@@ -174,8 +174,13 @@ server.shutdownGracefully(maxWaitTime = 10.seconds)
 ```
 
 `shutdownGracefully` calls `shutdown()`, waits up to the timeout via `awaitTermination`, and then calls
-`shutdownNow()` in a `finally` block so the server always stops. It throws `InterruptedException` if the
-waiting thread is interrupted.
+`shutdownNow()` in a `finally` block so the server always stops — including when `shutdown()` itself throws,
+as it does on an already-terminated server. It throws `InterruptedException` if the waiting thread is
+interrupted.
+
+`shutdownWithJvm` runs the same sequence from a JVM shutdown hook, swallowing any failure since nothing can
+observe it at that point. It rejects a timeout under a millisecond when the hook is registered, rather than
+failing at JVM exit where it would skip the shutdown entirely.
 
 ## API Reference
 

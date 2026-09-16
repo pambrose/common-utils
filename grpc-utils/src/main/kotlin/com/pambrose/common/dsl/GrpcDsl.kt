@@ -75,34 +75,35 @@ object GrpcDsl {
       else
         createInProcessChannel(inProcessServerName)
 
-    channelBuilder.applyChannelOptions(overrideAuthority, enableRetry, maxRetryAttempts)
-
     return channelBuilder.run {
+      applyChannelOptions(this, overrideAuthority, enableRetry, maxRetryAttempts)
       block(this)
       build()
     }
   }
 
-  // Applied to whichever transport was chosen, so the in-process branch honors them as well.
-  private fun ManagedChannelBuilder<*>.applyChannelOptions(
-    authority: String,
-    retryEnabled: Boolean,
-    retryAttempts: Int,
+  // Every option here lives on ManagedChannelBuilder itself, so it is applied to whichever transport was
+  // chosen; setting them in the Netty branch alone is what left the in-process channel ignoring them.
+  private fun applyChannelOptions(
+    builder: ManagedChannelBuilder<*>,
+    overrideAuthority: String,
+    enableRetry: Boolean,
+    maxRetryAttempts: Int,
   ) {
-    val override = authority.trim()
+    val override = overrideAuthority.trim()
     if (override.isNotEmpty()) {
       logger.info { "Assigning overrideAuthority: ${override.toDoubleQuoted()}" }
-      overrideAuthority(override)
+      builder.overrideAuthority(override)
     }
 
     // grpc-java turns retry on by default, so the flag has to say so in both directions.
-    if (retryEnabled)
-      enableRetry()
+    if (enableRetry)
+      builder.enableRetry()
     else
-      disableRetry()
+      builder.disableRetry()
 
-    if (retryAttempts > -1)
-      maxRetryAttempts(retryAttempts)
+    if (maxRetryAttempts > -1)
+      builder.maxRetryAttempts(maxRetryAttempts)
   }
 
   private fun createInProcessChannel(inProcessServerName: String): InProcessChannelBuilder {
