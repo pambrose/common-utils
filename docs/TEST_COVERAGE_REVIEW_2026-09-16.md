@@ -165,10 +165,10 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-029** `LOW` · weak — Common tests never check the request method/URL; no-op assertion ([details](#tc-029))
 
 ### email-utils
-- [ ] **TC-030** `MEDIUM` · gap — Webhook branch misses are generated code, but `decode`'s error contract and new serial names are untested ([details](#tc-030))
-- [ ] **TC-031** `MEDIUM` · gap — The documented IPv4-literal branch of `isValidEmail` is never tested ([details](#tc-031))
-- [ ] **TC-032** `LOW` · gap — `Email`'s serialized form is never tested ([details](#tc-032))
-- [ ] **TC-033** `LOW` · weak — `shouldContain "2"` log assertion always passes ([details](#tc-033))
+- [ ] **TC-030** `MEDIUM` · gap — Webhook branch misses are generated code, but `decode`'s error contract and new serial names are untested ([details](#tc-030)) — in progress
+- [ ] **TC-031** `MEDIUM` · gap — The documented IPv4-literal branch of `isValidEmail` is never tested ([details](#tc-031)) — in progress
+- [ ] **TC-032** `LOW` · gap — `Email`'s serialized form is never tested ([details](#tc-032)) — in progress
+- [ ] **TC-033** `LOW` · weak — `shouldContain "2"` log assertion always passes ([details](#tc-033)) — in progress
 
 ### recaptcha-utils
 - [ ] **TC-034** `HIGH` · gap — Malformed or non-2xx siteverify responses (fail-closed path) never tested ([details](#tc-034))

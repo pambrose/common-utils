@@ -278,5 +278,56 @@ class WebhookDataTests : StringSpec() {
       json shouldContain "\"email_id\""
       json shouldContain "\"from\""
     }
+
+    // Resend sends the ids in snake_case. decode ignores unknown keys, so a wrong @SerialName would leave a field
+    // null without any error.
+    "data encodes tags, broadcast, message and template ids under their Resend serial names" {
+      val data = Data(
+        createdAt = "2026-07-01T00:00:00Z",
+        emailId = "email-800",
+        from = "sender@example.com",
+        tags = mapOf("category" to "confirm_email"),
+        broadcastId = "broadcast-1",
+        messageId = "<msg-1@example.com>",
+        templateId = "template-1",
+      )
+      val json = Json.encodeToString(data)
+      json shouldBe
+        """{"created_at":"2026-07-01T00:00:00Z","email_id":"email-800","from":"sender@example.com",""" +
+        """"tags":{"category":"confirm_email"},"broadcast_id":"broadcast-1",""" +
+        """"message_id":"<msg-1@example.com>","template_id":"template-1"}"""
+      Json.decodeFromString<Data>(json) shouldBe data
+    }
+
+    "bounce encodes its classification under Resend's camelCase names" {
+      val bounce = Bounce(message = "suppressed", subType = "Suppressed", type = "Permanent")
+      val json = Json.encodeToString(bounce)
+      json shouldBe """{"message":"suppressed","subType":"Suppressed","type":"Permanent"}"""
+      Json.decodeFromString<Bounce>(json) shouldBe bounce
+    }
+
+    // A consumer that re-encodes with encodeDefaults gets every absent optional field written as an explicit null.
+    "encodeDefaults writes every absent optional field as null" {
+      val json = Json { encodeDefaults = true }
+
+      json.encodeToString(Bounce("m")) shouldBe """{"message":"m","subType":null,"type":null}"""
+      json.encodeToString(Click(ipAddress = "1.2.3.4", link = "l", timestamp = "t", userAgent = "u")) shouldBe
+        """{"ipAddress":"1.2.3.4","link":"l","linkTags":null,"timestamp":"t","userAgent":"u"}"""
+      json.encodeToString(Data(createdAt = "c", emailId = "e", from = "f")) shouldBe
+        """{"created_at":"c","email_id":"e","from":"f","subject":null,"to":null,"headers":null,""" +
+        """"bounce":null,"click":null,"tags":null,"broadcast_id":null,"message_id":null,"template_id":null}"""
+    }
+
+    "bounce decoding fails when the message is missing" {
+      shouldThrow<SerializationException> {
+        Json.decodeFromString<Bounce>("""{"subType":"Suppressed","type":"Permanent"}""")
+      }
+    }
+
+    "header decoding fails when a required field is missing" {
+      shouldThrow<SerializationException> {
+        Json.decodeFromString<Header>("""{"name":"X-Custom"}""")
+      }
+    }
   }
 }

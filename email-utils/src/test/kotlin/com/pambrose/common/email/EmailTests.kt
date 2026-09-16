@@ -25,6 +25,7 @@ import com.pambrose.common.email.Email.Companion.toResendEmail
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.http.parametersOf
+import kotlinx.serialization.json.Json
 
 class EmailTests : StringSpec() {
   init {
@@ -96,6 +97,19 @@ class EmailTests : StringSpec() {
 
       params.getEmail("user") shouldBe "  ALICE@Example.COM  ".toResendEmail()
       params.getEmail("user") shouldBe Email("alice@example.com")
+    }
+
+    // A value class serializes as its underlying value, so an address is a bare JSON string, not {"value":...}.
+    "Email serializes as a bare JSON string" {
+      Json.encodeToString(Email("a@b.com")) shouldBe "\"a@b.com\""
+      Json.decodeFromString<Email>("\"a@b.com\"") shouldBe Email("a@b.com")
+    }
+
+    "a list of Emails serializes as a JSON array of strings" {
+      val emails = [Email("a@b.com"), Email("c@d.com")]
+      val json = Json.encodeToString<List<Email>>(emails)
+      json shouldBe """["a@b.com","c@d.com"]"""
+      Json.decodeFromString<List<Email>>(json) shouldBe emails
     }
 
     // Java sees the value class boxed, and reads the address through the box's getValue() accessor.

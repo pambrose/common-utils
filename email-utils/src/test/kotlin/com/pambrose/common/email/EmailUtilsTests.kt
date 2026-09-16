@@ -70,6 +70,32 @@ class EmailUtilsTests : StringSpec() {
       "test@my-domain.com".isValidEmail() shouldBe true
     }
 
+    "accepts a bare IPv4-literal domain, octets 0 through 255" {
+      "user@192.168.1.1".isValidEmail() shouldBe true
+      "user@0.0.0.0".isValidEmail() shouldBe true
+      "user@255.255.255.255".isValidEmail() shouldBe true
+      "user@249.10.1.199".isValidEmail() shouldBe true
+    }
+
+    "rejects IPv4 literals that are out of range, bracketed, or the wrong length" {
+      "user@256.1.1.1".isNotValidEmail() shouldBe true
+      "user@1.1.1.256".isNotValidEmail() shouldBe true
+      "user@[127.0.0.1]".isNotValidEmail() shouldBe true
+      "user@1.2.3".isNotValidEmail() shouldBe true
+      "user@1.2.3.4.5".isNotValidEmail() shouldBe true
+    }
+
+    "rejects a domain with a leading hyphen or a trailing dot" {
+      "user@-bad.com".isNotValidEmail() shouldBe true
+      "user@bad-.com".isNotValidEmail() shouldBe true
+      "user@example.com.".isNotValidEmail() shouldBe true
+    }
+
+    "accepts a TLD of up to 63 letters and rejects a longer one" {
+      "user@example.${"a".repeat(63)}".isValidEmail() shouldBe true
+      "user@example.${"a".repeat(64)}".isNotValidEmail() shouldBe true
+    }
+
     "email() builds an HTML doc with embedded css and body content" {
       val html = email {
         h1 { +"Hello" }
