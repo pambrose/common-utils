@@ -21,10 +21,17 @@ package com.pambrose.common.concurrent
 import com.pambrose.common.util.isZipped
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeout
+
+// The waits below start UNDISPATCHED, so each is suspended on its value by the time async returns, and the value then
+// changes while it waits; no delay is needed to get there. A wait that is never woken fails the hang guard.
+private suspend fun Deferred<Boolean>.awaitGuarded() = withTimeout(HANG_GUARD_SECONDS.seconds) { await() }
 
 class BugFixVerificationTests : StringSpec() {
   init {
@@ -80,25 +87,21 @@ class BugFixVerificationTests : StringSpec() {
     "boolean waiter wait until true works" {
       val waiter = BooleanWaiter(false)
 
-      launch {
-        delay(50.milliseconds)
-        waiter.setValue(true)
-      }
+      val result = async(start = UNDISPATCHED) { waiter.waitUntilTrue(1.hours) }
+      result.isActive shouldBe true
 
-      val result = waiter.waitUntilTrue(2.seconds)
-      result shouldBe true
+      waiter.setValue(true)
+      result.awaitGuarded() shouldBe true
     }
 
     "boolean waiter wait until false works" {
       val waiter = BooleanWaiter(true)
 
-      launch {
-        delay(50.milliseconds)
-        waiter.setValue(false)
-      }
+      val result = async(start = UNDISPATCHED) { waiter.waitUntilFalse(1.hours) }
+      result.isActive shouldBe true
 
-      val result = waiter.waitUntilFalse(2.seconds)
-      result shouldBe true
+      waiter.setValue(false)
+      result.awaitGuarded() shouldBe true
     }
 
     "boolean waiter timeout returns false" {
@@ -142,25 +145,21 @@ class BugFixVerificationTests : StringSpec() {
     "conditional boolean wait until true with default timeout" {
       val cond = ConditionalBoolean(false)
 
-      launch {
-        delay(50.milliseconds)
-        cond.set(true)
-      }
+      val result = async(start = UNDISPATCHED) { cond.waitUntilTrue() }
+      result.isActive shouldBe true
 
-      val result = cond.waitUntilTrue(2.seconds)
-      result shouldBe true
+      cond.set(true)
+      result.awaitGuarded() shouldBe true
     }
 
     "conditional value wait until with default timeout" {
       val cond = ConditionalValue(0)
 
-      launch {
-        delay(50.milliseconds)
-        cond.set(42)
-      }
+      val result = async(start = UNDISPATCHED) { cond.waitUntil { it == 42 } }
+      result.isActive shouldBe true
 
-      val result = cond.waitUntil(2.seconds) { it == 42 }
-      result shouldBe true
+      cond.set(42)
+      result.awaitGuarded() shouldBe true
     }
 
     "conditional value timeout returns false" {
