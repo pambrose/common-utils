@@ -11,7 +11,7 @@ kotlinter = "5.7.0"
 kover = "0.9.9"
 mavenPublish = "0.37.0"
 pitestPlugin = "1.19.0"
-versions = "0.61.0"
+versions = "0.63.1"
 
 # Kotlin & kotlinx
 # Held at 2.4.10: 2.4.20 regressed the JSR-223 K2 REPL used by script-utils-kotlin. Binding a value
@@ -42,7 +42,7 @@ dropwizard = "4.2.40"
 grpc = "1.84.0"
 jakartaServlet = "6.1.0"
 jetty = "12.1.13"
-ktor = "3.5.2"
+ktor = "3.6.0"
 # Keep in sync with grpc
 tcnative = "2.0.81.Final"
 
@@ -65,7 +65,7 @@ zipkinReporter = "3.5.3"
 guava = "33.7.1-jre"
 
 # Other
-resend = "4.24.0"
+resend = "4.25.0"
 
 # Testing
 kotest = "6.2.5"

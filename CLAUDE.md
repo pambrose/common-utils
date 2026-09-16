@@ -199,11 +199,10 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
 - `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
   MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
-- ktor-client-utils declares no client engine, so its client-creating `commonTest` specs are gated on the
-  `hasDefaultEngine` expect/actual flag. They run on the JVM (CIO is a `jvmTest` dependency) and on js/wasmJs
-  (ktor-client-core bundles a Js engine). On native they are disabled, and `KtorDslNativeTests` pins the
-  missing-engine failure instead. Keep that the only native test that creates a client: Kotlin/Native caches the
-  failed file initialization, so a second attempt throws without Ktor's `IllegalStateException` as the cause.
+- ktor-client-utils declares no client engine, so its client-creating `commonTest` specs rely on one supplied
+  by the test source sets: CIO is a `jvmTest` and `nativeTest` dependency, and js/wasmJs fall back to the Js
+  engine bundled in ktor-client-core. Kotlin/Native has no such fallback, so dropping CIO from `nativeTest`
+  makes those specs fail there with "Failed to find HTTP client engine implementation".
 - service-utils tests configure admin and metrics servers with port 0 and read the port the OS chose from
   the `internal` `boundPort` test seam on `MetricsService`, `ServletService` and `KtorServletService`.
   Don't pick a free port by opening and closing a `ServerSocket(0)`: another test JVM
