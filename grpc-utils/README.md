@@ -216,7 +216,9 @@ This module depends on:
 - Kotlin Standard Library
 - core-utils
 - gRPC Netty, In-Process, Protobuf and Services
-- Netty tcnative (BoringSSL) for TLS
+- Netty tcnative (BoringSSL) for TLS, with its native libraries for Linux (x86_64, aarch_64), macOS (x86_64,
+  aarch_64) and Windows (x86_64) as runtime dependencies. Netty uses OpenSSL on those platforms and falls back to
+  the JDK TLS provider elsewhere. Exclude `io.netty:netty-tcnative-boringssl-static` to always use the JDK provider.
 
 ## Installation
 

@@ -31,11 +31,9 @@ import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.ServerInterceptors
 import io.grpc.Status
-import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
-import io.netty.handler.ssl.OpenSsl
 import java.security.cert.X509Certificate
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.net.ssl.SSLPeerUnverifiedException
@@ -104,8 +102,8 @@ private fun echoServer(
 
 private fun ManagedChannel.echoFailureCode(): Status.Code = use { Status.fromThrowable(it.echoFailure("hi")).code }
 
-// Real handshakes over loopback. They run on the JDK TLS provider: Gradle does not resolve the per-platform jars of
-// netty-tcnative-boringssl-static, so OpenSSL never loads.
+// Real handshakes over loopback, on the OpenSSL (BoringSSL) provider that netty-tcnative supplies (OpenSslTests
+// checks that it loads).
 class GrpcTlsHandshakeTests : StringSpec() {
   init {
     "a mutual-TLS client and server complete the handshake and the server sees the client certificate" {
@@ -168,12 +166,9 @@ class GrpcTlsHandshakeTests : StringSpec() {
       }
     }
 
-    // Netty checks neither while configuring the builder nor, with the JDK provider, in build() that the key belongs
-    // to the certificate, so the mismatch surfaces only when a client connects.
+    // Netty checks neither while configuring the builder nor in build(), with the OpenSSL or the JDK provider, that
+    // the key belongs to the certificate, so the mismatch surfaces only when a client connects.
     "a server key that belongs to a different certificate builds, but fails the handshake" {
-      withClue("OpenSSL is loaded: re-check how it treats a mismatched key before relying on this test") {
-        OpenSsl.isAvailable() shouldBe false
-      }
       val mismatched =
         TlsUtils.buildServerTlsContext(
           certChainFilePath = tlsResourcePath("server-cert.pem"),

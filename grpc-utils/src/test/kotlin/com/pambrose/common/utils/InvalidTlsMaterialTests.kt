@@ -19,14 +19,14 @@
 package com.pambrose.common.utils
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.engine.spec.tempfile
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.netty.handler.ssl.OpenSsl
+import io.kotest.matchers.types.shouldBeInstanceOf
 import java.io.File
+import java.security.KeyStoreException
 import javax.net.ssl.SSLException
 
 private const val NOT_CERTIFICATES = "does not contain valid certificates"
@@ -34,7 +34,8 @@ private const val NOT_A_KEY = "does not contain valid private key"
 
 // Files that exist but hold the wrong content. Netty rejects most of them while TlsUtils configures the builder, so
 // they fail as IllegalArgumentException before build() runs; a chain that does not link up gets past the builder
-// and fails in build() as SSLException. The tests run on the JDK TLS provider (see GrpcTlsHandshakeTests).
+// and fails in build() as SSLException. The tests hold for both the OpenSSL provider, which this build loads (see
+// OpenSslTests), and the JDK provider that Netty falls back to on a platform tcnative does not cover.
 class InvalidTlsMaterialTests : StringSpec() {
   init {
     fun pemFile(content: String): String = tempfile(suffix = ".pem").apply { writeText(content) }.absolutePath
@@ -132,11 +133,14 @@ class InvalidTlsMaterialTests : StringSpec() {
     }
 
     // The documented @Throws(SSLException) path: the certificates parse, so the builder accepts them, but the JDK
-    // key store refuses a chain in which one certificate is not issued by the next.
+    // key store that build() fills with the key material refuses a chain in which one certificate is not issued by
+    // the next. Netty builds that key store for the OpenSSL provider too; only its SSLException message differs by
+    // provider, so the tests check the cause.
     "a certificate chain that does not link up passes the builder but fails build() with SSLException" {
-      withClue("OpenSSL is loaded: re-check how it treats a broken chain before relying on this test") {
-        OpenSsl.isAvailable() shouldBe false
+      fun SSLException.shouldBeBrokenChain() {
+        cause.shouldBeInstanceOf<KeyStoreException>().message shouldBe "Certificate chain is not valid"
       }
+
       val serverCert = File(tlsResourcePath("server-cert.pem")).readText()
       val clientCert = File(tlsResourcePath("client-cert.pem")).readText()
       val serverChain = pemFile(serverCert + clientCert)
@@ -146,7 +150,7 @@ class InvalidTlsMaterialTests : StringSpec() {
 
       shouldThrow<SSLException> {
         TlsUtils.buildServerTlsContext(serverChain, tlsResourcePath("server-key.pem"))
-      }.message shouldContain "server-side SSL context"
+      }.shouldBeBrokenChain()
 
       shouldThrow<SSLException> {
         TlsUtils.buildClientTlsContext(
@@ -154,7 +158,7 @@ class InvalidTlsMaterialTests : StringSpec() {
           privateKeyFilePath = tlsResourcePath("client-key.pem"),
           trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"),
         )
-      }.message shouldContain "client-side SSL context"
+      }.shouldBeBrokenChain()
     }
   }
 }
