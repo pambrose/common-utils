@@ -153,11 +153,11 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-021** `LOW` · flaky/weak — Wall-clock upper bounds, a real `getLocalHost()` call, and no-op assertions ([details](#tc-021))
 
 ### json-utils
-- [ ] **TC-022** `HIGH` · bug — `getByPath` throws instead of returning `null` when the path crosses a non-object ([details](#tc-022))
-- [ ] **TC-023** `MEDIUM` · weak — `jsonObjectValueOrNull` / `jsonElementListOrNull` are only ever tested for `null` ([details](#tc-023))
-- [ ] **TC-024** `MEDIUM` · platform — Number parsing (`doubleValue*`, `isNumber`, `toMap`) differs across platforms and is untested there ([details](#tc-024))
-- [ ] **TC-025** `MEDIUM` · platform — `JsonIntegrationTest` is JVM-only just for `System.currentTimeMillis`; has a wall-clock assertion ([details](#tc-025))
-- [ ] **TC-026** `LOW` · gap — Wrong-type receivers, `forEachJsonObject` skipping, `deepCopy` identity, Long overflow ([details](#tc-026))
+- [x] **TC-022** `HIGH` · bug — `getByPath` throws instead of returning `null` when the path crosses a non-object ([details](#tc-022)) — fixed in #190
+- [x] **TC-023** `MEDIUM` · weak — `jsonObjectValueOrNull` / `jsonElementListOrNull` are only ever tested for `null` ([details](#tc-023)) — fixed in #190
+- [x] **TC-024** `MEDIUM` · platform — Number parsing (`doubleValue*`, `isNumber`, `toMap`) differs across platforms and is untested there ([details](#tc-024)) — fixed in #190
+- [x] **TC-025** `MEDIUM` · platform — `JsonIntegrationTest` is JVM-only just for `System.currentTimeMillis`; has a wall-clock assertion ([details](#tc-025)) — fixed in #190
+- [x] **TC-026** `LOW` · gap — Wrong-type receivers, `forEachJsonObject` skipping, `deepCopy` identity, Long overflow ([details](#tc-026)) — fixed in #190
 
 ### ktor-client-utils
 - [ ] **TC-027** `MEDIUM` · platform — Client-creating paths tested only on the JVM; native has no engine ([details](#tc-027))
