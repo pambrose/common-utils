@@ -230,17 +230,17 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-072** `LOW` · weak — Null-database tests are weak and order-dependent; stale comment ([details](#tc-072)) — fixed in #196
 
 ### script-utils (common / java / kotlin / python)
-- [ ] **TC-073** `HIGH` · bug — `accessibleClass` falls back to `Any` but keeps the type arguments; arrays fail to compile ([details](#tc-073))
-- [ ] **TC-074** `HIGH` · bug — `JavaScript.renderType` emits `?[]` for `Array<*>`; array/star/type-parameter branches untested ([details](#tc-074))
-- [ ] **TC-075** `HIGH` · safety — Guard tests either pass without a guard or would kill the test JVM if it regressed ([details](#tc-075))
-- [ ] **TC-076** `MEDIUM` · bug — `withInstance` loses the instance when `reset()` throws ([details](#tc-076))
-- [ ] **TC-077** `MEDIUM` · infra — script-utils-common has no direct tests; add a fake `ScriptEngine` ([details](#tc-077))
-- [ ] **TC-078** `MEDIUM` · gap — Pool concurrency cap, close with a waiting borrower, and failed cleanup untested ([details](#tc-078))
-- [ ] **TC-079** `MEDIUM` · weak — Null-result error message untested; type-mismatch messages checked loosely; Python non-Boolean path untested ([details](#tc-079))
-- [ ] **TC-080** `MEDIUM` · gap — Binding retry / re-add, `nullGlobalContext` after recycle, Java cross-engine parity ([details](#tc-080))
-- [ ] **TC-081** `MEDIUM` · flaky — Pool cancellation test can pass without exercising cancellation ([details](#tc-081))
-- [ ] **TC-082** `MEDIUM` · perf — ~31 s of loop tests (600 REPL compiles) that never check a result ([details](#tc-082))
-- [ ] **TC-083** `LOW` · gap — `verbose = true`, evaluator `close()`, `ScriptUtils` context, REPL history reset ([details](#tc-083))
+- [x] **TC-073** `HIGH` · bug — `accessibleClass` falls back to `Any` but keeps the type arguments; arrays fail to compile ([details](#tc-073)) — fixed in #197
+- [x] **TC-074** `HIGH` · bug — `JavaScript.renderType` emits `?[]` for `Array<*>`; array/star/type-parameter branches untested ([details](#tc-074)) — fixed in #197
+- [x] **TC-075** `HIGH` · safety — Guard tests either pass without a guard or would kill the test JVM if it regressed ([details](#tc-075)) — fixed in #197
+- [x] **TC-076** `MEDIUM` · bug — `withInstance` loses the instance when `reset()` throws ([details](#tc-076)) — fixed in #197
+- [x] **TC-077** `MEDIUM` · infra — script-utils-common has no direct tests; add a fake `ScriptEngine` ([details](#tc-077)) — fixed in #197
+- [x] **TC-078** `MEDIUM` · gap — Pool concurrency cap, close with a waiting borrower, and failed cleanup untested ([details](#tc-078)) — fixed in #197
+- [x] **TC-079** `MEDIUM` · weak — Null-result error message untested; type-mismatch messages checked loosely; Python non-Boolean path untested ([details](#tc-079)) — fixed in #197
+- [x] **TC-080** `MEDIUM` · gap — Binding retry / re-add, `nullGlobalContext` after recycle, Java cross-engine parity ([details](#tc-080)) — fixed in #197
+- [x] **TC-081** `MEDIUM` · flaky — Pool cancellation test can pass without exercising cancellation ([details](#tc-081)) — fixed in #197
+- [x] **TC-082** `MEDIUM` · perf — ~31 s of loop tests (600 REPL compiles) that never check a result ([details](#tc-082)) — fixed in #197
+- [x] **TC-083** `LOW` · gap — `verbose = true`, evaluator `close()`, `ScriptUtils` context, REPL history reset ([details](#tc-083)) — fixed in #197
 
 ---
 
