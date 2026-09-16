@@ -74,7 +74,7 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
 
   /**
    * Suspends until an instance can be borrowed, runs [block] with it, then resets it with [reset] and returns it to the
-   * pool, even if [block] throws.
+   * pool, even if [block] or [reset] throws. An exception from [reset] propagates to the caller.
    *
    * @param block the work to do with the borrowed instance
    * @return the result of [block]
@@ -85,8 +85,12 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
     try {
       return block(instance)
     } finally {
-      reset(instance)
-      returnToPool(instance)
+      // Nested, so a failing reset cannot keep the instance out of the pool: a size-1 pool would then wait forever.
+      try {
+        reset(instance)
+      } finally {
+        returnToPool(instance)
+      }
     }
   }
 

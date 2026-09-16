@@ -106,7 +106,23 @@ Declarations use fully-qualified Java type names, so they need no imports of the
 Kotlin type arguments are mapped to their Java equivalents: `Int` and `Int?` both become `java.lang.Integer`, and
 nullability is dropped. A boxed primitive value is declared as the Java primitive (`int`, `long`, `boolean`, …). A
 value whose runtime class cannot be named in generated source, such as the private list class behind `listOf(1, 2)`,
-is declared as its nearest public class or interface.
+is declared as its nearest public class or interface. A value with no public class or interface that takes its
+registered type arguments is declared as `java.lang.Object`, without them.
+
+An array is declared with its registered element type, and a primitive array as itself. A star-projected array type
+argument has no `?[]` form in Java, so it is declared with the array's erased element type:
+
+```kotlin
+script.add("ints", arrayOf(1, 2), typeOf<Int>())
+script.add("counts", intArrayOf(1, 2))
+script.add("map", hashMapOf("k" to arrayOf<Any>(1)), typeOf<String>(), typeOf<Array<*>>())
+```
+
+```java
+  public java.lang.Integer[] ints;
+  public int[] counts;
+  public java.util.HashMap<java.lang.String, java.lang.Object[]> map;
+```
 
 ### Evaluating a Whole Class
 

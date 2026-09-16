@@ -230,17 +230,17 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-072** `LOW` · weak — Null-database tests are weak and order-dependent; stale comment ([details](#tc-072)) — fixed in #196
 
 ### script-utils (common / java / kotlin / python)
-- [ ] **TC-073** `HIGH` · bug — `accessibleClass` falls back to `Any` but keeps the type arguments; arrays fail to compile ([details](#tc-073))
-- [ ] **TC-074** `HIGH` · bug — `JavaScript.renderType` emits `?[]` for `Array<*>`; array/star/type-parameter branches untested ([details](#tc-074))
-- [ ] **TC-075** `HIGH` · safety — Guard tests either pass without a guard or would kill the test JVM if it regressed ([details](#tc-075))
-- [ ] **TC-076** `MEDIUM` · bug — `withInstance` loses the instance when `reset()` throws ([details](#tc-076))
-- [ ] **TC-077** `MEDIUM` · infra — script-utils-common has no direct tests; add a fake `ScriptEngine` ([details](#tc-077))
-- [ ] **TC-078** `MEDIUM` · gap — Pool concurrency cap, close with a waiting borrower, and failed cleanup untested ([details](#tc-078))
-- [ ] **TC-079** `MEDIUM` · weak — Null-result error message untested; type-mismatch messages checked loosely; Python non-Boolean path untested ([details](#tc-079))
-- [ ] **TC-080** `MEDIUM` · gap — Binding retry / re-add, `nullGlobalContext` after recycle, Java cross-engine parity ([details](#tc-080))
-- [ ] **TC-081** `MEDIUM` · flaky — Pool cancellation test can pass without exercising cancellation ([details](#tc-081))
-- [ ] **TC-082** `MEDIUM` · perf — ~31 s of loop tests (600 REPL compiles) that never check a result ([details](#tc-082))
-- [ ] **TC-083** `LOW` · gap — `verbose = true`, evaluator `close()`, `ScriptUtils` context, REPL history reset ([details](#tc-083))
+- [x] **TC-073** `HIGH` · bug — `accessibleClass` falls back to `Any` but keeps the type arguments; arrays fail to compile ([details](#tc-073)) — fixed in #197
+- [x] **TC-074** `HIGH` · bug — `JavaScript.renderType` emits `?[]` for `Array<*>`; array/star/type-parameter branches untested ([details](#tc-074)) — fixed in #197
+- [x] **TC-075** `HIGH` · safety — Guard tests either pass without a guard or would kill the test JVM if it regressed ([details](#tc-075)) — fixed in #197
+- [x] **TC-076** `MEDIUM` · bug — `withInstance` loses the instance when `reset()` throws ([details](#tc-076)) — fixed in #197
+- [x] **TC-077** `MEDIUM` · infra — script-utils-common has no direct tests; add a fake `ScriptEngine` ([details](#tc-077)) — fixed in #197
+- [x] **TC-078** `MEDIUM` · gap — Pool concurrency cap, close with a waiting borrower, and failed cleanup untested ([details](#tc-078)) — fixed in #197
+- [x] **TC-079** `MEDIUM` · weak — Null-result error message untested; type-mismatch messages checked loosely; Python non-Boolean path untested ([details](#tc-079)) — fixed in #197
+- [x] **TC-080** `MEDIUM` · gap — Binding retry / re-add, `nullGlobalContext` after recycle, Java cross-engine parity ([details](#tc-080)) — fixed in #197
+- [x] **TC-081** `MEDIUM` · flaky — Pool cancellation test can pass without exercising cancellation ([details](#tc-081)) — fixed in #197
+- [x] **TC-082** `MEDIUM` · perf — ~31 s of loop tests (600 REPL compiles) that never check a result ([details](#tc-082)) — fixed in #197
+- [x] **TC-083** `LOW` · gap — `verbose = true`, evaluator `close()`, `ScriptUtils` context, REPL history reset ([details](#tc-083)) — fixed in #197
 
 ---
 
@@ -1138,11 +1138,12 @@ For `Array<*>`, the star projection renders as `"?"`, and the array branch emits
 **Where:** `script-utils-java/src/test/kotlin/com/pambrose/common/script/JavaScriptTests.kt:220-242`, `script-utils-kotlin/src/test/kotlin/com/pambrose/common/script/KotlinScriptTests.kt:255-268`, `script-utils-python/src/test/kotlin/com/pambrose/common/script/PythonScriptTests.kt:199-202`
 
 - **Pass without a guard:** some cases fail to compile anyway, so they'd throw `ScriptException` with no guard at all.
-  - `eval("System.exit(0)")`: `exit` is `void`.
+  - Java `eval("System.exit(0)")` and `eval("Runtime.getRuntime().halt(0)")`: both methods are `void`.
   - `evalScript("System.exit(0);")`: not a class body.
   - `eval("exitProcess(0)")`: unresolved without an import.
   - Python `sys.exit()` without `import sys`.
-- **Would kill the test JVM:** other cases are valid code. If the guard regressed, `KotlinScriptTests.kt:261-266` and `JavaScriptTests.kt:225-226, 237` would terminate the Gradle test worker instead of failing a test.
+  - Python `exit(1)` and `quit(1)`: under JSR 223, Jython only raises `SystemExit`, which the engine reports as a `ScriptException`.
+- **Would kill the test JVM:** other cases are valid code. If the guard regressed, `KotlinScriptTests.kt:261-262, 264-266` and `JavaScriptTests.kt:225-226, 237` would terminate the Gradle test worker instead of failing a test.
 
 **Fix:**
 - Assert the guard's own message (`"Illegal call to a JVM termination method"`, `"Illegal call to sys.exit()"`).
@@ -1267,14 +1268,12 @@ Checked against the per-method counters in `report.xml` and against `javap` outp
 | `service-utils` `AbstractGenericService.kt:310`                      | Null branch reachable only by calling `shutDown` through reflection                                  |
 | `grpc-utils` `TlsUtils.kt:151`                                       | `keyPath.isNotEmpty()` is already guaranteed by the `require` at `:141-144`                          |
 | `guava-utils` `GuavaFuncs.kt:23, 26`                                 | `.orEmpty()` on `os.name`, which the JVM always sets                                                 |
-| `redis-utils` `RedisUtils.kt:72`                                     | Reachable only with the `REDIS_URL` environment variable set                                         |
-| `redis-utils` `RedisUtils.kt:160-161`                                | Building a client never connects, so the `JedisException` catch is effectively dead                   |
+| `redis-utils` `RedisUtils.kt:78`                                     | Reachable only with the `REDIS_URL` environment variable set                                         |
 | `exposed-utils` `ExposedUtils.kt:67, 94, 115, 138`                   | Compiler null checks after `?.` on values that are never null                                        |
-| `script-utils-common` `AbstractScript.kt:241` (`?: 0`)               | `typeMap` and `valueMap` are kept in step; callers loop over `valueMap`                              |
-| `script-utils-common` `AbstractScript.kt:242` (`.kotlin`), `:273`    | Compiler null check; defensive `runCatching` fallback that needs a JVM-public Kotlin synthetic class |
+| `script-utils-common` `AbstractScript.kt:247` (`?: 0`)               | `typeMap` and `valueMap` are kept in step; callers loop over `valueMap`                              |
+| `script-utils-common` `AbstractScript.kt:248` (`.kotlin`), `:279`    | Compiler null check; defensive `runCatching` fallback that needs a JVM-public Kotlin synthetic class |
 | `script-utils-common` `AbstractExprEvaluator.kt:53` (2 of 3 branches) | Compiler null checks; the third is the real null-result case in [TC-079](#tc-079)                    |
-| `script-utils-java` `JavaScript.kt:67`                               | Compiler null check                                                                                   |
-| `*Script$Companion`, `AbstractScript.kt:252`, `JavaScript.kt:197`, `KotlinScript.kt:95`, `PythonScript.kt:85` | Unused synthetic `getX()` accessors on private companion objects; the field initializers do run |
+| `*Script$Companion`, `AbstractScript.kt:258`, `JavaScript.kt:206`, `KotlinScript.kt:100`, `PythonScript.kt:85` | Unused synthetic `getX()` accessors on private companion objects; the field initializers do run |
 
 ## Appendix B — Reproducing the numbers
 

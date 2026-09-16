@@ -19,6 +19,9 @@ All notable changes to Common Utils are documented in this file.
     message leaves the URL out.
   - a URL with no host, such as `localhost:6379` (which parses as the scheme `localhost`), took the `null` path
     like an unreachable server.
+- script-utils-common `ScriptUtils.globalBindings` and `ScriptUtils.bindings(scope)` return `Bindings?`. A context
+  created with `nullGlobalContext = true` has no global bindings, and reading them threw a `NullPointerException`
+  ("getBindings(...) must not be null"). Kotlin callers now need a null check. `engineBindings` is unchanged.
 
 ### Bug fixes
 
@@ -42,6 +45,15 @@ All notable changes to Common Utils are documented in this file.
 
   For such text, `doubleValue` now throws `NumberFormatException`, `doubleValueOrNull` returns `null` and
   `isNumber` is `false`. A quoted JSON number such as `"2.5"` is still read by `doubleValue`.
+- script-utils-kotlin and script-utils-java bind object arrays. An `Array<Int>` registered with `typeOf<Int>()` was
+  declared as `kotlin.Any<kotlin.Int>` or `java.lang.Object<java.lang.Integer>`; it is now `kotlin.Array<kotlin.Int>`
+  or `java.lang.Integer[]`. Any other value with no public class or interface that takes its registered type
+  arguments still falls back to `Any`, but is now declared without them. Before, the generated declaration did not
+  compile, so every later evaluation on that instance failed.
+- script-utils-java declares a star-projected array type argument (`typeOf<Array<*>>()`) as `java.lang.Object[]`.
+  It used to generate `?[]`, which does not compile.
+- script-utils-common pools return an instance whose reset throws. Before, the instance was neither returned nor
+  closed, so a pool of size 1 then suspended every later borrower forever.
 - recaptcha-utils rejects a siteverify reply with a non-2xx status. Before, the status was ignored, so an error
   or redirect whose body parsed as `{"success": true}` passed verification.
 - recaptcha-utils `validateRecaptcha` responds `400 reCAPTCHA verification failed` after
@@ -81,6 +93,10 @@ All notable changes to Common Utils are documented in this file.
   - `forEachJsonObject` skipping non-object elements and rejecting a primitive
   - `deepCopy` building new objects and arrays rather than returning the same instances
   - a millisecond timestamp overflowing `intValue`
+- script-utils-common has a test-only JSR 223 engine (`fake`), so its base classes and pool contracts are tested
+  without starting a compiler. Guard tests in the engine modules keep each termination call in code that never runs,
+  and check the guard's own message, so a regressed guard fails a test instead of passing or terminating the test JVM.
+  See `docs/TEST_COVERAGE_REVIEW_2026-09-16.md` (TC-073 to TC-083).
 - recaptcha-utils tests build their MockEngine client with the production configuration instead of a copy of
   it. New cases cover malformed and non-2xx siteverify replies, v3 fields and a `null` `error-codes`, the site
   key in the widget (and the secret key's absence), a blank `remoteip`, use after `close()`, and how often the

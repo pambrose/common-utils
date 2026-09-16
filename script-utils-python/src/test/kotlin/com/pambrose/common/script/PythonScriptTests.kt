@@ -193,13 +193,18 @@ class PythonScriptTests : StringSpec() {
       }
     }
 
-    "illegal calls" {
-      PythonScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { eval("sys.exit(1)") }
-          shouldThrow<ScriptException> { eval("exit(1)") }
-          shouldThrow<ScriptException> { eval("quit(1)") }
-          shouldThrow<ScriptException> { eval("exit (1)") }
+    "Python exit calls are rejected before evaluation" {
+      // Each call sits in a function that is never called, so without the guard the definition would just succeed.
+      // Run, the calls would raise SystemExit, which the engine also reports as a ScriptException, so only the
+      // guard's own message shows that the guard rejected them.
+      PythonScript().use { script ->
+        listOf(
+          "def stop():\n  import sys\n  sys.exit(1)" to "Illegal call to sys.exit()",
+          "def stop():\n  exit(1)" to "Illegal call to exit()",
+          "def stop():\n  exit (1)" to "Illegal call to exit()",
+          "def stop():\n  quit(1)" to "Illegal call to quit()",
+        ).forEach { (code, message) ->
+          shouldThrow<ScriptException> { script.eval(code) }.message shouldBe message
         }
       }
     }
@@ -208,10 +213,10 @@ class PythonScriptTests : StringSpec() {
       PythonScript().use {
         it.apply {
           // `raise SystemExit` is exactly what sys.exit()/exit()/quit() do under the hood. The guard
-          // rejects it before evaluation; its message starts with "Illegal" (vs. a Jython runtime error).
-          shouldThrow<ScriptException> { eval("raise SystemExit") }.message shouldContain "Illegal"
-          shouldThrow<ScriptException> { eval("raise SystemExit(0)") }
-          shouldThrow<ScriptException> { eval("raise SystemExit('bye')") }
+          // rejects it before evaluation, with its own message rather than Jython's SystemExit error.
+          listOf("raise SystemExit", "raise SystemExit(0)", "raise SystemExit('bye')").forEach { code ->
+            shouldThrow<ScriptException> { eval("def stop():\n  $code") }.message shouldBe "Illegal 'raise SystemExit'"
+          }
           // Catching it (no `raise`) is legitimate and must not be flagged.
           shouldNotThrow<ScriptException> { eval("try:\n  pass\nexcept SystemExit:\n  pass") }
         }
@@ -257,26 +262,35 @@ class PythonScriptTests : StringSpec() {
       widget.calls shouldBe 2
     }
 
-    "expr evaluator" {
-      PythonExprEvaluator()
-        .apply {
-          repeat(200) { i ->
-            // println("Invocation: $i")
-            shouldThrow<ScriptException> { eval("$i == [wrong]") }
-            shouldNotThrow<ScriptException> { eval("$i == $i") }
-          }
+    "expr evaluator keeps working after failed expressions" {
+      PythonExprEvaluator().use { evaluator ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { evaluator.eval("$i == [wrong]") }
+          evaluator.eval("$i == $i") shouldBe true
+          evaluator.eval("$i == ${i + 1}") shouldBe false
         }
+      }
     }
 
-    "pool expr evaluator" {
-      val pool = PythonExprEvaluatorPool(5)
-      repeat(200) { i ->
-        pool
-          .apply {
-            // println("Invocation: $i")
-            shouldThrow<ScriptException> { blockingEval("$i == [wrong]") }
-            shouldNotThrow<ScriptException> { blockingEval("$i == $i") }
-          }
+    "pool expr evaluator keeps working after failed expressions" {
+      PythonExprEvaluatorPool(2).use { pool ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { pool.blockingEval("$i == [wrong]") }
+          pool.blockingEval("$i == $i") shouldBe true
+          pool.blockingEval("$i == ${i + 1}") shouldBe false
+        }
+      }
+    }
+
+    "expr evaluator names the type of a result that is not a Boolean" {
+      PythonExprEvaluator().use { evaluator ->
+        evaluator.compute("1 + 2") shouldBe 3
+        shouldThrow<IllegalArgumentException> { evaluator.eval("1 + 2") }.message shouldBe
+          "Expression did not evaluate to Boolean, got Integer"
+        shouldThrow<IllegalArgumentException> { evaluator.eval("'s'") }.message shouldBe
+          "Expression did not evaluate to Boolean, got String"
+        shouldThrow<IllegalArgumentException> { evaluator.eval("None") }.message shouldBe
+          "Expression did not evaluate to Boolean, got null"
       }
     }
 
@@ -293,7 +307,7 @@ class PythonScriptTests : StringSpec() {
                 System.exit(0)
               """.trimIndent(),
             )
-          }
+          }.message shouldContain JVM_EXIT_MESSAGE
           shouldThrow<ScriptException> {
             eval(
               """
@@ -302,7 +316,7 @@ class PythonScriptTests : StringSpec() {
                 Runtime.getRuntime().halt(0)
               """.trimIndent(),
             )
-          }
+          }.message shouldContain JVM_EXIT_MESSAGE
         }
       }
     }
@@ -337,6 +351,17 @@ class PythonScriptTests : StringSpec() {
       }
     }
 
+    "a variable added again replaces the earlier value" {
+      PythonScript().use {
+        it.apply {
+          add("x", 1)
+          eval("x") shouldBe 1
+          add("x", "s")
+          eval("x") shouldBe "s"
+        }
+      }
+    }
+
     "variable names must be valid Python identifiers" {
       PythonScript().use { script ->
         ["my-var", "print", "x = 1"].forEach { name ->
@@ -346,10 +371,20 @@ class PythonScriptTests : StringSpec() {
     }
 
     "the Python evaluator rejects literal termination calls" {
-      val evaluator = PythonExprEvaluator()
-      // The lambdas are never called, so an unguarded evaluator returns True instead of exiting.
-      shouldThrow<ScriptException> { evaluator.eval("(lambda: System.exit(0)) is not None") }
-      shouldThrow<ScriptException> { evaluator.eval("(lambda: sys.exit(0)) is not None") }
+      PythonExprEvaluator().use { evaluator ->
+        // The lambdas are never called, so an unguarded evaluator returns True instead of exiting.
+        shouldThrow<ScriptException> { evaluator.eval("(lambda: System.exit(0)) is not None") }.message shouldContain
+          JVM_EXIT_MESSAGE
+        shouldThrow<ScriptException> { evaluator.eval("(lambda: sys.exit(0)) is not None") }.message shouldBe
+          "Illegal call to sys.exit()"
+      }
     }
+  }
+
+  companion object {
+    private const val JVM_EXIT_MESSAGE = "Illegal call to a JVM termination method"
+
+    // A few iterations are enough to show that failed expressions leave the engine usable.
+    private const val ITERATIONS = 5
   }
 }

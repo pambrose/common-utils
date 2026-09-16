@@ -23,7 +23,6 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.kotest.matchers.string.shouldContain
 import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 
@@ -77,7 +76,7 @@ class BugFixVerificationTests : StringSpec() {
       val exception = shouldThrow<IllegalArgumentException> {
         evaluator.eval("1 + 2")
       }
-      exception.message shouldContain "Boolean"
+      exception.message shouldBe "Expression did not evaluate to Boolean, got Integer"
     }
 
     "eval throws meaningful error for string result" {
@@ -85,7 +84,15 @@ class BugFixVerificationTests : StringSpec() {
       val exception = shouldThrow<IllegalArgumentException> {
         evaluator.eval("\"hello\"")
       }
-      exception.message shouldContain "Boolean"
+      exception.message shouldBe "Expression did not evaluate to Boolean, got String"
+    }
+
+    "eval throws meaningful error for null result" {
+      val evaluator = KotlinExprEvaluator()
+      val exception = shouldThrow<IllegalArgumentException> {
+        evaluator.eval("null")
+      }
+      exception.message shouldBe "Expression did not evaluate to Boolean, got null"
     }
 
     "eval still works for boolean expressions" {
@@ -137,6 +144,19 @@ class BugFixVerificationTests : StringSpec() {
       KotlinScriptPool(2, nullGlobalContext = false).eval {
         engine.getBindings(GLOBAL_SCOPE)
       } shouldNotBe null
+    }
+
+    "pool honors nullGlobalContext for recycled instances" {
+      // A size-1 pool lends the same instance each time, so every borrow after the first gets a recycled one.
+      KotlinScriptPool(1, nullGlobalContext = true).use { pool ->
+        repeat(2) {
+          pool.eval {
+            add("x", it)
+            eval("x") shouldBe it
+            engine.getBindings(GLOBAL_SCOPE)
+          } shouldBe null
+        }
+      }
     }
   }
 }

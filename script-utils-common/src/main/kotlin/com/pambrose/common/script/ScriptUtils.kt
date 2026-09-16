@@ -27,22 +27,24 @@ import javax.script.SimpleScriptContext
  */
 object ScriptUtils {
   /**
-   * Returns the engine-scope [Bindings] for this [ScriptEngine].
+   * Returns the engine-scope [Bindings] for this [ScriptEngine]. A script context always has them.
    */
-  val ScriptEngine.engineBindings get() = bindings(ENGINE_SCOPE)
+  val ScriptEngine.engineBindings: Bindings get() = getBindings(ENGINE_SCOPE)
 
   /**
-   * Returns the global-scope [Bindings] for this [ScriptEngine].
+   * Returns the global-scope [Bindings] for this [ScriptEngine], or `null` when its context has none, as after
+   * [resetContext] with `nullGlobalContext = true`.
    */
-  val ScriptEngine.globalBindings get() = bindings(GLOBAL_SCOPE)
+  val ScriptEngine.globalBindings: Bindings? get() = bindings(GLOBAL_SCOPE)
 
   /**
    * Returns the [Bindings] for the specified [scope] on this [ScriptEngine].
    *
    * @param scope the scope to retrieve bindings for (defaults to [ENGINE_SCOPE])
-   * @return the [Bindings] for the given scope
+   * @return the [Bindings] for the given scope, or `null` when the context has none for it, which only the global
+   *   scope can
    */
-  fun ScriptEngine.bindings(scope: Int = ENGINE_SCOPE): Bindings = getBindings(scope)
+  fun ScriptEngine.bindings(scope: Int = ENGINE_SCOPE): Bindings? = getBindings(scope)
 
   /**
    * Resets the context of this [ScriptEngine] by creating a new [SimpleScriptContext]

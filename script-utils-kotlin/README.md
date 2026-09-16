@@ -111,6 +111,21 @@ KotlinScript().use { script ->
 }
 ```
 
+An array is cast to `kotlin.Array` with its registered element type, and a primitive array to its own type:
+
+```kotlin
+KotlinScript().use { script ->
+  script.add("ints", arrayOf(1, 2), typeOf<Int>())
+  script.add("counts", intArrayOf(1, 2))
+  script.varDecls
+  // val ints = bindings["ints_tmp"] as kotlin.Array<kotlin.Int>
+  // val counts = bindings["counts_tmp"] as kotlin.IntArray
+}
+```
+
+A value with no public class or interface that takes its registered type arguments is cast to `kotlin.Any`, without
+them.
+
 ### Resetting
 
 `resetContext` gives the engine a fresh context and drops every bound variable and registered type.

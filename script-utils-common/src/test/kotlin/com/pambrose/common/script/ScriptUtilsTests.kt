@@ -2,11 +2,13 @@
 
 package com.pambrose.common.script
 
+import com.pambrose.common.script.ScriptUtils.bindings
 import com.pambrose.common.script.ScriptUtils.engineBindings
 import com.pambrose.common.script.ScriptUtils.globalBindings
 import com.pambrose.common.script.ScriptUtils.resetContext
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
@@ -15,6 +17,7 @@ import io.mockk.verify
 import javax.script.ScriptContext
 import javax.script.ScriptEngine
 import javax.script.SimpleBindings
+import javax.script.SimpleScriptContext
 
 class ScriptUtilsTests : StringSpec() {
   init {
@@ -46,28 +49,43 @@ class ScriptUtilsTests : StringSpec() {
       verify { engine.context = any() }
     }
 
-    "setting a binding in engine scope is accessible" {
-      val bindings = SimpleBindings()
-      val engine = mockk<ScriptEngine>()
-      every { engine.getBindings(ScriptContext.ENGINE_SCOPE) } returns bindings
+    "bindings defaults to the engine scope and reads the engine's own bindings" {
+      val engine = FakeScriptEngineFactory().scriptEngine
+      engine.resetContext()
+      engine.put("engineKey", "engineValue")
+      engine.bindings()?.get("engineKey") shouldBe "engineValue"
+      engine.engineBindings["engineKey"] shouldBe "engineValue"
 
-      bindings["testKey"] = "testValue"
-      engine.engineBindings["testKey"] shouldBe "testValue"
+      engine.globalBindings.shouldNotBeNull()["globalKey"] = "globalValue"
+      engine.context.getAttributesScope("globalKey") shouldBe ScriptContext.GLOBAL_SCOPE
+      engine.eval("globalKey") shouldBe "globalValue"
     }
 
-    "resetContext clears previously set bindings" {
-      val engine = mockk<ScriptEngine>(relaxed = true)
-      val freshBindings = SimpleBindings()
-      every { engine.createBindings() } returns freshBindings
+    "resetContext replaces the bindings in both scopes" {
+      val engine = FakeScriptEngineFactory().scriptEngine
+      engine.resetContext()
+      val oldGlobals = engine.globalBindings.shouldNotBeNull()
+      engine.engineBindings["engineKey"] = 1
+      oldGlobals["globalKey"] = 2
 
       engine.resetContext()
 
-      verify(exactly = 1) { engine.context = any() }
-      val capturedContext: MutableList<ScriptContext> = []
-      verify { engine.context = capture(capturedContext) }
-      val newContext = capturedContext.first()
-      newContext.shouldBeInstanceOf<javax.script.SimpleScriptContext>()
-      newContext.getBindings(ScriptContext.ENGINE_SCOPE) shouldNotBe null
+      engine.context.shouldBeInstanceOf<SimpleScriptContext>()
+      engine.engineBindings.isEmpty() shouldBe true
+      engine.globalBindings.shouldNotBeNull().isEmpty() shouldBe true
+      (engine.globalBindings === oldGlobals) shouldBe false
+      engine.context.getAttributesScope("engineKey") shouldBe -1
+      engine.context.getAttributesScope("globalKey") shouldBe -1
+    }
+
+    "resetContext with nullGlobalContext leaves the global scope null" {
+      val engine = FakeScriptEngineFactory().scriptEngine
+      engine.resetContext(nullGlobalContext = true)
+      engine.getBindings(ScriptContext.GLOBAL_SCOPE) shouldBe null
+      // Reading the null global scope used to throw a NullPointerException.
+      engine.globalBindings shouldBe null
+      engine.bindings(ScriptContext.GLOBAL_SCOPE) shouldBe null
+      engine.engineBindings.isEmpty() shouldBe true
     }
   }
 }
