@@ -19,7 +19,6 @@
 
 package com.pambrose.common.recaptcha
 
-import com.pambrose.common.recaptcha.RecaptchaService.validateRecaptcha
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -37,7 +36,6 @@ import io.ktor.server.plugins.mutableOriginConnectionPoint
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 
@@ -84,7 +82,7 @@ internal fun successEngine() =
  * The returned body is `"passed"` when validation succeeded, `"propagated <exception>"` when it threw, and
  * whatever `validateRecaptcha` itself wrote (a 400 page) when it returned false.
  */
-internal suspend fun postToken(
+internal fun postToken(
   engine: MockEngine,
   config: RecaptchaConfig = recaptchaConfig(enabled = true, siteKey = "site", secretKey = "secret"),
   remoteAddress: String = "203.0.113.7",

@@ -95,13 +95,11 @@ class ZipkinReporterService internal constructor(
   }
 
   override fun shutDown() {
-    try {
+    sender.use { sender ->
       // close() drops the spans still queued, so send them first. flush() already swallows send failures, and a
       // flush that throws anyway must not stop the reporter and sender from closing.
       val _ = runCatching { reporter.flush() }
       reporter.close()
-    } finally {
-      sender.close()
     }
   }
 

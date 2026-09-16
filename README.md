@@ -116,7 +116,7 @@ Prometheus metrics integration.
 - Instrumented thread factories
 - Custom gauge collectors
 
-#### **zipkin-utils**
+#### [**zipkin-utils**](zipkin-utils/README.md)
 
 Zipkin distributed tracing utilities.
 
@@ -125,7 +125,7 @@ Zipkin distributed tracing utilities.
 
 ### Persistence & Caching
 
-#### **redis-utils**
+#### [**redis-utils**](redis-utils/README.md)
 
 Redis client utilities and extensions.
 
@@ -135,7 +135,7 @@ Redis client utilities and extensions.
 
 ### Scripting Support
 
-#### **script-utils-common**
+#### [**script-utils-common**](script-utils-common/README.md)
 
 Common base classes and interfaces for scripting engines.
 
@@ -143,7 +143,7 @@ Common base classes and interfaces for scripting engines.
 - Script pool management
 - Expression evaluator frameworks
 
-#### **script-utils-java**
+#### [**script-utils-java**](script-utils-java/README.md)
 
 Java scripting engine integration (compiles and evaluates Java source at runtime via
 [java-scriptengine](https://github.com/eobermuhlner/java-scriptengine)).
@@ -160,7 +160,7 @@ Kotlin script engine integration.
 - Expression evaluation
 - Script compilation and caching
 
-#### **script-utils-python**
+#### [**script-utils-python**](script-utils-python/README.md)
 
 Python (Jython) script engine integration.
 
@@ -169,15 +169,15 @@ Python (Jython) script engine integration.
 
 ### Communication & Security
 
-#### **email-utils**
+#### [**email-utils**](email-utils/README.md)
 
 Email sending utilities using Resend.
 
 - Email composition and sending via Resend API
 - Resend webhook message handling
-- HTML email support via Ktor HTML builder
+- HTML email bodies built with kotlinx-html, with an embedded stylesheet
 
-#### **recaptcha-utils**
+#### [**recaptcha-utils**](recaptcha-utils/README.md)
 
 Google reCAPTCHA verification utilities.
 
@@ -186,7 +186,7 @@ Google reCAPTCHA verification utilities.
 
 ### Service Infrastructure
 
-#### **service-utils**
+#### [**service-utils**](service-utils/README.md)
 
 Service lifecycle and configuration management.
 
@@ -206,9 +206,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:3.2.3")
-  implementation("com.pambrose.common-utils:json-utils:3.2.3")
-  implementation("com.pambrose.common-utils:ktor-server-utils:3.2.3")
+  implementation("com.pambrose.common-utils:core-utils:4.0.0")
+  implementation("com.pambrose.common-utils:json-utils:4.0.0")
+  implementation("com.pambrose.common-utils:ktor-server-utils:4.0.0")
     // ... other modules
 }
 ```
@@ -224,7 +224,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>3.2.3</version>
+      <version>4.0.0</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>

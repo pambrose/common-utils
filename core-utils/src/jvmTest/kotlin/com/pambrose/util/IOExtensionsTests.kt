@@ -188,7 +188,7 @@ class IOExtensionsTests : StringSpec() {
             Exception::class.java,
             Throwable::class.java,
             Array<StackTraceElement>::class.java,
-            Class.forName("java.util.Collections\$EmptyList"),
+            Class.forName($$"java.util.Collections$EmptyList"),
           ),
         )
       restored.message shouldBe "boom"

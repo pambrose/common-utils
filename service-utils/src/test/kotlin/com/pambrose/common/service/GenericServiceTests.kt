@@ -477,14 +477,12 @@ class GenericServiceTests : StringSpec() {
       val port = freePort()
       val service = TestKtorService(admin = disabledAdmin.copy(enabled = true, port = port))
       service.startSync()
-      try {
+      service.use { service ->
         val response = httpGet(port, "/healthcheck")
 
         response.statusCode() shouldBe 200
         response.body() shouldContain "thread_deadlock"
         response.body() shouldContain "all_services_healthy"
-      } finally {
-        service.close()
       }
     }
 

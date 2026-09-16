@@ -31,6 +31,7 @@ import io.ktor.server.testing.testApplication
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 class ResponseUtilsTests : StringSpec() {
   init {
@@ -69,7 +70,7 @@ class ResponseUtilsTests : StringSpec() {
         routing {
           get("/suspending") {
             call.respondWith {
-              delay(1)
+              delay(1.milliseconds)
               "<h1>suspended</h1>"
             }
           }
@@ -146,7 +147,7 @@ class ResponseUtilsTests : StringSpec() {
         routing {
           get("/old") {
             call.redirectTo {
-              delay(1)
+              delay(1.milliseconds)
               "/new"
             }
           }

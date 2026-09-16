@@ -59,6 +59,22 @@ listOf("a", "b").toPath()
 "a very long string".maxLength(10)
 ```
 
+`maskUrlCredentials()` masks only credentials inside the authority — an `@` between `://` and the first `/`, `?`
+or `#` — so an `@` in a path, query or fragment is left alone. Credentials must be percent-encoded as RFC 3986
+requires; an unencoded `/`, `?` or `#` in a password ends the authority early.
+
+`pathOf(...)` and `List<String>.toPath()` skip empty elements and strip a leading separator from every element
+after the first, so they never produce doubled separators.
+
+`toPattern` and `asRegex()` treat their receiver as a **glob**, not a regex: `*` becomes `.*`, `?` becomes `.`,
+and every regex metacharacter (`\ ^ $ . | + ( ) [ ] { }`) is escaped so it matches itself. The result is anchored
+with `^` and `$`.
+
+```kotlin
+"*.kt".toPattern                  // "^.*\.kt$"
+"a+b".asRegex().matches("a+b")    // true — the '+' is literal
+```
+
 Line helpers work on both `String` and `List<String>`:
 
 ```kotlin
@@ -89,6 +105,9 @@ listOf("a", "b", "c").toCsv()   // "a, b, c"
 listPrint(listOf(1, 2, 3))
 ```
 
+`toCsv()` is a display helper, not a CSV encoder: elements are neither quoted nor escaped, so one containing a
+comma, quote or newline will not round-trip through a CSV parser.
+
 ### Date Utilities
 
 Built on `kotlinx-datetime`. Note that core-utils bundles **no IANA time-zone database**: only
@@ -115,6 +134,9 @@ today.toDashedYYYYMMDD()
 instant.age                 // Duration since that instant
 now.age(TimeZone.UTC)
 ```
+
+`toISO8601()` always emits seconds and drops any fractional-seconds component, so `2024-03-15T08:30` formats as
+`"2024-03-15T08:30:00Z"`. The trailing `Z` labels the value as UTC; no zone conversion is performed.
 
 ### Atomics and Delegates
 
@@ -143,6 +165,11 @@ val result = shared.withLock { length }   // the current value is the receiver
 val started = AtomicBoolean(false)
 started.criticalSection { println("started is true while this runs") }
 ```
+
+`atomicInteger` and `atomicLong` default to `0` and `0L`. `singleSetReference` allows exactly one assignment —
+including an assignment of `null`, which still counts as set — and throws `IllegalStateException` on any later
+one. Its `compareValue` parameter defaults to `initValue` and must equal it; a differing value could never match
+and would leave the property permanently unsettable, so it is rejected with `IllegalArgumentException`.
 
 On the JVM, `singleAssign()` provides a write-once property:
 
@@ -199,26 +226,33 @@ import com.pambrose.common.util.encode
 
 ### Serialization and Checksums (JVM)
 
-`toObjectSecure` deserializes only classes you allow-list, which avoids the deserialization gadget risk
-that plain `toObject` carries. The allow-list is required and must name every class in the stream,
-including superclasses (an `Integer` also needs `Number`). A blocklist of known gadget packages applies
-even to allow-listed classes. The stream is also limited to a nesting depth of 32, and to array lengths
-within the 10 MB payload cap.
+Writing is the same either way: `toByteArraySecure()` delegates to `toByteArray()` and exists only for source
+compatibility. All of the hardening is on the read side. `toObjectSecure` deserializes only classes you
+allow-list, which avoids the deserialization gadget risk that the deprecated `toObject()` carries.
+
+The allow-list is required and must be non-empty, and it has to name every class in the stream, including
+superclasses (an `Integer` also needs `Number`). A blocklist is checked first and rejects `java.lang.Runtime`,
+`java.lang.Process` and `java.lang.ProcessBuilder`, plus anything under `java.rmi.`, `javax.management.` or the
+Commons Collections `functors` packages, even when allow-listed. A JEP 290 `ObjectInputFilter` bounds the stream
+as well — at most 32 levels of nesting and 10,485,760 array elements — and is merged with any JVM-wide
+`jdk.serialFilter` rather than replacing it. The serialized input itself is capped at 10 MB.
 
 ```kotlin
 import com.pambrose.common.util.*
 
 val bytes = myValue.toByteArray()
-val back = bytes.toObject()
 
-// Hardened round-trip
-val secureBytes = myValue.toByteArraySecure()
-val restored = secureBytes.toObjectSecure(MyType::class.java, setOf(MyType::class.java))
+// Hardened read; the allow-list argument is required
+val restored = bytes.toObjectSecure(MyType::class.java, setOf(MyType::class.java))
 
 // Corruption check: an unkeyed SHA-256 detects accidental damage, not tampering
 val withSum = bytes.withChecksum()
 val verified = withSum.verifyChecksum()
 ```
+
+`toObjectSecure` throws `IllegalArgumentException` for an empty allow-list, `SecurityException` for an oversized
+payload or a blocklisted or non-allow-listed class, and `InvalidClassException` when the depth or array-length
+limits are exceeded.
 
 ### Content Sources (JVM)
 
@@ -240,7 +274,7 @@ val text = local.file("config.json").content
 // Direct sources
 FileSource("/etc/hosts").content
 UrlSource("https://example.com/data.json").content                     // fetched on every access
-UrlSource("https://example.com/data.json", readTimeout = 5.seconds).content
+UrlSource("https://example.com/data.json", readTimeout = 5.seconds).content   // 10s connect, 30s read by default
 
 // GitHub
 val repo = GitHubRepo(OwnerType.Organization, "pambrose", "common-utils")
@@ -255,6 +289,10 @@ val sameReadme = repo.file("master/README.md")
 Every `ContentSource` reports `remote`, and repository sources resolve paths against the raw-content prefix
 (`rawSourcePrefix`).
 
+`GitHubRepo` uses `raw.githubusercontent.com` for `github.com`. For any other `domainName` (GitHub Enterprise
+Server) it uses that host's `/raw/` path, the form served when subdomain isolation is disabled; a server with
+subdomain isolation enabled serves raw content from `raw.HOSTNAME`, which this class does not detect.
+
 ### Version Metadata (JVM)
 
 The annotation is named `Version`:
@@ -265,7 +303,7 @@ import com.pambrose.common.util.Version.Companion.buildString
 import com.pambrose.common.util.Version.Companion.version
 import com.pambrose.common.util.Version.Companion.versionDesc
 
-@Version(version = "3.2.3", releaseDate = "2026-09-07", buildTime = 1757260800000L)
+@Version(version = "2.2.6", releaseDate = "2026-09-07", buildTime = 1757260800000L)
 object MyApp
 
 MyApp::class.version()          // "3.2.3", or "Unknown" if unannotated
@@ -296,33 +334,51 @@ throwable.stackTraceAsString
 myList.typeParameterCount
 ```
 
+`getBanner` and `ReadResources.readResourceFile` both take an optional `ClassLoader` that defaults to the thread
+context classloader, falling back to core-utils' own; the `getBanner(filename, logger)` overload falls back to the
+logger's classloader instead.
+
+`readProperties` accepts a simple `key=value` subset of `.properties`: one pair per line, split on the first `=`,
+with key and value trimmed. Blank lines, `#` and `!` comment lines, lines without `=` and lines with an empty key
+are skipped; escapes, line continuations and `:` separators are not supported. Every file is read and parsed
+before any property is set, so a missing file throws `IllegalStateException` and leaves the system properties
+untouched. Later files override earlier ones.
+
+`captureStdout` is not thread-safe: it replaces the process-wide `System.out` while the block runs, so output from
+other threads is captured too and concurrent calls interfere with each other. Output is encoded and decoded as
+UTF-8.
+
+`typeParameterCount` counts the type parameters the runtime class itself declares. `Array<T>` reports 1, while
+primitive arrays such as `IntArray` and non-generic classes report 0 — as does a non-generic subclass of a generic
+class, such as `java.util.Properties`, which extends `Hashtable<Object, Object>`.
+
 ## API Reference
 
 Grouped by file; see the KDoc for full signatures.
 
 ### commonMain
 
-| Area | Entry points |
-|------|--------------|
-| Strings | `StringExtensions.kt` — quoting, bracketing, paths, line search, masking |
-| Numbers | `NumberExtensions.kt` — `random()`, `length` |
-| Collections | `ListUtils`, `ArrayUtils`, `Iterable.toCsv()` |
-| Dates | `DateUtils` |
-| Atomics | `Atomic<T>`, `AtomicDelegates`, `AtomicUtils.criticalSection` |
-| Exceptions | `runCatchingCancellable`, `onFailureRethrowCancellation`, `onFailureOrRethrow` |
-| Misc | `simpleClassName`, `isNull()`, `isNotNull()`, `lpad`, `rpad`, `capitalizeFirstChar` |
+| Area        | Entry points                                                                        |
+|-------------|-------------------------------------------------------------------------------------|
+| Strings     | `StringExtensions.kt` — quoting, bracketing, paths, line search, masking            |
+| Numbers     | `NumberExtensions.kt` — `random()`, `length`                                        |
+| Collections | `ListUtils`, `ArrayUtils`, `Iterable.toCsv()`                                       |
+| Dates       | `DateUtils`                                                                         |
+| Atomics     | `Atomic<T>`, `AtomicDelegates`, `AtomicUtils.criticalSection`                       |
+| Exceptions  | `runCatchingCancellable`, `onFailureRethrowCancellation`, `onFailureOrRethrow`      |
+| Misc        | `simpleClassName`, `isNull()`, `isNotNull()`, `lpad`, `rpad`, `capitalizeFirstChar` |
 
 ### jvmMain
 
-| Area | Entry points |
-|------|--------------|
-| Hashing | `md5`, `sha256`, `newStringSalt`, `newByteArraySalt`, `md5Of` |
-| Encoding | `encode()`, `decode()` |
-| I/O | `toByteArray`, `toObject`, `toByteArraySecure`, `toObjectSecure`, `withChecksum`, `verifyChecksum` |
-| Content | `ContentRoot`, `ContentSource`, `FileSystemSource`, `GitHubRepo`, `GitLabRepo`, `GitHubFile`, `GitLabFile`, `UrlSource`, `FileSource`, `OwnerType` |
-| Version | `@Version`, `version()`, `buildString()`, `buildDateTime()`, `versionDesc()` |
-| Durations | `timeUnitToDuration`, `Duration.format` |
-| Misc | `hostInfo`, `sleep`, `randomId`, `captureStdout`, `waitForPortAvailable`, `readProperties`, `ReadResources`, `getBanner`, `stackTraceAsString`, `typeParameterCount`, `singleAssign` |
+| Area      | Entry points                                                                                                                                                                                            |
+|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Hashing   | `md5`, `sha256`, `newStringSalt`, `newByteArraySalt`, `md5Of`                                                                                                                                           |
+| Encoding  | `encode()`, `decode()`                                                                                                                                                                                  |
+| I/O       | `toByteArray`, `toByteArraySecure` (an alias for it), `toObjectSecure`, `withChecksum`, `verifyChecksum`, and the deprecated `toObject`                                                                 |
+| Content   | `ContentRoot`, `ContentSource`, `FileSystemSource`, `GitHubRepo`, `GitLabRepo`, `GitHubFile`, `GitLabFile`, `UrlSource`, `FileSource`, `OwnerType`                                                      |
+| Version   | `@Version`, `version()`, `buildString()`, `buildDateTime()`, `versionDesc()`                                                                                                                            |
+| Durations | `timeUnitToDuration`, `Duration.format`                                                                                                                                                                 |
+| Misc      | `hostInfo`, `sleep`, `randomId`, `repeatWithSleep`, `captureStdout`, `waitForPortAvailable`, `readProperties`, `ReadResources`, `getBanner`, `stackTraceAsString`, `typeParameterCount`, `singleAssign` |
 
 ## Dependencies
 
@@ -361,9 +417,8 @@ Maven consumers must depend on the `-jvm` artifact, since this is a multiplatfor
 ## Security Notes
 
 - `md5` and `sha256` are general-purpose digests, not password hashes
-- Prefer `toObjectSecure` over `toObject` for any data you did not produce yourself, and keep its
-  allow-list to exactly the classes you expect. Java deserialization of untrusted bytes is a known
-  remote-code-execution vector.
+- `toObject` is deprecated; use `toObjectSecure` and keep its allow-list to exactly the classes you
+  expect. Java deserialization of untrusted bytes is a known remote-code-execution vector.
 - `maskUrlCredentials()` exists so connection strings can be logged without leaking passwords
 
 ## License

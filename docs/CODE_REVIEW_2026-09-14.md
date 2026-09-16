@@ -1,13 +1,13 @@
 # Code Review — common-utils
 
-| | |
-|---|---|
-| **Review date** | 2026-09-14 |
-| **Project version** | 3.2.3 |
-| **Commit reviewed** | `bb4cea6` (master) |
-| **Scope** | All 20 modules (main + test sources, module build files), root build, CI workflows, project docs |
-| **Method** | Seven parallel reviewers, one per module group plus build/CI/docs. Each finding was traced in the code and tests. Findings that depend on outside behavior (third-party libraries, wire formats, platform APIs) were checked against the dependency sources in `~/.gradle/caches`, vendor docs, or `kotlinc` probes. The high and medium findings were spot-checked again before being written up. |
-| **Supersedes** | `docs/CODE_REVIEW.md` (2026-03-01, v2.6.3) and root `code-review.md` (May 2026), whose items were largely fixed in #118–#136 (see [CR-139](#cr-139)) |
+|                     |                                                                                                                                                                                                                                                                                                                                                                                                    |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Review date**     | 2026-09-14                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Project version** | 3.2.3                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Commit reviewed** | `bb4cea6` (master)                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Scope**           | All 20 modules (main + test sources, module build files), root build, CI workflows, project docs                                                                                                                                                                                                                                                                                                   |
+| **Method**          | Seven parallel reviewers, one per module group plus build/CI/docs. Each finding was traced in the code and tests. Findings that depend on outside behavior (third-party libraries, wire formats, platform APIs) were checked against the dependency sources in `~/.gradle/caches`, vendor docs, or `kotlinc` probes. The high and medium findings were spot-checked again before being written up. |
+| **Supersedes**      | `docs/CODE_REVIEW.md` (2026-03-01, v2.6.3) and root `code-review.md` (May 2026), whose items were largely fixed in #118–#136 (see [CR-139](#cr-139))                                                                                                                                                                                                                                               |
 
 ## How to track progress
 
@@ -50,18 +50,18 @@ Recurring themes in the medium items:
 
 These follow the per-area batching used for #118–#136. The order within the list is roughly by impact.
 
-| Batch | Items |
-|---|---|
-| 1. Publishing scopes | CR-124, CR-125, CR-127 |
-| 2. Servlet bridge + service endpoints | CR-038, CR-039, CR-041, CR-042, CR-045, CR-046, CR-047, CR-048 |
-| 3. core-utils security + correctness | CR-001 – CR-011 |
-| 4. script-utils pooling/binding | CR-081 – CR-098 |
-| 5. guava-utils concurrency | CR-064 – CR-078 |
-| 6. json-utils accessors | CR-026 – CR-034 |
-| 7. redis / exposed / grpc / email / recaptcha | CR-099 – CR-123 |
-| 8. prometheus / dropwizard / jetty / zipkin | CR-056 – CR-063, CR-079, CR-080 |
-| 9. CI hardening | CR-132 – CR-135 |
-| 10. Docs + remaining low items | everything else |
+| Batch                                         | Items                                                          |
+|-----------------------------------------------|----------------------------------------------------------------|
+| 1. Publishing scopes                          | CR-124, CR-125, CR-127                                         |
+| 2. Servlet bridge + service endpoints         | CR-038, CR-039, CR-041, CR-042, CR-045, CR-046, CR-047, CR-048 |
+| 3. core-utils security + correctness          | CR-001 – CR-011                                                |
+| 4. script-utils pooling/binding               | CR-081 – CR-098                                                |
+| 5. guava-utils concurrency                    | CR-064 – CR-078                                                |
+| 6. json-utils accessors                       | CR-026 – CR-034                                                |
+| 7. redis / exposed / grpc / email / recaptcha | CR-099 – CR-123                                                |
+| 8. prometheus / dropwizard / jetty / zipkin   | CR-056 – CR-063, CR-079, CR-080                                |
+| 9. CI hardening                               | CR-132 – CR-135                                                |
+| 10. Docs + remaining low items                | everything else                                                |
 
 ---
 
@@ -228,7 +228,7 @@ These follow the per-area batching used for #118–#136. The order within the li
 - [x] **CR-124** `HIGH` · publishing — service-utils exposes `implementation` dependency types in its public API ([details](#cr-124)) — fixed in #174
 - [x] **CR-125** `MEDIUM` · publishing — grpc-utils (Netty `SslContext`) and script-utils-java (`Isolation`) leak `implementation` types ([details](#cr-125)) — fixed in #185
 - [x] **CR-126** `LOW` · deps — Catalog `kotlin` entry also pins `kotlin-reflect`; POMs mix 2.4.10 / 2.4.20 ([details](#cr-126)) — fixed in #185
-- [x] **CR-127** `LOW` · deps — Redundant/unused dependency declarations ([details](#cr-127)) — fixed in #185
+- [x] **CR-127** `LOW` · deps — Redundant/unused dependency declarations ([details](#cr-127)) — fixed in #185; the deferred POM change (ktor-server-utils `api(project(":core-utils"))`) landed in the 4.0.0 release
 - [x] **CR-128** `LOW` · build — `make build` ("without tests") still runs KMP `jvmTest` via Kover ([details](#cr-128)) — fixed in #185
 - [x] **CR-129** `LOW` · build — `coverage-clean` misses JVM-module test results; build cache restores them ([details](#cr-129)) — fixed in #185
 - [x] **CR-130** `LOW` · build — `ksp` plugin not declared in root `plugins {}` ([details](#cr-130)) — fixed in #185
@@ -378,14 +378,14 @@ The URL uses `-/blob`, so `content` returns GitLab's HTML viewer page. The revie
 **Severity:** Low · **Category:** docs · **Carried over:** partly (criticalSection)
 **Where:** `core-utils/README.md:136-145,202-217,246-247,280,284`
 
-| Line | Snippet | Problem |
-|---|---|---|
-| 140 | `shared.withLock { it.length }` | The lambda has a receiver, so `it` is unresolved. |
-| 213 | `toObjectSecure<MyType>(setOf(MyType::class.java.name))` | Wrong signature: the function isn't reified and takes `Set<Class<*>>`. |
-| 280 | `waitForPortAvailable(port = 8080)` | This is a member of `object MiscFuncs`, so the star import doesn't reach it. |
-| 284 | `getBanner("banner.txt")` | Missing the required `logger` argument. |
-| 142-144 | `criticalSection { println("runs once") }` | The block always runs. The code matches its KDoc, which only says it sets a flag while running; the README claims mutual exclusion. |
-| 215 | "Tamper detection" | See [CR-016](#cr-016). |
+| Line    | Snippet                                                  | Problem                                                                                                                             |
+|---------|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| 140     | `shared.withLock { it.length }`                          | The lambda has a receiver, so `it` is unresolved.                                                                                   |
+| 213     | `toObjectSecure<MyType>(setOf(MyType::class.java.name))` | Wrong signature: the function isn't reified and takes `Set<Class<*>>`.                                                              |
+| 280     | `waitForPortAvailable(port = 8080)`                      | This is a member of `object MiscFuncs`, so the star import doesn't reach it.                                                        |
+| 284     | `getBanner("banner.txt")`                                | Missing the required `logger` argument.                                                                                             |
+| 142-144 | `criticalSection { println("runs once") }`               | The block always runs. The code matches its KDoc, which only says it sets a flag while running; the README claims mutual exclusion. |
+| 215     | "Tamper detection"                                       | See [CR-016](#cr-016).                                                                                                              |
 
 **Fix:** Correct the snippets. Consider compiling README snippets in a doc test.
 
@@ -1570,6 +1570,12 @@ CLAUDE.md says the held `kotlin` ref governs only `kotlin-scripting-*`, but it a
 
 **Fix:** Remove the redundant declarations. Narrow the ktor-server-utils `api` at the next major version, because that changes the POM.
 
+**Outcome:** The redundant declarations went in #185. The POM change waited for a major release and shipped in
+4.0.0. This item's stated justification — "its main sources import no `com.pambrose.*` code" — was necessary but
+not sufficient: the module also reached `kotlin-logging` through core-utils' `api(libs.kotlin.logging)` export,
+so dropping core-utils on that reasoning alone failed to compile (`Unresolved reference 'KotlinLogging'`). The
+fix declares `implementation(libs.kotlin.logging)` directly and then removes the core-utils dependency.
+
 <a id="cr-128"></a>
 #### CR-128 — `make build` ("without tests") still runs KMP `jvmTest` via Kover
 **Severity:** Low · **Category:** build · **Carried over:** no
@@ -1658,15 +1664,15 @@ Superseded PR builds (JS, wasm, native, detekt) run to completion. Actions pinne
 
 llms.txt is meant for AI coding tools, so every error here turns directly into wrong generated code:
 
-| Module | What llms.txt says | What's actually true |
-|---|---|---|
-| redis-utils, zipkin-utils | Links to their READMEs | Neither README exists ([CR-080](#cr-080)) |
-| exposed, grpc, dropwizard, prometheus, zipkin | "Standalone" | Each declares `api(project(":core-utils"))` |
-| script-utils-java | "JavaScript engine" | It compiles Java source |
-| dropwizard-utils | "JMX integration" | There is none |
-| guava-utils | "service lifecycle (GenericService)" and "archive (ZIP)" | Neither exists; the module has gzip helpers |
-| service-utils | Depends on core-utils only | It also depends on six sibling modules |
-| json-utils | "dot-notation paths" | Correct for `get`, but `getByPath` splits on `/` |
+| Module                                        | What llms.txt says                                       | What's actually true                             |
+|-----------------------------------------------|----------------------------------------------------------|--------------------------------------------------|
+| redis-utils, zipkin-utils                     | Links to their READMEs                                   | Neither README exists ([CR-080](#cr-080))        |
+| exposed, grpc, dropwizard, prometheus, zipkin | "Standalone"                                             | Each declares `api(project(":core-utils"))`      |
+| script-utils-java                             | "JavaScript engine"                                      | It compiles Java source                          |
+| dropwizard-utils                              | "JMX integration"                                        | There is none                                    |
+| guava-utils                                   | "service lifecycle (GenericService)" and "archive (ZIP)" | Neither exists; the module has gzip helpers      |
+| service-utils                                 | Depends on core-utils only                               | It also depends on six sibling modules           |
+| json-utils                                    | "dot-notation paths"                                     | Correct for `get`, but `getByPath` splits on `/` |
 
 **Fix:** Correct each description and dependency list, and add the missing READMEs or remove the links.
 

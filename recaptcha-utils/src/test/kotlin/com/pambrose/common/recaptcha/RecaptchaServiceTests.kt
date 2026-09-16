@@ -18,8 +18,6 @@
 
 package com.pambrose.common.recaptcha
 
-import com.pambrose.common.recaptcha.RecaptchaService.loadRecaptchaScript
-import com.pambrose.common.recaptcha.RecaptchaService.validateRecaptcha
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -39,7 +37,6 @@ import io.ktor.http.headersOf
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.html.head
 import kotlinx.html.stream.createHTML

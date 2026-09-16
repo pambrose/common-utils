@@ -97,7 +97,7 @@ class KtorServletConfigTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { context.getServletRegistration("name") }
       shouldThrow<UnsupportedOperationException> { context.servletRegistrations }
       shouldThrow<UnsupportedOperationException> { context.addFilter("name", "com.example.MyFilter") }
-      shouldThrow<UnsupportedOperationException> { context.addFilter("name", Filter { _, _, _ -> }) }
+      shouldThrow<UnsupportedOperationException> { context.addFilter("name") { _, _, _ -> } }
       shouldThrow<UnsupportedOperationException> { context.addFilter("name", Filter::class.java) }
       shouldThrow<UnsupportedOperationException> { context.createFilter(Filter::class.java) }
       shouldThrow<UnsupportedOperationException> { context.getFilterRegistration("name") }

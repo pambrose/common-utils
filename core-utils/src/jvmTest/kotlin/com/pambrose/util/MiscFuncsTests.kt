@@ -40,7 +40,6 @@ import io.kotest.matchers.string.shouldHaveLength
 import io.kotest.matchers.string.shouldMatch
 import java.net.InetAddress
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.datetime.LocalDateTime
 
 class MiscFuncsTests : StringSpec() {
   init {
@@ -77,7 +76,7 @@ class MiscFuncsTests : StringSpec() {
 
     "is null test" {
       val nullValue: String? = null
-      val nonNullValue: String? = "test"
+      val nonNullValue = "test"
 
       nullValue.isNull() shouldBe true
       nonNullValue.isNull() shouldBe false

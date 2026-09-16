@@ -221,7 +221,7 @@ object RecaptchaService : Closeable {
 
     val configured = !config.recaptchaSiteKey.isNullOrBlank() && !config.recaptchaSecretKey.isNullOrBlank()
 
-    if (!configured && misconfiguredWarningLogged.compareAndSet(false, true))
+    if (!configured && misconfiguredWarningLogged.compareAndSet(expectedValue = false, newValue = true))
       logger.warn {
         "reCAPTCHA is enabled but the site key or secret key is missing: " +
           "no widget is rendered and no verification is performed"

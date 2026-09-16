@@ -268,7 +268,7 @@ private fun echoService(): ServerServiceDefinition =
   ServerServiceDefinition.builder("EchoService")
     .addMethod(
       echoMethod,
-      ServerCalls.asyncUnaryCall<String, String> { request, responseObserver ->
+      ServerCalls.asyncUnaryCall { request, responseObserver ->
         responseObserver.onNext("echo: $request")
         responseObserver.onCompleted()
       },

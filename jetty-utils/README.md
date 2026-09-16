@@ -94,7 +94,7 @@ import com.pambrose.common.servlet.VersionServlet
 import com.pambrose.common.util.Version
 import com.pambrose.common.util.Version.Companion.versionDesc
 
-@Version(version = "3.2.3", releaseDate = "2026-09-07", buildTime = 0L)
+@Version(version = "2.2.6", releaseDate = "2026-09-07", buildTime = 0L)
 object MyApp
 
 addServlet(ServletHolder(VersionServlet(MyApp::class.versionDesc())), "/version")
@@ -109,7 +109,8 @@ addServlet(ServletHolder(VersionServlet(MyApp::class.versionDesc())), "/version"
 
 ### Servlets
 
-- `open class LambdaServlet(contentType: String, block: () -> String) : HttpServlet`
+- `open class LambdaServlet(contentType: String, block: () -> String) : HttpServlet` — open for subclassing,
+  but `doGet` is `final`; a subclass supplies its own lambda and content type
 - `LambdaServlet(block: () -> String)` — content type `"text/plain"`
 - `class VersionServlet(version: String) : LambdaServlet`
 
@@ -148,8 +149,9 @@ dependencies {
 
 ## Notes
 
-- Both servlets override only `doGet`; other methods fall through to `HttpServlet`'s defaults, which
-  return 405
+- `LambdaServlet` overrides only `doGet`, and that override is `final`, so `VersionServlet` and any other
+  subclass keep its UTF-8 encoding and error handling; other HTTP methods fall through to `HttpServlet`'s
+  defaults, which return 405
 - The no-cache headers make these endpoints safe to poll from load balancers and health checks
 - Anything beyond these helpers — static content, filters, security — is plain Jetty configuration inside
   the DSL blocks

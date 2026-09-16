@@ -18,7 +18,6 @@
 
 package com.pambrose.common.recaptcha
 
-import com.pambrose.common.recaptcha.RecaptchaService.recaptchaWidget
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty

@@ -144,7 +144,7 @@ class InstrumentedThreadFactoryTests : StringSpec() {
 
     // The ThreadFactory contract lets a delegate reject a request by returning null.
     "a delegate that rejects the thread yields null and is not counted as created" {
-      val factory = InstrumentedThreadFactory(delegate = ThreadFactory { null }, name = "itf_rejected", help = "Test")
+      val factory = InstrumentedThreadFactory(delegate = { null }, name = "itf_rejected", help = "Test")
 
       factory.newThread {} shouldBe null
       CollectorRegistry.defaultRegistry.getSampleValue("itf_rejected_threads_created_total") shouldBe 0.0
