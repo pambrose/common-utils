@@ -25,10 +25,11 @@ import io.kotest.matchers.shouldBe
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import javax.script.ScriptException
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -43,41 +44,12 @@ private class ProbeEvaluatorPool : AbstractExprEvaluatorPool<KotlinExprEvaluator
   }
 }
 
-// An evaluator that records whether it has been closed, and runs onCheck in place of the usual code check.
-private class ClosingEvaluator : AbstractExprEvaluator("kts") {
-  @Volatile
-  var closed = false
-    private set
-
-  @Volatile
-  var onCheck: () -> Unit = {}
-
-  override fun checkCode(code: String) = onCheck()
-
-  override fun close() {
-    closed = true
-  }
-}
-
-// A pool of ClosingEvaluators that records each one it creates; creating the one at index failAt throws.
-private class ClosingEvaluatorPool(
-  size: Int,
-  val created: MutableList<ClosingEvaluator> = [],
-  failAt: Int = -1,
-) : AbstractExprEvaluatorPool<ClosingEvaluator>(size) {
-  init {
-    populate {
-      check(created.size != failAt) { "cannot create evaluator $failAt" }
-      ClosingEvaluator().also { created += it }
-    }
-  }
-}
-
 /**
  * Characterization tests for the borrow/recycle and context-reset contracts of [AbstractScriptPool]
  * and [AbstractExprEvaluatorPool], exercised through the concrete [KotlinScriptPool] /
  * [KotlinExprEvaluatorPool]. A pool size of 1 is used deliberately: any failure to recycle (on
- * success OR on exception) drains the pool, which a subsequent borrow would expose.
+ * success OR on exception) drains the pool, which a subsequent borrow would expose. The pool contracts that need no
+ * compiler are tested in script-utils-common's `AbstractEnginePoolTests`.
  *
  * Kotest test bodies are already suspending, so the pool's `suspend` APIs are called directly. Each
  * body is wrapped in [withTimeout] so that a recycle regression (which would otherwise suspend the
@@ -184,8 +156,14 @@ class ScriptPoolContractTests : StringSpec() {
             }
           withContext(Dispatchers.IO) { borrowed.await() }
 
-          val waiter = launch(waiterDispatcher) { pool.eval { } }
-          delay(200.milliseconds) // the waiter is now suspended, waiting for the only instance
+          // UNDISPATCHED runs the waiter up to its first suspension, so it is already waiting for the only instance
+          // when launch returns; it resumes on its own thread. A delay could not guarantee that.
+          val waiterRan = AtomicBoolean(false)
+          val waiter =
+            launch(waiterDispatcher, start = CoroutineStart.UNDISPATCHED) {
+              pool.eval { waiterRan.store(true) }
+            }
+          waiter.isActive shouldBe true
 
           // Occupy the waiter's only thread, so its resumption is queued instead of run.
           val busy = CountDownLatch(1)
@@ -196,8 +174,11 @@ class ScriptPoolContractTests : StringSpec() {
           busy.countDown()
           waiter.join()
 
+          // The waiter was cancelled without running its block, so the instance it was handed was never used.
+          waiter.isCancelled shouldBe true
+          waiterRan.load() shouldBe false
           pool.eval { eval("1 + 1") } shouldBe 2
-          }
+        }
       }
     }
 
@@ -215,46 +196,16 @@ class ScriptPoolContractTests : StringSpec() {
       }
     }
 
-    "closing a pool closes its instances and fails later borrows" {
+    "closing a pool fails later borrows" {
       withTimeout(TIMEOUT_MS.milliseconds) {
-        val evaluators = ClosingEvaluatorPool(size = 2)
-        evaluators.close()
-        evaluators.created.map { it.closed } shouldBe [true, true]
-        shouldThrow<ClosedReceiveChannelException> { evaluators.eval("1 > 0") }
-
         val scripts = KotlinScriptPool(size = 1, nullGlobalContext = false)
         scripts.close()
         shouldThrow<ClosedReceiveChannelException> { scripts.eval { eval("1") } }
+
+        val evaluators = KotlinExprEvaluatorPool(size = 1)
+        evaluators.close()
+        shouldThrow<ClosedReceiveChannelException> { evaluators.eval("1 > 0") }
       }
-    }
-
-    "an instance returned after its pool is closed is closed" {
-      withTimeout(TIMEOUT_MS.milliseconds) {
-        val pool = ClosingEvaluatorPool(size = 1)
-        val entered = CountDownLatch(1)
-        val release = CountDownLatch(1)
-        // Keeps the evaluator borrowed without compiling anything: the check waits for release, then fails the eval.
-        pool.created.single().onCheck = {
-          entered.countDown()
-          release.await()
-          throw ScriptException("released")
-        }
-        val borrower = launch(Dispatchers.IO) { shouldThrow<ScriptException> { pool.eval("true") } }
-        withContext(Dispatchers.IO) { entered.await() }
-
-        pool.close()
-        pool.created.single().closed shouldBe false
-
-        release.countDown()
-        borrower.join()
-        pool.created.single().closed shouldBe true
-      }
-    }
-
-    "a pool whose construction fails closes the instances it already created" {
-      val created: MutableList<ClosingEvaluator> = []
-      shouldThrow<IllegalStateException> { ClosingEvaluatorPool(size = 3, created = created, failAt = 2) }
-      created.map { it.closed } shouldBe [true, true]
     }
   }
 

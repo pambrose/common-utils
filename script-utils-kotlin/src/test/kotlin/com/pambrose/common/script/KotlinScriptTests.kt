@@ -16,10 +16,11 @@
 
 package com.pambrose.common.script
 
-import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import java.util.Properties
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 
@@ -29,6 +30,17 @@ class IncClass(
   fun inc() {
     i++
   }
+}
+
+// Two type parameters, and no public supertype with two, so a script can only cast it to Any. Being internal, it is
+// not a class a script can name either.
+internal class InternalPair<A, B>(
+  val first: A,
+  val second: B,
+) : AbstractList<A>() {
+  override val size get() = 1
+
+  override fun get(index: Int) = first
 }
 
 class KotlinScriptTests : StringSpec() {
@@ -254,50 +266,49 @@ class KotlinScriptTests : StringSpec() {
       }
     }
 
-    "illegal calls" {
-      // ScriptGuards rejects each of these before the engine runs, so the JVM is never terminated.
-      KotlinScript().use {
-        it.apply {
-          shouldThrow<ScriptException> { eval("System.exit(1)") }
-          shouldThrow<ScriptException> { eval("java.lang.System.exit(1)") }
-          shouldThrow<ScriptException> { eval("exitProcess(0)") }
-          shouldThrow<ScriptException> { eval("kotlin.system.exitProcess(0)") }
-          shouldThrow<ScriptException> { eval("Runtime.getRuntime().exit(0)") }
-          shouldThrow<ScriptException> { eval("Runtime.getRuntime().halt(0)") }
+    "JVM termination calls are rejected before evaluation" {
+      // Each call sits in a lambda that is never invoked, so without the guard the script would return the lambda,
+      // failing the test instead of terminating the test JVM. The guard's own message tells its rejection apart from
+      // a compile error, such as the unresolved reference a bare exitProcess would otherwise be.
+      KotlinScript().use { script ->
+        listOf(
+          "{ System.exit(1) }",
+          "{ java.lang.System.exit(1) }",
+          "{ exitProcess(0) }",
+          "{ kotlin.system.exitProcess(0) }",
+          "{ Runtime.getRuntime().exit(0) }",
+          "{ Runtime.getRuntime().halt(0) }",
+        ).forEach { code ->
+          shouldThrow<ScriptException> { script.eval(code) }.message shouldContain JVM_EXIT_MESSAGE
         }
       }
     }
 
-    "expr evaluator" {
-      KotlinExprEvaluator()
-        .apply {
-          repeat(100) { i ->
-            // println("Invocation1: $i")
-            shouldThrow<ScriptException> { eval("$i == [wrong]") }
-            shouldNotThrow<ScriptException> { eval("$i == $i") }
-          }
+    "expr evaluator keeps working after failed expressions" {
+      KotlinExprEvaluator().use { evaluator ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { evaluator.eval("$i == [wrong]") }
+          evaluator.eval("$i == $i") shouldBe true
+          evaluator.eval("$i == ${i + 1}") shouldBe false
         }
+      }
     }
 
     "compute evaluator" {
-      KotlinExprEvaluator()
-        .apply {
-          repeat(100) { i ->
-            shouldNotThrow<ScriptException> { compute("$i * $i") }
-            (compute("$i * $i") as Int) shouldBe (i * i)
-          }
+      KotlinExprEvaluator().use { evaluator ->
+        repeat(ITERATIONS) { i ->
+          evaluator.compute("$i * $i") shouldBe i * i
         }
+      }
     }
 
-    "pool expr evaluator" {
-      val pool = KotlinExprEvaluatorPool(5)
-      repeat(100) { i ->
-        pool
-          .apply {
-            // println("Invocation2: $i")
-            shouldThrow<ScriptException> { blockingEval("$i == [wrong]") }
-            shouldNotThrow<ScriptException> { blockingEval("$i == $i") }
-          }
+    "pool expr evaluator keeps working after failed expressions" {
+      KotlinExprEvaluatorPool(2).use { pool ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { pool.blockingEval("$i == [wrong]") }
+          pool.blockingEval("$i == $i") shouldBe true
+          pool.blockingEval("$i == ${i + 1}") shouldBe false
+        }
       }
     }
 
@@ -332,6 +343,61 @@ class KotlinScriptTests : StringSpec() {
       }
     }
 
+    "a variable added again is redeclared with its new value and type" {
+      KotlinScript().use {
+        it.apply {
+          add("x", 1)
+          eval("x") shouldBe 1
+          add("x", "s")
+          eval("x.length") shouldBe 1
+        }
+      }
+    }
+
+    // ArrayPrimitive: an Array<Int> is the case under test.
+    @Suppress("ArrayPrimitive")
+    "arrays can be bound, including arrays of generic and primitive elements" {
+      KotlinScript().use {
+        it.apply {
+          // Integer[] used to be cast to kotlin.Any<kotlin.Int>, which does not compile.
+          add("ints", arrayOf(1, 2), typeOf<Int>())
+          add("lists", arrayOf(listOf(1, 2, 3)), typeOf<List<Int>>())
+          add("primitives", intArrayOf(1, 2, 3, 4))
+          varDecls shouldBe
+            """
+            |val ints = bindings["ints_tmp"] as kotlin.Array<kotlin.Int>
+            |val lists = bindings["lists_tmp"] as kotlin.Array<kotlin.collections.List<kotlin.Int>>
+            |val primitives = bindings["primitives_tmp"] as kotlin.IntArray
+            """.trimMargin()
+          eval("ints.size + ints[1]") shouldBe 4
+          eval("lists[0].size") shouldBe 3
+          eval("primitives.sum()") shouldBe 10
+        }
+      }
+    }
+
+    "a value with no nameable class for its type arguments is bound as Any" {
+      KotlinScript().use {
+        it.apply {
+          add("pair", InternalPair(1, "a"), typeOf<Int>(), typeOf<String>())
+          // It used to be cast to kotlin.Any<kotlin.Int, kotlin.String>, which does not compile.
+          varDecls shouldBe """val pair = bindings["pair_tmp"] as kotlin.Any"""
+          eval("pair.toString()") shouldBe "[1]"
+          eval("0") shouldBe 0
+        }
+      }
+    }
+
+    "a non-generic subclass of a generic class is cast to itself" {
+      KotlinScript().use {
+        it.apply {
+          add("props", Properties().apply { setProperty("k", "v") })
+          varDecls shouldBe """val props = bindings["props_tmp"] as java.util.Properties"""
+          eval("""props.getProperty("k")""") shouldBe "v"
+        }
+      }
+    }
+
     "variable names must be valid identifiers" {
       KotlinScript().use { script ->
         ["my-var", "class", "x = 1; val injected", ""].forEach { name ->
@@ -344,5 +410,12 @@ class KotlinScriptTests : StringSpec() {
       // Kotlin keeps a property's annotations on the property, not its getter, so read them with Kotlin reflection.
       AbstractEngine::class.members.single { it.name == "engine" }.annotations.any { it is Deprecated } shouldBe true
     }
+  }
+
+  companion object {
+    private const val JVM_EXIT_MESSAGE = "Illegal call to a JVM termination method"
+
+    // Each iteration compiles REPL snippets, so a few are enough to show that failed ones leave the engine usable.
+    private const val ITERATIONS = 5
   }
 }

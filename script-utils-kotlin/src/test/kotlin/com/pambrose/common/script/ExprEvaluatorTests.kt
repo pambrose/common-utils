@@ -22,8 +22,11 @@ package com.pambrose.common.script
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
+
+private const val JVM_EXIT_MESSAGE = "Illegal call to a JVM termination method"
 
 class ExprEvaluatorTests : StringSpec() {
   init {
@@ -31,10 +34,23 @@ class ExprEvaluatorTests : StringSpec() {
     // terminating the test JVM.
     "evaluators reject literal JVM termination calls" {
       val evaluator = KotlinExprEvaluator()
-      shouldThrow<ScriptException> { evaluator.eval("{ kotlin.system.exitProcess(0) } != null") }
-      shouldThrow<ScriptException> { evaluator.compute("{ System.exit(0) }") }
-      shouldThrow<ScriptException> {
-        KotlinExprEvaluatorPool(1).blockingEval("{ Runtime.getRuntime().halt(0) } != null")
+      shouldThrow<ScriptException> { evaluator.eval("{ kotlin.system.exitProcess(0) } != null") }.message shouldContain
+        JVM_EXIT_MESSAGE
+      shouldThrow<ScriptException> { evaluator.compute("{ System.exit(0) }") }.message shouldContain JVM_EXIT_MESSAGE
+      KotlinExprEvaluatorPool(1).use { pool ->
+        shouldThrow<ScriptException> {
+          pool.blockingEval("{ Runtime.getRuntime().halt(0) } != null")
+        }.message shouldContain
+          JVM_EXIT_MESSAGE
+      }
+    }
+
+    "resetting an evaluator discards its REPL history" {
+      KotlinExprEvaluator().use { evaluator ->
+        evaluator.compute("val y = 1")
+        evaluator.compute("y") shouldBe 1
+        evaluator.resetContext()
+        shouldThrow<ScriptException> { evaluator.compute("y") }
       }
     }
 

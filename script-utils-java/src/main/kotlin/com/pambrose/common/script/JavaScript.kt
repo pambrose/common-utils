@@ -58,14 +58,21 @@ class JavaScript : AbstractScript("java", false) {
   val varDecls: String
     get() = valueMap.entries.joinToString("\n") { (name, value) -> "  public ${fieldType(name, value)} $name;" }
 
-  // A primitive for a boxed primitive; otherwise the accessible class with its type arguments, raw when none were
-  // registered.
+  // A primitive for a boxed primitive; an array of the registered element type for an object array; otherwise the
+  // accessible class with its type arguments, raw when none were registered. Object, the fallback when no nameable
+  // class takes the registered type arguments, is used without them.
   private fun fieldType(
     name: String,
     value: Any,
-  ): String =
-    value.javaClass.kotlin.javaPrimitiveType?.name
-      ?: "${accessibleClass(name, value).java.canonicalName}${params(name)}"
+  ): String {
+    value.javaClass.kotlin.javaPrimitiveType?.let { return it.name }
+    val clazz = accessibleClass(name, value).java
+    return when {
+      value is Array<*> -> "${params(name).removeSurrounding("<", ">")}[]"
+      clazz == Any::class.java -> clazz.canonicalName
+      else -> "${clazz.canonicalName}${params(name)}"
+    }
+  }
 
   /**
    * Generates Java import statements for all registered import classes.
@@ -107,14 +114,16 @@ class JavaScript : AbstractScript("java", false) {
   }
 
   // Java source for a Kotlin type argument: kotlin.collections.List<kotlin.Int> -> java.util.List<java.lang.Integer>
+  // A star projection is null here. It is ? as a type argument, but Java has no array of ?, so Array<*> is rendered
+  // with the array's erased component type, as java.lang.Object[].
   override fun renderType(type: KType): String {
-    val args = type.arguments.map { argument -> argument.type?.let(::renderType) ?: "?" }
+    val args = type.arguments.map { argument -> argument.type?.let(::renderType) }
     val clazz = (type.classifier as? KClass<*>)?.javaObjectType
     return when {
       clazz == null -> "Object"
       clazz.isArray -> "${args.singleOrNull() ?: clazz.componentType.canonicalName}[]"
       args.isEmpty() -> clazz.canonicalName
-      else -> "${clazz.canonicalName}<${args.joinToString(", ")}>"
+      else -> "${clazz.canonicalName}<${args.joinToString(", ") { it ?: "?" }}>"
     }
   }
 

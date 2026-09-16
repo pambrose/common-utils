@@ -14,36 +14,42 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+// DEPRECATION: one test reads the deprecated public engine.
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "DEPRECATION")
 
 package com.pambrose.common.script
 
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import javax.script.ScriptException
 
 class AbstractEngineTests : StringSpec() {
   init {
-    "invalid extension throws exception" {
-      val exception = shouldThrow<ScriptException> {
-        object : AbstractEngine("invalid_extension_xyz") {}
+    "an extension with no registered engine throws a ScriptException naming it" {
+      ["invalid_extension_xyz", "", "foobar123"].forEach { extension ->
+        shouldThrow<ScriptException> { object : AbstractEngine(extension) {} }.message shouldBe
+          "Unrecognized script extension: $extension"
       }
-      exception.message shouldContain "Unrecognized script extension"
     }
 
-    "another invalid extension" {
-      val exception = shouldThrow<ScriptException> {
-        object : AbstractEngine("") {}
-      }
-      exception.message shouldContain "Unrecognized script extension"
+    "a registered extension resolves its engine, which the deprecated engine property exposes" {
+      val engine =
+        object : AbstractEngine(FAKE_EXTENSION) {
+          val scripted get() = scriptEngine
+        }
+      engine.scripted.shouldBeInstanceOf<FakeScriptEngine>()
+      (engine.engine === engine.scripted) shouldBe true
     }
 
-    "yet another invalid extension" {
-      val exception = shouldThrow<ScriptException> {
-        object : AbstractEngine("foobar123") {}
+    "close does nothing by default, however often it is called" {
+      val engine = object : AbstractEngine(FAKE_EXTENSION) {}
+      shouldNotThrowAny {
+        engine.close()
+        engine.close()
       }
-      exception.message shouldContain "Unrecognized script extension"
     }
   }
 }

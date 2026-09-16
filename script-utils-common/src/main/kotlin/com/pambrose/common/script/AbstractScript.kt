@@ -228,7 +228,12 @@ abstract class AbstractScript(
    * The nearest class or interface of [value]'s runtime class that generated code can name, searched breadth-first
    * through its superclasses and interfaces. The runtime class itself may be private or internal, as the list behind
    * `listOf(1, 2)` is. A candidate must declare as many type parameters as were registered for [name], or any number
-   * when none were registered. Falls back to [Any].
+   * when none were registered. Falls back to [Any], which takes no type arguments, so callers must not append the
+   * registered ones to it.
+   *
+   * An array is the exception: its own class is returned. Its JVM class declares no type parameters, and generated code
+   * names an object array by its registered element type (`kotlin.Array<kotlin.Int>`, `java.lang.Integer[]`), so the
+   * class of its elements does not matter.
    *
    * @param name the variable name
    * @param value the variable's value
@@ -238,6 +243,7 @@ abstract class AbstractScript(
     name: String,
     value: Any,
   ): KClass<*> {
+    if (value.javaClass.isArray) return value.javaClass.kotlin
     val arity = typeMap[name]?.size ?: 0
     return value.javaClass
       .supertypesBreadthFirst()

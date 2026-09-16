@@ -14,11 +14,15 @@
  *   limitations under the License.
  */
 
+// DEPRECATION: the nullGlobalContext test reads the deprecated public engine.
+@file:Suppress("DEPRECATION")
+
 package com.pambrose.common.script
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.withTimeout
@@ -107,6 +111,21 @@ class PythonScriptPoolTests : StringSpec() {
       withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = PythonScriptPool(size = 1, nullGlobalContext = true)
         pool.eval { eval("2 ** 3") } shouldBe 8
+      }
+    }
+
+    "python script pool keeps the global context null for recycled instances" {
+      withTimeout(TIMEOUT_MS.milliseconds) {
+        PythonScriptPool(size = 1, nullGlobalContext = true).use { pool ->
+          // A size-1 pool lends the same instance each time, so every borrow after the first gets a recycled one.
+          repeat(3) { i ->
+            pool.eval {
+              add("x", i)
+              eval("x * 2") shouldBe i * 2
+              engine.getBindings(GLOBAL_SCOPE)
+            } shouldBe null
+          }
+        }
       }
     }
 

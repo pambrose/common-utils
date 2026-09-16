@@ -29,17 +29,16 @@ import kotlin.reflect.typeOf
 
 /**
  * Characterization tests pinning the exact ScriptException / IllegalStateException messages produced
- * by [AbstractScript.add] and [AbstractScript.params], exercised through the concrete [KotlinScript].
- * The existing KotlinScriptTests / JavaScriptTests already prove each branch THROWS; these lock the
- * message text and singular/plural wording so a regression in message content or branch routing is
- * caught.
+ * by [AbstractScript.add] and [AbstractScript.params], exercised through [FakeScript], which keeps the base class's
+ * default rendering and starts no compiler. The engine modules' tests already prove each branch THROWS; these lock the
+ * message text and singular/plural wording so a regression in message content or branch routing is caught.
  */
 class AbstractScriptAddMessageTests : StringSpec() {
   init {
     "add rejects a local class with a local/anonymous-class message" {
       class Local // local class -> qualifiedName is null
 
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         val e = shouldThrow<ScriptException> { script.add("x", Local()) }
         e.message shouldContain "is a local or an anonymous class"
         e.message shouldContain "\"x\"" // qname is the name double-quoted
@@ -47,7 +46,7 @@ class AbstractScriptAddMessageTests : StringSpec() {
     }
 
     "add reports missing type parameters with singular wording" {
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         val e = shouldThrow<ScriptException> { script.add("list", mutableListOf(1)) }
         // pluralize(1) keeps the singular "parameter"
         e.message shouldContain "Expected 1 type parameter to be specified for"
@@ -56,7 +55,7 @@ class AbstractScriptAddMessageTests : StringSpec() {
     }
 
     "add reports an unexpected single type parameter with the formatted type and singular wording" {
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         val e = shouldThrow<ScriptException> { script.add("value", 5, typeOf<Int>()) }
         // params() renders fully-qualified names -> <kotlin.Int>; one type -> "parameter"
         e.message shouldContain "Invalid type parameter <kotlin.Int> specified for"
@@ -65,7 +64,7 @@ class AbstractScriptAddMessageTests : StringSpec() {
     }
 
     "add reports unexpected multiple type parameters with plural wording" {
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         val e = shouldThrow<ScriptException> { script.add("value", 5, typeOf<Int>(), typeOf<String>()) }
         // two types -> "parameters"
         e.message shouldContain "Invalid type parameters <kotlin.Int, kotlin.String> specified for"
@@ -73,7 +72,7 @@ class AbstractScriptAddMessageTests : StringSpec() {
     }
 
     "add reports a type-count mismatch with the expected and found counts" {
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         val e =
           shouldThrow<ScriptException> {
             script.add("list", mutableListOf(1), typeOf<Int?>(), typeOf<Int>()) // 2 types vs 1 expected
@@ -86,14 +85,14 @@ class AbstractScriptAddMessageTests : StringSpec() {
     }
 
     "params raises an IllegalStateException when no types are registered for the name" {
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         val e = shouldThrow<IllegalStateException> { script.params("never") }
         e.message shouldBe "No type parameters registered for never"
       }
     }
 
     "add requires type parameters for a generic class whose superclass is not generic" {
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         // Pair extends Object, so its own two type parameters used to go uncounted.
         val e = shouldThrow<ScriptException> { script.add("pair", 1 to "a") }
         e.message shouldContain "Expected 2 type parameters to be specified for"
@@ -101,9 +100,11 @@ class AbstractScriptAddMessageTests : StringSpec() {
     }
 
     "add accepts a non-generic subclass of a generic class without type parameters" {
-      KotlinScript().use { script ->
+      FakeScript().use { script ->
         // Properties extends Hashtable<Object, Object> but declares no type parameters of its own.
-        shouldNotThrowAny { script.add("props", Properties()) }
+        val props = Properties()
+        shouldNotThrowAny { script.add("props", props) }
+        (script.eval("props") === props) shouldBe true
       }
     }
   }

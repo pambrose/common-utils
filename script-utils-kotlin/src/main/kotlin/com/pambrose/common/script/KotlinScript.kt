@@ -57,12 +57,17 @@ class KotlinScript(
     }
 
   // The accessible class with the registered type arguments, or with star projections when none were registered.
+  // Any, the fallback when no nameable class takes the registered type arguments, is used without them.
   private fun castType(name: String): String {
     val clazz = accessibleClass(name, valueMap.getValue(name))
     val typeParameterCount = clazz.java.typeParameters.size
     val typeArguments =
-      params(name).ifEmpty {
-        if (typeParameterCount > 0) List(typeParameterCount) { "*" }.joinToString(", ", "<", ">") else ""
+      if (clazz == Any::class) {
+        ""
+      } else {
+        params(name).ifEmpty {
+          if (typeParameterCount > 0) List(typeParameterCount) { "*" }.joinToString(", ", "<", ">") else ""
+        }
       }
     return "${clazz.qualifiedName}$typeArguments"
   }

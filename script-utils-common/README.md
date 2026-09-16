@@ -102,8 +102,10 @@ type rendered by the subclass's `renderType`.
 A value whose runtime class cannot be named in generated code — the private list class behind `listOf(1, 2)`, for
 example — is declared as the nearest class or interface that generated code can name, found breadth-first through its
 superclasses and interfaces, with fully-qualified type arguments. A class qualifies only if it and every class
-enclosing it are public and it declares as many type parameters as were registered; the search falls back to `Any`. A
-value that is a local or anonymous class is rejected by `add` outright.
+enclosing it are public and it declares as many type parameters as were registered; the search falls back to `Any`,
+which is declared without type arguments. An array keeps its own class and is declared with its registered element
+type, such as `kotlin.Array<kotlin.Int>` or `java.lang.Integer[]`. A value that is a local or anonymous class is
+rejected by `add` outright.
 
 ### Resetting
 
@@ -154,7 +156,8 @@ pool.close()
 eagerly in their `init` block with `populate { }`; if creating one fails, the instances already created are closed —
 any failure to close one is attached to the original exception as a suppressed exception — before it propagates.
 
-Borrowing suspends until an instance is free, and the instance is reset and returned even when the block throws.
+Borrowing suspends until an instance is free, and the instance is reset and returned even when the block throws. If
+the reset itself throws, the instance is still returned, and the reset's exception propagates to the borrower.
 `AbstractScriptPool` resets with `resetForReuse`, `AbstractExprEvaluatorPool` with `resetContext`, so no borrower sees
 the previous borrower's variables. An instance handed to a borrower that is cancelled before it resumes goes back into
 the pool rather than being lost, so a cancellation cannot shrink the pool.
@@ -201,7 +204,8 @@ engine.engineBindings["key"] = "value"
 ```
 
 `resetContext` installs a new `SimpleScriptContext` with fresh engine-scope bindings; the global scope gets fresh
-bindings, or `null` when `nullGlobalContext` is `true`.
+bindings, or `null` when `nullGlobalContext` is `true`. `globalBindings` and `bindings(scope)` are nullable for that
+reason; `engineBindings` never is.
 
 ## API Reference
 
@@ -254,8 +258,8 @@ bindings, or `null` when `nullGlobalContext` is `true`.
 
 ### `ScriptUtils`
 
-- `val ScriptEngine.engineBindings: Bindings`, `val ScriptEngine.globalBindings: Bindings`
-- `fun ScriptEngine.bindings(scope: Int = ENGINE_SCOPE): Bindings`
+- `val ScriptEngine.engineBindings: Bindings`, `val ScriptEngine.globalBindings: Bindings?`
+- `fun ScriptEngine.bindings(scope: Int = ENGINE_SCOPE): Bindings?`
 - `fun ScriptEngine.resetContext(nullGlobalContext: Boolean = false)`
 
 ## Dependencies
