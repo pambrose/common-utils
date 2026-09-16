@@ -26,6 +26,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.routing
+import kotlinx.coroutines.runBlocking
 
 /**
  * A Guava [GenericIdleService] that runs an embedded Ktor CIO server to host servlets from an [HttpServletGroup].
@@ -58,6 +59,14 @@ class KtorServletService(
       }
     }
 
+  /**
+   * Visible for testing: the port the server listens on, which the OS chooses when [port] is 0. It is updated when
+   * the service starts and keeps that value after it stops.
+   */
+  @Volatile
+  internal var boundPort = port
+    private set
+
   init {
     addListener(genericServiceListener(logger), MoreExecutors.directExecutor())
     initBlock(this)
@@ -73,6 +82,8 @@ class KtorServletService(
 
   override fun startUp() {
     ktorServer.start(wait = false)
+    // start() returns once the connectors are bound, so they are already resolved.
+    boundPort = runBlocking { ktorServer.engine.resolvedConnectors().single().port }
   }
 
   override fun shutDown() = ktorServer.stop()

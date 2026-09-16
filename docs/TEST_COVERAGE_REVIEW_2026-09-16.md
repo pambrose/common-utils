@@ -183,14 +183,14 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-041** `LOW` · gap — Multi-valued headers and `Content-Type` set via `setHeader` untested end to end ([details](#tc-041)) — fixed in #189 (fixed rather than pinned: a `Content-Type` header now sets the content type and charset, and the bridge no longer duplicates `Content-Length`)
 
 ### service-utils
-- [ ] **TC-042** `HIGH` · gap — Health check never shown to detect a sub-service that stopped while running ([details](#tc-042))
-- [ ] **TC-043** `MEDIUM` · gap — Port-in-use rollback tested only for the Jetty variant ([details](#tc-043))
-- [ ] **TC-044** `MEDIUM` · gap — `MetricsService` / `ServletService` / `KtorServletService` never constructed directly ([details](#tc-044))
-- [ ] **TC-045** `MEDIUM` · gap — Admin-disabled Ktor service never started; `servletInit` / `initKtor` hooks never passed ([details](#tc-045))
-- [ ] **TC-046** `MEDIUM` · weak — Metrics export flags always `false`; JMX reporter never asserted ([details](#tc-046))
-- [ ] **TC-047** `MEDIUM` · gap — Shutdown hook never run; `close()` edge cases; ports never shown released ([details](#tc-047))
-- [ ] **TC-048** `MEDIUM` · flaky — `freePort()` race under parallel builds; `freePort() to freePort()` can collide ([details](#tc-048))
-- [ ] **TC-049** `LOW` · flaky — Host-binding tests silently skip without a non-loopback address ([details](#tc-049))
+- [x] **TC-042** `HIGH` · gap — Health check never shown to detect a sub-service that stopped while running ([details](#tc-042)) — fixed in #194
+- [x] **TC-043** `MEDIUM` · gap — Port-in-use rollback tested only for the Jetty variant ([details](#tc-043)) — fixed in #194
+- [x] **TC-044** `MEDIUM` · gap — `MetricsService` / `ServletService` / `KtorServletService` never constructed directly ([details](#tc-044)) — fixed in #194
+- [x] **TC-045** `MEDIUM` · gap — Admin-disabled Ktor service never started; `servletInit` / `initKtor` hooks never passed ([details](#tc-045)) — fixed in #194
+- [x] **TC-046** `MEDIUM` · weak — Metrics export flags always `false`; JMX reporter never asserted ([details](#tc-046)) — fixed in #194
+- [x] **TC-047** `MEDIUM` · gap — Shutdown hook never run; `close()` edge cases; ports never shown released ([details](#tc-047)) — fixed in #194
+- [x] **TC-048** `MEDIUM` · flaky — `freePort()` race under parallel builds; `freePort() to freePort()` can collide ([details](#tc-048)) — fixed in #194
+- [x] **TC-049** `LOW` · flaky — Host-binding tests silently skip without a non-loopback address ([details](#tc-049)) — fixed in #194
 
 ### jetty-utils
 - [ ] **TC-050** `LOW` · weak — `LambdaServlet` error handling checked only with mocks; no-op assertions ([details](#tc-050))

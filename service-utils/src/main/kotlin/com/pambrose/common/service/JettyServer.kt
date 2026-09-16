@@ -43,3 +43,7 @@ internal fun jettyServer(
         servlets()
       }
   }
+
+/** The port the connector of a [jettyServer] is listening on, which the OS chooses when it was given port 0. */
+internal val Server.localPort: Int
+  get() = connectors.filterIsInstance<ServerConnector>().single().localPort

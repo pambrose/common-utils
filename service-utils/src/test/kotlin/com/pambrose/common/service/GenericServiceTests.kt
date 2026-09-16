@@ -25,57 +25,75 @@ import ch.qos.logback.core.read.ListAppender
 import com.codahale.metrics.Counter
 import com.codahale.metrics.health.HealthCheck
 import com.pambrose.common.concurrent.GenericIdleService
+import com.pambrose.common.metrics.SystemMetrics
+import com.pambrose.common.servlet.VersionServlet
 import com.google.common.util.concurrent.AbstractIdleService
 import com.google.common.util.concurrent.Service
+import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.test.Enabled
+import io.kotest.core.test.EnabledOrReasonIf
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.ktor.server.application.Application
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import io.prometheus.client.CollectorRegistry
 import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
+import java.lang.management.ManagementFactory
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.util.Collections
 import java.util.SortedMap
 import java.util.concurrent.CountDownLatch
+import javax.management.ObjectName
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
-private fun freePort() = ServerSocket(0).use { it.localPort }
-
-private fun httpGet(
-  port: Int,
-  path: String,
-): HttpResponse<String> =
-  HttpClient.newHttpClient().send(
-    HttpRequest.newBuilder(URI("http://127.0.0.1:$port$path")).timeout(java.time.Duration.ofSeconds(10)).build(),
-    HttpResponse.BodyHandlers.ofString(),
-  )
-
-// An IPv4 address of an active non-loopback interface, or null when the machine has none.
-private fun nonLoopbackAddress(): InetAddress? =
-  Collections.list(NetworkInterface.getNetworkInterfaces())
-    .filter { it.isUp && !it.isLoopback }
-    .flatMap { Collections.list(it.inetAddresses) }
-    .firstOrNull { it is Inet4Address }
-
 private fun canConnect(
   address: InetAddress,
   port: Int,
 ) = Socket().use { socket -> runCatching { socket.connect(InetSocketAddress(address, port), 1_000) }.isSuccess }
+
+// An IPv4 address of an active non-loopback interface that a listener on every interface can be reached through, or
+// null when there is none, such as on a machine with no network or behind a firewall that drops the connection.
+private val reachableNonLoopbackAddress: InetAddress? by lazy {
+  ServerSocket(0).use { probe ->
+    Collections.list(NetworkInterface.getNetworkInterfaces())
+      .filter { it.isUp && !it.isLoopback }
+      .flatMap { Collections.list(it.inetAddresses) }
+      .filterIsInstance<Inet4Address>()
+      .firstOrNull { canConnect(it, probe.localPort) }
+  }
+}
+
+// Skips a test that connects through reachableNonLoopbackAddress when there is none, so the report shows the skip
+// rather than a pass that tested nothing.
+private val needsNonLoopbackAddress: EnabledOrReasonIf = {
+  if (reachableNonLoopbackAddress != null)
+    Enabled.enabled
+  else
+    Enabled.disabled("no non-loopback IPv4 address accepts local connections")
+}
 
 // Runs block with a function that snapshots the log events emitted by the service package in the meantime.
 private inline fun <T> capturingServiceLogs(block: (logs: () -> List<ILoggingEvent>) -> T): T {
@@ -130,9 +148,11 @@ private val disabledZipkin =
     serviceName = "test",
   )
 
-// Admin paths spelled with the given prefix: "/ping" and "ping" must reach the same endpoint.
+// Admin paths spelled with the given prefix: "/ping" and "ping" must reach the same endpoint. Port 0 lets the OS
+// choose a free port when the server starts, so parallel test JVMs cannot race for one. The enabled configs bind to
+// LOOPBACK, which the tests send their requests to.
 private fun enabledAdmin(
-  port: Int,
+  port: Int = 0,
   prefix: String = "/",
 ) = disabledAdmin.copy(
   enabled = true,
@@ -141,37 +161,44 @@ private fun enabledAdmin(
   versionPath = "${prefix}version",
   healthCheckPath = "${prefix}healthcheck",
   threadDumpPath = "${prefix}threaddump",
+  host = LOOPBACK,
 )
 
-private fun enabledMetrics(
-  port: Int,
-  prefix: String = "",
-) = disabledMetrics.copy(enabled = true, port = port, path = "${prefix}metrics")
+private fun enabledMetrics(prefix: String = "") =
+  disabledMetrics.copy(enabled = true, path = "${prefix}metrics", host = LOOPBACK)
+
+// The port a started service's admin server listens on.
+private val AbstractGenericService<*>.adminPort: Int
+  get() =
+    when (this) {
+      is GenericService<*> -> servletService.boundPort
+      is GenericKtorService<*> -> servletService.boundPort
+      else -> error("${this::class.simpleName} has no admin server")
+    }
 
 // Requests every admin endpoint and the metrics endpoint of a running service.
 private fun checkEndpoints(
-  adminPort: Int,
-  metricsPort: Int,
+  service: AbstractGenericService<*>,
   version: String,
   metricName: String,
 ) {
-  httpGet(adminPort, "/ping").apply {
+  httpGet(service.adminPort, "/ping").apply {
     statusCode() shouldBe 200
     body().trim() shouldBe "pong"
   }
-  httpGet(adminPort, "/version").apply {
+  httpGet(service.adminPort, "/version").apply {
     statusCode() shouldBe 200
     body().trim() shouldBe version
   }
-  httpGet(adminPort, "/healthcheck").apply {
+  httpGet(service.adminPort, "/healthcheck").apply {
     statusCode() shouldBe 200
     body() shouldContain "all_services_healthy"
   }
-  httpGet(adminPort, "/threaddump").apply {
+  httpGet(service.adminPort, "/threaddump").apply {
     statusCode() shouldBe 200
     body() shouldContain "state="
   }
-  httpGet(metricsPort, "/metrics").apply {
+  httpGet(service.metricsService.boundPort, "/metrics").apply {
     statusCode() shouldBe 200
     body() shouldContain metricName
   }
@@ -182,6 +209,7 @@ private class TestJettyService(
   metrics: MetricsConfig = disabledMetrics,
   zipkin: ZipkinConfig = disabledZipkin,
   extraServices: Pair<Service, Service>? = null,
+  servletInit: ServletGroup.() -> Unit = {},
 ) : GenericService<String>(
     configVals = "jetty-config",
     adminConfig = admin,
@@ -213,7 +241,7 @@ private class TestJettyService(
 
   init {
     extraServices?.let { (first, second) -> addExtraServices(first, second) }
-    initServletService()
+    initServletService(servletInit)
   }
 }
 
@@ -221,6 +249,8 @@ private class TestKtorService(
   admin: AdminConfig = disabledAdmin,
   metrics: MetricsConfig = disabledMetrics,
   zipkin: ZipkinConfig = disabledZipkin,
+  initKtor: Application.() -> Unit = {},
+  servletInit: HttpServletGroup.() -> Unit = {},
 ) : GenericKtorService<String>(
     configVals = "ktor-config",
     adminConfig = admin,
@@ -243,8 +273,25 @@ private class TestKtorService(
   fun counter(name: String): Counter = metricRegistry.counter(name)
 
   init {
-    initKtorServletService()
+    initKtorServletService(initKtor, servletInit)
   }
+}
+
+// The two admin server variants, so the lifecycle tests run against both.
+private enum class Variant {
+  Jetty,
+  Ktor,
+  ;
+
+  fun newService(
+    admin: AdminConfig = disabledAdmin,
+    metrics: MetricsConfig = disabledMetrics,
+    zipkin: ZipkinConfig = disabledZipkin,
+  ): AbstractGenericService<String> =
+    when (this) {
+      Jetty -> TestJettyService(admin, metrics, zipkin)
+      Ktor -> TestKtorService(admin, metrics, zipkin)
+    }
 }
 
 // A service whose admin server fails to stop, to show that shutDown still stops everything else.
@@ -325,8 +372,8 @@ class GenericServiceTests : StringSpec() {
     "Jetty service with admin, metrics, and zipkin enabled starts healthy and stops" {
       val service =
         TestJettyService(
-          admin = disabledAdmin.copy(enabled = true, port = freePort()),
-          metrics = disabledMetrics.copy(enabled = true, port = freePort()),
+          admin = enabledAdmin(),
+          metrics = enabledMetrics(),
           zipkin = disabledZipkin.copy(enabled = true),
         )
       service.isAdminEnabled shouldBe true
@@ -349,7 +396,8 @@ class GenericServiceTests : StringSpec() {
     }
 
     "Ktor service with admin enabled starts and stops" {
-      val service = TestKtorService(admin = disabledAdmin.copy(enabled = true, port = freePort()))
+      // No requests are sent, so the default of every interface is safe here.
+      val service = TestKtorService(admin = enabledAdmin().copy(host = null))
       service.isAdminEnabled shouldBe true
 
       service.startSync()
@@ -364,49 +412,95 @@ class GenericServiceTests : StringSpec() {
       val spelling = if (prefix.isEmpty()) "without" else "with"
 
       "Jetty service serves every admin endpoint and metrics for paths $spelling a leading slash" {
-        val (adminPort, metricsPort) = freePort() to freePort()
         val metricName = "jetty_endpoints_${spelling}_slash"
-        TestJettyService(admin = enabledAdmin(adminPort, prefix), metrics = enabledMetrics(metricsPort, prefix))
-          .use { service ->
-            service.counter(metricName).inc()
-            service.startSync()
-            checkEndpoints(adminPort, metricsPort, "jetty-version", metricName)
-          }
+        TestJettyService(admin = enabledAdmin(prefix = prefix), metrics = enabledMetrics(prefix)).use { service ->
+          service.counter(metricName).inc()
+          service.startSync()
+          checkEndpoints(service, "jetty-version", metricName)
+        }
       }
 
       "Ktor service serves every admin endpoint and metrics for paths $spelling a leading slash" {
-        val (adminPort, metricsPort) = freePort() to freePort()
         val metricName = "ktor_endpoints_${spelling}_slash"
-        TestKtorService(admin = enabledAdmin(adminPort, prefix), metrics = enabledMetrics(metricsPort, prefix))
-          .use { service ->
-            service.counter(metricName).inc()
-            service.startSync()
-            checkEndpoints(adminPort, metricsPort, "ktor-version", metricName)
-          }
+        TestKtorService(admin = enabledAdmin(prefix = prefix), metrics = enabledMetrics(prefix)).use { service ->
+          service.counter(metricName).inc()
+          service.startSync()
+          checkEndpoints(service, "ktor-version", metricName)
+        }
       }
     }
 
-    "a failed startup stops the sub-services that had already started" {
-      val metricsPort = freePort()
-      ServerSocket(0).use { occupied ->
-        val service =
-          TestJettyService(
-            admin = enabledAdmin(occupied.localPort),
-            metrics = enabledMetrics(metricsPort),
-            zipkin = disabledZipkin.copy(enabled = true),
-          )
-        shouldThrow<IllegalStateException> { service.startSync() }
+    Variant.entries.forEach { variant ->
+      "a failed $variant startup stops the sub-services that had already started" {
+        occupiedLoopbackPort().use { occupied ->
+          val service =
+            variant.newService(
+              admin = enabledAdmin(occupied.localPort),
+              metrics = enabledMetrics(),
+              zipkin = disabledZipkin.copy(enabled = true),
+            )
+          shouldThrow<IllegalStateException> { service.startSync() }
 
-        service.zipkinReporterService.state() shouldBe Service.State.TERMINATED
-        service.metricsService.state() shouldBe Service.State.TERMINATED
-        // Binding throws if the metrics server still holds its port.
-        ServerSocket(metricsPort).close()
-        service.registeredShutDownHook shouldBe null
+          service.state() shouldBe Service.State.FAILED
+          service.zipkinReporterService.state() shouldBe Service.State.TERMINATED
+          service.metricsService.state() shouldBe Service.State.TERMINATED
+          shouldBeReleased(service.metricsService.boundPort)
+          service.registeredShutDownHook shouldBe null
+        }
+      }
+
+      "the $variant health check reports a sub-service that stopped while the service runs" {
+        variant.newService(admin = enabledAdmin(), metrics = enabledMetrics()).use { service ->
+          service.startSync()
+          httpGet(service.adminPort, "/healthcheck").statusCode() shouldBe 200
+
+          service.metricsService.stopSync()
+
+          // The ServiceManager learns of the stop from a listener that can still be running when stopSync()
+          // returns, so all_services_healthy may briefly report the service as STOPPING.
+          eventually(5.seconds) {
+            httpGet(service.adminPort, "/healthcheck").apply {
+              statusCode() shouldBe 500
+              // all_services_healthy names only the stopped service, leaving out the ones still running.
+              body() shouldContain "Incorrect state: TERMINATED: ${service.metricsService}"
+              body() shouldNotContain "RUNNING:"
+              // metrics_service notices it too.
+              body() shouldContain "Jetty server not running"
+            }
+          }
+        }
+      }
+
+      "closing a never-started $variant service, or closing one twice, succeeds" {
+        variant.newService(admin = enabledAdmin()).apply {
+          close()
+          state() shouldBe Service.State.TERMINATED
+          close()
+          state() shouldBe Service.State.TERMINATED
+        }
+
+        variant.newService(admin = enabledAdmin()).apply {
+          startSync()
+          close()
+          close()
+          state() shouldBe Service.State.TERMINATED
+          registeredShutDownHook shouldBe null
+        }
+      }
+
+      "closing a $variant service releases its admin and metrics ports" {
+        val service = variant.newService(admin = enabledAdmin(), metrics = enabledMetrics())
+        service.startSync()
+        val ports = [service.adminPort, service.metricsService.boundPort]
+
+        service.close()
+
+        ports.forEach { shouldBeReleased(it) }
       }
     }
 
     "shutDown stops the remaining sub-services even when one fails to stop" {
-      val service = FailingStopService(enabledMetrics(freePort()))
+      val service = FailingStopService(enabledMetrics())
       service.startSync()
       service.metricsService.isRunning shouldBe true
 
@@ -419,7 +513,7 @@ class GenericServiceTests : StringSpec() {
     "a sub-service failure is logged at error level" {
       val failures =
         capturingServiceLogs { logs ->
-          ServerSocket(0).use { occupied ->
+          occupiedLoopbackPort().use { occupied ->
             shouldThrow<IllegalStateException> {
               TestJettyService(admin = enabledAdmin(occupied.localPort)).startSync()
             }
@@ -436,7 +530,7 @@ class GenericServiceTests : StringSpec() {
     }
 
     "the Dropwizard exporter is registered with Prometheus only while the service runs" {
-      val service = TestJettyService(metrics = enabledMetrics(freePort()))
+      val service = TestJettyService(metrics = enabledMetrics())
       service.counter("exporter_lifecycle").inc(3)
       CollectorRegistry.defaultRegistry.getSampleValue("exporter_lifecycle") shouldBe null
 
@@ -447,6 +541,48 @@ class GenericServiceTests : StringSpec() {
       CollectorRegistry.defaultRegistry.getSampleValue("exporter_lifecycle") shouldBe null
     }
 
+    "the JMX reporter exposes the service's metrics only while it runs" {
+      val mbeanServer = ManagementFactory.getPlatformMBeanServer()
+      val counterName = ObjectName("metrics:name=jmx_reporter_lifecycle,type=counters")
+      val service = TestJettyService(metrics = enabledMetrics())
+      service.counter("jmx_reporter_lifecycle").inc(2)
+      mbeanServer.isRegistered(counterName) shouldBe false
+
+      service.use {
+        service.startSync()
+        mbeanServer.getAttribute(counterName, "Count") shouldBe 2L
+      }
+
+      mbeanServer.isRegistered(counterName) shouldBe false
+    }
+
+    "each metrics export flag reaches its own SystemMetrics.initialize parameter" {
+      // In SystemMetrics.initialize parameter order, each with a single flag set.
+      val oneFlagEach =
+        [
+          disabledMetrics.copy(standardExportsEnabled = true),
+          disabledMetrics.copy(memoryPoolsExportsEnabled = true),
+          disabledMetrics.copy(garbageCollectorExportsEnabled = true),
+          disabledMetrics.copy(threadExportsEnabled = true),
+          disabledMetrics.copy(classLoadingExportsEnabled = true),
+          disabledMetrics.copy(versionInfoExportsEnabled = true),
+        ]
+      val flagsPassed: MutableList<List<Any?>> = []
+      mockkObject(SystemMetrics)
+      try {
+        every { SystemMetrics.initialize(any(), any(), any(), any(), any(), any(), any()) } answers {
+          flagsPassed += args.take(oneFlagEach.size)
+        }
+
+        oneFlagEach.forEach { TestJettyService(metrics = it.copy(enabled = true)) }
+      } finally {
+        unmockkObject(SystemMetrics)
+      }
+
+      // Compared call by call: a flag passed to the wrong parameter moves that call's single true value.
+      flagsPassed shouldBe oneFlagEach.indices.map { index -> List(oneFlagEach.size) { it == index } }
+    }
+
     "the Zipkin URL has a single slash before the path, whether or not the path has a leading slash" {
       ["api/v2/spans", "/api/v2/spans"].forEach { path ->
         TestJettyService(zipkin = disabledZipkin.copy(enabled = true, path = path))
@@ -455,18 +591,18 @@ class GenericServiceTests : StringSpec() {
     }
 
     "starting a service whose init method was never called fails with a clear message" {
-      val failure = shouldThrow<IllegalStateException> { UninitializedService(enabledMetrics(freePort())).startSync() }
+      val failure = shouldThrow<IllegalStateException> { UninitializedService(enabledMetrics()).startSync() }
       failure.cause?.message.orEmpty() shouldContain "initServletService"
     }
 
     "calling the init method a second time fails fast instead of orphaning the first servlet service" {
-      val jetty = TestJettyService(admin = enabledAdmin(freePort()))
+      val jetty = TestJettyService(admin = enabledAdmin())
       val jettyServletService = jetty.servletService
       shouldThrow<IllegalStateException> { jetty.initServletService() }.message.orEmpty() shouldContain
         "already initialized"
       jetty.servletService shouldBe jettyServletService
 
-      val ktor = TestKtorService(admin = enabledAdmin(freePort()))
+      val ktor = TestKtorService(admin = enabledAdmin())
       val ktorServletService = ktor.servletService
       shouldThrow<IllegalStateException> { ktor.initKtorServletService() }.message.orEmpty() shouldContain
         "already initialized"
@@ -474,11 +610,10 @@ class GenericServiceTests : StringSpec() {
     }
 
     "Ktor service admin health check endpoint reports the registered checks" {
-      val port = freePort()
-      val service = TestKtorService(admin = disabledAdmin.copy(enabled = true, port = port))
+      val service = TestKtorService(admin = enabledAdmin())
       service.startSync()
       service.use { service ->
-        val response = httpGet(port, "/healthcheck")
+        val response = httpGet(service.adminPort, "/healthcheck")
 
         response.statusCode() shouldBe 200
         response.body() shouldContain "thread_deadlock"
@@ -486,8 +621,44 @@ class GenericServiceTests : StringSpec() {
       }
     }
 
+    "an admin-disabled Ktor service still serves metrics and stops cleanly" {
+      val service = TestKtorService(metrics = enabledMetrics())
+      service.use {
+        service.startSync()
+        shouldThrow<UninitializedPropertyAccessException> { service.servletService }
+        httpGet(service.metricsService.boundPort, "/metrics").statusCode() shouldBe 200
+      }
+
+      service.state() shouldBe Service.State.TERMINATED
+      service.metricsService.state() shouldBe Service.State.TERMINATED
+    }
+
+    "servletInit adds a servlet to the Jetty admin server" {
+      TestJettyService(
+        admin = enabledAdmin(),
+        servletInit = { addServlet("added", VersionServlet("added-servlet")) },
+      ).use { service ->
+        service.startSync()
+        httpGet(service.adminPort, "/added").body().trim() shouldBe "added-servlet"
+        httpGet(service.adminPort, "/ping").body().trim() shouldBe "pong"
+      }
+    }
+
+    "servletInit and initKtor add endpoints to the Ktor admin server" {
+      TestKtorService(
+        admin = enabledAdmin(),
+        initKtor = { routing { get("/added-route") { call.respondText("added-route") } } },
+        servletInit = { addServlet("/added", VersionServlet("added-servlet")) },
+      ).use { service ->
+        service.startSync()
+        httpGet(service.adminPort, "/added-route").body() shouldBe "added-route"
+        httpGet(service.adminPort, "/added").body().trim() shouldBe "added-servlet"
+        httpGet(service.adminPort, "/ping").body().trim() shouldBe "pong"
+      }
+    }
+
     "shutdown hook is registered on start and removed on stop" {
-      val service = TestJettyService(admin = disabledAdmin.copy(enabled = true, port = freePort()))
+      val service = TestJettyService(admin = enabledAdmin())
       service.startSync()
       val hook = service.registeredShutDownHook ?: error("expected a shutdown hook to be registered after start")
 
@@ -496,6 +667,43 @@ class GenericServiceTests : StringSpec() {
       service.registeredShutDownHook shouldBe null
       // Removing it again reports false, proving shutDown already de-registered it (no leak).
       Runtime.getRuntime().removeShutdownHook(hook) shouldBe false
+    }
+
+    "running the shutdown hook stops the service, releases its ports, and clears the hook" {
+      val service = TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics())
+      service.startSync()
+      val hook = service.registeredShutDownHook ?: error("expected a shutdown hook to be registered after start")
+
+      hook.run()
+
+      service.state() shouldBe Service.State.TERMINATED
+      service.registeredShutDownHook shouldBe null
+      Runtime.getRuntime().removeShutdownHook(hook) shouldBe false
+      shouldBeReleased(service.adminPort)
+      shouldBeReleased(service.metricsService.boundPort)
+    }
+
+    "close() succeeds when the JVM refuses to remove the shutdown hook" {
+      val service = TestJettyService()
+      service.startSync()
+      val hook = service.registeredShutDownHook ?: error("expected a shutdown hook to be registered after start")
+
+      // removeShutdownHook throws this once the JVM has begun shutting down.
+      val runtime = spyk(Runtime.getRuntime())
+      every { runtime.removeShutdownHook(any()) } throws IllegalStateException("Shutdown in progress")
+      mockkStatic(Runtime::class)
+      try {
+        every { Runtime.getRuntime() } returns runtime
+        shouldNotThrowAny { service.close() }
+        verify { runtime.removeShutdownHook(hook) }
+      } finally {
+        unmockkStatic(Runtime::class)
+      }
+
+      service.state() shouldBe Service.State.TERMINATED
+      service.registeredShutDownHook shouldBe null
+      // The refused removal left the hook registered, so remove it for real before the JVM exits.
+      Runtime.getRuntime().removeShutdownHook(hook) shouldBe true
     }
 
     "services added before init are managed, while one added after init is not and triggers a warning" {
@@ -520,41 +728,40 @@ class GenericServiceTests : StringSpec() {
         .zipkinReporterService.defaultServiceName shouldBe "configured-name"
     }
 
-    "Jetty admin and metrics servers bind only to the configured host" {
-      val (adminPort, metricsPort) = freePort() to freePort()
-      TestJettyService(
-        admin = enabledAdmin(adminPort).copy(host = "127.0.0.1"),
-        metrics = enabledMetrics(metricsPort).copy(host = "127.0.0.1"),
-      ).use { service ->
-        service.startSync()
-        httpGet(adminPort, "/ping").statusCode() shouldBe 200
-        httpGet(metricsPort, "/metrics").statusCode() shouldBe 200
-        nonLoopbackAddress()?.let { address ->
+    "Jetty admin and metrics servers bind only to the configured host"
+      .config(enabledOrReasonIf = needsNonLoopbackAddress) {
+        TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics()).use { service ->
+          service.startSync()
+          val (adminPort, metricsPort) = service.adminPort to service.metricsService.boundPort
+          httpGet(adminPort, "/ping").statusCode() shouldBe 200
+          httpGet(metricsPort, "/metrics").statusCode() shouldBe 200
+
+          val address = checkNotNull(reachableNonLoopbackAddress)
           canConnect(address, adminPort) shouldBe false
           canConnect(address, metricsPort) shouldBe false
         }
       }
-    }
 
-    "Ktor admin server binds only to the configured host" {
-      val adminPort = freePort()
-      TestKtorService(admin = enabledAdmin(adminPort).copy(host = "127.0.0.1")).use { service ->
+    "Ktor admin server binds only to the configured host".config(enabledOrReasonIf = needsNonLoopbackAddress) {
+      TestKtorService(admin = enabledAdmin()).use { service ->
         service.startSync()
-        httpGet(adminPort, "/ping").statusCode() shouldBe 200
-        nonLoopbackAddress()?.let { address -> canConnect(address, adminPort) shouldBe false }
+        httpGet(service.adminPort, "/ping").statusCode() shouldBe 200
+        canConnect(checkNotNull(reachableNonLoopbackAddress), service.adminPort) shouldBe false
       }
     }
 
-    "admin and metrics servers still bind every interface when no host is configured" {
-      val (adminPort, metricsPort) = freePort() to freePort()
-      TestJettyService(admin = enabledAdmin(adminPort), metrics = enabledMetrics(metricsPort)).use { service ->
-        service.startSync()
-        nonLoopbackAddress()?.let { address ->
-          canConnect(address, adminPort) shouldBe true
-          canConnect(address, metricsPort) shouldBe true
+    "admin and metrics servers still bind every interface when no host is configured"
+      .config(enabledOrReasonIf = needsNonLoopbackAddress) {
+        TestJettyService(
+          admin = enabledAdmin().copy(host = null),
+          metrics = enabledMetrics().copy(host = null),
+        ).use { service ->
+          service.startSync()
+          val address = checkNotNull(reachableNonLoopbackAddress)
+          canConnect(address, service.adminPort) shouldBe true
+          canConnect(address, service.metricsService.boundPort) shouldBe true
         }
       }
-    }
 
     "both variants expose a shutDownHookAction that builds an unstarted hook thread" {
       GenericService.shutDownHookAction(noopService()).isAlive shouldBe false
