@@ -27,14 +27,15 @@ object ListUtils {
    * @param vals the list to print
    */
   @JvmStatic
-  fun <T> listPrint(vals: List<T>) {
-    val str =
-      vals.joinToString {
+  fun <T> listPrint(vals: List<T>) = println(asString(vals))
+
+  // Elements use their platform toString, so a whole-number Double prints without ".0" on JS.
+  internal fun <T> asString(vals: List<T>): String =
+    vals
+      .joinToString {
         if (it is String)
           it.toDoubleQuoted()
         else
           it.toString()
-      }
-    println(str.asBracketed())
-  }
+      }.asBracketed()
 }

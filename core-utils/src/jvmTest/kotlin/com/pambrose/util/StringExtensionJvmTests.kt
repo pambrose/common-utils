@@ -21,41 +21,20 @@ package com.pambrose.util
 import com.pambrose.common.util.asText
 import com.pambrose.common.util.decode
 import com.pambrose.common.util.encode
-import com.pambrose.common.util.ensureSuffix
-import com.pambrose.common.util.maskUrlCredentials
-import com.pambrose.common.util.maxLength
 import com.pambrose.common.util.md5
 import com.pambrose.common.util.md5Of
 import com.pambrose.common.util.newByteArraySalt
 import com.pambrose.common.util.newStringSalt
-import com.pambrose.common.util.nullIfBlank
-import com.pambrose.common.util.obfuscate
-import com.pambrose.common.util.pathOf
 import com.pambrose.common.util.sha256
-import com.pambrose.common.util.substringBetween
-import com.pambrose.common.util.withLineNumbers
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldHaveLength
 import io.kotest.matchers.string.shouldMatch
 
-class StringExtensionEdgeCaseTests : StringSpec() {
+// The common string helpers are covered on every platform by StringExtensionTests.
+class StringExtensionJvmTests : StringSpec() {
   init {
-    "null if blank test" {
-      "".nullIfBlank() shouldBe null
-      "   ".nullIfBlank() shouldBe null
-      "hello".nullIfBlank() shouldBe "hello"
-      " hello ".nullIfBlank() shouldBe " hello "
-    }
-
-    "ensure suffix test" {
-      "file".ensureSuffix(".txt") shouldBe "file.txt"
-      "file.txt".ensureSuffix(".txt") shouldBe "file.txt"
-      "".ensureSuffix("/") shouldBe "/"
-    }
-
     "encode decode test" {
       val original = "hello world"
       val encoded = original.encode()
@@ -65,22 +44,6 @@ class StringExtensionEdgeCaseTests : StringSpec() {
       val specialChars = "a=b&c=d"
       val encodedSpecial = specialChars.encode()
       encodedSpecial.decode() shouldBe specialChars
-    }
-
-    "substring between test" {
-      "hello [world] test".substringBetween("[", "]") shouldBe "world"
-      "<tag>content</tag>".substringBetween("<tag>", "</tag>") shouldBe "content"
-      "no markers here".substringBetween("[", "]") shouldBe "no markers here"
-    }
-
-    "with line numbers test" {
-      "line1\nline2\nline3".withLineNumbers() shouldBe "1 : line1\n2 : line2\n3 : line3"
-
-      // Numbers are left-aligned and padded to the width of the largest line number.
-      val numbered = (1..10).joinToString("\n") { "l$it" }.withLineNumbers().lines()
-      numbered.first() shouldBe "1  : l1"
-      numbered.last() shouldBe "10 : l10"
-      "a\nb".withLineNumbers(separator = '|') shouldBe "1 | a\n2 | b"
     }
 
     "md5 test" {
@@ -176,49 +139,6 @@ class StringExtensionEdgeCaseTests : StringSpec() {
       md5Of("hello") shouldBe "5d41402abc4b2a76b9719d911017c592"
       md5Of("a", "b", separator = "-") shouldBe "a-b".md5()
       md5Of("a", "b") shouldNotBe md5Of("a", "c")
-    }
-
-    "path of test" {
-      pathOf("a", "b", "c") shouldBe "a/b/c"
-      pathOf("a", "", "c") shouldBe "a/c" // Empty elements filtered
-      pathOf("") shouldBe ""
-      pathOf("single") shouldBe "single"
-    }
-
-    "mask url credentials test" {
-      "https://user:pass@example.com/path".maskUrlCredentials() shouldBe "https://*****:*****@example.com/path"
-      "http://admin:secret@localhost:8080".maskUrlCredentials() shouldBe "http://*****:*****@localhost:8080"
-      "https://example.com/path".maskUrlCredentials() shouldBe "https://example.com/path" // No credentials
-      "not a url".maskUrlCredentials() shouldBe "not a url"
-    }
-
-    "mask url credentials only treats an @ inside the authority as a credential separator" {
-      // An @ in the path, query, or fragment must not be mistaken for userinfo.
-      "https://api.example.com/users?email=bob@corp.com".maskUrlCredentials() shouldBe
-        "https://api.example.com/users?email=bob@corp.com"
-      "https://example.com/a@b".maskUrlCredentials() shouldBe "https://example.com/a@b"
-      "https://example.com#section@2".maskUrlCredentials() shouldBe "https://example.com#section@2"
-      "https://u:p@host.com/a@b".maskUrlCredentials() shouldBe "https://*****:*****@host.com/a@b"
-      "https://u:p@host.com?next=me@x.com".maskUrlCredentials() shouldBe "https://*****:*****@host.com?next=me@x.com"
-    }
-
-    "obfuscate test" {
-      // obfuscate replaces characters at positions where index % freq == 0
-      "hello".obfuscate() shouldBe "*e*l*" // freq=2: positions 0,2,4 replaced
-      "hello".obfuscate(3) shouldBe "*el*o" // freq=3: positions 0,3 replaced
-      "ab".obfuscate() shouldBe "*b"
-      "".obfuscate() shouldBe ""
-      "abc".obfuscate(1) shouldBe "***" // freq=1: every position replaced
-      // freq must be positive; a non-positive freq previously threw ArithmeticException (i % 0).
-      shouldThrow<IllegalArgumentException> { "abc".obfuscate(0) }
-      shouldThrow<IllegalArgumentException> { "abc".obfuscate(-1) }
-    }
-
-    "max length test" {
-      "hello world".maxLength(5) shouldBe "hello"
-      "hello".maxLength(10) shouldBe "hello"
-      "hello".maxLength(5) shouldBe "hello"
-      "".maxLength(5) shouldBe ""
     }
   }
 }

@@ -50,7 +50,8 @@ fun Any?.isNull(): Boolean {
 /**
  * Left-pads this [Int] to the specified [width] with [padChar].
  *
- * Extension function on [Int].
+ * Extension function on [Int]. When padding a negative number with `'0'`, the zeros go after the minus sign,
+ * as with `"%0Nd"`: `(-1).lpad(4)` is `"-001"`. Any other [padChar] goes before the sign: `"  -1"`.
  *
  * @param width the minimum width of the resulting string
  * @param padChar the character to pad with (default `'0'`)
@@ -59,7 +60,12 @@ fun Any?.isNull(): Boolean {
 fun Int.lpad(
   width: Int,
   padChar: Char = '0',
-): String = toString().padStart(width, padChar)
+): String =
+  // As with "%0Nd", zeros go between the sign and the digits, and the sign counts toward the width.
+  if (this < 0 && padChar == '0')
+    "-" + toString().removePrefix("-").padStart(width - 1, padChar)
+  else
+    toString().padStart(width, padChar)
 
 /**
  * Right-pads this [Int] to the specified [width] with [padChar].

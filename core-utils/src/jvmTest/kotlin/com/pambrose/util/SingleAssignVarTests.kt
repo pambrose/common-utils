@@ -22,6 +22,9 @@ import com.pambrose.common.delegate.SingleAssignVar
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.thread
 
 class SingleAssignVarTests : StringSpec() {
   init {
@@ -64,5 +67,28 @@ class SingleAssignVarTests : StringSpec() {
       listValue = ["a", "b", "c"]
       listValue shouldBe ["a", "b", "c"]
     }
+
+    // The writers start together from a latch. A race test cannot prove there is no race window, but it pins
+    // the contract: exactly one assignment succeeds, and its value is the one kept.
+    "singleAssign lets exactly one of many racing writers win" {
+      val holder = SingleAssignHolder()
+      val start = CountDownLatch(1)
+      val winners = ConcurrentLinkedQueue<Int>()
+      val writers =
+        List(16) { i ->
+          thread {
+            start.await()
+            if (runCatching { holder.value = i }.isSuccess) winners += i
+          }
+        }
+      start.countDown()
+      writers.forEach { it.join() }
+      winners.size shouldBe 1
+      holder.value shouldBe winners.single()
+    }
   }
+}
+
+private class SingleAssignHolder {
+  var value: Int? by SingleAssignVar.singleAssign()
 }

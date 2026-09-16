@@ -2,6 +2,8 @@ package com.pambrose.util
 
 import com.pambrose.common.util.DateUtils.abbrevDayOfWeek
 import com.pambrose.common.util.DateUtils.age
+import com.pambrose.common.util.DateUtils.localDateNow
+import com.pambrose.common.util.DateUtils.localDateTimeNow
 import com.pambrose.common.util.DateUtils.parseToLocalDate
 import com.pambrose.common.util.DateUtils.parseToLocalDateTime
 import com.pambrose.common.util.DateUtils.parseToLocalTime
@@ -18,17 +20,20 @@ import com.pambrose.common.util.DateUtils.toMMDDYYYYHHMM
 import com.pambrose.common.util.DateUtils.toUTCDateTime
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveLength
 import io.kotest.matchers.string.shouldNotContain
-import kotlinx.datetime.IllegalTimeZoneException
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.UtcOffset
 import kotlinx.datetime.asTimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -149,6 +154,13 @@ class DateUtilsTest : StringSpec() {
       LocalDate(2024, 9, 8).toDashedYYYYMMDD() shouldBe "2024-09-08"
     }
 
+    // The four-digit year is padded like "%04d", so a negative year keeps its sign in front (it was "00-1").
+    "four-digit year formats keep the sign of a negative year in front" {
+      LocalDate(-1, 1, 1).toMMDDYYYY() shouldBe "01/01/-001"
+      LocalDate(-1, 1, 1).toDashedYYYYMMDD() shouldBe "-001-01-01"
+      LocalDate(5, 1, 1).toMMDDYYYY() shouldBe "01/01/0005"
+    }
+
     "toMMDDYYYYHHMM - includes hour and minute" {
       LocalDateTime(2024, 5, 1, 14, 7).toMMDDYYYYHHMM() shouldBe "05/01/2024 14:07"
     }
@@ -167,10 +179,10 @@ class DateUtilsTest : StringSpec() {
       nullInstant.age shouldBe Duration.ZERO
     }
 
-    "Instant.age - returns positive duration for past instant" {
+    "Instant.age - returns the elapsed duration for a past instant" {
       val past = Clock.System.now() - 5.seconds
       val age = past.age
-      (age >= 5.seconds) shouldBe true
+      withClue("age=$age") { (age in 5.seconds..(5.seconds + 1.minutes)) shouldBe true }
     }
 
     "LocalDateTime.age - returns ZERO for null" {
@@ -178,28 +190,71 @@ class DateUtilsTest : StringSpec() {
       nullDateTime.age(TimeZone.UTC) shouldBe Duration.ZERO
     }
 
+    // The receiver is a wall-clock time in UTC-4. Read in that zone it is an hour old; read as UTC it is five.
+    "LocalDateTime.age - interprets the date-time in the given zone" {
+      val minus4 = UtcOffset(hours = -4).asTimeZone()
+      val dateTime = (Clock.System.now() - 1.hours).toLocalDateTime(minus4)
+      val inZone = dateTime.age(minus4)
+      val asUtc = dateTime.age(TimeZone.UTC)
+      withClue("inZone=$inZone") { (inZone in 1.hours..(1.hours + 1.minutes)) shouldBe true }
+      withClue("asUtc=$asUtc") { (asUtc in 5.hours..(5.hours + 1.minutes)) shouldBe true }
+    }
+
+    // UTC+14 is ahead of every other zone, so if the zone argument were ignored the reading would be off by hours
+    // (unless the host itself runs at UTC+14).
+    "localDateNow and localDateTimeNow read the clock in the given zone" {
+      val plus14 = UtcOffset(hours = 14).asTimeZone()
+      val before = Clock.System.now()
+      val date = localDateNow(plus14)
+      val dateTime = localDateTimeNow(plus14)
+      val after = Clock.System.now()
+
+      date shouldBeIn setOf(before.toLocalDateTime(plus14).date, after.toLocalDateTime(plus14).date)
+      val instant = dateTime.toInstant(plus14)
+      withClue("instant=$instant, before=$before, after=$after") { (instant in before..after) shouldBe true }
+    }
+
+    // The default zone must resolve without a time-zone database, which JS and wasmJs do not bundle.
+    "localDateNow and localDateTimeNow default to the system zone" {
+      val zone = TimeZone.currentSystemDefault()
+      val before = Clock.System.now()
+      val date = localDateNow()
+      val dateTime = localDateTimeNow()
+      val after = Clock.System.now()
+
+      date shouldBeIn setOf(before.toLocalDateTime(zone).date, after.toLocalDateTime(zone).date)
+      val instant = dateTime.toInstant(zone)
+      withClue("instant=$instant, before=$before, after=$after") { (instant in before..after) shouldBe true }
+    }
+
     "toAdjustedString - truncates duration to specified unit" {
       val d = 1.hours + 30.minutes + 45.seconds + 250.milliseconds
-      d.toAdjustedString(DurationUnit.SECONDS) shouldBe (1.hours + 30.minutes + 45.seconds).toString()
-      d.toAdjustedString(DurationUnit.MINUTES) shouldBe (1.hours + 30.minutes).toString()
-      d.toAdjustedString(DurationUnit.HOURS) shouldBe 1.hours.toString()
-      d.toAdjustedString(DurationUnit.MILLISECONDS) shouldBe d.inWholeMilliseconds.milliseconds.toString()
+      d.toAdjustedString(DurationUnit.MILLISECONDS) shouldBe "1h 30m 45.25s"
+      d.toAdjustedString(DurationUnit.SECONDS) shouldBe "1h 30m 45s"
+      d.toAdjustedString(DurationUnit.MINUTES) shouldBe "1h 30m"
+      d.toAdjustedString(DurationUnit.HOURS) shouldBe "1h"
     }
 
     "toAdjustedString - DAYS unit produces day-rounded string" {
-      val d = 49.hours
-      d.toAdjustedString(DurationUnit.DAYS) shouldBe 2L.let { Duration.parse("2d") }.toString()
+      49.hours.toAdjustedString(DurationUnit.DAYS) shouldBe "2d"
+    }
+
+    // The first two lines are the KDoc example.
+    "toAdjustedString - defaults to whole seconds" {
+      95.seconds.toAdjustedString() shouldBe "1m 35s"
+      95.seconds.toAdjustedString(DurationUnit.MINUTES) shouldBe "1m"
+      (95.seconds + 400.milliseconds).toAdjustedString() shouldBe "1m 35s"
+    }
+
+    "toAdjustedString - truncates a negative duration toward zero" {
+      (-95).seconds.toAdjustedString(DurationUnit.MINUTES) shouldBe "-1m"
+      (-1500).milliseconds.toAdjustedString() shouldBe "-1s"
     }
 
     "toAdjustedString - unsupported unit throws" {
       shouldThrow<IllegalStateException> {
         2.hours.toAdjustedString(DurationUnit.NANOSECONDS)
       }
-    }
-
-    "TimeZone.of with bogus zone throws" {
-      // Sanity for parse safety guards
-      shouldThrow<IllegalTimeZoneException> { TimeZone.of("Not/AZone") }
     }
   }
 }

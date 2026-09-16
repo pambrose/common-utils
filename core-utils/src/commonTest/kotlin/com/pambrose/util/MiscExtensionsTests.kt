@@ -19,29 +19,24 @@
 package com.pambrose.util
 
 import com.pambrose.common.util.simpleClassName
-import com.pambrose.common.util.stackTraceAsString
 import com.pambrose.common.util.toCsv
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
+
+private class NamedForTest
 
 class MiscExtensionsTests : StringSpec() {
   init {
-    "stack trace as string test" {
-      val exception = RuntimeException("test error")
-      val stackTrace = exception.stackTraceAsString
-
-      stackTrace shouldContain "RuntimeException"
-      stackTrace shouldContain "test error"
-      stackTrace shouldContain "MiscExtensionsTests"
-    }
-
+    // Only classes whose simple name agrees across platforms; a map's implementation class, for one, does not.
     "simple class name test" {
       "hello".simpleClassName shouldBe "String"
       42.simpleClassName shouldBe "Int"
-      [1, 2, 3].simpleClassName shouldBe "ArrayList"
-      // Single entry maps may use optimized implementations like SingletonMap
-      mapOf("a" to 1, "b" to 2).simpleClassName shouldBe "LinkedHashMap"
+      NamedForTest().simpleClassName shouldBe "NamedForTest"
+      arrayListOf(1, 2, 3).simpleClassName shouldBe "ArrayList"
+    }
+
+    "simple class name is None for an anonymous object" {
+      object {}.simpleClassName shouldBe "None"
     }
 
     "to csv test" {

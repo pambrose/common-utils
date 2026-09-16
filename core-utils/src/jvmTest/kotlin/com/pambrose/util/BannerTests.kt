@@ -25,28 +25,17 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.engine.spec.tempdir
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldNotEndWith
-import io.kotest.matchers.string.shouldNotStartWith
 import java.net.URLClassLoader
 
 private val logger = KotlinLogging.logger {}
 
 class BannerTests : StringSpec() {
   init {
+    // test-banner.txt is "\n\nfirst\nmiddle blank above and below\n\nlast\n\n": the outer blank lines go, the one
+    // in the middle stays (indented like the others), and the result is framed by two newlines on each side.
     "banner trims leading and trailing blank lines, preserves middle blanks" {
-      val result = getBanner("test-banner.txt", logger)
-
-      result shouldContain "     first"
-      result shouldContain "     middle blank above and below"
-      result shouldContain "     last"
-
-      val body = result.removePrefix("\n\n").removeSuffix("\n\n")
-
-      body.lines().first() shouldBe "     first"
-      body.lines().last() shouldBe "     last"
-
-      body shouldNotStartWith " \n"
-      body shouldNotEndWith "\n     "
+      getBanner("test-banner.txt", logger) shouldBe
+        "\n\n     first\n     middle blank above and below\n     \n     last\n\n"
     }
 
     "banner is idempotent across calls" {
@@ -83,6 +72,19 @@ class BannerTests : StringSpec() {
 
     "banner without a logger defaults to the thread context classloader" {
       getBanner("test-banner.txt") shouldContain "     first"
+    }
+
+    "banner throws when an explicit classloader cannot find the file" {
+      URLClassLoader(arrayOf(), null).use { empty ->
+        shouldThrow<IllegalArgumentException> { getBanner("test-banner.txt", empty) }
+      }
+    }
+
+    // Threads started by native code can have no context classloader; core-utils' own loader is used then.
+    "banner without a logger falls back when there is no context classloader" {
+      withoutContextClassLoader {
+        getBanner("test-banner.txt") shouldContain "     first"
+      }
     }
   }
 }

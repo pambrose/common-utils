@@ -14,15 +14,21 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "InjectDispatcher")
 
 package com.pambrose.concurrent
 
 import com.pambrose.common.concurrent.Atomic
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 
 class AtomicTests : StringSpec() {
   init {
@@ -50,21 +56,43 @@ class AtomicTests : StringSpec() {
       atomic.value shouldBe "hello"
     }
 
-    "concurrent access test" {
+    // Each update suspends between reading and writing the value, so without the mutex the coroutines interleave
+    // and lose updates, on single-threaded JS as well as on the multi-threaded platforms.
+    "concurrent setWithLock calls lose no updates" {
       val atomic = Atomic(0)
-      val iterations = 1000
-
-      // Launch multiple coroutines that increment the value
-      val jobs =
-        (1..iterations).map {
+      withContext(Dispatchers.Default) {
+        List(1_000) {
           launch {
-            atomic.setWithLock { it + 1 }
+            atomic.setWithLock { current ->
+              yield()
+              current + 1
+            }
           }
-        }
+        }.joinAll()
+      }
+      atomic.value shouldBe 1_000
+    }
 
-      jobs.joinAll()
-
-      atomic.value shouldBe iterations
+    // The writer starts only once the reader is inside withLock, and gets the reader's whole delay to run if
+    // withLock does not actually hold the mutex.
+    "withLock keeps writers out until its action finishes" {
+      val atomic = Atomic(0)
+      val readerHoldsLock = CompletableDeferred<Unit>()
+      withContext(Dispatchers.Default) {
+        val reader =
+          launch {
+            atomic.withLock {
+              val seen = this
+              readerHoldsLock.complete(Unit)
+              delay(100.milliseconds)
+              atomic.value shouldBe seen
+            }
+          }
+        readerHoldsLock.await()
+        val writer = launch { atomic.setWithLock { it + 1 } }
+        joinAll(reader, writer)
+      }
+      atomic.value shouldBe 1
     }
 
     "atomic with complex type test" {

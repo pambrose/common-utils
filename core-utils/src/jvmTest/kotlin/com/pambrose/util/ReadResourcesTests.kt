@@ -27,6 +27,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeEmpty
 import java.net.ServerSocket
 import java.net.URLClassLoader
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.thread
 
 class ReadResourcesTests : StringSpec() {
   init {
@@ -40,15 +42,45 @@ class ReadResourcesTests : StringSpec() {
       }
     }
 
+    "readResourceFile falls back to core-utils' classloader when there is no context classloader" {
+      withoutContextClassLoader {
+        readResourceFile("test-banner.txt").shouldNotBeEmpty()
+      }
+    }
+
     "MiscFuncs.waitForPortAvailable returns true immediately for a free port" {
       // Bind to find a free port, then close it so the port is unbound,
       // then verify waitForPortAvailable returns without retrying.
       val freePort = ServerSocket(0).use { it.localPort }
       val start = System.currentTimeMillis()
-      MiscFuncs.waitForPortAvailable(port = freePort, maxAttempts = 3, delayMs = 1000) shouldBe true
+      MiscFuncs.waitForPortAvailable(port = freePort, maxAttempts = 3, delayMs = 60_000) shouldBe true
       val elapsed = System.currentTimeMillis() - start
-      // Should be far below maxAttempts * delayMs (3000ms) since the port is already free.
-      (elapsed < 1000) shouldBe true
+      // A single retry would sleep for a minute, so half that is a generous bound even on a slow runner.
+      (elapsed < 30_000) shouldBe true
+    }
+
+    "MiscFuncs.waitForPortAvailable keeps retrying until the port is released" {
+      val occupied = ServerSocket(0)
+      val port = occupied.localPort
+      val releasing = CountDownLatch(1)
+      thread(isDaemon = true) {
+        Thread.sleep(100)
+        // Counted down first, so the latch is already open by the time the port can be bound.
+        releasing.countDown()
+        occupied.close()
+      }
+      MiscFuncs.waitForPortAvailable(port = port, maxAttempts = 500, delayMs = 20) shouldBe true
+      // The port was bound when the wait started, so it succeeded only after retrying past the release.
+      releasing.count shouldBe 0L
+    }
+
+    // A port outside 0..65535 can never be bound. It used to be retried like a busy port and reported as
+    // "still in use" once maxAttempts ran out.
+    "MiscFuncs.waitForPortAvailable rejects an invalid port" {
+      shouldThrow<IllegalArgumentException> {
+        MiscFuncs.waitForPortAvailable(port = 70_000, maxAttempts = 2, delayMs = 1)
+      }
+      shouldThrow<IllegalArgumentException> { MiscFuncs.waitForPortAvailable(port = -1, maxAttempts = 2, delayMs = 1) }
     }
 
     "MiscFuncs.waitForPortAvailable with default arguments returns for a free port" {

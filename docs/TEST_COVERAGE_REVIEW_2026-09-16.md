@@ -137,20 +137,20 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — fixed in #187 (the `RedisUtils` catch is left for TC-067)
 
 ### core-utils
-- [ ] **TC-008** `HIGH` · bug — `singleToDoubleQuoted` corrupts input that has surrounding whitespace ([details](#tc-008))
-- [ ] **TC-009** `HIGH` · platform — `commonMain` utilities tested only on the JVM; confirmed JS differences ([details](#tc-009))
-- [ ] **TC-010** `MEDIUM` · bug — `UrlSource` throws for `Duration.INFINITE` or ≥ ~25-day timeouts ([details](#tc-010))
-- [ ] **TC-011** `MEDIUM` · weak — `Short.MAX_VALUE` regression test never uses `MAX_VALUE` ([details](#tc-011))
-- [ ] **TC-012** `MEDIUM` · weak — `Atomic` concurrency tests can't detect a missing `Mutex` ([details](#tc-012))
-- [ ] **TC-013** `MEDIUM` · gap — `DateUtils`: `localDateNow`/`localDateTimeNow`/`age(tz)` untested; expectations copy the implementation ([details](#tc-013))
-- [ ] **TC-014** `MEDIUM` · gap — `toObjectSecure`: exact-name blocklist and JVM-filter merge never hit; messages unchecked ([details](#tc-014))
-- [ ] **TC-015** `LOW` · gap — `linesBetween` reversed-boundary guard has no test ([details](#tc-015))
-- [ ] **TC-016** `LOW` · gap — `getBanner` missing resource / interior blank lines; null context classloader fallback ([details](#tc-016))
-- [ ] **TC-017** `LOW` · weak — `Version.plainStr` never called; `Version` assertions only check presence ([details](#tc-017))
-- [ ] **TC-018** `LOW` · gap — `criticalSection` flag state and single-assignment thread safety untested ([details](#tc-018))
-- [ ] **TC-019** `LOW` · gap — No DST gap/overlap tests for zone-offset formatting ([details](#tc-019))
-- [ ] **TC-020** `LOW` · gap — Edge cases: negative years, surrogate pairs, non-ASCII capitalization, checksum boundary, property override order, port-wait retry ([details](#tc-020))
-- [ ] **TC-021** `LOW` · flaky/weak — Wall-clock upper bounds, a real `getLocalHost()` call, and no-op assertions ([details](#tc-021))
+- [x] **TC-008** `HIGH` · bug — `singleToDoubleQuoted` corrupts input that has surrounding whitespace ([details](#tc-008)) — fixed in #191
+- [x] **TC-009** `HIGH` · platform — `commonMain` utilities tested only on the JVM; confirmed JS differences ([details](#tc-009)) — fixed in #191 (JS/wasm/native differences pinned per platform, trimEnds/maxLength now throw everywhere)
+- [x] **TC-010** `MEDIUM` · bug — `UrlSource` throws for `Duration.INFINITE` or ≥ ~25-day timeouts ([details](#tc-010)) — fixed in #191
+- [x] **TC-011** `MEDIUM` · weak — `Short.MAX_VALUE` regression test never uses `MAX_VALUE` ([details](#tc-011)) — fixed in #191 (the original Short counter never looped forever, see details)
+- [x] **TC-012** `MEDIUM` · weak — `Atomic` concurrency tests can't detect a missing `Mutex` ([details](#tc-012)) — fixed in #191
+- [x] **TC-013** `MEDIUM` · gap — `DateUtils`: `localDateNow`/`localDateTimeNow`/`age(tz)` untested; expectations copy the implementation ([details](#tc-013)) — fixed in #191
+- [x] **TC-014** `MEDIUM` · gap — `toObjectSecure`: exact-name blocklist and JVM-filter merge never hit; messages unchecked ([details](#tc-014)) — fixed in #191
+- [x] **TC-015** `LOW` · gap — `linesBetween` reversed-boundary guard has no test ([details](#tc-015)) — fixed in #191
+- [x] **TC-016** `LOW` · gap — `getBanner` missing resource / interior blank lines; null context classloader fallback ([details](#tc-016)) — fixed in #191
+- [x] **TC-017** `LOW` · weak — `Version.plainStr` never called; `Version` assertions only check presence ([details](#tc-017)) — fixed in #191
+- [x] **TC-018** `LOW` · gap — `criticalSection` flag state and single-assignment thread safety untested ([details](#tc-018)) — fixed in #191
+- [x] **TC-019** `LOW` · gap — No DST gap/overlap tests for zone-offset formatting ([details](#tc-019)) — fixed in #191
+- [x] **TC-020** `LOW` · gap — Edge cases: negative years, surrogate pairs, non-ASCII capitalization, checksum boundary, property override order, port-wait retry ([details](#tc-020)) — fixed in #191 (negative lpad and surrogate pairs fixed, invalid port now rejected)
+- [x] **TC-021** `LOW` · flaky/weak — Wall-clock upper bounds, a real `getLocalHost()` call, and no-op assertions ([details](#tc-021)) — fixed in #191
 
 ### json-utils
 - [x] **TC-022** `HIGH` · bug — `getByPath` throws instead of returning `null` when the path crosses a non-object ([details](#tc-022)) — fixed in #190
@@ -381,7 +381,9 @@ The timeouts were added by the CR-013 fix (#176). `connectTimeout.inWholeMillise
 **Severity:** Medium · **Category:** weak
 **Where:** `core-utils/src/jvmTest/kotlin/com/pambrose/util/BugFixVerificationTests.kt:214-223`, `core-utils/src/commonTest/kotlin/com/pambrose/util/NumberExtensionTests.kt:29`, `core-utils/src/commonMain/kotlin/com/pambrose/common/util/NumberExtensions.kt:74-77`
 
-The test named "short times works at max value" uses `n = 100`, and the common test uses 1000. Reintroducing the Bug #22 `Short` counter, which overflows to -32768 and loops forever, would pass both.
+The test named "short times works at max value" uses `n = 100`, and the common test uses 1000, so neither reaches the boundary.
+
+*Correction (found while fixing):* the pre-fix `Short` counter never looped forever. With `i < this`, a `Short` counter stops at 32767 without overflowing, so "Bug #22" was misdiagnosed. The boundary still matters: an off-by-one `<=` with a `Short` counter does wrap and never ends.
 
 **Test (commonTest):** `Short.MAX_VALUE times { count++ }` gives `count == 32767`, and the last index is `32766`. A negative receiver runs zero iterations. Give the test a timeout so a regression fails instead of hanging.
 

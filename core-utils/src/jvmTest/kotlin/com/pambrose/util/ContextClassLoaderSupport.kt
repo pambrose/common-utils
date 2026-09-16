@@ -28,12 +28,22 @@ internal inline fun <T> withIsolatedContextClassLoader(
   block: () -> T,
 ): T =
   URLClassLoader(arrayOf(dir.toURI().toURL()), null).use { loader ->
-    val thread = Thread.currentThread()
-    val original = thread.contextClassLoader
-    thread.contextClassLoader = loader
-    try {
-      block()
-    } finally {
-      thread.contextClassLoader = original
-    }
+    withContextClassLoader(loader, block)
   }
+
+/** Runs [block] with no thread context classloader, as on a thread attached by native code, then restores it. */
+internal inline fun <T> withoutContextClassLoader(block: () -> T): T = withContextClassLoader(null, block)
+
+internal inline fun <T> withContextClassLoader(
+  loader: ClassLoader?,
+  block: () -> T,
+): T {
+  val thread = Thread.currentThread()
+  val original = thread.contextClassLoader
+  thread.contextClassLoader = loader
+  try {
+    return block()
+  } finally {
+    thread.contextClassLoader = original
+  }
+}
