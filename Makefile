@@ -23,9 +23,9 @@ clean: ## Run gradle clean
 stop: ## Stop the Gradle daemon
 	./gradlew --stop
 
+# koverVerify depends on the instrumented test tasks, so without excluding it the KMP modules'
+# jvmTest still runs despite -x test -x allTests.
 build: ## Build without running tests
-	# koverVerify depends on the instrumented test tasks, so without excluding it the KMP modules'
-	# jvmTest still runs despite -x test -x allTests.
 	./gradlew build -x test -x allTests -x koverVerify
 
 lint: ## Run Kotlinter and Detekt
@@ -57,9 +57,9 @@ coverage-open: coverage-html ## Generate and open the HTML coverage report
 coverage-packages: coverage-xml ## Print per-package coverage table from the XML report
 	@python3 scripts/coverage-packages.py
 
+# cleanAllTests exists only in the KMP modules; cleanTest covers the JVM ones. With the build cache on,
+# a cleaned test task can still come back FROM-CACHE, so re-run coverage with --rerun-tasks.
 coverage-clean: ## Clean Kover outputs and previous test results
-	# cleanAllTests exists only in the KMP modules; cleanTest covers the JVM ones. With the build cache on,
-	# a cleaned test task can still come back FROM-CACHE, so re-run coverage with --rerun-tasks.
 	./gradlew cleanTest cleanAllTests
 	rm -rf build/reports/kover build/kover
 
