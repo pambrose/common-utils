@@ -24,5 +24,10 @@ kotlin {
             implementation(libs.ktor.client.cio)
             runtimeOnly(libs.logback.classic)
         }
+        // Kotlin/Native has no fallback engine (js and wasmJs use ktor-client-core's bundled Js engine), so the
+        // specs that let KtorDsl create its own client need one here too.
+        nativeTest.dependencies {
+            implementation(libs.ktor.client.cio)
+        }
     }
 }

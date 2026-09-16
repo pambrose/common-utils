@@ -118,15 +118,16 @@ class KtorDslTests : StringSpec() {
       request.url.toString() shouldBe "$URL?q=kotlin"
     }
 
-    // The tests below let the helpers create their own client, so they need a default engine (see hasDefaultEngine).
+    // The tests below let the helpers create their own client, so they need a default engine: CIO on the JVM and
+    // native (a test dependency), and ktor-client-core's bundled Js engine on js and wasmJs.
 
-    "newHttpClient installs HttpTimeout".config(enabled = hasDefaultEngine) {
+    "newHttpClient installs HttpTimeout" {
       newHttpClient().use { client ->
         client.pluginOrNull(HttpTimeout).shouldNotBeNull()
       }
     }
 
-    "withHttpClient closes a client it created".config(enabled = hasDefaultEngine) {
+    "withHttpClient closes a client it created" {
       lateinit var created: HttpClient
       withHttpClient {
         created = this
@@ -136,7 +137,7 @@ class KtorDslTests : StringSpec() {
       withTimeout(5.seconds) { created.coroutineContext.job.join() }
     }
 
-    "httpClient closes a client it created".config(enabled = hasDefaultEngine) {
+    "httpClient closes a client it created" {
       lateinit var created: HttpClient
       httpClient { client ->
         created = client
