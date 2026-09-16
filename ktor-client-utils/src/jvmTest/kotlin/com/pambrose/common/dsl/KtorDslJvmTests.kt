@@ -2,24 +2,22 @@
 
 package com.pambrose.common.dsl
 
-import com.pambrose.common.dsl.KtorDsl.httpClient
 import com.pambrose.common.dsl.KtorDsl.newHttpClient
-import com.pambrose.common.dsl.KtorDsl.withHttpClient
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.plugins.timeout
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import kotlin.time.Duration.Companion.seconds
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.job
-import kotlinx.coroutines.withTimeout
 
 class KtorDslJvmTests : StringSpec() {
   private inline fun <T> withLocalHttpServer(
@@ -56,25 +54,6 @@ class KtorDslJvmTests : StringSpec() {
       }
     }
 
-    "withHttpClient closes a client it created" {
-      lateinit var created: HttpClient
-      withHttpClient {
-        created = this
-        "created"
-      } shouldBe "created"
-      // close() completes the client's job; join() would hang past the timeout if it were left open.
-      withTimeout(5.seconds) { created.coroutineContext.job.join() }
-    }
-
-    "httpClient creates client when null passed" {
-      val result =
-        httpClient { client ->
-          client shouldNotBe null
-          "created"
-        }
-      result shouldBe "created"
-    }
-
     "blockingGet performs a GET request" {
       withLocalHttpServer("hello from server") { url ->
         val result =
@@ -103,10 +82,37 @@ class KtorDslJvmTests : StringSpec() {
       }
     }
 
+    "blockingGet returns a server error without throwing by default" {
+      withLocalHttpServer(respond = { 500 to "boom" }) { url ->
+        val result = KtorDsl.blockingGet(url) { it.status to it.bodyAsText() }
+        result shouldBe (HttpStatusCode.InternalServerError to "boom")
+      }
+    }
+
     "blockingGet with expectSuccess throws on a server error" {
       withLocalHttpServer(respond = { 500 to "boom" }) { url ->
         shouldThrow<ServerResponseException> {
           KtorDsl.blockingGet(url, expectSuccess = true) { it.bodyAsText() }
+        }
+      }
+    }
+
+    "a created client enforces a request timeout" {
+      // CIO leaves a request's timeout to the HttpTimeout plugin, so without install(HttpTimeout) in newHttpClient
+      // this request would wait for the handler and succeed.
+      val release = CountDownLatch(1)
+      withLocalHttpServer(
+        respond = {
+          release.await(5, TimeUnit.SECONDS)
+          200 to "late"
+        },
+      ) { url ->
+        try {
+          shouldThrow<HttpRequestTimeoutException> {
+            KtorDsl.blockingGet(url, setUp = { timeout { requestTimeoutMillis = 100 } }) { it.bodyAsText() }
+          }
+        } finally {
+          release.countDown()
         }
       }
     }
