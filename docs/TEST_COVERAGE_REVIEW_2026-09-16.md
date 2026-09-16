@@ -193,7 +193,7 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-049** `LOW` · flaky — Host-binding tests silently skip without a non-loopback address ([details](#tc-049)) — fixed in #194
 
 ### jetty-utils
-- [ ] **TC-050** `LOW` · weak — `LambdaServlet` error handling checked only with mocks; no-op assertions ([details](#tc-050))
+- [x] **TC-050** `LOW` · weak — `LambdaServlet` error handling checked only with mocks; no-op assertions ([details](#tc-050)) — fixed in #195
 
 ### grpc-utils
 - [ ] **TC-051** `HIGH` · gap — No test completes a TLS or mutual-TLS handshake ([details](#tc-051))

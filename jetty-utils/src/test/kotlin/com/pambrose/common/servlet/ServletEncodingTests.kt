@@ -18,43 +18,14 @@
 
 package com.pambrose.common.servlet
 
-import com.pambrose.common.dsl.JettyDsl
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import jakarta.servlet.http.HttpServlet
-import org.eclipse.jetty.ee11.servlet.ServletHolder
-import org.eclipse.jetty.server.ServerConnector
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
 
 // Characters outside ISO-8859-1, which Jetty otherwise assumes for text/plain.
 private const val NON_LATIN_TEXT = "caf\u00e9 \u2615 \u65e5\u672c"
 
 class ServletEncodingTests : StringSpec() {
-  // Serves servlet from a real Jetty server on an ephemeral port and returns the response to one GET.
-  private fun fetch(servlet: HttpServlet): HttpResponse<ByteArray> {
-    val server =
-      JettyDsl.server(0) {
-        handler = JettyDsl.servletContextHandler { addServlet(ServletHolder(servlet), "/test") }
-      }
-    server.start()
-    return try {
-      val port = (server.connectors.single() as ServerConnector).localPort
-      HttpClient.newHttpClient().send(
-        HttpRequest.newBuilder(URI("http://127.0.0.1:$port/test")).timeout(Duration.ofSeconds(10)).build(),
-        HttpResponse.BodyHandlers.ofByteArray(),
-      )
-    } finally {
-      server.stop()
-    }
-  }
-
-  private fun HttpResponse<ByteArray>.contentType() = headers().firstValue("Content-Type").orElse("").lowercase()
-
   init {
     "LambdaServlet sends text as UTF-8 and says so in the Content-Type" {
       val response = fetch(LambdaServlet { NON_LATIN_TEXT })
