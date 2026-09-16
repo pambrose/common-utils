@@ -227,20 +227,18 @@ object RecaptchaService : Closeable {
     }
   }
 
-  /**
-   * Returns the keys only when reCAPTCHA is enabled *and* both the site key and secret key are present,
-   * and `null` otherwise.
-   *
-   * Requiring both keys keeps rendering and validation in lockstep: the widget is never shown unless
-   * its response can actually be verified server-side, closing a fail-open gap where a missing secret
-   * key would render a widget but silently skip validation.
-   *
-   * Each key is read once and the caller uses the value that passed this check, so a config whose getters
-   * return different values on each read cannot pass the check with a key and then supply `null`.
-   *
-   * Enabled with a key missing is a configuration mistake that leaves no bot protection at all, so it logs a
-   * warning the first time it is seen rather than passing silently.
-   */
+  // Returns the keys only when reCAPTCHA is enabled *and* both the site key and secret key are present,
+  // and null otherwise.
+  //
+  // Requiring both keys keeps rendering and validation in lockstep: the widget is never shown unless
+  // its response can actually be verified server-side, closing a fail-open gap where a missing secret
+  // key would render a widget but silently skip validation.
+  //
+  // Each key is read once and the caller uses the value that passed this check, so a config whose getters
+  // return different values on each read cannot pass the check with a key and then supply null.
+  //
+  // Enabled with a key missing is a configuration mistake that leaves no bot protection at all, so it logs a
+  // warning the first time it is seen rather than passing silently.
   private fun configuredKeys(config: RecaptchaConfig): ConfiguredKeys? {
     if (!config.isRecaptchaEnabled)
       return null
