@@ -59,11 +59,24 @@ fun String.pluralize(
   suffix: String = "s",
 ) = if (cnt == 1) this else "$this$suffix"
 
-/** Converts a single-quoted [String] to a double-quoted [String], escaping inner double quotes. */
+/**
+ * Converts a single-quoted [String] to a double-quoted [String]. Surrounding whitespace is dropped, and inner
+ * backslashes and double quotes are backslash-escaped so the result is a well-formed double-quoted string.
+ * A string that is not single-quoted is returned unchanged.
+ */
 fun String.singleToDoubleQuoted() =
   when {
-    !isSingleQuoted() -> this
-    else -> subSequence(1, length - 1).toString().replace("\"", "\\\"").toDoubleQuoted()
+    !isSingleQuoted() -> {
+      this
+    }
+
+    else -> {
+      trim()
+        .let { it.substring(1, it.length - 1) }
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .toDoubleQuoted()
+    }
   }
 
 /** Returns `null` if this [String] is blank, otherwise returns the string itself. */
@@ -247,13 +260,24 @@ fun String.isInt() = toIntOrNull() != null
 /** Returns `true` if this [String] cannot be parsed as an [Int]. */
 fun String.isNotInt() = !isInt()
 
-/** Returns `true` if this [String] can be parsed as a [Float]. */
+/**
+ * Returns `true` if this [String] can be parsed as a [Float].
+ *
+ * Parsing is the platform's own [toFloatOrNull]. All platforms accept a sign, an exponent, surrounding
+ * whitespace, `NaN` and `Infinity`. They differ on other forms: the JVM and Kotlin/Native also accept a trailing
+ * `f`/`d` and hexadecimal floating-point literals (`0x1p3`), JS accepts hexadecimal integers (`0x10`), and
+ * wasmJs accepts neither.
+ */
 fun String.isFloat() = toFloatOrNull() != null
 
 /** Returns `true` if this [String] cannot be parsed as a [Float]. */
 fun String.isNotFloat() = !isFloat()
 
-/** Returns `true` if this [String] can be parsed as a [Double]. */
+/**
+ * Returns `true` if this [String] can be parsed as a [Double].
+ *
+ * Parsing is the platform's own [toDoubleOrNull], so the same platform differences as [isFloat] apply.
+ */
 fun String.isDouble() = toDoubleOrNull() != null
 
 /** Returns `true` if this [String] cannot be parsed as a [Double]. */
@@ -264,8 +288,15 @@ fun String.isNotDouble() = !isDouble()
  *
  * @param len the number of characters to remove from each end (default 1)
  * @return the trimmed substring
+ * @throws IllegalArgumentException if [len] is negative or the trimmed string is shorter than `2 * len`.
  */
-fun String.trimEnds(len: Int = 1) = trim().run { substring(len, this.length - len) }
+fun String.trimEnds(len: Int = 1): String {
+  // Checked explicitly because JS's substring swaps or clamps out-of-range indices instead of throwing.
+  require(len >= 0) { "len must not be negative but was $len" }
+  val trimmed = trim()
+  require(trimmed.length >= 2 * len) { "Cannot remove $len characters from each end of \"$trimmed\"" }
+  return trimmed.substring(len, trimmed.length - len)
+}
 
 /**
  * Returns the substring between the first occurrence of [begin] and the last occurrence of [end].
@@ -360,19 +391,45 @@ fun String.maskUrlCredentials(): String {
 /**
  * Obfuscates this [String] by replacing characters at every [freq]-th position with `'*'`.
  *
+ * Positions count code points, so a surrogate pair (such as an emoji) is replaced or kept as a whole.
+ *
  * @param freq the replacement frequency (default every 2nd character, starting at index 0)
  * @return the obfuscated string
  * @throws IllegalArgumentException if [freq] is not positive (it is used as a modulus divisor).
  */
 fun String.obfuscate(freq: Int = 2): String {
   require(freq > 0) { "freq must be positive but was $freq" }
-  return mapIndexed { i, v -> if (i % freq == 0) '*' else v }.joinToString("")
+  return buildString {
+    var index = 0
+    var position = 0
+    while (index < this@obfuscate.length) {
+      val end = index + if (this@obfuscate.isSurrogatePairAt(index)) 2 else 1
+      if (position % freq == 0) append('*') else append(this@obfuscate, index, end)
+      index = end
+      position++
+    }
+  }
 }
+
+private fun String.isSurrogatePairAt(index: Int) =
+  this[index].isHighSurrogate() && index + 1 < length && this[index + 1].isLowSurrogate()
 
 /**
  * Truncates this [String] to at most [len] characters.
  *
+ * A surrogate pair (such as an emoji) that would be cut in half is dropped whole, so the result can be one
+ * character shorter than [len].
+ *
  * @param len the maximum length
- * @return the original string if its length is within [len], otherwise the first [len] characters
+ * @return the original string if its length is within [len], otherwise its first [len] characters
+ * @throws IllegalArgumentException if [len] is negative.
  */
-fun String.maxLength(len: Int) = if (length <= len) this else this.substring(0, len)
+fun String.maxLength(len: Int): String {
+  // Checked explicitly because JS's substring clamps a negative index instead of throwing.
+  require(len >= 0) { "len must not be negative but was $len" }
+  return when {
+    length <= len -> this
+    len > 0 && isSurrogatePairAt(len - 1) -> substring(0, len - 1)
+    else -> substring(0, len)
+  }
+}

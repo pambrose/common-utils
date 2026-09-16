@@ -35,7 +35,12 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import java.net.ServerSocket
 import java.net.SocketTimeoutException
 import java.nio.file.Files
+import kotlin.concurrent.thread
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class ContentSourceTests : StringSpec() {
   init {
@@ -202,5 +207,41 @@ class ContentSourceTests : StringSpec() {
         }
       }
     }
+
+    // URLConnection takes an Int of milliseconds: Duration.INFINITE converted to -1, and anything past
+    // Int.MAX_VALUE ms (about 24.8 days) wrapped around, both of which URLConnection rejects.
+    "UrlSource accepts an infinite or very long timeout" {
+      val url = tempFileUrl("long timeouts")
+      UrlSource(url, connectTimeout = Duration.INFINITE, readTimeout = Duration.INFINITE).content shouldBe
+        "long timeouts"
+      UrlSource(url, connectTimeout = 30.days, readTimeout = 365.days).content shouldBe "long timeouts"
+    }
+
+    "UrlSource rejects a negative timeout when it is created" {
+      shouldThrow<IllegalArgumentException> { UrlSource("file:/tmp/x", connectTimeout = (-1).seconds) }
+      shouldThrow<IllegalArgumentException> { UrlSource("file:/tmp/x", readTimeout = (-1).milliseconds) }
+    }
+
+    // A sub-millisecond timeout truncated to 0, which URLConnection treats as no timeout at all.
+    "UrlSource rounds a sub-millisecond timeout up instead of disabling it" {
+      ServerSocket(0).use { server ->
+        // Closing the listener after a while resets the pending connection, so a read that ignores the
+        // timeout fails with a different exception instead of hanging the test.
+        thread(isDaemon = true) {
+          Thread.sleep(3_000)
+          server.close()
+        }
+        shouldThrow<SocketTimeoutException> {
+          UrlSource("http://127.0.0.1:${server.localPort}/slow", readTimeout = 100.microseconds).content
+        }
+      }
+    }
   }
+}
+
+private fun tempFileUrl(text: String): String {
+  val tmp = Files.createTempFile("url-source-test", ".txt").toFile()
+  tmp.writeText(text)
+  tmp.deleteOnExit()
+  return tmp.toURI().toURL().toString()
 }

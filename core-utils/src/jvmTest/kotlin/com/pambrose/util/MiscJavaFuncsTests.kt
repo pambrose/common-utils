@@ -107,10 +107,5 @@ class MiscJavaFuncsTests : StringSpec() {
       // Thread.interrupted() reads-and-clears: asserts the flag was restored and cleans up.
       Thread.interrupted() shouldBe true
     }
-
-    "MiscJavaFuncs is instantiable via its default constructor" {
-      // The class only exposes static members; this exercises the implicit constructor.
-      MiscJavaFuncs() shouldNotBe null
-    }
   }
 }

@@ -14,7 +14,7 @@
  *   limitations under the License.
  */
 
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "InjectDispatcher")
 
 package com.pambrose.util
 
@@ -22,6 +22,11 @@ import com.pambrose.common.delegate.AtomicDelegates
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withContext
 
 class AtomicDelegatesTests : StringSpec() {
   init {
@@ -159,5 +164,29 @@ class AtomicDelegatesTests : StringSpec() {
       hits shouldBe 1
       bytes shouldBe 10L
     }
+
+    // The writers start together on the multi-threaded dispatcher. A race test cannot prove there is no race
+    // window, but it pins the contract: exactly one assignment succeeds, and its value is the one kept.
+    "singleSetReference lets exactly one of many racing writers win" {
+      val holder = SingleSetHolder()
+      val start = CompletableDeferred<Unit>()
+      val winners =
+        withContext(Dispatchers.Default) {
+          List(100) { i ->
+            async {
+              start.await()
+              i.takeIf { runCatching { holder.value = i }.isSuccess }
+            }
+          }.also { start.complete(Unit) }
+            .awaitAll()
+            .filterNotNull()
+        }
+      winners.size shouldBe 1
+      holder.value shouldBe winners.single()
+    }
   }
+}
+
+private class SingleSetHolder {
+  var value: Int? by AtomicDelegates.singleSetReference()
 }

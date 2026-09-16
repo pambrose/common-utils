@@ -4,6 +4,42 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- core-utils `String.trimEnds(len)` and `String.maxLength(len)` throw `IllegalArgumentException` for a length
+  that does not fit. They threw `StringIndexOutOfBoundsException` on the JVM and Native, and returned a wrong
+  result on JS, whose native `substring` swaps or clamps bad indices.
+- core-utils `MiscFuncs.waitForPortAvailable` throws `IllegalArgumentException` for a port outside `0..65535`,
+  instead of retrying it like a busy port and returning `false`. Only I/O failures now count as "busy".
+- core-utils `UrlSource` rejects a negative timeout when it is constructed.
+
+### Fixed
+
+- core-utils `String.singleToDoubleQuoted()` drops surrounding whitespace before removing the quotes
+  (`"  'x'  "` became `"\" 'x' \""`), and escapes backslashes as well as double quotes.
+- core-utils `UrlSource` accepts `Duration.INFINITE` and timeouts longer than `Int.MAX_VALUE` milliseconds
+  (about 24.8 days), which it used to convert to a negative `Int` that `URLConnection` rejects. A
+  sub-millisecond timeout is rounded up instead of becoming 0, which `URLConnection` treats as no timeout.
+- core-utils `Int.lpad` zero-pads a negative number after its sign, as `"%0Nd"` does (`(-1).lpad(4)` is
+  `"-001"`, not `"00-1"`). `toMMDDYYYY()` and `toDashedYYYYMMDD()` format negative years accordingly.
+- core-utils `String.maxLength` and `String.obfuscate` no longer split a surrogate pair (such as an emoji).
+
+### Documentation
+
+- core-utils `isFloat`/`isDouble` and `ArrayUtils.asString(FloatArray/DoubleArray)` document where the
+  platforms disagree: number parsing (a trailing `f`/`d`, hexadecimal literals) and whole-number formatting
+  (`1.0` prints as `1` on JS).
+
+### Build and tests
+
+- Coverage tooling (#187): a per-package Kover line floor, CI jobs for the macOS/iOS and Windows native tests,
+  line/branch coverage tables (`make coverage-packages`, `make coverage-modules`), Codecov per-module
+  components and a 90% patch target, on-demand PIT mutation testing (`make mutation`), and Kotlin ABI dumps
+  checked by `check` (`make abi-update`).
+- core-utils specs for common code now run in `commonTest`, so they cover JS, wasmJs and Native as well as the
+  JVM, with the results the platforms legitimately disagree on pinned per platform. See
+  `docs/TEST_COVERAGE_REVIEW_2026-09-16.md` (TC-008 to TC-021).
+
 ## [4.0.0] - 2026-09-15
 
 ### Breaking changes
