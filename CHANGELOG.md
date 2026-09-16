@@ -12,6 +12,11 @@ All notable changes to Common Utils are documented in this file.
 - core-utils `MiscFuncs.waitForPortAvailable` throws `IllegalArgumentException` for a port outside `0..65535`,
   instead of retrying it like a busy port and returning `false`. Only I/O failures now count as "busy".
 - core-utils `UrlSource` rejects a negative timeout when it is constructed.
+- grpc-utils declares the native libraries of `netty-tcnative-boringssl-static` (the `linux-x86_64`,
+  `linux-aarch_64`, `osx-x86_64`, `osx-aarch_64` and `windows-x86_64` jars) as runtime dependencies. The main
+  tcnative jar holds no native code, and Gradle ignores the POM entries that pull the native jars in, so Gradle
+  builds never loaded OpenSSL and TLS silently ran on the JDK provider. Gradle consumers on those platforms now
+  get the OpenSSL (BoringSSL) provider, as Maven consumers already did, and about 6 MB of extra runtime jars.
 - redis-utils throws `IllegalArgumentException` for a Redis URL that can never work, from `newRedisClient` and
   from the `withRedis` family before the block runs. That covers a malformed URL, a URL with no host, a
   non-numeric database index and an unknown `protocol`. Before:

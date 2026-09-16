@@ -114,6 +114,11 @@ Dependabot only proposes candidates carrying the same suffix — and it must be 
 artifacts ship. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
 `make upgrade-wrapper` reads, so that entry goes stale after a Dependabot wrapper bump.
 
+`netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
+classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
+jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
+POM lists, update that list to match.
+
 ### Experimental Kotlin Features
 
 These opt-ins are enabled globally:
