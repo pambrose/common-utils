@@ -147,8 +147,20 @@ This module depends on:
 - core-utils
 - Ktor Client Core
 
-No engine is included. Add the one you need — for example `ktor-client-cio` on the JVM, or
-`ktor-client-js` for the browser.
+No engine is included, and `newHttpClient` (like `withHttpClient`/`httpClient` without a client) uses whichever
+engine Ktor finds among your dependencies:
+
+| Platform      | Engine                                                                 |
+|---------------|------------------------------------------------------------------------|
+| JVM           | Add one, e.g. `ktor-client-cio`                                        |
+| JS, wasmJs    | None needed: `ktor-client-core` falls back to its bundled Js engine    |
+| Apple         | Add one, e.g. `ktor-client-darwin`                                     |
+| Linux/Windows | Add one, e.g. `ktor-client-curl` (or `ktor-client-winhttp` on Windows) |
+
+Without an engine, creating a client fails. The cause of the first failure is Ktor's `IllegalStateException`
+("Failed to find HTTP client engine implementation"), wrapped in the platform's initialization error
+(`ExceptionInInitializerError` on the JVM); later attempts fail without that cause. Passing your own
+`HttpClient(engine)` avoids the lookup entirely.
 
 ## Installation
 

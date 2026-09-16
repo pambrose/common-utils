@@ -160,9 +160,9 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-026** `LOW` · gap — Wrong-type receivers, `forEachJsonObject` skipping, `deepCopy` identity, Long overflow ([details](#tc-026)) — fixed in #190
 
 ### ktor-client-utils
-- [ ] **TC-027** `MEDIUM` · platform — Client-creating paths tested only on the JVM; native has no engine ([details](#tc-027))
-- [ ] **TC-028** `MEDIUM` · gap — Default `expectSuccess=false`, `expectSuccess` with a provided client, and `HttpTimeout` untested ([details](#tc-028))
-- [ ] **TC-029** `LOW` · weak — Common tests never check the request method/URL; no-op assertion ([details](#tc-029))
+- [x] **TC-027** `MEDIUM` · platform — Client-creating paths tested only on the JVM; native has no engine ([details](#tc-027)) — fixed in #192
+- [x] **TC-028** `MEDIUM` · gap — Default `expectSuccess=false`, `expectSuccess` with a provided client, and `HttpTimeout` untested ([details](#tc-028)) — fixed in #192
+- [x] **TC-029** `LOW` · weak — Common tests never check the request method/URL; no-op assertion ([details](#tc-029)) — fixed in #192
 
 ### email-utils
 - [x] **TC-030** `MEDIUM` · gap — Webhook branch misses are generated code, but `decode`'s error contract and new serial names are untested ([details](#tc-030)) — fixed in #188
