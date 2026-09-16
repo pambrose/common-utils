@@ -128,13 +128,13 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 ## Tracker
 
 ### Cross-cutting (tooling and CI)
-- [ ] **TC-001** `MEDIUM` · infra — Coverage floor is a single aggregate; most modules could drop to 0% without tripping it ([details](#tc-001)) — in progress (branch `test-coverage-tooling`)
-- [ ] **TC-002** `MEDIUM` · platform — Apple and Windows native tests never run in CI ([details](#tc-002)) — in progress (branch `test-coverage-tooling`)
-- [ ] **TC-003** `LOW` · infra — `make coverage-packages` prints instruction coverage, not the line/branch figures the floors use ([details](#tc-003)) — in progress (branch `test-coverage-tooling`)
-- [ ] **TC-004** `LOW` · infra — Codecov patch target (70%) is far below the project's level ([details](#tc-004)) — in progress (branch `test-coverage-tooling`)
-- [ ] **TC-005** `LOW` · infra — No mutation testing to catch "runs but isn't checked" tests ([details](#tc-005)) — in progress (branch `test-coverage-tooling`)
-- [ ] **TC-006** `LOW` · infra — Java-facing API (`@JvmStatic` bridges, `@JvmName` facades) is never exercised or ABI-checked ([details](#tc-006)) — in progress (branch `test-coverage-tooling`)
-- [ ] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — in progress (branch `test-coverage-tooling`; the `RedisUtils` catch is left for TC-067)
+- [ ] **TC-001** `MEDIUM` · infra — Coverage floor is a single aggregate; most modules could drop to 0% without tripping it ([details](#tc-001)) — in progress (#187)
+- [ ] **TC-002** `MEDIUM` · platform — Apple and Windows native tests never run in CI ([details](#tc-002)) — in progress (#187)
+- [ ] **TC-003** `LOW` · infra — `make coverage-packages` prints instruction coverage, not the line/branch figures the floors use ([details](#tc-003)) — in progress (#187)
+- [ ] **TC-004** `LOW` · infra — Codecov patch target (70%) is far below the project's level ([details](#tc-004)) — in progress (#187)
+- [ ] **TC-005** `LOW` · infra — No mutation testing to catch "runs but isn't checked" tests ([details](#tc-005)) — in progress (#187)
+- [ ] **TC-006** `LOW` · infra — Java-facing API (`@JvmStatic` bridges, `@JvmName` facades) is never exercised or ABI-checked ([details](#tc-006)) — in progress (#187)
+- [ ] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — in progress (#187; the `RedisUtils` catch is left for TC-067)
 
 ### core-utils
 - [ ] **TC-008** `HIGH` · bug — `singleToDoubleQuoted` corrupts input that has surrounding whitespace ([details](#tc-008))
@@ -203,7 +203,7 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 
 ### guava-utils
 - [ ] **TC-055** `MEDIUM` · gap — `GenericValueWaiter`: non-satisfying update, timeout/set race, cancel with finite timeout ([details](#tc-055))
-- [ ] **TC-056** `MEDIUM` · weak — `BooleanMonitor` log helpers: levels unchecked, `@JvmStatic` bridges uncovered ([details](#tc-056)) — `@JvmStatic` bridge half in progress with TC-006; log-level assertions still open
+- [ ] **TC-056** `MEDIUM` · weak — `BooleanMonitor` log helpers: levels unchecked, `@JvmStatic` bridges uncovered ([details](#tc-056)) — `@JvmStatic` bridge half in progress (#187, with TC-006); log-level assertions still open
 - [ ] **TC-057** `MEDIUM` · gap — `GenericMonitor` interruption and timed-guard-failure paths untested ([details](#tc-057))
 - [ ] **TC-058** `MEDIUM` · gap — Service failure paths and `GuavaDsl.serviceManager` untested in this module ([details](#tc-058))
 - [ ] **TC-059** `MEDIUM` · flaky — Wall-clock bounds, unsynchronized flags after short joins, delay-based waiter registration ([details](#tc-059))
