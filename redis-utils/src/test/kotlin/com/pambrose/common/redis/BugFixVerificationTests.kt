@@ -24,11 +24,9 @@ import com.pambrose.common.redis.RedisUtils.withRedisPool
 import com.pambrose.common.redis.RedisUtils.withSuspendingNonNullRedisPool
 import com.pambrose.common.redis.RedisUtils.withSuspendingRedis
 import com.pambrose.common.redis.RedisUtils.withSuspendingRedisPool
-import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.incrementAndFetch
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -39,37 +37,33 @@ class BugFixVerificationTests : StringSpec() {
     // Before fix: split(colon, 2).get(1) crashed on single-element list
     // After fix: getOrElse(1) { "" } returns empty string when index is missing
 
-    "redis client creation with user info without colon does not crash" {
-      // URL with username only (no colon/password in userInfo)
-      shouldNotThrow<IndexOutOfBoundsException> {
-        val client = RedisUtils.newRedisClient(
-          redisUrl = "redis://username@localhost:6379",
-          maxPoolSize = 1,
-        )
-        client shouldNotBe null
-        client.close()
+    "a url with a user but no password builds a client and sends no credentials" {
+      RedisUtils.clientConfig("redis://username@localhost:6379").apply {
+        user shouldBe null
+        password shouldBe null
+      }
+      RedisUtils.newRedisClient(redisUrl = "redis://username@localhost:1", maxPoolSize = 1).use { client ->
+        client.pool.maxTotal shouldBe 1
       }
     }
 
-    "redis client creation with no user info does not crash" {
-      shouldNotThrow<Exception> {
-        val client = RedisUtils.newRedisClient(
-          redisUrl = "redis://localhost:6379",
-          maxPoolSize = 1,
-        )
-        client shouldNotBe null
-        client.close()
+    "a url with no user info builds a client and sends no credentials" {
+      RedisUtils.clientConfig("redis://localhost:6379").apply {
+        user shouldBe null
+        password shouldBe null
+      }
+      RedisUtils.newRedisClient(redisUrl = "redis://localhost:1", maxPoolSize = 1).use { client ->
+        client.pool.maxTotal shouldBe 1
       }
     }
 
-    "redis client creation with standard user info works" {
-      shouldNotThrow<Exception> {
-        val client = RedisUtils.newRedisClient(
-          redisUrl = "redis://user:password@localhost:6379",
-          maxPoolSize = 1,
-        )
-        client shouldNotBe null
-        client.close()
+    "a url with the placeholder user and a password sends only the password" {
+      RedisUtils.clientConfig("redis://user:password@localhost:6379").apply {
+        user shouldBe null
+        password shouldBe "password"
+      }
+      RedisUtils.newRedisClient(redisUrl = "redis://user:password@localhost:1", maxPoolSize = 1).use { client ->
+        client.pool.maxTotal shouldBe 1
       }
     }
 
@@ -146,7 +140,7 @@ class BugFixVerificationTests : StringSpec() {
     }
 
     // withNonNullRedis used to run its block against an unreachable server, because building a client does
-    // not connect. It now skips the block and returns null; RedisConfigTests covers that path.
+    // not report one. It now skips the block and returns null; RedisConfigTests covers that path.
 
     "withRedisPool: block exception from null branch propagates and block invoked once" {
       val callCount = AtomicInt(0)

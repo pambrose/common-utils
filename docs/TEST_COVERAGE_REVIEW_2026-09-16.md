@@ -134,7 +134,7 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-004** `LOW` · infra — Codecov patch target (70%) is far below the project's level ([details](#tc-004)) — fixed in #187
 - [x] **TC-005** `LOW` · infra — No mutation testing to catch "runs but isn't checked" tests ([details](#tc-005)) — fixed in #187
 - [x] **TC-006** `LOW` · infra — Java-facing API (`@JvmStatic` bridges, `@JvmName` facades) is never exercised or ABI-checked ([details](#tc-006)) — fixed in #187
-- [x] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — fixed in #187 (the `RedisUtils` catch is left for TC-067)
+- [x] **TC-007** `LOW` · infra — Simplify unreachable branches instead of trying to test them ([details](#tc-007)) — fixed in #187 (the `RedisUtils` catch was removed by TC-067 in #196)
 
 ### core-utils
 - [x] **TC-008** `HIGH` · bug — `singleToDoubleQuoted` corrupts input that has surrounding whitespace ([details](#tc-008)) — fixed in #191
@@ -212,22 +212,22 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [ ] **TC-062** `LOW` · weak — `GuavaFuncsTests` cannot fail ([details](#tc-062))
 
 ### prometheus-utils
-- [ ] **TC-063** `MEDIUM` · gap — `SystemMetrics` retry path untested; repeat-call test cannot fail ([details](#tc-063))
-- [ ] **TC-064** `LOW` · gap — Duplicate registration, throwing runnables, partial registration in `InstrumentedThreadFactory` ([details](#tc-064))
+- [x] **TC-063** `MEDIUM` · gap — `SystemMetrics` retry path untested; repeat-call test cannot fail ([details](#tc-063)) — fixed in #196
+- [x] **TC-064** `LOW` · gap — Duplicate registration, throwing runnables, partial registration in `InstrumentedThreadFactory` ([details](#tc-064)) — fixed in #196
 
 ### dropwizard-utils
-- [ ] **TC-065** `LOW` · weak — Map health check never shown to be live; error message unchecked ([details](#tc-065))
+- [x] **TC-065** `LOW` · weak — Map health check never shown to be live; error message unchecked ([details](#tc-065)) — fixed in #196
 
 ### redis-utils
-- [ ] **TC-066** `HIGH` · gap — Real `withRedis` connect/ping/close path never runs; URL and `close()` never verified ([details](#tc-066))
-- [ ] **TC-067** `MEDIUM` · bug — URL without a port uses port -1; malformed URLs escape the null path ([details](#tc-067))
-- [ ] **TC-068** `LOW` · weak — `shouldNotBe null` on non-null clients; `printStackTrace` effect unverified ([details](#tc-068))
+- [x] **TC-066** `HIGH` · gap — Real `withRedis` connect/ping/close path never runs; URL and `close()` never verified ([details](#tc-066)) — fixed in #196
+- [x] **TC-067** `MEDIUM` · bug — URL without a port uses port -1; malformed URLs escape the null path ([details](#tc-067)) — fixed in #196
+- [x] **TC-068** `LOW` · weak — `shouldNotBe null` on non-null clients; `printStackTrace` effect unverified ([details](#tc-068)) — fixed in #196
 
 ### exposed-utils
-- [ ] **TC-069** `HIGH` · weak — No test proves `upsert` uses the given conflict index ([details](#tc-069))
-- [ ] **TC-070** `MEDIUM` · weak — Transaction helpers' read-only, isolation and rollback behaviour unverified ([details](#tc-070))
-- [ ] **TC-071** `LOW` · gap — `toRowString` empty-value filter; `CustomExpr` never run against H2 ([details](#tc-071))
-- [ ] **TC-072** `LOW` · weak — Null-database tests are weak and order-dependent; stale comment ([details](#tc-072))
+- [x] **TC-069** `HIGH` · weak — No test proves `upsert` uses the given conflict index ([details](#tc-069)) — fixed in #196
+- [x] **TC-070** `MEDIUM` · weak — Transaction helpers' read-only, isolation and rollback behaviour unverified ([details](#tc-070)) — fixed in #196
+- [x] **TC-071** `LOW` · gap — `toRowString` empty-value filter; `CustomExpr` never run against H2 ([details](#tc-071)) — fixed in #196
+- [x] **TC-072** `LOW` · weak — Null-database tests are weak and order-dependent; stale comment ([details](#tc-072)) — fixed in #196
 
 ### script-utils (common / java / kotlin / python)
 - [ ] **TC-073** `HIGH` · bug — `accessibleClass` falls back to `Any` but keeps the type arguments; arrays fail to compile ([details](#tc-073))
@@ -328,7 +328,7 @@ About 30 of the 114 missed branches are compiler-generated null checks, `COROUTI
 - `KtorServletResponse.kt:120, 146`: `printWriter ?: PrintWriter(…).also { printWriter = it }`.
 - `AtomicDelegates.kt:90`: drop the `= null` default on the private constructor.
 - `RecaptchaService.kt:92`: drop the `= null` default on a non-null `String`.
-- `RedisUtils.kt:158-161`: the `catch` around `createRedisClient` is effectively dead, because building a client never connects. It does, however, catch nothing that malformed URLs throw; see [TC-067](#tc-067) before deleting it.
+- `RedisUtils.kt:158-161`: the `catch` around `createRedisClient` is effectively dead, because building a client never reports a connection failure (jedis 8.0.1 does open a probe connection while building, but swallows its `JedisException`). It does, however, catch nothing that malformed URLs throw; see [TC-067](#tc-067) before deleting it.
 
 The rest need no action. Do **not** add Kover class exclusions to hide them ([TC-030](#tc-030) explains why that backfires for serialization code).
 
@@ -1017,7 +1017,7 @@ The `else` (retry later) arm is never taken. The repeat-call test can't fail: a 
 **Where:** `dropwizard-utils/src/main/kotlin/com/pambrose/common/util/MetricsUtils.kt:77`; test `dropwizard-utils/src/test/kotlin/com/pambrose/common/dsl/MetricsDslTests.kt:49-57`
 
 - **Live map:** the tests use only immutable maps, so nothing shows `newMapHealthCheck` reads the map on every check. **Test:** create the check, mutate the `HashMap`, and assert the next result changes.
-- **Error message:** the throwing-block test doesn't assert the result's `error`.
+- **Error message:** the exception test doesn't assert the result's `error`. Its block returns `unhealthy(exception)` rather than throwing, and no test has a block that throws.
 
 ### redis-utils
 

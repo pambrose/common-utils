@@ -40,12 +40,18 @@ The password is sent only when it is a real one: a blank password and the placeh
 password. The user is sent only alongside a real password, and only when the name itself is a real one — not
 blank, `default` or `user`.
 
+A URL without a port connects to 6379. A URL that can never work throws `IllegalArgumentException` from every
+function that takes one, before any block runs; it is a configuration error, not a connection failure, so it does
+not take the `null` path described below. That covers a malformed URL, one with no host (such as
+`localhost:6379`, which parses as the scheme `localhost`), a non-numeric database index and an unknown
+`protocol`. The message of a malformed-URL exception leaves out the URL, which may hold a password.
+
 ### Short-lived Clients
 
 The `withRedis` family creates a client, pings the server to verify the connection, runs the block, and closes
 the client. When the connection fails, `withRedis` passes `null` to the block, while `withNonNullRedis` skips the
-block and returns `null`. Building a Jedis client does not connect, so the ping is what makes that promise hold
-for an unreachable server, a pool that cannot lend a connection, or a rejected password. A client that fails
+block and returns `null`. Building a Jedis client does not report an unreachable server, so the ping is what
+makes that promise hold for an unreachable server, a pool that cannot lend a connection, or a rejected password. A client that fails
 the ping is closed rather than handed to the block.
 
 ```kotlin

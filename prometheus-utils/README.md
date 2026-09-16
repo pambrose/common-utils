@@ -105,8 +105,9 @@ Mismatched `labelNames` / `labelValues` sizes throw `IllegalArgumentException`.
 
 Wraps an existing `ThreadFactory` and exports counters for threads created, running and terminated. Pass
 `registry` to register the metrics somewhere other than the default registry; two factories with the same
-`name` need separate registries. When the delegate rejects a thread by returning `null`, `newThread` returns
-`null` too, and the thread is not counted.
+`name` need separate registries. If any of the three metric names is already taken, the constructor throws
+`IllegalArgumentException` and leaves none of them registered. When the delegate rejects a thread by returning
+`null`, `newThread` returns `null` too, and the thread is not counted.
 
 ```kotlin
 import com.pambrose.common.concurrent.InstrumentedThreadFactory

@@ -21,6 +21,9 @@ package com.pambrose.common.metrics
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.spyk
+import io.mockk.verify
 import io.prometheus.client.Collector
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.hotspot.ThreadExports
@@ -43,12 +46,41 @@ class SystemMetricsTests : StringSpec() {
       registry.getSampleValue("jvm_classes_currently_loaded").shouldNotBeNull()
     }
 
-    "calling initialize again with the same exporters is safe" {
-      val registry = CollectorRegistry(true)
+    // The registry rejects a duplicate with IllegalArgumentException, which initialize also swallows, so only the
+    // number of registration attempts tells skipping an exporter apart from trying it again.
+    "calling initialize again with the same exporters makes no second registration attempt" {
+      val registry = spyk(CollectorRegistry(true))
       SystemMetrics.initialize(enableThreadExports = true, registry = registry)
       SystemMetrics.initialize(enableThreadExports = true, registry = registry)
 
       registry.getSampleValue("jvm_threads_current").shouldNotBeNull()
+      verify(exactly = 1) { registry.register(any()) }
+    }
+
+    "an exporter that fails to register for another reason is retried by the next call" {
+      val registry = spyk(CollectorRegistry(true))
+      every { registry.register(any()) } throws IllegalStateException("simulated failure") andThenAnswer
+        { callOriginal() }
+
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+      registry.getSampleValue("jvm_threads_current") shouldBe null
+
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+      registry.getSampleValue("jvm_threads_current").shouldNotBeNull()
+
+      // Registered now, so a third call makes no further attempt.
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+      verify(exactly = 2) { registry.register(any()) }
+    }
+
+    "an exporter removed with clear is not registered again" {
+      val registry = CollectorRegistry(true)
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+      registry.clear()
+
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+
+      registry.getSampleValue("jvm_threads_current") shouldBe null
     }
 
     "a later call registers exporters that were not requested before" {
@@ -62,12 +94,18 @@ class SystemMetricsTests : StringSpec() {
     }
 
     "an exporter already registered elsewhere is skipped without blocking the others" {
-      val registry = CollectorRegistry(true)
+      val registry = spyk(CollectorRegistry(true))
       ThreadExports().register<Collector>(registry)
 
       SystemMetrics.initialize(enableThreadExports = true, enableClassLoadingExports = true, registry = registry)
 
       registry.getSampleValue("jvm_classes_currently_loaded").shouldNotBeNull()
+      // One direct registration, then one attempt per exporter.
+      verify(exactly = 3) { registry.register(any()) }
+
+      // The rejected exporter counts as registered, so a later call does not try it again.
+      SystemMetrics.initialize(enableThreadExports = true, enableClassLoadingExports = true, registry = registry)
+      verify(exactly = 3) { registry.register(any()) }
     }
 
     "initialize with no exports enabled registers nothing" {

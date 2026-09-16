@@ -18,8 +18,10 @@
 
 package com.pambrose.common.dsl
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.prometheus.client.CollectorRegistry
 
 class PrometheusDslTests : StringSpec() {
@@ -126,6 +128,24 @@ class PrometheusDslTests : StringSpec() {
       registry.getSampleValue("isolated_dsl_summary_sum") shouldBe 3.0
       registry.getSampleValue("isolated_dsl_histogram_count") shouldBe 1.0
       defaultRegistry.getSampleValue("isolated_dsl_counter_total") shouldBe null
+    }
+
+    // Each builder registers the metric, so the registry rejects a name that is already in use.
+    "a builder whose name is already registered throws IllegalArgumentException" {
+      val registry = CollectorRegistry()
+      PrometheusDsl.counter(registry) {
+        name("duplicate_dsl_metric")
+        help("first")
+      }
+
+      listOf(
+        { PrometheusDsl.counter(registry) { name("duplicate_dsl_metric").help("again") } },
+        { PrometheusDsl.gauge(registry) { name("duplicate_dsl_metric").help("again") } },
+        { PrometheusDsl.summary(registry) { name("duplicate_dsl_metric").help("again") } },
+        { PrometheusDsl.histogram(registry) { name("duplicate_dsl_metric").help("again") } },
+      ).forEach { register ->
+        shouldThrow<IllegalArgumentException> { register() }.message shouldContain "duplicate_dsl_metric"
+      }
     }
   }
 }

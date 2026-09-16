@@ -84,6 +84,22 @@ class MetricsUtilsTests : StringSpec() {
       factories.all { Modifier.isStatic(it.modifiers) } shouldBe true
     }
 
+    "a map health check reads the map's current size on every check" {
+      val map = HashMap<String, Int>()
+      val healthCheck = MetricsUtils.newMapHealthCheck(map, size = 2)
+      healthCheck.execute().isHealthy shouldBe true
+
+      map["a"] = 1
+      map["b"] = 2
+      healthCheck.execute().apply {
+        isHealthy shouldBe false
+        message shouldBe "Large size: 2 (threshold: 2)"
+      }
+
+      map.remove("a")
+      healthCheck.execute().isHealthy shouldBe true
+    }
+
     "a backlog check built from a supplier reads the current size on every check" {
       var backlog = 5
       val healthCheck = MetricsUtils.newBacklogHealthCheck(backlogSize = { backlog }, size = 10)

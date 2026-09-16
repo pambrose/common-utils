@@ -19,30 +19,63 @@
 package com.pambrose.common.exposed
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.longs.shouldBeInRange
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jetbrains.exposed.v1.core.QueryBuilder
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jodatime.JodaLocalDateTimeColumnType
+import org.joda.time.DateTime
 
 class CustomExprTests : StringSpec() {
+  private lateinit var db: Database
+
   init {
-    "custom expr creation" {
-      val expr = customDateTimeConstant("NOW()")
-      expr shouldNotBe null
-      expr.text shouldBe "NOW()"
+    beforeSpec {
+      db = Database.connect("jdbc:h2:mem:custom_expr_tests;DB_CLOSE_DELAY=-1", user = "sa")
     }
 
-    "date time expr creation" {
-      val expr = dateTimeExpr("CURRENT_TIMESTAMP")
-      expr shouldNotBe null
-      expr.text shouldBe "CURRENT_TIMESTAMP"
+    afterSpec {
+      TransactionManager.closeAndUnregister(db)
     }
 
-    "custom expr with different text" {
-      val expr1 = customDateTimeConstant("NOW()")
-      val expr2 = customDateTimeConstant("CURRENT_DATE")
+    "each factory keeps the raw sql text and maps results as a Joda date-time" {
+      listOf(customDateTimeConstant("NOW()"), dateTimeExpr("CURRENT_DATE")).forEach { expr ->
+        expr.columnType.shouldBeInstanceOf<JodaLocalDateTimeColumnType>()
+      }
+      customDateTimeConstant("NOW()").text shouldBe "NOW()"
+      dateTimeExpr("CURRENT_DATE").text shouldBe "CURRENT_DATE"
+    }
 
-      expr1.text shouldBe "NOW()"
-      expr2.text shouldBe "CURRENT_DATE"
+    // The raw text is sent to H2 as written, and the result is read back through the Joda column type.
+    "a date-time expression selects its value from the database" {
+      val expr = dateTimeExpr("TIMESTAMP '2026-09-16 12:34:56'")
+
+      val value = transaction(db) { Table.Dual.select(expr).single()[expr] }
+
+      value shouldBe DateTime(2026, 9, 16, 12, 34, 56)
+    }
+
+    "a nullable date-time constant reads SQL NULL as null" {
+      val expr = customDateTimeConstant("CAST(NULL AS TIMESTAMP)")
+
+      transaction(db) { Table.Dual.select(expr).single()[expr] } shouldBe null
+    }
+
+    // LOCALTIMESTAMP is when the statement ran, so it falls between the clock readings taken around it.
+    "LOCALTIMESTAMP reads back as the current local time" {
+      val expr = dateTimeExpr("LOCALTIMESTAMP")
+
+      // Whole seconds either side, in case either clock truncates.
+      val before = DateTime.now().minusSeconds(1).millis
+      val value = transaction(db) { Table.Dual.select(expr).single()[expr] }
+      val after = DateTime.now().plusSeconds(1).millis
+
+      value.millis shouldBeInRange before..after
     }
 
     "custom expr toQueryBuilder appends the raw sql text" {

@@ -12,6 +12,13 @@ All notable changes to Common Utils are documented in this file.
 - core-utils `MiscFuncs.waitForPortAvailable` throws `IllegalArgumentException` for a port outside `0..65535`,
   instead of retrying it like a busy port and returning `false`. Only I/O failures now count as "busy".
 - core-utils `UrlSource` rejects a negative timeout when it is constructed.
+- redis-utils throws `IllegalArgumentException` for a Redis URL that can never work, from `newRedisClient` and
+  from the `withRedis` family before the block runs. That covers a malformed URL, a URL with no host, a
+  non-numeric database index and an unknown `protocol`. Before:
+  - a malformed URL threw `URISyntaxException`, whose message repeated the URL and any password in it. The new
+    message leaves the URL out.
+  - a URL with no host, such as `localhost:6379` (which parses as the scheme `localhost`), took the `null` path
+    like an unreachable server.
 
 ### Bug fixes
 
@@ -43,6 +50,11 @@ All notable changes to Common Utils are documented in this file.
 - recaptcha-utils reads each `RecaptchaConfig` key once per call. A config whose getters changed between reads
   could pass the "fully configured" gate and then throw `IllegalArgumentException` from `validateRecaptcha` or
   `recaptchaWidget`.
+- redis-utils connects to port 6379 when the URL has no port. The port was passed to Jedis as -1, so every
+  connection to `redis://host` failed, and `withRedis` passed `null` to its block even with a server listening.
+- prometheus-utils `InstrumentedThreadFactory` registers its three metrics all or nothing. When only a later
+  metric name was taken, the constructor threw but left the earlier metrics registered, so building the factory
+  kept failing even after the conflict was removed.
 
 ### Documentation
 

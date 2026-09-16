@@ -22,16 +22,20 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import java.sql.Connection
 import kotlin.time.Duration
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transactionManager
 
 private object ExposedUtilsTestTable : Table("exposed_utils_test_users") {
   val id = integer("id")
@@ -41,6 +45,10 @@ private object ExposedUtilsTestTable : Table("exposed_utils_test_users") {
   // Holds SQL NULL in the seeded row: a null value is a value, not a missing column.
   val note = varchar("note", 100).nullable()
 }
+
+// The isolation level the transaction was given, and the one its JDBC connection reports.
+private fun JdbcTransaction.isolationLevels() =
+  transactionIsolation to (connection.connection as Connection).transactionIsolation
 
 class ExposedUtilsTests : StringSpec() {
   private lateinit var db: Database
@@ -115,6 +123,70 @@ class ExposedUtilsTests : StringSpec() {
         val row = ExposedUtilsTestTable.selectAll().single()
         row.toRowString() shouldBe "1 - alice@example.com - Alice - null"
       }
+    }
+
+    // Rolled back, so the other tests still see only the seeded row.
+    "toRowString leaves out a column whose value is empty" {
+      transaction(db) {
+        ExposedUtilsTestTable.insert {
+          it[id] = 2
+          it[email] = "bob@example.com"
+          it[name] = ""
+        }
+        val row =
+          ExposedUtilsTestTable
+            .select(ExposedUtilsTestTable.id, ExposedUtilsTestTable.name, ExposedUtilsTestTable.email)
+            .where { ExposedUtilsTestTable.id eq 2 }
+            .single()
+        row.toRowString() shouldBe "2 - bob@example.com"
+        rollback()
+      }
+    }
+
+    // H2 ignores Connection.setReadOnly, so a write would still succeed; what can be checked is the read-only flag
+    // each helper gives the transaction, which Exposed passes on to the driver.
+    "readonlyTx and timedReadOnlyTx run read-only transactions, and timedTransaction does not" {
+      readonlyTx(db = db) { readOnly } shouldBe true
+      timedReadOnlyTx(db = db) { readOnly }.value shouldBe true
+      timedTransaction(db = db) { readOnly }.value shouldBe false
+    }
+
+    // H2 does apply the isolation level, so the connection reports it as well as the transaction.
+    "each helper applies the given isolation level to its transaction and connection" {
+      val serializable = Connection.TRANSACTION_SERIALIZABLE
+      db.transactionManager.defaultIsolationLevel shouldNotBe serializable
+      val expected = serializable to serializable
+
+      readonlyTx(db, serializable) { isolationLevels() } shouldBe expected
+      timedTransaction(db, serializable) { isolationLevels() }.value shouldBe expected
+      timedReadOnlyTx(db, serializable) { isolationLevels() }.value shouldBe expected
+    }
+
+    "each helper defaults to the database's isolation level" {
+      val default = db.transactionManager.defaultIsolationLevel
+      val expected = default to default
+
+      readonlyTx(db) { isolationLevels() } shouldBe expected
+      timedTransaction(db) { isolationLevels() }.value shouldBe expected
+      timedReadOnlyTx(db) { isolationLevels() }.value shouldBe expected
+    }
+
+    "an exception thrown inside timedTransaction propagates and rolls back its changes" {
+      val exception =
+        shouldThrow<IllegalStateException> {
+          timedTransaction(db = db) {
+            ExposedUtilsTestTable.insert {
+              it[id] = 3
+              it[email] = "carol@example.com"
+              it[name] = "Carol"
+            }
+            ExposedUtilsTestTable.selectAll().count() shouldBe 2L
+            error("simulated failure")
+          }
+        }
+
+      exception.message shouldBe "simulated failure"
+      readonlyTx(db = db) { ExposedUtilsTestTable.selectAll().count() } shouldBe 1L
     }
 
     "readonlyTx with default database returns the statement result" {

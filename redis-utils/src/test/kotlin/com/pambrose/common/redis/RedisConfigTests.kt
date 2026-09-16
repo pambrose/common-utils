@@ -25,14 +25,19 @@ import com.pambrose.common.redis.RedisUtils.withRedisPool
 import com.pambrose.common.redis.RedisUtils.withSuspendingNonNullRedis
 import com.pambrose.common.redis.RedisUtils.withSuspendingRedis
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldNotContain
+import io.kotest.matchers.string.shouldStartWith
 import io.mockk.every
 import io.mockk.mockk
 import java.util.Locale
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.incrementAndFetch
+import redis.clients.jedis.HostAndPort
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.RedisProtocol
 import redis.clients.jedis.exceptions.JedisAccessControlException
@@ -85,6 +90,51 @@ class RedisConfigTests : StringSpec() {
       }
     }
 
+    // URI reports a missing port as -1, which jedis tried to connect to, so every connection failed even with a
+    // server listening on 6379.
+    "a url without a port connects to 6379" {
+      RedisUtils.hostAndPort("redis://cache.example.com") shouldBe HostAndPort("cache.example.com", 6379)
+      RedisUtils.hostAndPort("rediss://alice:secret@cache.example.com/2") shouldBe
+        HostAndPort("cache.example.com", 6379)
+      RedisUtils.hostAndPort("redis://cache.example.com:6380") shouldBe HostAndPort("cache.example.com", 6380)
+    }
+
+    // A URL that can never work is a configuration error, not a connection failure: it throws before the block
+    // runs, rather than passing it null.
+    "an invalid url throws IllegalArgumentException from every function that takes one" {
+      mapOf(
+        "redis://localhost:6379/abc" to "For input string: \"abc\"",
+        "redis://localhost:6379/0?protocol=9" to "Unknown protocol 9",
+        // The index in the message varies between JDKs.
+        "redis://local host:6379" to "Malformed Redis URL: Illegal character in authority at index ",
+        // Read as scheme "localhost" with no host, which jedis would have sent to 127.0.0.1.
+        "localhost:6379" to "Redis URL has no host",
+        "redis://:6379" to "Redis URL has no host",
+      ).forEach { (url, message) ->
+        withClue(url) {
+          val blockRuns = AtomicInt(0)
+          listOf(
+            shouldThrow<IllegalArgumentException> { withRedis(url) { blockRuns.incrementAndFetch() } },
+            shouldThrow<IllegalArgumentException> { withNonNullRedis(url) { blockRuns.incrementAndFetch() } },
+            shouldThrow<IllegalArgumentException> { withSuspendingRedis(url) { blockRuns.incrementAndFetch() } },
+            shouldThrow<IllegalArgumentException> {
+              withSuspendingNonNullRedis(url) { blockRuns.incrementAndFetch() }
+            },
+            shouldThrow<IllegalArgumentException> { RedisUtils.newRedisClient(url) },
+          ).forEach { it.message.shouldNotBeNull() shouldStartWith message }
+          blockRuns.load() shouldBe 0
+        }
+      }
+    }
+
+    // The URL can carry a password, and so can the message of the URISyntaxException that rejects it.
+    "a malformed url's exception does not repeat the password" {
+      val exception = shouldThrow<IllegalArgumentException> { withRedis("redis://alice:s3cret@bad host:6379") { } }
+
+      exception.message shouldNotContain "s3cret"
+      exception.cause shouldBe null
+    }
+
     // commons-pool2 treats -1 as unlimited and 0 as a pool that can never lend a connection.
     "a pool size of zero is rejected" {
       shouldThrow<IllegalArgumentException> { RedisUtils.newRedisClient(maxPoolSize = 0) }
@@ -97,7 +147,7 @@ class RedisConfigTests : StringSpec() {
       }
     }
 
-    // Building a client never connects, so the withRedis family has to check the connection itself.
+    // Building a client does not report an unreachable server, so the withRedis family has to check the connection.
     "withRedis passes null to the block when the server is unreachable" {
       val callCount = AtomicInt(0)
       val result =

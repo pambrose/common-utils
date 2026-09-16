@@ -21,6 +21,7 @@ package com.pambrose.common.dsl
 import com.codahale.metrics.health.HealthCheck
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import java.lang.reflect.Modifier
 
 class MetricsDslTests : StringSpec() {
@@ -47,13 +48,28 @@ class MetricsDslTests : StringSpec() {
     }
 
     "health check with exception" {
+      val failure = RuntimeException("Test exception")
       val healthCheck =
         MetricsDsl.healthCheck {
-          HealthCheck.Result.unhealthy(RuntimeException("Test exception"))
+          HealthCheck.Result.unhealthy(failure)
         }
 
       val result = healthCheck.execute()
       result.isHealthy shouldBe false
+      result.error shouldBeSameInstanceAs failure
+      result.message shouldBe "Test exception"
+    }
+
+    // HealthCheck.execute() turns an exception from check() into an unhealthy result, so the DSL must let it
+    // propagate rather than handle it itself.
+    "a block that throws yields an unhealthy result carrying the exception" {
+      val failure = IllegalStateException("backend unreachable")
+      val healthCheck = MetricsDsl.healthCheck { throw failure }
+
+      val result = healthCheck.execute()
+      result.isHealthy shouldBe false
+      result.error shouldBeSameInstanceAs failure
+      result.message shouldBe "backend unreachable"
     }
 
     "healthCheck is a static method, so Java callers need no INSTANCE" {
