@@ -6,10 +6,9 @@ on:
   pull_request:
     branches: [master]
 
+# Pages and OIDC rights belong to the deploy job alone; the build job, which runs PR code, only reads.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # A concurrency group holds at most one running and one pending run; a newly queued run cancels
 # the pending one. Grouping by ref keeps PR builds (refs/pull/<n>/merge) from replacing a pending
@@ -24,6 +23,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-java@v6
         with:
@@ -45,6 +46,10 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs: kdocs
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

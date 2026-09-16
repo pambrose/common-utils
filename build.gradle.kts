@@ -10,6 +10,8 @@ import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.DetektCreateBaselineTask
 import dev.detekt.gradle.extensions.DetektExtension
 import io.kotest.framework.gradle.KotestGradleExtension
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
@@ -47,6 +49,9 @@ plugins {
     alias(libs.plugins.kotlinter) apply false
     alias(libs.plugins.kotest) apply false
     alias(libs.plugins.detekt) apply false
+    // Declared here, like every other module plugin, so it resolves in one classloader rather than
+    // separately in each KMP module that applies it.
+    alias(libs.plugins.ksp) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
     alias(libs.plugins.maven.publish) apply false
@@ -87,6 +92,30 @@ fun DokkaExtension.configureHtml() {
 dokka {
     moduleName.set(projectName)
     configureHtml()
+}
+
+// Coverage floors, enforced through `check` (and so through CI's `./gradlew build`). They sit a few points
+// below the weakest package rather than at the project's current figures — line 98.3% overall but 96.0% in
+// `concurrent`; branch 89.1% overall but 50.0% in `response` and 74.5% in `webhook` — so a real regression,
+// such as a module arriving without tests, trips them while ordinary drift does not. `make build` passes
+// -x koverVerify, since that target is documented as building without tests.
+kover {
+    reports {
+        verify {
+            rule {
+                bound {
+                    minValue = 90
+                    coverageUnits = CoverageUnit.LINE
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
+                bound {
+                    minValue = 80
+                    coverageUnits = CoverageUnit.BRANCH
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
+            }
+        }
+    }
 }
 
 // Force patched versions of vulnerable transitive npm packages in the JS/wasmJs test
@@ -398,14 +427,29 @@ fun Project.configurePublishing(isKmp: Boolean) {
             }
             scm {
                 connection.set("scm:git:https://$scmHost.git")
-                developerConnection.set("scm:git:ssh://$scmHost.git")
+                developerConnection.set("scm:git:ssh://git@$scmHost.git")
                 url.set(projectHomepage)
             }
         }
 
         publishToMavenCentral(automaticRelease = true)
-        if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+
+        // Signing needs an in-memory key, which the Makefile's publish targets export. Calling
+        // signAllPublications() unconditionally would break `make publish-local`, since that publishes the
+        // release version with no key and the signing task then fails with "No configured signatory".
+        // The risk worth catching is an *unsigned upload to Central*, which Central rejects only after the
+        // fact, so guard that path explicitly instead.
+        val hasSigningKey = providers.gradleProperty("signingInMemoryKey").isPresent
+        if (hasSigningKey) {
             signAllPublications()
+        }
+        tasks.matching { it.name.contains("MavenCentral") }.configureEach {
+            doFirst {
+                require(hasSigningKey) {
+                    "Publishing to Maven Central requires a signing key: set ORG_GRADLE_PROJECT_signingInMemoryKey, " +
+                        "as `make publish-snapshot` and `make publish-maven-central` do."
+                }
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 description = "Kotlin scripting engine utilities"
 
 dependencies {
-    api(project(":core-utils"))
+    // script-utils-common already exports core-utils as `api`.
     api(project(":script-utils-common"))
 
     runtimeOnly(libs.kotlin.scripting)

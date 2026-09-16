@@ -1,7 +1,7 @@
 description = "Python scripting integration utilities"
 
 dependencies {
-    api(project(":core-utils"))
+    // script-utils-common already exports core-utils as `api`.
     api(project(":script-utils-common"))
 
     implementation(libs.python.scripting)
