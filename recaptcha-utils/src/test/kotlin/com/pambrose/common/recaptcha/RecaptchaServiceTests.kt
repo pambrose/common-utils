@@ -19,21 +19,19 @@
 package com.pambrose.common.recaptcha
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.ktor.http.headersOf
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.post
@@ -41,11 +39,20 @@ import io.ktor.server.testing.testApplication
 import kotlinx.html.head
 import kotlinx.html.stream.createHTML
 
+// A siteverify reply for the fail-closed cases.
+private class Reply(
+  val description: String,
+  val content: String,
+  val status: HttpStatusCode = HttpStatusCode.OK,
+  val contentType: ContentType = ContentType.Application.Json,
+)
+
 /**
  * Covers the routing logic of [RecaptchaService.validateRecaptcha] and the HEAD script injection:
  * the disabled-gate short-circuit, the missing/blank-token 400 path, the verification-error 400
- * path, and the success/failure *response* branches, exercised hermetically through the shared
- * [postToken] helper, which fakes Google's siteverify endpoint with a MockEngine.
+ * path, and the success/failure *response* branches, including malformed and non-2xx replies,
+ * exercised hermetically through the shared [postToken] helper, which fakes Google's siteverify
+ * endpoint with a MockEngine.
  */
 class RecaptchaServiceTests : StringSpec() {
   init {
@@ -157,19 +164,53 @@ class RecaptchaServiceTests : StringSpec() {
     }
 
     "validateRecaptcha responds 400 when the verification response reports failure" {
-      val engine =
-        MockEngine {
-          respond(
-            content = """{"success": false, "error-codes": ["invalid-input-response"]}""",
-            status = HttpStatusCode.OK,
-            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-          )
-        }
+      val engine = respondingEngine("""{"success": false, "error-codes": ["invalid-input-response"]}""")
 
       val (status, body) = postToken(engine)
 
       status shouldBe HttpStatusCode.BadRequest
       body shouldContain "reCAPTCHA verification failed"
+    }
+
+    // The check must fail closed: a reply that is not a well-formed 2xx success is a failed verification, even
+    // when its body would parse as one. Each case sends exactly one request, so the 400 comes from the reply.
+    [
+      Reply(
+        "a 500 HTML error page",
+        "<html><body>Server Error</body></html>",
+        HttpStatusCode.InternalServerError,
+        ContentType.Text.Html,
+      ),
+      Reply("a 500 whose JSON body claims success", """{"success": true}""", HttpStatusCode.InternalServerError),
+      Reply("a redirect whose JSON body claims success", """{"success": true}""", HttpStatusCode.Found),
+      Reply("a JSON content type with a non-JSON body", "not json"),
+      Reply("an empty JSON object", "{}"),
+      Reply("a non-boolean success", """{"success": "yes"}"""),
+      Reply("a null success", """{"success": null}"""),
+    ].forEach { reply ->
+      "validateRecaptcha responds 400 for ${reply.description}" {
+        val engine = respondingEngine(reply.content, reply.status, reply.contentType)
+
+        val (status, body) = postToken(engine)
+
+        status shouldBe HttpStatusCode.BadRequest
+        body shouldBe "reCAPTCHA verification failed"
+        engine.requestHistory shouldHaveSize 1
+      }
+    }
+
+    // These decode only because the production client sets ignoreUnknownKeys (reCAPTCHA v3 adds score and
+    // action) and coerceInputValues (a null for a field with a default). Dropping either flag fails a case.
+    [
+      """{"success": true, "score": 0.9, "action": "login"}""",
+      """{"success": true, "error-codes": null}""",
+    ].forEach { content ->
+      "validateRecaptcha passes for the valid reply $content" {
+        val (status, body) = postToken(respondingEngine(content))
+
+        status shouldBe HttpStatusCode.OK
+        body shouldBe "passed"
+      }
     }
 
     // A verification that fails for an ordinary reason, such as an I/O error reaching Google, drives

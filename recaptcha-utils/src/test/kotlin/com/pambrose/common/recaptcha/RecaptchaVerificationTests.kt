@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.engine.mock.MockEngine
@@ -37,6 +38,9 @@ import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.post
 import io.ktor.server.testing.testApplication
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import org.slf4j.LoggerFactory
 
@@ -54,7 +58,7 @@ private inline fun <T> capturingRecaptchaLogs(block: (logs: () -> List<ILoggingE
 
 /**
  * Covers verification behavior that the routing tests do not: coroutine cancellation, what is sent as
- * `remoteip`, and the enabled-but-misconfigured case.
+ * `remoteip`, how often the config is read, use after `close()`, and the enabled-but-misconfigured case.
  */
 class RecaptchaVerificationTests : StringSpec() {
   init {
@@ -78,6 +82,53 @@ class RecaptchaVerificationTests : StringSpec() {
       body shouldBe "passed"
       val form = (engine.requestHistory.single().body as FormDataContent).formData
       form["remoteip"] shouldBe "203.0.113.7"
+    }
+
+    // Google treats remoteip as optional, so an unknown address is left out rather than sent empty.
+    "the verification request omits remoteip when the remote address is blank" {
+      ["", "  "].forEach { remoteAddress ->
+        val engine = successEngine()
+
+        val (status, body) = postToken(engine, remoteAddress = remoteAddress)
+
+        status shouldBe HttpStatusCode.OK
+        body shouldBe "passed"
+        val form = (engine.requestHistory.single().body as FormDataContent).formData
+        form.names() shouldBe setOf("secret", "response")
+      }
+    }
+
+    // The gate and the verification must use the same read of the secret key; a second read could return null.
+    "validation reads the secret key once and verifies with that value" {
+      val config =
+        mockk<RecaptchaConfig> {
+          every { isRecaptchaEnabled } returns true
+          every { recaptchaSiteKey } returns "site"
+          every { recaptchaSecretKey } returnsMany ["secret", null]
+        }
+      val engine = successEngine()
+
+      val (status, body) = postToken(engine, config = config)
+
+      status shouldBe HttpStatusCode.OK
+      body shouldBe "passed"
+      (engine.requestHistory.single().body as FormDataContent).formData["secret"] shouldBe "secret"
+      verify(exactly = 1) { config.recaptchaSecretKey }
+    }
+
+    // A closed client fails requests with a CancellationException. That must not pass for a cancelled call:
+    // the request gets the ordinary 400, and nothing is sent.
+    "after close, verification fails without contacting Google" {
+      val engine = successEngine()
+
+      val (result, events) =
+        capturingRecaptchaLogs { logs ->
+          postToken(engine, beforePost = { RecaptchaService.close() }) to logs()
+        }
+
+      result shouldBe (HttpStatusCode.BadRequest to "reCAPTCHA verification failed")
+      engine.requestHistory.shouldBeEmpty()
+      events.single { it.level == Level.ERROR }.formattedMessage shouldContain "close()"
     }
 
     // Enabled but missing a key means no bot protection at all, so it must not pass silently.

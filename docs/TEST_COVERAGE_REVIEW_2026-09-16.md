@@ -171,10 +171,10 @@ The slowest JVM suites are script-utils-kotlin (63 s, about half of it in three 
 - [x] **TC-033** `LOW` · weak — `shouldContain "2"` log assertion always passes ([details](#tc-033)) — fixed in #188
 
 ### recaptcha-utils
-- [ ] **TC-034** `HIGH` · gap — Malformed or non-2xx siteverify responses (fail-closed path) never tested ([details](#tc-034))
-- [ ] **TC-035** `MEDIUM` · weak — Tests copy the production `Json` config instead of using it ([details](#tc-035))
-- [ ] **TC-036** `MEDIUM` · weak — Widget test never checks the site key (or that the secret is absent) ([details](#tc-036))
-- [ ] **TC-037** `LOW` · gap — Empty `remoteip`, use after `close()`, config re-reads; specs that test only themselves ([details](#tc-037))
+- [x] **TC-034** `HIGH` · gap — Malformed or non-2xx siteverify responses (fail-closed path) never tested ([details](#tc-034)) — fixed in #193
+- [x] **TC-035** `MEDIUM` · weak — Tests copy the production `Json` config instead of using it ([details](#tc-035)) — fixed in #193
+- [x] **TC-036** `MEDIUM` · weak — Widget test never checks the site key (or that the secret is absent) ([details](#tc-036)) — fixed in #193
+- [x] **TC-037** `LOW` · gap — Empty `remoteip`, use after `close()`, config re-reads; specs that test only themselves ([details](#tc-037)) — fixed in #193
 
 ### ktor-server-utils
 - [x] **TC-038** `HIGH` · bug — Malformed servlet content type turns a successful response into a 500; throwing servlet untested ([details](#tc-038)) — fixed in #189
@@ -666,6 +666,8 @@ The only error test uses an engine that throws. This security check is supposed 
 - 200 `{"success":"yes"}`
 - 200 `{"success":null}`
 
+**Found while fixing:** the client ignored the status code, so a 500 or 302 whose body was `{"success":true}` passed verification. The client now sets `expectSuccess = true`, and both replies are tested.
+
 <a id="tc-035"></a>
 #### TC-035 — Tests copy the production `Json` config
 **Severity:** Medium · **Category:** weak
@@ -693,6 +695,8 @@ The test only checks that the output contains `"g-recaptcha"`.
 - **Config re-reads (`:95`, `:201`):** a config getter that changes between reads (MockK `returnsMany listOf("secret", null)`) makes `validateRecaptcha` throw `IllegalArgumentException` outside `runCatchingCancellable`. Pin that behaviour, or read the keys once.
 - **After `close()` (documented at `:236-237`):** swap in the mock client, call `close()`, post a token, and assert the result.
 - **Specs that exercise no production code:** `RecaptchaConfigTests.kt` (all of it), `RecaptchaTests.kt:69-89` and `:237-246`. Remove them or point them at the service.
+
+**Found while fixing:** after `close()`, a request failed with a `JobCancellationException` ("Parent job is Completed"). `runCatchingCancellable` rethrew it, so `validateRecaptcha` threw as if the call had been cancelled instead of responding 400. The service now checks the client first and fails the verification. The keys are also read once per call now, so the re-read case can't throw.
 
 ### ktor-server-utils
 

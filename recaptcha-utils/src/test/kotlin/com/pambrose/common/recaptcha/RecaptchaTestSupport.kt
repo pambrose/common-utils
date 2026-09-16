@@ -19,10 +19,8 @@
 
 package com.pambrose.common.recaptcha
 
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -31,16 +29,14 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.plugins.mutableOriginConnectionPoint
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.post
 import io.ktor.server.testing.testApplication
-import kotlinx.serialization.json.Json
 
-// Shared by the reCAPTCHA specs, which all need the same three pieces: a config literal, a MockEngine-backed
-// client that fakes Google's siteverify endpoint, and one token pushed through validateRecaptcha.
+// Shared by the reCAPTCHA specs, which all need the same three pieces: a config literal, a MockEngine that fakes
+// Google's siteverify endpoint, and one token pushed through validateRecaptcha.
 
 internal fun recaptchaConfig(
   enabled: Boolean,
@@ -52,32 +48,27 @@ internal fun recaptchaConfig(
   override val recaptchaSecretKey = secretKey
 }
 
-internal fun mockVerificationClient(engine: MockEngine): HttpClient =
-  HttpClient(engine) {
-    install(ContentNegotiation) {
-      json(
-        Json {
-          ignoreUnknownKeys = true
-          coerceInputValues = true
-        },
-      )
-    }
-  }
+// An engine that answers every request with the given reply.
+internal fun respondingEngine(
+  content: String,
+  status: HttpStatusCode = HttpStatusCode.OK,
+  contentType: ContentType = ContentType.Application.Json,
+) = MockEngine {
+  respond(
+    content = content,
+    status = status,
+    headers = headersOf(HttpHeaders.ContentType, contentType.toString()),
+  )
+}
 
 // An engine that answers as Google does for a valid token.
-internal fun successEngine() =
-  MockEngine {
-    respond(
-      content = """{"success": true, "hostname": "example.com"}""",
-      status = HttpStatusCode.OK,
-      headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-    )
-  }
+internal fun successEngine() = respondingEngine("""{"success": true, "hostname": "example.com"}""")
 
 /**
- * Swaps the service's client for a MockEngine-backed one, runs a single token through `validateRecaptcha`, and
- * restores the original client. [remoteAddress] is set explicitly, because the Ktor test host reports the same
- * value for `remoteHost` and `remoteAddress`.
+ * Swaps the service's client for one built on [engine] with the production configuration, runs a single token
+ * through `validateRecaptcha`, and restores the original client. [beforePost] runs once the swapped-in client is
+ * in place. [remoteAddress] is set explicitly, because the Ktor test host reports the same value for `remoteHost`
+ * and `remoteAddress`.
  *
  * The returned body is `"passed"` when validation succeeded, `"propagated <exception>"` when it threw, and
  * whatever `validateRecaptcha` itself wrote (a 400 page) when it returned false.
@@ -86,10 +77,12 @@ internal fun postToken(
   engine: MockEngine,
   config: RecaptchaConfig = recaptchaConfig(enabled = true, siteKey = "site", secretKey = "secret"),
   remoteAddress: String = "203.0.113.7",
+  beforePost: () -> Unit = {},
 ): Pair<HttpStatusCode, String> {
   val previous = RecaptchaService.httpClient
-  RecaptchaService.httpClient = mockVerificationClient(engine)
+  RecaptchaService.httpClient = RecaptchaService.verificationClient(engine)
   try {
+    beforePost()
     var result: Pair<HttpStatusCode, String>? = null
     testApplication {
       routing {

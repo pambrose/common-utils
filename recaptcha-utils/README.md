@@ -112,21 +112,26 @@ post("/signup") {
 and returns `true` when verification succeeds or when reCAPTCHA is not fully configured. **When it returns
 `false` it has already responded**, so the handler must not write a second response.
 
-| Situation                           | Response                                | Returns |
-|-------------------------------------|-----------------------------------------|---------|
-| Not fully configured                | none                                    | `true`  |
-| Token missing or blank              | `400` `reCAPTCHA verification required` | `false` |
-| Google reports `success: false`     | `400` `reCAPTCHA verification failed`   | `false` |
-| Verification could not be completed | `400` `reCAPTCHA verification failed`   | `false` |
-| Google reports `success: true`      | none                                    | `true`  |
+| Situation                                               | Response                                | Returns |
+|---------------------------------------------------------|-----------------------------------------|---------|
+| Not fully configured                                    | none                                    | `true`  |
+| Token missing or blank                                  | `400` `reCAPTCHA verification required` | `false` |
+| Google reports `success: false`                         | `400` `reCAPTCHA verification failed`   | `false` |
+| Verification could not be completed                     | `400` `reCAPTCHA verification failed`   | `false` |
+| Reply is not a 2xx, or its body is not a valid response | `400` `reCAPTCHA verification failed`   | `false` |
+| `RecaptchaService.close()` has been called              | `400` `reCAPTCHA verification failed`   | `false` |
+| Google reports `success: true` in a 2xx reply           | none                                    | `true`  |
 
 The verification request is a form POST to `https://www.google.com/recaptcha/api/siteverify` carrying `secret`
 and `response`, plus `remoteip` when one is available. That address comes from `call.request.origin.remoteAddress`
 rather than `remoteHost`, because Google expects an IP and `remoteHost` can be a reverse-DNS hostname.
 
-Errors reaching or decoding Google's response are logged and treated as a failed verification, with one
-deliberate exception: a `CancellationException` propagates instead. A client that disconnects mid-verification
-is a cancelled call, not a bot, and swallowing it would break coroutine cancellation semantics.
+Each key is read from the config once per call, and the value that passed the gate is the one used.
+
+Errors reaching or decoding Google's response are logged and treated as a failed verification. So is a reply
+with a non-2xx status, even when its body would parse. There is one deliberate exception: a
+`CancellationException` propagates instead. A client that disconnects mid-verification is a cancelled call, not
+a bot, and swallowing it would break coroutine cancellation semantics.
 
 ### Shutdown
 
@@ -143,7 +148,8 @@ fun Application.module() {
 ```
 
 `close()` releases the underlying `HttpClient` and its connection and thread pools. After it is called,
-`validateRecaptcha` can no longer perform server-side verification, so close only on shutdown.
+`validateRecaptcha` can no longer perform server-side verification: while reCAPTCHA is fully configured, every
+submission gets the `400` failure response and an error is logged. Close only on shutdown.
 
 ## API Reference
 
