@@ -5,11 +5,12 @@ package com.pambrose.common.concurrent
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.delay
+import io.kotest.matchers.types.shouldBeInstanceOf
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -31,23 +32,17 @@ class VerboseCountDownLatchTests : StringSpec() {
 
     "await returns when count reaches zero" {
       val latch = VerboseCountDownLatch(2)
-      var completed = false
+      val (waiter, done) = inDaemonThread { latch.await() }
 
-      val t = thread {
-        latch.await()
-        completed = true
-      }
+      waiter.awaitParked()
+      done.isDone shouldBe false
 
-      delay(50.milliseconds)
-      completed shouldBe false
+      // A latch releases its waiters only at zero, so one count down cannot wake this one.
+      latch.countDown()
+      done.isDone shouldBe false
 
       latch.countDown()
-      delay(50.milliseconds)
-      completed shouldBe false
-
-      latch.countDown()
-      t.join(1000)
-      completed shouldBe true
+      done.getGuarded()
     }
 
     "await with timeout returns false if not counted down" {
@@ -59,13 +54,9 @@ class VerboseCountDownLatchTests : StringSpec() {
     "await with timeout returns true when counted down" {
       val latch = VerboseCountDownLatch(1)
 
-      thread {
-        Thread.sleep(10)
-        latch.countDown()
-      }
+      thread { latch.countDown() }
 
-      val result = latch.await(1000, TimeUnit.MILLISECONDS)
-      result shouldBe true
+      latch.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
     }
 
     "isFinished extension returns correct value" {
@@ -106,6 +97,25 @@ class VerboseCountDownLatchTests : StringSpec() {
         // Guarantee the background thread can always exit, even if an assertion above failed.
         latch.countDown()
         t.join(5000)
+      }
+    }
+
+    "the verbose awaits throw InterruptedException when interrupted while waiting" {
+      val awaits: List<VerboseCountDownLatch.() -> Unit> =
+        [
+          { await(1.hours, "still waiting") },
+          { await(1.hours) { "still waiting" } },
+        ]
+
+      for (awaitVerbosely in awaits) {
+        val latch = VerboseCountDownLatch(1)
+        val (waiter, outcome) = inDaemonThread { runCatching { latch.awaitVerbosely() } }
+
+        waiter.awaitParked()
+        waiter.interrupt()
+
+        outcome.getGuarded().exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
+        latch.count shouldBe 1L
       }
     }
 

@@ -20,9 +20,12 @@ import com.pambrose.common.util.isZipped
 import com.pambrose.common.util.unzip
 import com.pambrose.common.util.zip
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import java.io.EOFException
 import java.io.IOException
+import java.util.zip.ZipException
 
 class ZipExtensionTests : StringSpec() {
   init {
@@ -93,6 +96,48 @@ class ZipExtensionTests : StringSpec() {
 
     "unzip accepts content up to exactly maxBytes" {
       "abc".zip().unzip(maxBytes = 3) shouldBe "abc"
+    }
+
+    "a zero maxBytes accepts only empty content" {
+      ByteArray(0).unzip(maxBytes = 0) shouldBe ""
+      shouldThrow<IllegalArgumentException> { "a".zip().unzip(maxBytes = 0) }.message shouldBe
+        "Decompressed content is larger than 0 bytes"
+    }
+
+    "a negative maxBytes is rejected whatever the input" {
+      for (input in [ByteArray(0), "plain".toByteArray(), "zipped".zip()]) {
+        shouldThrow<IllegalArgumentException> { input.unzip(maxBytes = -1) }.message shouldBe
+          "maxBytes must not be negative, but was -1"
+      }
+    }
+
+    // maxBytes limits what decompression produces; input that is not gzipped is returned as it is.
+    "maxBytes does not limit input that is not gzipped" {
+      "longer than the limit".toByteArray().unzip(maxBytes = 3) shouldBe "longer than the limit"
+    }
+
+    // Only both magic bytes, in order, mark gzip input; anything else is passed through as UTF-8.
+    "bytes that match only part of the gzip magic are not treated as gzipped" {
+      val nearMisses = [byteArrayOf(0x1f, 0x00), byteArrayOf(0x00, 0x8b.toByte()), byteArrayOf(0x8b.toByte(), 0x1f)]
+      for (bytes in nearMisses) {
+        bytes.isZipped() shouldBe false
+        bytes.unzip() shouldBe String(bytes, Charsets.UTF_8)
+      }
+    }
+
+    "a corrupt CRC or length in the gzip trailer throws ZipException" {
+      val zipped = "some content to check".zip()
+      // The trailer is the last 8 bytes: the CRC-32, then the uncompressed length.
+      for (index in [zipped.size - 8, zipped.size - 1]) {
+        val corrupt = zipped.copyOf().apply { this[index] = (this[index].toInt() xor 0xFF).toByte() }
+        shouldThrowExactly<ZipException> { corrupt.unzip() }.message shouldBe "Corrupt GZIP trailer"
+      }
+    }
+
+    "a gzip stream cut short in the body or the trailer throws EOFException" {
+      val zipped = "0123456789".repeat(1_000).zip()
+      shouldThrowExactly<EOFException> { zipped.copyOf(zipped.size / 2).unzip() }
+      shouldThrowExactly<EOFException> { zipped.copyOf(zipped.size - 4).unzip() }
     }
   }
 }

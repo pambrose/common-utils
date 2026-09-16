@@ -18,10 +18,26 @@
 
 package com.pambrose.common.utils
 
+import com.google.common.util.concurrent.ListenableFuture
+import com.pambrose.common.dsl.stringMarshaller
+import io.grpc.CallOptions
+import io.grpc.ManagedChannel
+import io.grpc.MethodDescriptor
 import io.grpc.Server
+import io.grpc.ServerServiceDefinition
+import io.grpc.Status
+import io.grpc.inprocess.InProcessChannelBuilder
+import io.grpc.inprocess.InProcessServerBuilder
+import io.grpc.stub.ClientCalls
+import io.grpc.stub.ServerCalls
+import io.grpc.stub.StreamObserver
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeIn
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -31,6 +47,9 @@ import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
@@ -62,8 +81,77 @@ private fun registerHook(
   }
 }
 
+private val holdMethod: MethodDescriptor<String, String> =
+  MethodDescriptor.newBuilder<String, String>()
+    .setType(MethodDescriptor.MethodType.UNARY)
+    .setFullMethodName(MethodDescriptor.generateFullMethodName("HoldService", "Hold"))
+    .setRequestMarshaller(stringMarshaller)
+    .setResponseMarshaller(stringMarshaller)
+    .build()
+
+// An in-process server whose single method leaves each call open, handing its response observer to the test.
+private class HoldingServer : AutoCloseable {
+  val heldCalls = LinkedBlockingQueue<StreamObserver<String>>()
+  private val name = InProcessServerBuilder.generateName()
+
+  val server: Server =
+    InProcessServerBuilder
+      .forName(name)
+      .addService(
+        ServerServiceDefinition.builder("HoldService")
+          .addMethod(holdMethod, ServerCalls.asyncUnaryCall { _, responseObserver -> heldCalls.put(responseObserver) })
+          .build(),
+      ).build()
+      .start()
+
+  private val channel: ManagedChannel = InProcessChannelBuilder.forName(name).build()
+
+  // Starts a call and returns once the server holds it.
+  fun startHeldCall(): Pair<ListenableFuture<String>, StreamObserver<String>> {
+    val response = ClientCalls.futureUnaryCall(channel.newCall(holdMethod, CallOptions.DEFAULT), "request")
+    return response to heldCalls.poll(5, TimeUnit.SECONDS).shouldNotBeNull()
+  }
+
+  override fun close() {
+    channel.shutdownNow()
+    server.shutdownNow()
+  }
+}
+
 class ServerExtensionsTests : StringSpec() {
   init {
+    "shutdownGracefully lets an in-flight call finish before the server terminates" {
+      HoldingServer().use { holding ->
+        val server = holding.server
+        val (response, responseObserver) = holding.startHeldCall()
+
+        val shutdown = CompletableFuture.runAsync { server.shutdownGracefully(30.seconds) }
+        eventually(5.seconds) { server.isShutdown shouldBe true }
+        // The held call keeps the server from terminating, and it can still be answered.
+        server.isTerminated shouldBe false
+        responseObserver.onNext("finished")
+        responseObserver.onCompleted()
+
+        response.get(5, TimeUnit.SECONDS) shouldBe "finished"
+        shutdown.get(10, TimeUnit.SECONDS)
+        server.isTerminated shouldBe true
+      }
+    }
+
+    "shutdownGracefully forces down a server whose in-flight call outlasts the wait" {
+      HoldingServer().use { holding ->
+        val server = holding.server
+        val (response, _) = holding.startHeldCall()
+
+        server.shutdownGracefully(100.milliseconds)
+
+        server.awaitTermination(5, TimeUnit.SECONDS) shouldBe true
+        val failure = shouldThrow<ExecutionException> { response.get(5, TimeUnit.SECONDS) }
+        val cutOff: List<Status.Code> = [Status.Code.CANCELLED, Status.Code.UNAVAILABLE]
+        Status.fromThrowable(failure.cause).code shouldBeIn cutOff
+      }
+    }
+
     "shutdownGracefully invokes shutdown, awaitTermination, and shutdownNow in order" {
       val server = mockk<Server>(relaxed = true)
       every { server.awaitTermination(any(), any()) } returns true

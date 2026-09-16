@@ -26,13 +26,12 @@ import io.grpc.Attributes
 import io.grpc.CallOptions
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
-import io.grpc.MethodDescriptor
-import io.grpc.ServerServiceDefinition
+import io.grpc.Server
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.netty.NettyChannelBuilder
+import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.ClientCalls
-import io.grpc.stub.ServerCalls
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
@@ -42,8 +41,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import java.io.ByteArrayInputStream
-import java.io.InputStream
 import kotlin.reflect.KClass
 
 // A built ManagedChannel exposes no way to read its retry configuration back, so the transport's builder is
@@ -62,6 +59,40 @@ private fun <T : ManagedChannelBuilder<*>> withStubbedBuilder(
   } finally {
     unmockkStatic(transport)
   }
+}
+
+private fun withStubbedNettyChannelBuilder(block: (NettyChannelBuilder) -> Unit) =
+  mockk<NettyChannelBuilder>(relaxed = true).let { builder ->
+    withStubbedBuilder(
+      NettyChannelBuilder::class,
+      builder,
+      { every { NettyChannelBuilder.forAddress(any<String>(), any<Int>()) } returns builder },
+      block,
+    )
+  }
+
+// The server counterpart of withStubbedBuilder: GrpcDsl.server gets a mock Netty builder to configure.
+private fun withStubbedNettyServerBuilder(block: (NettyServerBuilder) -> Unit) {
+  val builder = mockk<NettyServerBuilder>(relaxed = true)
+  every { builder.build() } returns mockk<Server>(relaxed = true)
+  mockkStatic(NettyServerBuilder::class)
+  try {
+    every { NettyServerBuilder.forPort(any()) } returns builder
+    block(builder)
+  } finally {
+    unmockkStatic(NettyServerBuilder::class)
+  }
+}
+
+private val clientTlsContext by lazy {
+  TlsUtils.buildClientTlsContext(trustCertCollectionFilePath = tlsResourcePath("server-cert.pem"))
+}
+
+private val serverTlsContext by lazy {
+  TlsUtils.buildServerTlsContext(
+    certChainFilePath = tlsResourcePath("server-cert.pem"),
+    privateKeyFilePath = tlsResourcePath("server-key.pem"),
+  )
 }
 
 class GrpcDslTests : StringSpec() {
@@ -209,6 +240,60 @@ class GrpcDslTests : StringSpec() {
       }
     }
 
+    "a TLS context gives the Netty channel that context instead of plaintext" {
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15555, tlsContext = clientTlsContext) {}
+
+        verify(exactly = 1) { builder.sslContext(clientTlsContext.sslContext) }
+        verify(exactly = 0) { builder.usePlaintext() }
+      }
+    }
+
+    "the plaintext context makes the Netty channel use plaintext" {
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15556, tlsContext = PLAINTEXT_CONTEXT) {}
+
+        verify(exactly = 1) { builder.usePlaintext() }
+        verify(exactly = 0) { builder.sslContext(any()) }
+      }
+    }
+
+    "a TLS context is set on the Netty server, and the plaintext context sets none" {
+      withStubbedNettyServerBuilder { builder ->
+        GrpcDsl.server(port = 0, tlsContext = serverTlsContext) {}
+        verify(exactly = 1) { builder.sslContext(serverTlsContext.sslContext) }
+      }
+
+      withStubbedNettyServerBuilder { builder ->
+        GrpcDsl.server(port = 0, tlsContext = PLAINTEXT_CONTEXT) {}
+        verify(exactly = 0) { builder.sslContext(any()) }
+      }
+    }
+
+    "maxRetryAttempts = -1 keeps grpc's own limit, while 0 is passed through" {
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15557, enableRetry = true, maxRetryAttempts = -1) {}
+        verify(exactly = 0) { builder.maxRetryAttempts(any()) }
+      }
+
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15558, enableRetry = true, maxRetryAttempts = 0) {}
+        verify(exactly = 1) { builder.maxRetryAttempts(0) }
+      }
+    }
+
+    "a blank overrideAuthority is ignored, and a padded one is trimmed" {
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15559, overrideAuthority = "   ") {}
+        verify(exactly = 0) { builder.overrideAuthority(any()) }
+      }
+
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15560, overrideAuthority = "  override.example.com ") {}
+        verify(exactly = 1) { builder.overrideAuthority("override.example.com") }
+      }
+    }
+
     "server builds a plaintext Netty server without starting it" {
       var blockCalled = false
       val server =
@@ -248,29 +333,3 @@ class GrpcDslTests : StringSpec() {
     }
   }
 }
-
-private val stringMarshaller =
-  object : MethodDescriptor.Marshaller<String> {
-    override fun stream(value: String): InputStream = ByteArrayInputStream(value.toByteArray())
-
-    override fun parse(stream: InputStream): String = stream.readBytes().decodeToString()
-  }
-
-private val echoMethod: MethodDescriptor<String, String> =
-  MethodDescriptor.newBuilder<String, String>()
-    .setType(MethodDescriptor.MethodType.UNARY)
-    .setFullMethodName(MethodDescriptor.generateFullMethodName("EchoService", "Echo"))
-    .setRequestMarshaller(stringMarshaller)
-    .setResponseMarshaller(stringMarshaller)
-    .build()
-
-private fun echoService(): ServerServiceDefinition =
-  ServerServiceDefinition.builder("EchoService")
-    .addMethod(
-      echoMethod,
-      ServerCalls.asyncUnaryCall { request, responseObserver ->
-        responseObserver.onNext("echo: $request")
-        responseObserver.onCompleted()
-      },
-    )
-    .build()

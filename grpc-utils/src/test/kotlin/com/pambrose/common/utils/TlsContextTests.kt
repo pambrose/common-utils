@@ -35,11 +35,11 @@ class TlsContextTests : StringSpec() {
       context.desc() shouldBe "plaintext"
     }
 
-    "tls context with mutual auth desc" {
-      // We can't easily create a real SslContext without files, but we can test the desc logic
-      val context = TlsContext(null, true)
-      // With null sslContext, it should show plaintext regardless of mutualAuth
-      context.desc() shouldBe "plaintext"
+    // A client context needs no files, so a real SslContext stands in here where TlsUtilsTests uses a mock.
+    "a real TLS context describes whether mutual auth is on" {
+      val sslContext = SslContextBuilder.forClient().build()
+      TlsContext(sslContext, mutualAuth = true).desc() shouldBe "TLS with mutual auth"
+      TlsContext(sslContext, mutualAuth = false).desc() shouldBe "TLS (no mutual auth)"
     }
 
     "tls context builder data class" {
