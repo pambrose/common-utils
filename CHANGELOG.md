@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [4.1.0] - 2026-09-16
 
 ### Changed
 
@@ -72,12 +72,25 @@ All notable changes to Common Utils are documented in this file.
 - prometheus-utils `InstrumentedThreadFactory` registers its three metrics all or nothing. When only a later
   metric name was taken, the constructor threw but left the earlier metrics registered, so building the factory
   kept failing even after the conflict was removed.
+- ktor-server-utils `Route.servlet` falls back to `application/octet-stream`, and logs a warning, when a servlet
+  sets a content type that does not parse. Before, a servlet that finished normally turned into a 500.
+- ktor-server-utils `Route.servlet` drops the servlet's `Content-Length`, `Transfer-Encoding` and `Upgrade`
+  headers. Ktor sets `Content-Length` from the body it sends and rejects the other two, so the servlet's values
+  were sent twice or failed the call.
+- ktor-server-utils `KtorServletResponse` treats a `Content-Type` header as the content type, as a servlet
+  container does. `setHeader`/`addHeader` set the content type and character encoding, `getHeader` returns
+  `getContentType()`, and the header is no longer listed in `getHeaderNames()`. Before,
+  `setHeader("Content-Type", "text/plain; charset=ISO-8859-1")` left the writer on its old charset, so the header
+  and the body encoding could disagree.
 
 ### Documentation
 
 - core-utils `isFloat`/`isDouble` and `ArrayUtils.asString(FloatArray/DoubleArray)` document where the
   platforms disagree: number parsing (a trailing `f`/`d`, hexadecimal literals) and whole-number formatting
   (`1.0` prints as `1` on JS).
+- ktor-client-utils `KtorDsl.newHttpClient` and its README explain that the module declares no client engine.
+  js and wasmJs fall back to ktor-client-core's bundled Js engine; JVM and Kotlin/Native consumers must add one
+  (CIO, Darwin, Curl or WinHttp), or creating a client fails.
 
 ### Build and tests
 
@@ -106,6 +119,23 @@ All notable changes to Common Utils are documented in this file.
   it. New cases cover malformed and non-2xx siteverify replies, v3 fields and a `null` `error-codes`, the site
   key in the widget (and the secret key's absence), a blank `remoteip`, use after `close()`, and how often the
   config is read. Specs that exercised only their own `RecaptchaConfig` literals are removed.
+- ktor-client-utils specs that let `KtorDsl` create its own client run on every platform. `jvmTest` and
+  `nativeTest` depend on CIO, and js/wasmJs use the bundled Js engine, so the native test binaries no longer
+  skip them.
+- service-utils and jetty-utils test servers listen on port 0 and bind `127.0.0.1`. service-utils services
+  expose the port the OS chose through an `internal` `boundPort` test seam, so parallel test JVMs no longer race
+  for a free port, and another local app's loopback listener can no longer take the tests' connections.
+- More specs close the remaining gaps in the test coverage review: email-utils payloads and webhooks, grpc-utils
+  TLS handshakes and invalid key material, guava-utils monitors, services and value waiters, ktor-server-utils
+  redirects and headers, and service-utils lifecycles. See `docs/TEST_COVERAGE_REVIEW_2026-09-16.md`.
+- guava-utils `BugFixVerificationTests` wait on conditions instead of fixed delays.
+
+### Dependency bumps
+
+- `ktor` 3.5.2 → 3.6.0
+- `resend` 4.24.0 → 4.25.0
+- `versions` 0.61.0 → 0.63.1 (build-only)
+- Bump project version to 4.1.0
 
 ## [4.0.0] - 2026-09-15
 

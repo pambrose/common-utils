@@ -57,7 +57,13 @@ listOf("a", "b").toPath()
 
 "sensitive".obfuscate()           // partially masked
 "a very long string".maxLength(10)
+" [x] ".trimEnds()                // "x"
 ```
+
+`obfuscate()` counts positions in code points, and `maxLength` drops a surrogate pair it would otherwise cut in half,
+so neither splits an emoji; `maxLength` can therefore return one character fewer than asked. `maxLength` and
+`trimEnds` throw `IllegalArgumentException` for a negative length, and `trimEnds` also throws when the trimmed string
+is shorter than twice the length it removes.
 
 `maskUrlCredentials()` masks only credentials inside the authority — an `@` between `://` and the first `/`, `?`
 or `#` — so an `@` in a path, query or fragment is left alone. Credentials must be percent-encoded as RFC 3986
@@ -285,6 +291,10 @@ println(readme.content)
 val sameReadme = repo.file("master/README.md")
 ```
 
+`UrlSource` applies its timeouts in whole milliseconds, as `URLConnection` requires: a positive timeout is rounded
+up and capped at `Int.MAX_VALUE` milliseconds, and `Duration.INFINITE` or `Duration.ZERO` means no timeout. A
+negative timeout throws `IllegalArgumentException` when the source is constructed.
+
 `GitLabRepo` / `GitLabFile` mirror the GitHub pair and read raw content from GitLab's `/-/raw/` path.
 Every `ContentSource` reports `remote`, and repository sources resolve paths against the raw-content prefix
 (`rawSourcePrefix`).
@@ -333,6 +343,10 @@ println(getBanner("banner.txt"))              // found through the thread contex
 throwable.stackTraceAsString
 myList.typeParameterCount
 ```
+
+`waitForPortAvailable` polls up to `maxAttempts` times (default 50), `delayMs` apart (default 200), and returns
+`false` if the port is still in use. A port outside `0..65535` throws `IllegalArgumentException` rather than being
+retried like a busy one.
 
 `getBanner` and `ReadResources.readResourceFile` both take an optional `ClassLoader` that defaults to the thread
 context classloader, falling back to core-utils' own; the `getBanner(filename, logger)` overload falls back to the

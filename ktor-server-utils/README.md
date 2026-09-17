@@ -118,9 +118,15 @@ The servlet's `destroy()` is called when the application stops.
   container features such as dynamic registration and sessions throw `UnsupportedOperationException`.
 - **Supported:** `sendError` and `sendRedirect`, so an unsupported HTTP method gets `405` from `HttpServlet`'s
   defaults. Also request attributes, and `getPathInfo()`, which is always `null`.
-- **Character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is used for the
-  body and included in the `Content-Type`, as a servlet container reports it. It can't change after `getWriter()`.
-  A servlet that sets no content type at all is answered as `application/octet-stream`.
+- **Content type and character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is
+  used for the body and included in the `Content-Type`, as a servlet container reports it. It can't change after
+  `getWriter()`. A `Content-Type` header set with `setHeader` or `addHeader` is the content type, as in a
+  container: it sets the charset, `getHeader` returns `getContentType()`, and `getHeaderNames()` does not list it.
+  A servlet that sets no content type, or one that does not parse, is answered as `application/octet-stream`; the
+  malformed value is logged as a warning.
+- **Headers:** every value of a multi-valued header is forwarded. The servlet's `Content-Length`,
+  `Transfer-Encoding` and `Upgrade` headers are dropped: Ktor sets `Content-Length` from the body it sends and
+  rejects the other two.
 - **Parameters:** parameter names are case-insensitive, which is Ktor's behavior, unlike a servlet container.
 
 ```kotlin

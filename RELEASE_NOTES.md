@@ -5,6 +5,75 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v4.1.0 — 2026-09-16
+
+### Highlights
+
+- **grpc-utils loads OpenSSL under Gradle**: `netty-tcnative-boringssl-static` keeps its native code in
+  per-platform jars that its POM pulls in as classifier dependencies, and Gradle ignores those entries. Gradle
+  builds therefore never loaded OpenSSL, and TLS silently ran on the JDK provider. grpc-utils now declares the
+  `linux-x86_64`, `linux-aarch_64`, `osx-x86_64`, `osx-aarch_64` and `windows-x86_64` jars, so Gradle consumers
+  get the BoringSSL provider, as Maven consumers already did, along with about 6 MB of extra runtime jars.
+- **redis-utils URL handling**: a URL without a port, such as `redis://host`, connects to 6379. Before, the port
+  reached Jedis as -1, so every such connection failed and `withRedis` passed `null` to its block. A URL that can
+  never work now throws `IllegalArgumentException` up front, and the message no longer repeats the URL or its
+  password.
+- **recaptcha-utils verification**: a siteverify reply with a non-2xx status fails verification, even when its
+  body parses as `{"success": true}`. After `RecaptchaService.close()`, `validateRecaptcha` responds
+  `400 reCAPTCHA verification failed` instead of leaking a `CancellationException`, and each call reads the
+  config keys once.
+- **json-utils numbers are the same everywhere**: `doubleValue`, `doubleValueOrNull` and `isNumber` accept only
+  JSON number syntax (plus `NaN` and `±Infinity`). Each platform's own parser had accepted different extras, such
+  as `1.5f` on the JVM, `0x10` on JS, and `+1` or `.5` everywhere. `getByPath` also returns `null`, as documented,
+  when the path runs into a value that is not an object.
+- **ktor-server-utils servlet bridge**: a malformed content type from a servlet falls back to
+  `application/octet-stream` instead of turning the response into a 500. A `Content-Type` header now sets the
+  content type and charset, as it does in a servlet container, and the servlet's `Content-Length`,
+  `Transfer-Encoding` and `Upgrade` headers are no longer passed through.
+- **Scripting fixes**: script-utils-kotlin and script-utils-java can bind object arrays such as `Array<Int>`,
+  and script-utils-java declares `Array<*>` as `java.lang.Object[]`. Both used to generate declarations that did
+  not compile, breaking every later evaluation. A script-utils-common pool no longer hangs when resetting an
+  instance throws.
+- **core-utils fixes**:
+  - `maxLength` and `obfuscate` no longer split an emoji or any other surrogate pair.
+  - `singleToDoubleQuoted` trims surrounding whitespace and escapes backslashes.
+  - `Int.lpad` pads a negative number after its sign.
+  - `UrlSource` accepts infinite and very long timeouts, and rounds a sub-millisecond one up instead of turning
+    it into "no timeout".
+- **prometheus-utils**: `InstrumentedThreadFactory` registers its metrics all or nothing, so a name conflict no
+  longer leaves it permanently unbuildable.
+- **Test coverage and CI**: all 83 items in the new test coverage review (`docs/TEST_COVERAGE_REVIEW_2026-09-16.md`)
+  are fixed.
+  - **Platforms:** common specs run on JS, wasmJs and Native as well as the JVM, and CI adds macOS/iOS and
+    Windows native jobs.
+  - **Coverage:** Kover enforces a per-package line floor, and the Makefile prints line and branch coverage per
+    package and per module.
+  - **API checks:** `check` compares the public API against committed Kotlin ABI dumps.
+  - **Mutation testing:** PIT runs on demand with `make mutation`.
+
+### Behavior changes
+
+- script-utils-common `ScriptUtils.globalBindings` and `bindings(scope)` return `Bindings?`, because a context
+  created with `nullGlobalContext = true` has no global bindings. Reading them used to throw a
+  `NullPointerException`. Kotlin callers now need a null check; compiled code is unaffected.
+- core-utils `trimEnds` and `maxLength` throw `IllegalArgumentException` for a length that does not fit.
+  `MiscFuncs.waitForPortAvailable` throws it for a port outside `0..65535`, and `UrlSource` throws it for a
+  negative timeout.
+- redis-utils throws `IllegalArgumentException` for a malformed URL, a URL without a host, a non-numeric
+  database index or an unknown `protocol`.
+- json-utils `doubleValue` throws `NumberFormatException` for text that is not a JSON number;
+  `doubleValueOrNull` returns `null` and `isNumber` returns `false`.
+
+### Dependency bumps
+
+- `ktor` 3.5.2 → 3.6.0
+- `resend` 4.24.0 → 4.25.0
+- `versions` 0.61.0 → 0.63.1 (build-only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/4.0.0...4.1.0
+
+---
+
 ## v4.0.0 — 2026-09-15
 
 ### Highlights

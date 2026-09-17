@@ -59,7 +59,7 @@ Enhancements for JetBrains Exposed SQL framework.
 gRPC server and client utilities.
 
 - Server configuration DSL
-- TLS/SSL utilities for secure communication
+- TLS/SSL utilities for secure communication, using OpenSSL (BoringSSL) on Linux, macOS and Windows
 - Server extension functions
 
 #### [**guava-utils**](guava-utils/README.md)
@@ -85,6 +85,8 @@ Ktor HTTP client enhancements.
 
 - Client configuration DSL
 - Request/response utilities
+- No bundled engine: add one (CIO, Darwin, Curl, WinHttp) on the JVM and Native; js and wasmJs use Ktor's own
+  Js engine
 
 #### [**ktor-server-utils**](ktor-server-utils/README.md)
 
@@ -206,9 +208,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:4.0.0")
-  implementation("com.pambrose.common-utils:json-utils:4.0.0")
-  implementation("com.pambrose.common-utils:ktor-server-utils:4.0.0")
+  implementation("com.pambrose.common-utils:core-utils:4.1.0")
+  implementation("com.pambrose.common-utils:json-utils:4.1.0")
+  implementation("com.pambrose.common-utils:ktor-server-utils:4.1.0")
     // ... other modules
 }
 ```
@@ -224,7 +226,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>4.0.0</version>
+      <version>4.1.0</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
