@@ -79,6 +79,12 @@ The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same repor
 
 Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0; earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates.
 
+The report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
+'testRuntimeOnly' configuration". No build script declares it: the pitest plugin, applied to the
+`mutationModuleNames` modules, adds it from a `withDependencies` hook at the JUnit Platform version already on the
+test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.5). It follows Kotest, so don't pin it
+separately; its 1.14.x/6.x candidates become relevant once Kotest moves.
+
 Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
@@ -230,8 +236,8 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Project-wide rule:** 90% line and 80% branch across the aggregated report.
 - **Per-package rule:** 90% line in every package.
 
-They are floors, not targets. The project sits at 98.8% line and 89.3% branch, and the weakest package is
-`script` at 96.1% line.
+They are floors, not targets. As of 4.1.0 the project sits at 99.8% line and 97.2% branch, and the weakest package
+by line coverage is `script` at 98.5%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
   service-utils, ktor-server-utils and guava-utils) could lose all its coverage without failing the aggregate.
@@ -250,8 +256,9 @@ Tables, both sorted weakest branch coverage first:
 - `make coverage-packages`: line and branch coverage per package.
 - `make coverage-modules`: the same per module. It maps each report source file back to its module.
 
-`docs/TEST_COVERAGE_REVIEW_2026-09-16.md` tracks the known test gaps (`TC-001`…`TC-083`). Update its tracker as
-items are fixed, as with the code review doc.
+`docs/TEST_COVERAGE_REVIEW_2026-09-16.md` tracked the known test gaps (`TC-001`…`TC-083`); all 83 were fixed
+before the 4.1.0 release (#187–#199). If a later review adds items, update its tracker as they are fixed, as with
+the code review doc.
 
 Codecov (`codecov.yml`):
 

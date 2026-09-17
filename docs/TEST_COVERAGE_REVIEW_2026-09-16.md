@@ -357,11 +357,11 @@ These run only in `jvmTest`:
 
 The JS results for these functions differ from the JVM's. Confirmed in `kotlin-stdlib-js-2.4.20-sources.jar`:
 
-| Behaviour                         | JVM                  | JS                                                               | Affected                                                                                               |
-|-----------------------------------|----------------------|------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `1.0.toString()`                  | `"1.0"`              | `"1"`                                                            | `ArrayUtils.asString(doubleArrayOf(1.0))`: `ArrayUtilsTests.kt:71` expects `"[1.0]"`                     |
-| `String.substring(start, end)`    | bounds-checked       | native `substring` (`stringJs.kt:293`): swaps/clamps              | `"a".trimEnds()` returns `"a"` instead of throwing; `"abc".maxLength(-1)` returns `""` instead of throwing |
-| `toDoubleOrNull` / `toFloatOrNull` | `screenFloatValue`   | unary `+` (`numberConversions.kt:117`)                           | `isDouble`/`isFloat`: `"4f"` is true on the JVM, false on JS; `"0x10"` is false on the JVM, true on JS |
+| Behaviour                          | JVM                | JS                                                   | Affected                                                                                                   |
+|------------------------------------|--------------------|------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `1.0.toString()`                   | `"1.0"`            | `"1"`                                                | `ArrayUtils.asString(doubleArrayOf(1.0))`: `ArrayUtilsTests.kt:71` expects `"[1.0]"`                       |
+| `String.substring(start, end)`     | bounds-checked     | native `substring` (`stringJs.kt:293`): swaps/clamps | `"a".trimEnds()` returns `"a"` instead of throwing; `"abc".maxLength(-1)` returns `""` instead of throwing |
+| `toDoubleOrNull` / `toFloatOrNull` | `screenFloatValue` | unary `+` (`numberConversions.kt:117`)               | `isDouble`/`isFloat`: `"4f"` is true on the JVM, false on JS; `"0x10"` is false on the JVM, true on JS     |
 
 The common specs for `isFloat`/`isDouble` (`StringExtensionTests.kt:115-137`) only use `""`, `"a"`, `"4"` and `"4.0"`.
 
@@ -598,13 +598,13 @@ The common tests never check the request's method or URL (`MockEngine.requestHis
 
 Every missed branch in `webhook` (27, the project's lowest package at 74.5%) is in code that kotlinx.serialization generates: `write$Self` and the synthetic deserialization constructor. `write$Self` has several branches per defaulted property, and `encodeDefaults` is never on in the tests.
 
-| Class              | Branches missed | Why                                                                                     |
-|--------------------|----------------:|-----------------------------------------------------------------------------------------|
+| Class              | Branches missed | Why                                                                                              |
+|--------------------|----------------:|--------------------------------------------------------------------------------------------------|
 | `Data`             |              17 | 9 `encodeDefaults` arms; `tags`, `broadcastId`, `messageId`, `templateId` never encoded non-null |
-| `Bounce`           |               7 | 2 `encodeDefaults` arms; `subType`/`type` never encoded; missing-`message` throw        |
-| `Click`            |               1 | `encodeDefaults`                                                                        |
-| `Header`           |               1 | missing-required-field throw                                                            |
-| `ResendWebhookMsg` |               1 | missing-required-field throw                                                            |
+| `Bounce`           |               7 | 2 `encodeDefaults` arms; `subType`/`type` never encoded; missing-`message` throw                 |
+| `Click`            |               1 | `encodeDefaults`                                                                                 |
+| `Header`           |               1 | missing-required-field throw                                                                     |
+| `ResendWebhookMsg` |               1 | missing-required-field throw                                                                     |
 
 Two real behaviours hide behind these:
 - `ResendWebhookMsg.decode`'s `@throws` contract (`ResendWebhookMsg.kt:63-65`).
@@ -1251,29 +1251,29 @@ The three Kotlin loops take 16.9 s, 7.3 s and 6.8 s: about 31 s of the module's 
 
 Checked against the per-method counters in `report.xml` and against `javap` output. These need no test. Where a source change would remove the miss, it is listed under [TC-007](#tc-007).
 
-| Location                                                             | Why it can't be covered                                                                              |
-|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| `core-utils` `Version.kt:87, 100, 111-113`                           | Extra null checks on non-null annotation values; branches inlined from `findAnnotation`             |
-| `core-utils` `AtomicDelegates.kt:90`                                 | Synthetic default-argument constructor from `= null` on a private constructor                        |
-| `json-utils` `JsonElementUtils.kt:129` (`jsonObject?.` arm)          | `jsonObject` never returns null; goes away with the [TC-022](#tc-022) fix                            |
-| `json-utils` `JsonElementUtils.kt:330`                               | Body of an `inline reified` function; the inlined copies are covered where it is called             |
-| `json-utils` `JsonElementUtils.kt:407`                               | Deprecated `logger` holder, never referenced; remove in the next major version                      |
-| `email-utils` `webhook/*` (27 branches)                              | kotlinx.serialization `write$Self` / synthetic constructor; covered by the [TC-030](#tc-030) tests   |
-| `email-utils` `Email.kt:33`                                          | Boxed `getValue()` getter, called only from Java or reflection                                       |
-| `recaptcha-utils` `RecaptchaService.kt:92, 102` (null arm)           | `remoteAddress` is a non-null `String`                                                               |
-| `ktor-server-utils` `ResponseUtils.kt:39, 53`                        | Compiler compares a constant with `COROUTINE_SUSPENDED` after the inlined lambda                     |
-| `ktor-server-utils` `ServletRoute.kt:61`                             | `lateinit` initialization guard                                                                      |
-| `ktor-server-utils` `ServletRoute.kt:77` (elvis)                     | `ContentType.parse` never returns null                                                               |
-| `ktor-server-utils` `KtorServletResponse.kt:120, 146`                | `?: error(…)` right after the field is assigned                                                      |
-| `service-utils` `AbstractGenericService.kt:310`                      | Null branch reachable only by calling `shutDown` through reflection                                  |
-| `grpc-utils` `TlsUtils.kt:151`                                       | `keyPath.isNotEmpty()` is already guaranteed by the `require` at `:141-144`                          |
-| `guava-utils` `GuavaFuncs.kt:23, 26`                                 | `.orEmpty()` on `os.name`, which the JVM always sets                                                 |
-| `redis-utils` `RedisUtils.kt:78`                                     | Reachable only with the `REDIS_URL` environment variable set                                         |
-| `exposed-utils` `ExposedUtils.kt:67, 94, 115, 138`                   | Compiler null checks after `?.` on values that are never null                                        |
-| `script-utils-common` `AbstractScript.kt:247` (`?: 0`)               | `typeMap` and `valueMap` are kept in step; callers loop over `valueMap`                              |
-| `script-utils-common` `AbstractScript.kt:248` (`.kotlin`), `:279`    | Compiler null check; defensive `runCatching` fallback that needs a JVM-public Kotlin synthetic class |
-| `script-utils-common` `AbstractExprEvaluator.kt:53` (2 of 3 branches) | Compiler null checks; the third is the real null-result case in [TC-079](#tc-079)                    |
-| `*Script$Companion`, `AbstractScript.kt:258`, `JavaScript.kt:206`, `KotlinScript.kt:100`, `PythonScript.kt:85` | Unused synthetic `getX()` accessors on private companion objects; the field initializers do run |
+| Location                                                                                                       | Why it can't be covered                                                                              |
+|----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| `core-utils` `Version.kt:87, 100, 111-113`                                                                     | Extra null checks on non-null annotation values; branches inlined from `findAnnotation`              |
+| `core-utils` `AtomicDelegates.kt:90`                                                                           | Synthetic default-argument constructor from `= null` on a private constructor                        |
+| `json-utils` `JsonElementUtils.kt:129` (`jsonObject?.` arm)                                                    | `jsonObject` never returns null; goes away with the [TC-022](#tc-022) fix                            |
+| `json-utils` `JsonElementUtils.kt:330`                                                                         | Body of an `inline reified` function; the inlined copies are covered where it is called              |
+| `json-utils` `JsonElementUtils.kt:407`                                                                         | Deprecated `logger` holder, never referenced; remove in the next major version                       |
+| `email-utils` `webhook/*` (27 branches)                                                                        | kotlinx.serialization `write$Self` / synthetic constructor; covered by the [TC-030](#tc-030) tests   |
+| `email-utils` `Email.kt:33`                                                                                    | Boxed `getValue()` getter, called only from Java or reflection                                       |
+| `recaptcha-utils` `RecaptchaService.kt:92, 102` (null arm)                                                     | `remoteAddress` is a non-null `String`                                                               |
+| `ktor-server-utils` `ResponseUtils.kt:39, 53`                                                                  | Compiler compares a constant with `COROUTINE_SUSPENDED` after the inlined lambda                     |
+| `ktor-server-utils` `ServletRoute.kt:61`                                                                       | `lateinit` initialization guard                                                                      |
+| `ktor-server-utils` `ServletRoute.kt:77` (elvis)                                                               | `ContentType.parse` never returns null                                                               |
+| `ktor-server-utils` `KtorServletResponse.kt:120, 146`                                                          | `?: error(…)` right after the field is assigned                                                      |
+| `service-utils` `AbstractGenericService.kt:310`                                                                | Null branch reachable only by calling `shutDown` through reflection                                  |
+| `grpc-utils` `TlsUtils.kt:151`                                                                                 | `keyPath.isNotEmpty()` is already guaranteed by the `require` at `:141-144`                          |
+| `guava-utils` `GuavaFuncs.kt:23, 26`                                                                           | `.orEmpty()` on `os.name`, which the JVM always sets                                                 |
+| `redis-utils` `RedisUtils.kt:78`                                                                               | Reachable only with the `REDIS_URL` environment variable set                                         |
+| `exposed-utils` `ExposedUtils.kt:67, 94, 115, 138`                                                             | Compiler null checks after `?.` on values that are never null                                        |
+| `script-utils-common` `AbstractScript.kt:247` (`?: 0`)                                                         | `typeMap` and `valueMap` are kept in step; callers loop over `valueMap`                              |
+| `script-utils-common` `AbstractScript.kt:248` (`.kotlin`), `:279`                                              | Compiler null check; defensive `runCatching` fallback that needs a JVM-public Kotlin synthetic class |
+| `script-utils-common` `AbstractExprEvaluator.kt:53` (2 of 3 branches)                                          | Compiler null checks; the third is the real null-result case in [TC-079](#tc-079)                    |
+| `*Script$Companion`, `AbstractScript.kt:258`, `JavaScript.kt:206`, `KotlinScript.kt:100`, `PythonScript.kt:85` | Unused synthetic `getX()` accessors on private companion objects; the field initializers do run      |
 
 ## Appendix B — Reproducing the numbers
 
