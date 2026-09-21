@@ -11,7 +11,7 @@ kotlinter = "5.7.0"
 kover = "0.9.9"
 mavenPublish = "0.37.0"
 pitestPlugin = "1.19.0"
-versions = "0.63.1"
+versions = "0.64.0"
 
 # Kotlin & kotlinx
 # Held at 2.4.10: 2.4.20 regressed the JSR-223 K2 REPL used by script-utils-kotlin. Binding a value
