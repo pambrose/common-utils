@@ -434,6 +434,27 @@ class KotlinScriptTests : StringSpec() {
       }
     }
 
+    "a value whose class is in an unexported JDK package is declared as an exported supertype" {
+      KotlinScript().use {
+        it.apply {
+          add("cs", Charsets.UTF_8)
+          eval("cs.name()") shouldBe "UTF-8"
+        }
+      }
+    }
+
+    "a comparator or a lambda can be declared with its type arguments and called" {
+      KotlinScript().use {
+        it.apply {
+          add("cmp", Comparator.naturalOrder<String>(), typeOf<String>())
+          val increment: (Int) -> Int = { x -> x + 1 }
+          add("increment", increment, typeOf<Int>(), typeOf<Int>())
+          eval("""cmp.compare("a", "b") < 0""") shouldBe true
+          eval("increment(2)") shouldBe 3
+        }
+      }
+    }
+
     "variable names must be valid identifiers" {
       KotlinScript().use { script ->
         ["my-var", "class", "x = 1; val injected", ""].forEach { name ->

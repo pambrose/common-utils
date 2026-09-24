@@ -85,6 +85,18 @@ class AbstractEnginePoolTests : StringSpec() {
       }
     }
 
+    // The reset failure used to replace the block's exception entirely.
+    "when the block and the reset both fail, the block's exception propagates with the reset failure suppressed" {
+      withTimeout(TIMEOUT) {
+        val pool = FakeEvaluatorPool(size = 1)
+        pool.onReset = { throw IllegalStateException("reset failed") }
+        val thrown =
+          shouldThrow<IllegalArgumentException> { pool.borrow { throw IllegalArgumentException("block failed") } }
+        thrown.message shouldBe "block failed"
+        thrown.suppressed.map { it.message } shouldBe ["reset failed"]
+      }
+    }
+
     "resetEvery must be positive" {
       shouldThrow<IllegalArgumentException> { FakeEvaluatorPool(size = 1, resetEvery = 0) }.message shouldBe
         "resetEvery must be positive, but was 0"

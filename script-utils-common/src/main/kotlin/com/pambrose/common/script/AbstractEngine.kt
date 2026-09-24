@@ -37,6 +37,7 @@ abstract class AbstractEngine(
   /** The underlying JSR 223 script engine for this extension. */
   protected val scriptEngine: ScriptEngine =
     scriptManager.getEngineByExtension(extension)
+      ?: ScriptEngineManager().getEngineByExtension(extension)
       ?: throw ScriptException("Unrecognized script extension: $extension")
 
   /**
@@ -64,6 +65,9 @@ abstract class AbstractEngine(
   }
 
   companion object {
-    private val scriptManager by lazy { ScriptEngineManager() }
+    // Discovers engines with this library's class loader. The no-argument constructor would use the context class
+    // loader of whichever thread happened to construct the first engine, and keep it for every later lookup. An engine
+    // visible only to the current thread's context class loader is still found, by the fallback above.
+    private val scriptManager by lazy { ScriptEngineManager(AbstractEngine::class.java.classLoader) }
   }
 }

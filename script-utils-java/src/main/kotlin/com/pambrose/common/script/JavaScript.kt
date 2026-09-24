@@ -20,6 +20,7 @@ import ch.obermuhlner.scriptengine.java.Isolation
 import ch.obermuhlner.scriptengine.java.JavaScriptEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.lang.model.SourceVersion
+import javax.script.ScriptContext
 import javax.script.ScriptException
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -31,7 +32,8 @@ import kotlin.reflect.KType
  * A script engine wrapper for dynamically compiling and evaluating Java source code.
  *
  * Supports adding named variables with type parameters, import declarations, and
- * configurable isolation levels. Note that Java cannot have a null global context.
+ * configurable isolation levels. The Java engine needs a global scope: [resetForReuse] always keeps one, while
+ * `resetContext(true)` removes it, after which [evalScript] fails.
  *
  * Variable declarations use fully-qualified type names, so they need no imports. A value whose runtime class cannot be
  * named, such as the private list class behind `listOf(1, 2)`, is declared as its nearest public class or interface.
@@ -56,7 +58,9 @@ class JavaScript : AbstractScript("java", false) {
    * Each declaration includes the Java type name and any type parameters.
    */
   val varDecls: String
-    get() = valueMap.entries.joinToString("\n") { (name, value) -> "  public ${fieldType(name, value)} $name;" }
+    @Synchronized get() = valueMap.entries.joinToString("\n") { (name, value) ->
+      "  public ${fieldType(name, value)} $name;"
+    }
 
   // A primitive for a boxed primitive; an array of the registered element type for an object array; otherwise the
   // accessible class with its type arguments, raw when none were registered. Object, the fallback when no nameable
@@ -78,24 +82,41 @@ class JavaScript : AbstractScript("java", false) {
    * Generates Java import statements for all registered import classes.
    */
   val importDecls: String
-    get() = imports.joinToString("\n") { "import $it;" }
+    @Synchronized get() = imports.joinToString("\n") { "import $it;" }
 
   /**
-   * Registers a Java class to be imported in generated scripts.
+   * Registers a Java class to be imported in generated scripts, by its canonical name, so a nested class is imported
+   * as `Outer.Inner`. Java callers use [addImport], since `import` is a Java keyword.
    *
    * @param T the type of the class to import
    * @param clazz the class to add to the import list
+   * @throws IllegalArgumentException if [clazz] has no canonical name (a local, anonymous or hidden class, or an array
+   *   of one), which Java source cannot name
    */
   @Synchronized
   fun <T> import(clazz: Class<T>) {
-    imports += clazz.name
+    imports += requireNotNull(clazz.canonicalName) { "${clazz.name} has no canonical name, so it cannot be imported" }
   }
+
+  /**
+   * Registers a Java class to be imported in generated scripts; the same as [import], under a name Java can call.
+   *
+   * @param T the type of the class to import
+   * @param clazz the class to add to the import list
+   * @throws IllegalArgumentException if [clazz] has no canonical name
+   */
+  fun <T> addImport(clazz: Class<T>) = import(clazz)
 
   /**
    * Sets the isolation level for the underlying [JavaScriptEngine].
    *
+   * [Isolation.IsolatedClassLoader] hides the host application's classes from the script, so a variable whose class
+   * comes from the host, rather than the JDK, cannot be used under it; keep the default [Isolation.CallerClassLoader]
+   * for those. Both levels compile each script into a class loader of its own.
+   *
    * @param isolation the [Isolation] level to apply
    */
+  @Synchronized
   fun assignIsolation(isolation: Isolation) {
     (scriptEngine as JavaScriptEngine).setIsolation(isolation)
   }
@@ -104,11 +125,11 @@ class JavaScript : AbstractScript("java", false) {
    * Resets the context and also clears the imports and restores the default isolation, so the next borrower from a
    * pool starts clean.
    *
-   * @param nullGlobalContext ignored by the Java engine's global scope handling, as in [resetContext]
+   * @param nullGlobalContext ignored: the Java engine needs a global scope, so one is always kept
    */
   @Synchronized
   override fun resetForReuse(nullGlobalContext: Boolean) {
-    super.resetForReuse(nullGlobalContext)
+    super.resetForReuse(false)
     imports.clear()
     assignIsolation(DEFAULT_ISOLATION)
   }
@@ -151,7 +172,18 @@ class JavaScript : AbstractScript("java", false) {
     if (verbose)
       logger.info { "Script:\n$code" }
 
-    return evaluate(code)
+    return try {
+      evaluate(code)
+    } finally {
+      removeUnregisteredBindings()
+    }
+  }
+
+  // java-scriptengine copies every public field of the evaluated class back into the engine scope, and before each
+  // later evaluation sets a field for every binding, failing with NoSuchFieldException when the class lacks one. A
+  // field that is not a registered variable would therefore break every evaluation after the one that declared it.
+  private fun removeUnregisteredBindings() {
+    scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE)?.keys?.retainAll(valueMap.keys)
   }
 
   /**
@@ -193,10 +225,15 @@ $varDecls
   }
 
   // java-scriptengine lets some failures escape unwrapped, such as the IllegalArgumentException from assigning a
-  // variable to a field of an incompatible type, so report them as ScriptExceptions like every other script failure.
+  // variable to a field of an incompatible type, or the NoClassDefFoundError from using a host class under
+  // Isolation.IsolatedClassLoader, so report them as ScriptExceptions like every other script failure.
   private fun evaluate(code: String): Any? =
     runCatching { scriptEngine.eval(code) }.getOrElse { e ->
-      throw if (e is RuntimeException) ScriptException(e) else e
+      throw when (e) {
+        is RuntimeException -> ScriptException(e)
+        is LinkageError -> ScriptException(e.toString()).apply { initCause(e) }
+        else -> e
+      }
     }
 
   private companion object {

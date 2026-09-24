@@ -429,6 +429,83 @@ class JavaScriptTests : StringSpec() {
       }
     }
 
+    // java-scriptengine copies every public field back into the bindings and, on each later run, sets a field for every
+    // binding, so an extra field used to break every evaluation after the one that declared it.
+    "evalScript leaves only the registered variables bound, so a later evaluation still works" {
+      JavaScript().use {
+        it.apply {
+          add("count", 41)
+          evalScript(
+            "public class Main { public int count; public int extra = 1; public Object getValue() { return count + 1; } }",
+          ) shouldBe 42
+          eval("count") shouldBe 41
+          evalScript("public class Main { public int count; public Object getValue() { return count; } }") shouldBe 41
+        }
+      }
+    }
+
+    // sun.nio.cs.UTF_8 is public but in a package java.base does not export, so it cannot be named.
+    "a value whose class is in an unexported JDK package is declared as an exported supertype" {
+      JavaScript().use {
+        it.apply {
+          add("cs", Charsets.UTF_8)
+          varDecls shouldBe "  public java.nio.charset.Charset cs;"
+          eval("cs.name()") shouldBe "UTF-8"
+        }
+      }
+    }
+
+    // The enum behind Comparator.naturalOrder() used to be declared as java.lang.Enum, and could not take the
+    // registered type argument, since the enum itself has none.
+    "a comparator from Comparator.naturalOrder can be declared with its type argument and used" {
+      JavaScript().use {
+        it.apply {
+          add("cmp", Comparator.naturalOrder<String>(), typeOf<String>())
+          varDecls shouldBe "  public java.util.Comparator<java.lang.String> cmp;"
+          eval("""cmp.compare("a", "b") < 0""") shouldBe true
+        }
+      }
+    }
+
+    "a nested class is imported by its canonical name" {
+      JavaScript().use {
+        it.apply {
+          addImport(java.util.AbstractMap.SimpleEntry::class.java)
+          importDecls shouldBe "import java.util.AbstractMap.SimpleEntry;"
+          eval("""new SimpleEntry<String, Integer>("k", 1).getKey()""") shouldBe "k"
+        }
+      }
+    }
+
+    "a class Java source cannot name cannot be imported" {
+      class Local
+
+      JavaScript().use { script ->
+        shouldThrow<IllegalArgumentException> { script.import(Local::class.java) }
+      }
+    }
+
+    // IsolatedClassLoader hides host classes, which surfaced as a bare NoClassDefFoundError.
+    "a host class used under IsolatedClassLoader fails with a ScriptException" {
+      JavaScript().use {
+        it.apply {
+          add("aux", IncClass(5))
+          assignIsolation(Isolation.IsolatedClassLoader)
+          shouldThrow<ScriptException> { eval("aux.getI()") }.cause shouldNotBe null
+        }
+      }
+    }
+
+    "resetForReuse keeps the global scope the Java engine needs, whatever it is passed" {
+      JavaScript().use {
+        it.apply {
+          resetForReuse(nullGlobalContext = true)
+          add("x", 1)
+          evalScript("public class Main { public int x; public Object getValue() { return x; } }") shouldBe 1
+        }
+      }
+    }
+
     "variable names must be valid Java identifiers" {
       JavaScript().use { script ->
         ["my-var", "new", "x; int injected"].forEach { name ->

@@ -98,6 +98,7 @@ abstract class AbstractScript(
    * @return a formatted type parameter string, or an empty string if there are no parameters
    * @throws IllegalStateException if [types] is omitted and no types were registered for [name]
    */
+  @Synchronized
   open fun params(
     name: String,
     types: Array<out KType> = typeMap[name] ?: error("No type parameters registered for $name"),
@@ -118,7 +119,10 @@ abstract class AbstractScript(
    *
    * @param name the variable name to bind in the script
    * @param value the value to associate with the variable
-   * @param types the type parameters for generic types (e.g., for `List<String>`, pass `typeOf<String>()`)
+   * @param types the type parameters for generic types (e.g., for `List<String>`, pass `typeOf<String>()`). A value
+   *   whose own class cannot be named in generated code, and takes no type parameters, may still be given some when a
+   *   public class or interface it implements takes that many; it is then declared as that type (a lambda as a
+   *   `Function1<A, B>`, the value of `Comparator.naturalOrder()` as a `Comparator<T>`)
    * @throws ScriptException if the name is not a valid identifier, the value is a local/anonymous class, or the type
    *   parameter count is invalid
    */
@@ -140,6 +144,14 @@ abstract class AbstractScript(
       paramCnt > 0 && types.isEmpty() -> {
         val plural = "parameter".pluralize(paramCnt)
         throw ScriptException("Expected $paramCnt type $plural to be specified for $qname")
+      }
+
+      // A value whose own class cannot be named is declared as a public supertype, which may take type arguments the
+      // class itself does not: a lambda is declared as a Function1<A, B>, and the private enum behind
+      // Comparator.naturalOrder() as a Comparator<T>. A public class is still checked strictly.
+      types.isNotEmpty() && paramCnt != types.size && !value.javaClass.isPubliclyAccessible() &&
+        value.javaClass.hasNameableSupertype(types.size) -> {
+        register(name, value, types)
       }
 
       paramCnt == 0 && types.isNotEmpty() -> {
@@ -226,7 +238,8 @@ abstract class AbstractScript(
 
   /**
    * The nearest class or interface of [value]'s runtime class that generated code can name, searched breadth-first
-   * through its superclasses and interfaces. The runtime class itself may be private or internal, as the list behind
+   * through its superclasses and interfaces. [Enum] and `java.lang.Record` are skipped, since they carry none of the
+   * value's own API, and so are classes whose module does not export their package. The runtime class itself may be private or internal, as the list behind
    * `listOf(1, 2)` is. A candidate must declare as many type parameters as were registered for [name], or any number
    * when none were registered. Falls back to [Any], which takes no type arguments, so callers must not append the
    * registered ones to it.
@@ -245,17 +258,22 @@ abstract class AbstractScript(
   ): KClass<*> {
     if (value.javaClass.isArray) return value.javaClass.kotlin
     val arity = typeMap[name]?.size ?: 0
-    return value.javaClass
-      .supertypesBreadthFirst()
-      .firstOrNull {
-        it != Any::class.java && it.isPubliclyAccessible() &&
-          (arity == 0 || it.typeParameters.size == arity)
-      }?.kotlin
+    return value.javaClass.nameableSupertypes().firstOrNull { arity == 0 || it.typeParameters.size == arity }?.kotlin
       ?: Any::class
   }
 
   private companion object {
     val IDENTIFIER = Regex("[A-Za-z_][A-Za-z0-9_]*")
+
+    // Enum and Record carry none of a value's own API, so declaring a value as one hides the interface that does:
+    // the enum behind Comparator.naturalOrder() would become an Enum instead of a Comparator.
+    val UNHELPFUL_SUPERTYPES: Set<Class<*>> = setOf(Any::class.java, Enum::class.java, java.lang.Record::class.java)
+
+    // The classes and interfaces generated code can name for a value of this class, nearest first.
+    fun Class<*>.nameableSupertypes(): Sequence<Class<*>> =
+      supertypesBreadthFirst().filter { it !in UNHELPFUL_SUPERTYPES && it.isPubliclyAccessible() }
+
+    fun Class<*>.hasNameableSupertype(arity: Int) = nameableSupertypes().any { it.typeParameters.size == arity }
 
     fun Class<*>.supertypesBreadthFirst(): Sequence<Class<*>> =
       sequence {
@@ -271,12 +289,14 @@ abstract class AbstractScript(
         }
       }
 
-    // Whether generated Kotlin or Java code can name this class: it and every class enclosing it are public. Local and
-    // anonymous classes are never public to Kotlin reflection, and lambda classes are never public to Java.
+    // Whether generated Kotlin or Java code can name this class: it and every class enclosing it are public, and its
+    // module exports its package. Local and anonymous classes are never public to Kotlin reflection, lambda classes are
+    // never public to Java, and a JDK class such as sun.nio.cs.UTF_8 is public but in a package java.base keeps to itself.
     fun Class<*>.isPubliclyAccessible(): Boolean =
-      generateSequence(this) { it.enclosingClass }.all { clazz ->
-        Modifier.isPublic(clazz.modifiers) &&
-          runCatching { clazz.kotlin.visibility == KVisibility.PUBLIC }.getOrDefault(false)
-      }
+      (!module.isNamed || module.isExported(packageName)) &&
+        generateSequence(this) { it.enclosingClass }.all { clazz ->
+          Modifier.isPublic(clazz.modifiers) &&
+            runCatching { clazz.kotlin.visibility == KVisibility.PUBLIC }.getOrDefault(false)
+        }
   }
 }
