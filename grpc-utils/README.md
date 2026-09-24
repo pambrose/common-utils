@@ -84,12 +84,12 @@ val plaintextChannel =
     // configure the ManagedChannelBuilder here
   }
 
-// TLS channel with retry enabled
+// TLS channel that retries UNAVAILABLE calls. Retry is on by default (as in grpc-java), but only transparent
+// retries happen until a retry policy is supplied through the service config.
 val tlsChannel =
   GrpcDsl.channel(
     hostName = "api.example.com",
     port = 443,
-    enableRetry = true,
     maxRetryAttempts = 5,
     tlsContext = TlsUtils.buildClientTlsContext(
       certChainFilePath = "client.crt",
@@ -97,6 +97,22 @@ val tlsChannel =
       trustCertCollectionFilePath = "ca.crt",
     ),
   ) {
+    defaultServiceConfig(
+      mapOf(
+        "methodConfig" to listOf(
+          mapOf(
+            "name" to listOf(mapOf<String, Any>()),
+            "retryPolicy" to mapOf(
+              "maxAttempts" to 5.0,
+              "initialBackoff" to "0.1s",
+              "maxBackoff" to "1s",
+              "backoffMultiplier" to 2.0,
+              "retryableStatusCodes" to listOf("UNAVAILABLE"),
+            ),
+          ),
+        ),
+      ),
+    )
   }
 
 // In-process channel, ignoring host, port and TLS
@@ -186,7 +202,7 @@ failing at JVM exit where it would skip the shutdown entirely.
 
 ### `GrpcDsl`
 
-- `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = false, maxRetryAttempts: Int = 5, tlsContext: TlsContext = PLAINTEXT_CONTEXT, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
+- `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = true, maxRetryAttempts: Int = 5, tlsContext: TlsContext = PLAINTEXT_CONTEXT, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
 - `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", block: ServerBuilder<*>.() -> Unit): Server`
 - `attributes(block: Attributes.Builder.() -> Unit): Attributes`
 - `streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserver<T>` — each callback may be

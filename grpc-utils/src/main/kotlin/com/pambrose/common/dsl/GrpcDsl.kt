@@ -49,8 +49,11 @@ object GrpcDsl {
    *
    * @param hostName the target server hostname (Netty transport only)
    * @param port the target server port (Netty transport only)
-   * @param enableRetry whether to enable gRPC retry on the channel. grpc-java enables retry by default, so
-   *   `false` disables it explicitly rather than leaving that default in place.
+   * @param enableRetry whether gRPC retry is enabled on the channel. `true` (the default) matches grpc-java's own
+   *   default: RPCs get transparent retries (e.g. on a refused stream during a server restart), and any retry
+   *   policy in the channel's service config applies. `false` calls `disableRetry()`, which turns off transparent
+   *   retries as well. Configured retries need a retry policy, supplied in [block] through
+   *   `defaultServiceConfig(...)`; this flag alone does not add one.
    * @param maxRetryAttempts the maximum number of retry attempts per RPC; a negative value leaves grpc's own
    *   default in place
    * @param tlsContext the TLS configuration for the channel; defaults to [PLAINTEXT_CONTEXT]
@@ -62,7 +65,7 @@ object GrpcDsl {
   fun channel(
     hostName: String = "",
     port: Int = -1,
-    enableRetry: Boolean = false,
+    enableRetry: Boolean = true,
     maxRetryAttempts: Int = 5,
     tlsContext: TlsContext = PLAINTEXT_CONTEXT,
     overrideAuthority: String = "",

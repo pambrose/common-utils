@@ -199,6 +199,21 @@ class GrpcDslTests : StringSpec() {
       }
     }
 
+    // Before 4.1.0 an unset flag left grpc's default (retry on); 4.1.0 made the default call disableRetry(), which
+    // also turned off transparent retries on every channel that never mentioned retry.
+    "a channel built without enableRetry keeps grpc's retry, including transparent retries" {
+      val builder = mockk<NettyChannelBuilder>(relaxed = true)
+      withStubbedBuilder(
+        NettyChannelBuilder::class,
+        builder,
+        { every { NettyChannelBuilder.forAddress(any<String>(), any<Int>()) } returns builder },
+      ) {
+        GrpcDsl.channel(hostName = "localhost", port = 15559) {}
+
+        verify(exactly = 0) { builder.disableRetry() }
+      }
+    }
+
     "enableRetry = true enables retry" {
       val builder = mockk<NettyChannelBuilder>(relaxed = true)
       withStubbedBuilder(
