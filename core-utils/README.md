@@ -240,8 +240,11 @@ The allow-list is required and must be non-empty, and it has to name every class
 superclasses (an `Integer` also needs `Number`). A blocklist is checked first and rejects `java.lang.Runtime`,
 `java.lang.Process` and `java.lang.ProcessBuilder`, plus anything under `java.rmi.`, `javax.management.` or the
 Commons Collections `functors` packages, even when allow-listed. A JEP 290 `ObjectInputFilter` bounds the stream
-as well — at most 32 levels of nesting and 10,485,760 array elements — and is merged with any JVM-wide
-`jdk.serialFilter` rather than replacing it. The serialized input itself is capped at 10 MB.
+as well — at most 20 levels of nesting, and no array length or object-reference count larger than the payload's
+size in bytes — and is merged with any JVM-wide `jdk.serialFilter` rather than replacing it. The serialized input
+itself is capped at 10 MB. Allow-list hash-based collections (`HashSet`, `HashMap`, `Hashtable`) sparingly for
+untrusted input: nested sets cost hashing time that grows exponentially with depth, which the depth limit only
+bounds.
 
 ```kotlin
 import com.pambrose.common.util.*

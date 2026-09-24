@@ -191,6 +191,46 @@ class IOExtensionsTests : StringSpec() {
       }
     }
 
+    "secure deserialization rejects a primitive array longer than the payload" {
+      // 10,000,000 longs is under the 10 MB byte cap but would allocate 80 MB from a payload of a few dozen bytes.
+      val bytes = (LongArray(4) as Any as Serializable).toByteArraySecure()
+      ByteBuffer.wrap(bytes).putInt(bytes.size - 4 * 8 - 4, 10_000_000)
+
+      shouldThrow<InvalidClassException> {
+        bytes.toObjectSecure(Serializable::class.java, setOf(LongArray::class.java))
+      }
+    }
+
+    "secure deserialization rejects a collection declaring a size larger than the payload" {
+      // ArrayList.readObject allocates its backing Object[] from the serialized size field, which the filter checks.
+      val bytes = (arrayListOf<Any?>(null, null, null) as Serializable).toByteArraySecure()
+      // The size field (3) is followed by block data holding the capacity: TC_BLOCKDATA, length 4, then 3.
+      val marker = byteArrayOf(0, 0, 0, 3, 0x77, 4, 0, 0, 0, 3)
+      val at = bytes.indexOf(marker)
+      ByteBuffer.wrap(bytes).putInt(at, 10_000_000)
+
+      shouldThrow<InvalidClassException> {
+        bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java))
+      }
+    }
+
+    "secure deserialization rejects a nested HashSet hash-code bomb" {
+      // Reading this graph recomputes hash codes at a cost that doubles with each level; at depth 25 it takes
+      // seconds, and at 30 about a minute. The depth limit must reject it before the hashing starts.
+      val bytes = (hashSetBomb(25) as Serializable).toByteArraySecure()
+
+      shouldThrow<InvalidClassException> {
+        bytes.toObjectSecure(HashSet::class.java, setOf(HashSet::class.java, String::class.java))
+      }
+    }
+
+    "secure deserialization accepts primitive arrays filling the payload" {
+      val values = LongArray(1_000) { it.toLong() }
+      val bytes = (values as Any as Serializable).toByteArraySecure()
+
+      bytes.toObjectSecure(LongArray::class.java, setOf(LongArray::class.java)).toList() shouldBe values.toList()
+    }
+
     "secure deserialization blocks dangerous classes" {
       // javax.management.* is on the SecureObjectInputStream blocklist, and ObjectName is
       // Serializable, so its class descriptor trips the block during resolveClass, even when
@@ -260,6 +300,30 @@ class IOExtensionsTests : StringSpec() {
     if (depth == 0) arrayListOf() else arrayListOf(nestedLists(depth - 1))
 
   // ISO-8859-1 maps every byte to one char and back, so the rest of the stream is untouched.
+  // The classic nested-HashSet denial-of-service graph: two sets per level, each containing both of the next.
+  private fun hashSetBomb(depth: Int): HashSet<Any> {
+    val root = HashSet<Any>()
+    var s1: HashSet<Any> = root
+    var s2 = HashSet<Any>()
+    repeat(depth) {
+      val t1 = HashSet<Any>()
+      val t2 = HashSet<Any>()
+      t1.add("foo")
+      s1.add(t1)
+      s1.add(t2)
+      s2.add(t1)
+      s2.add(t2)
+      s1 = t1
+      s2 = t2
+    }
+    return root
+  }
+
+  private fun ByteArray.indexOf(pattern: ByteArray): Int {
+    val index = (0..size - pattern.size).firstOrNull { i -> pattern.indices.all { this[i + it] == pattern[it] } }
+    return requireNotNull(index) { "Pattern not found in the stream" }
+  }
+
   private fun ByteArray.replaceAscii(
     old: String,
     new: String,
