@@ -326,6 +326,8 @@ private class FailingStopService(
   init {
     initMetricsAndHealthChecks()
   }
+
+  fun initAgain() = initMetricsAndHealthChecks()
 }
 
 // A service that never calls its init method.
@@ -608,6 +610,15 @@ class GenericServiceTests : StringSpec() {
       shouldThrow<IllegalStateException> { ktor.initKtorServletService() }.message.orEmpty() shouldContain
         "already initialized"
       ktor.servletService shouldBe ktorServletService
+    }
+
+    // A direct subclass calls initMetricsAndHealthChecks itself, so the guard must live there too; a second call used
+    // to replace the metrics service, duplicate the managed services, and then fail on the health checks.
+    "calling initMetricsAndHealthChecks a second time fails fast and leaves the service as it was" {
+      val service = FailingStopService(enabledMetrics())
+      val metricsService = service.metricsService
+      shouldThrow<IllegalStateException> { service.initAgain() }.message.orEmpty() shouldContain "already initialized"
+      service.metricsService shouldBe metricsService
     }
 
     "Ktor service admin health check endpoint reports the registered checks" {

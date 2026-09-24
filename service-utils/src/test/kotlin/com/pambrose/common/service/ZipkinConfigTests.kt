@@ -36,17 +36,5 @@ class ZipkinConfigTests : StringSpec() {
       config.path shouldBe "custom/path"
       config.serviceName shouldBe "my-service"
     }
-
-    "url can be constructed from config fields" {
-      val config = ZipkinConfig(
-        enabled = true,
-        hostname = "localhost",
-        port = 9411,
-        path = "api/v2/spans",
-        serviceName = "test-service",
-      )
-      val url = "http://${config.hostname}:${config.port}/${config.path}"
-      url shouldBe "http://localhost:9411/api/v2/spans"
-    }
   }
 }

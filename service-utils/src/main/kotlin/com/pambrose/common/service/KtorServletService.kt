@@ -81,7 +81,15 @@ class KtorServletService(
   ) : this(port, servletGroup, initKtor, null, initBlock)
 
   override fun startUp() {
-    ktorServer.start(wait = false)
+    try {
+      ktorServer.start(wait = false)
+    } catch (e: Throwable) {
+      // start() registers Ktor's JVM shutdown hook and runs the modules, initializing the servlets, before the engine
+      // binds its port. Guava never calls shutDown() after a failed startUp(), so stop the server here; otherwise a
+      // failed bind leaves the hook holding the server, and the servlets are never destroyed.
+      runCatching { ktorServer.stop(0, 0) }.exceptionOrNull()?.let(e::addSuppressed)
+      throw e
+    }
     // start() returns once the connectors are bound, so they are already resolved.
     boundPort = runBlocking { ktorServer.engine.resolvedConnectors().single().port }
   }

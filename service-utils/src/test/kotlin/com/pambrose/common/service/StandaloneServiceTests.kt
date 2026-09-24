@@ -20,10 +20,15 @@ package com.pambrose.common.service
 
 import com.pambrose.common.concurrent.GenericIdleService
 import com.pambrose.common.servlet.VersionServlet
+import com.google.common.util.concurrent.Service
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import jakarta.servlet.http.HttpServlet
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.incrementAndFetch
 
 // Starts the service, runs block, and stops the service even when block fails.
 private inline fun GenericIdleService.whileRunning(block: () -> Unit) {
@@ -94,6 +99,25 @@ class StandaloneServiceTests : StringSpec() {
         }
         httpGet(service.boundPort, "/missing").statusCode() shouldBe 404
       }
+    }
+
+    // Ktor initializes the servlets and registers its shutdown hook before binding, so a failed bind must stop the
+    // server: stopping is what destroys the servlets and removes the hook.
+    "a KtorServletService that fails to bind destroys its servlets" {
+      val destroyed = AtomicInt(0)
+      val servlet =
+        object : HttpServlet() {
+          override fun destroy() {
+            destroyed.incrementAndFetch()
+          }
+        }
+      occupiedLoopbackPort().use { occupied ->
+        val service =
+          KtorServletService(occupied.localPort, HttpServletGroup().apply { addServlet("/x", servlet) }, host = LOOPBACK)
+        shouldThrow<IllegalStateException> { service.startSync() }
+        service.state() shouldBe Service.State.FAILED
+      }
+      destroyed.load() shouldBe 1
     }
 
     "each server reports the port the OS chose once it starts, and keeps it after stopping" {
