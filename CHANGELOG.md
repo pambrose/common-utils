@@ -2,6 +2,35 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- service-utils `ServletGroup.addServlet` and `HttpServletGroup.addServlet` add a missing leading slash to the path,
+  so `"ping"` and `"/ping"` register one endpoint and the later servlet replaces the earlier one. Before, both were
+  registered: the Jetty admin server failed to start with "Multiple servlets map to path /ping", and the Ktor one
+  kept serving the first.
+- service-utils' Jetty admin and metrics servers no longer send a `Server: Jetty(…)` header or a version on error
+  pages, and their error pages no longer include stack traces.
+
+### Bug fixes
+
+- core-utils `toObjectSecure` bounds array lengths and object references by the size of the payload, and nesting
+  at 20 levels (was 32). The old limits let a 35-byte payload allocate 80 MB, a 62-byte `ArrayList` allocate a
+  10-million-slot array, and a 1.7 KB nested-`HashSet` payload take about a minute of CPU.
+- email-utils `isValidEmail` rejects addresses over 254 characters, local parts over 64 and domain labels over 63
+  before running its pattern. An address with a few thousand domain labels threw `StackOverflowError`.
+- email-utils `ResendService` creates the Resend emails client once and reuses it. `Resend.emails()` builds a new
+  OkHttp client on every call, so each email opened its own connection pool and TLS handshake.
+- service-utils `GenericKtorService` treats a blank admin path as disabling that endpoint, as the Jetty variant
+  does. It used to normalize `""` to `"/"` first, so a blank `threadDumpPath` served the thread dump at the root.
+
+### Build
+
+- `gradle-wrapper.properties` pins `distributionSha256Sum`, and `make upgrade-wrapper` keeps it up to date.
+- `gradlew` and `gradlew.bat` are no longer marked `binary` in `.gitattributes`, so their diffs are visible.
+- CI actions are pinned to commit SHAs, and every job has a timeout.
+
 ## [4.1.0] - 2026-09-16
 
 ### Changed

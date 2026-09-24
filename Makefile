@@ -109,10 +109,14 @@ publish-maven-central: _require-version _check-gpg-env ## Publish and release to
 
 # Gradle's documented upgrade procedure: the first run rewrites
 # gradle-wrapper.properties using the *old* wrapper jar; the second run
-# regenerates the wrapper itself with the new version.
+# regenerates the wrapper itself with the new version. Both pass the
+# distribution's published SHA-256, so distributionSha256Sum is kept and the
+# wrapper verifies every download.
 upgrade-wrapper: _require-gradle-version ## Re-run the Gradle wrapper task at the pinned version
-	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
-	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
+	@sum="$$(curl -fsSL https://services.gradle.org/distributions/gradle-$(GRADLE_VERSION)-bin.zip.sha256)" \
+		|| { echo "ERROR: Could not fetch the SHA-256 for gradle $(GRADLE_VERSION)" >&2; exit 1; }; \
+	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin --gradle-distribution-sha256-sum=$$sum && \
+	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin --gradle-distribution-sha256-sum=$$sum
 
 _check-gpg-env:
 	@if [ -z "$$GPG_SIGNING_KEY_ID" ]; then \

@@ -120,6 +120,12 @@ Dependabot only proposes candidates carrying the same suffix — and it must be 
 artifacts ship. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
 `make upgrade-wrapper` reads, so that entry goes stale after a Dependabot wrapper bump.
 
+`gradle-wrapper.properties` carries a `distributionSha256Sum`, so the wrapper verifies every distribution it
+downloads; `make upgrade-wrapper` fetches the new release's published checksum and passes it to both wrapper runs,
+and a wrapper bump from any other route must update it too. `gradlew` and `gradlew.bat` are text in
+`.gitattributes` (not `binary`), so changes to them show up in diffs and PR reviews. The workflows pin every
+action to a commit SHA with the release in a trailing comment, and every job sets `timeout-minutes`.
+
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
