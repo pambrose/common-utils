@@ -4,6 +4,24 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+### Breaking (release as 5.0.0)
+
+These change the published API or dependency lists, so under the versioning policy in CLAUDE.md they need a major
+release.
+
+- ktor-server-utils `KtorServletRequest` and `KtorServletResponse` are internal; mount servlets with `Route.servlet`.
+- service-utils `jmxReporter`, `metricsService`, `zipkinReporterService` and `servletService` have private setters.
+- script-utils-common `AbstractScript.valueMap` is a read-only `Map`, and `AbstractEnginePool.channel` is private.
+- `ExposedUtils`, `RedisUtils.RedisInfo` and `RecaptchaService.RecaptchaResponse` are internal, and the companion
+  objects of `LambdaServlet`, `VersionServlet`, `SamplerGaugeCollector` and `ResendService` are private.
+- Narrower dependencies. Add any of these yourself if your code used them without declaring them:
+  - core-utils no longer exports kotlinx-serialization-json on any platform, nor kotlin-logging on JS, wasm and
+    native (the JVM artifact still exports kotlin-logging).
+  - jetty-utils, dropwizard-utils and ktor-client-utils no longer depend on core-utils; prometheus-utils and
+    exposed-utils depend on kotlin-logging instead of core-utils.
+  - grpc-utils no longer ships grpc-protobuf and grpc-services.
+  - service-utils no longer ships Ktor's call-logging and compression plugins.
+
 ### Changed
 
 - Kotlin is no longer held at 2.4.10: the catalog, the `kotlin-scripting-*` artifacts and `kotlin-reflect` all move to
@@ -58,6 +76,7 @@ All notable changes to Common Utils are documented in this file.
 
 ### Added
 
+- `common-utils-bom`, a BOM that aligns every module (and the multiplatform modules' `-jvm` artifacts) on one version.
 - json-utils `longValue`, `longValue(vararg keys)` and `longValueOrNull(vararg keys)`.
 - core-utils repository files (`GitHubFile`, `GitLabFile`, `AbstractRepo.file`) take connect and read timeouts, and
   `UrlSource` has a constructor taking `java.time.Duration` timeouts for Java callers.

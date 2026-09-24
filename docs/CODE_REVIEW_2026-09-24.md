@@ -60,7 +60,7 @@
 - [x] **RV-009** `LOW` · API — `UrlSource` timeouts can't be set for repo-based sources or from Java ([details](#rv-009)) — fixed in 6b09d26
 - [x] **RV-010** `LOW` · cleanup — `SingleAssignVar` duplicates `singleSetReference` and is JVM-only ([details](#rv-010)) — fixed in 6b09d26
 - [x] **RV-011** `LOW` · docs — core-utils README: an import that doesn't compile, a date example that mixes zones, an inconsistent `@Version` example ([details](#rv-011)) — fixed in 6b09d26
-- [ ] **RV-012** `LOW` · build — core-utils exports JVM-only dependencies from `commonMain`; unused serialization plugin ([details](#rv-012))
+- [x] **RV-012** `LOW` · build — core-utils exports JVM-only dependencies from `commonMain`; unused serialization plugin ([details](#rv-012)) — fixed in 7c315a9
 - [x] **RV-013** `LOW` · tests — `ReadResourcesTests` picks a port with `ServerSocket(0)` and can stall for ~3 minutes ([details](#rv-013)) — fixed in 6b09d26
 
 ### ktor-client-utils
@@ -81,7 +81,7 @@
 - [x] **RV-024** `LOW` · bug — `KtorServletResponse` throws NPE on `null` arguments the Servlet spec defines ([details](#rv-024)) — fixed in 086525a
 - [x] **RV-025** `LOW` · bug — The bridge throws `UnsupportedOperationException` for simple methods, so TRACE, `getLastModified` and `setContentLength` return 500 ([details](#rv-025)) — fixed in 086525a
 - [x] **RV-026** `LOW` · bug — `HerokuHttpsRedirect` reorders and lower-cases the query string ([details](#rv-026)) — fixed in 086525a
-- [ ] **RV-027** `LOW` · API — Servlet adapters export `Nothing`/`Void` members, and the body `KtorServletResponse` holds can't be read ([details](#rv-027))
+- [x] **RV-027** `LOW` · API — Servlet adapters export `Nothing`/`Void` members, and the body `KtorServletResponse` holds can't be read ([details](#rv-027)) — fixed in 02d4408
 
 ### service-utils
 - [x] **RV-028** `MEDIUM` · security — A blank Ktor admin path serves that endpoint (e.g. the thread dump) at `/` instead of disabling it ([details](#rv-028)) — fixed in f24cb8c
@@ -89,8 +89,8 @@
 - [x] **RV-030** `LOW` · bug — `"ping"` and `"/ping"` collide: Jetty fails to start, Ktor ignores the override ([details](#rv-030)) — fixed in f24cb8c
 - [x] **RV-031** `LOW` · security — The Jetty admin and metrics servers disclose the Jetty version ([details](#rv-031)) — fixed in f24cb8c
 - [x] **RV-032** `LOW` · bug — `initMetricsAndHealthChecks()` has no double-init guard (follows CR-051) ([details](#rv-032)) — fixed in 44a3287
-- [ ] **RV-033** `LOW` · API — Lifecycle-critical service properties have public setters ([details](#rv-033))
-- [ ] **RV-034** `LOW` · docs — README example imports `Compression`, which consumers don't get; call-logging and compression ship unused ([details](#rv-034)) — README fixed in 9f225de; dropping the bundle entries is Phase 5
+- [x] **RV-033** `LOW` · API — Lifecycle-critical service properties have public setters ([details](#rv-033)) — fixed in 02d4408
+- [x] **RV-034** `LOW` · docs — README example imports `Compression`, which consumers don't get; call-logging and compression ship unused ([details](#rv-034)) — README fixed in 9f225de, bundle entries dropped in 7c315a9
 - [x] **RV-035** `LOW` · tests — Self-referential and duplicated config specs ([details](#rv-035)) — fixed in 44a3287
 
 ### prometheus-utils
@@ -123,7 +123,7 @@
 - [x] **RV-056** `LOW` · concurrency — The thread-safety claim doesn't cover the unsynchronized public readers *(PLAUSIBLE)* ([details](#rv-056)) — fixed in 154ebf4
 - [x] **RV-057** `LOW` · bug — The shared `ScriptEngineManager` keeps the first caller's context classloader *(PLAUSIBLE)* ([details](#rv-057)) — fixed in 154ebf4
 - [x] **RV-058** `LOW` · bug — `withInstance` loses the block's exception when `reset` also throws ([details](#rv-058)) — fixed in 154ebf4
-- [ ] **RV-059** `LOW` · API — Mutable internals (`valueMap`, `channel`) are exposed as `protected` ([details](#rv-059))
+- [x] **RV-059** `LOW` · API — Mutable internals (`valueMap`, `channel`) are exposed as `protected` ([details](#rv-059)) — fixed in 02d4408
 
 ### email-utils
 - [x] **RV-060** `MEDIUM` · security — `isValidEmail` throws `StackOverflowError` on a ~4 KB input, and has no length cap ([details](#rv-060)) — fixed in c39565e
@@ -150,19 +150,19 @@
 ### grpc-utils
 - [x] **RV-074** `MEDIUM` · bug — The default channel now disables all retry, including transparent retry (regression from CR-116) ([details](#rv-074)) — fixed in 9680445
 - [x] **RV-075** `LOW` · API — `GrpcDsl.server` can't bind an address, and its defaults can never work ([details](#rv-075)) — fixed in 1cb8147
-- [ ] **RV-076** `LOW` · build — Unused grpc-protobuf and grpc-services are shipped to every consumer ([details](#rv-076))
+- [x] **RV-076** `LOW` · build — Unused grpc-protobuf and grpc-services are shipped to every consumer ([details](#rv-076)) — fixed in 7c315a9
 - [x] **RV-077** `LOW` · docs — README/KDoc drift: `tlsContext` "required", `shutdown()` "throws", client mutual auth ([details](#rv-077)) — fixed in 1cb8147
 
 ### Cross-module API surface
-- [ ] **RV-078** `LOW` · API — Public types and empty companions that should be internal or private ([details](#rv-078))
+- [x] **RV-078** `LOW` · API — Public types and empty companions that should be internal or private ([details](#rv-078)) — fixed in 02d4408
 
 ### Build & publishing
-- [ ] **RV-079** `LOW` · build — Five modules export core-utils as `api` but use little or none of it ([details](#rv-079))
+- [x] **RV-079** `LOW` · build — Five modules export core-utils as `api` but use little or none of it ([details](#rv-079)) — fixed in 7c315a9
 - [x] **RV-080** `LOW` · publishing — ktor-server-utils' `compileOnlyApi` servlet API is published at Maven `compile` scope ([details](#rv-080)) — fixed in 96aa00d
 - [x] **RV-081** `LOW` · deps — Dependabot's held Kotlin group also takes `kotlin-reflect`, so CR-126 can recur ([details](#rv-081)) — fixed in 31d5a7a (kotlin-reflect rides the unified `kotlin` version again)
 - [x] **RV-082** `LOW` · build — `make coverage-clean` doesn't clear the KMP `jvmTest` results (follows CR-129) *(PLAUSIBLE)* ([details](#rv-082)) — fixed in 96aa00d
 - [x] **RV-083** `LOW` · build — The disabled watchOS/tvOS test tasks still link their test binaries *(PLAUSIBLE)* ([details](#rv-083)) — fixed in 96aa00d
-- [ ] **RV-084** `LOW` · publishing — No BOM for 19 co-versioned artifacts ([details](#rv-084))
+- [x] **RV-084** `LOW` · publishing — No BOM for 19 co-versioned artifacts ([details](#rv-084)) — fixed in d728e24
 - [x] **RV-085** `LOW` · cleanup — Detekt's `VariableNaming` excludes miss `*Tests.kt` ([details](#rv-085)) — fixed in 96aa00d
 
 ### CI & supply chain
