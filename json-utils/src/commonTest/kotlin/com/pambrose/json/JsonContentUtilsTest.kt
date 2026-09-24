@@ -26,6 +26,7 @@ import com.pambrose.common.json.jsonElementList
 import com.pambrose.common.json.stringValue
 import com.pambrose.common.json.stringValueOrNull
 import com.pambrose.common.json.toFormattedString
+import com.pambrose.common.json.parseJson
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
@@ -98,8 +99,8 @@ class JsonContentUtilsTest : StringSpec() {
       rawJsonString.contains('\n') shouldBe false
 
       // Both should contain the same data
-      val prettyParsed = prettyJsonString.toJsonElement()
-      val rawParsed = rawJsonString.toJsonElement()
+      val prettyParsed = prettyJsonString.parseJson()
+      val rawParsed = rawJsonString.parseJson()
 
       rawParsed.stringValue("name") shouldBe prettyParsed.stringValue("name")
       rawParsed.intValue("value") shouldBe prettyParsed.intValue("value")
@@ -116,7 +117,7 @@ class JsonContentUtilsTest : StringSpec() {
 
     "string to json element parsing" {
       val jsonString = """{"name": "parsed", "value": 100, "active": false}"""
-      val jsonElement = jsonString.toJsonElement()
+      val jsonElement = jsonString.parseJson()
 
       jsonElement.stringValue("name") shouldBe "parsed"
       jsonElement.intValue("value") shouldBe 100
@@ -140,7 +141,7 @@ class JsonContentUtilsTest : StringSpec() {
     "complex data serialization and parsing" {
       // Test serialization
       val jsonString = complexData.toJsonString(prettyPrint = true)
-      val jsonElement = jsonString.toJsonElement()
+      val jsonElement = jsonString.parseJson()
 
       // Test basic fields
       jsonElement.stringValue("id") shouldBe "complex-1"
@@ -181,7 +182,7 @@ class JsonContentUtilsTest : StringSpec() {
       val dataWithDefaults = SimpleData("test", 42) // active defaults to true
 
       val strictJson = JsonContentUtils.strictFormat.encodeToString(SimpleData.serializer(), dataWithDefaults)
-      val strictElement = strictJson.toJsonElement()
+      val strictElement = strictJson.parseJson()
 
       // Should include default values
       strictElement.stringValue("name") shouldBe "test"
@@ -199,7 +200,7 @@ class JsonContentUtilsTest : StringSpec() {
     "round trip serialization" {
       // Original -> JSON String -> JsonElement -> Map -> back to JsonElement
       val originalJsonString = complexData.toJsonString()
-      val jsonElement = originalJsonString.toJsonElement()
+      val jsonElement = originalJsonString.parseJson()
       val map = jsonElement.toMap()
 
       // Verify the round trip preserved core data
@@ -209,7 +210,7 @@ class JsonContentUtilsTest : StringSpec() {
 
     "error handling with malformed JSON" {
       shouldThrow<SerializationException> {
-        """{"name": "test", "value": }""".toJsonElement()
+        """{"name": "test", "value": }""".parseJson()
       }
     }
 
@@ -224,7 +225,7 @@ class JsonContentUtilsTest : StringSpec() {
             }
         """.trimIndent()
 
-      val element = jsonWithNulls.toJsonElement()
+      val element = jsonWithNulls.parseJson()
 
       element.stringValue("name") shouldBe "test"
       element.stringValue("empty") shouldBe ""
@@ -247,7 +248,7 @@ class JsonContentUtilsTest : StringSpec() {
       )
 
       val jsonString = largeData.toJsonString()
-      val parsed = jsonString.toJsonElement()
+      val parsed = jsonString.parseJson()
 
       parsed.stringValue("id") shouldBe "large-test"
       parsed.stringValue("metadata.key25") shouldBe "value25"
@@ -273,9 +274,9 @@ class JsonContentUtilsTest : StringSpec() {
       viaToFormattedString.contains('\n') shouldBe true
 
       // Parse all and verify they contain the same data
-      val parsed1 = viaToJsonString.toJsonElement()
-      val parsed2 = viaPrettyFormat.toJsonElement()
-      val parsed3 = viaToFormattedString.toJsonElement()
+      val parsed1 = viaToJsonString.parseJson()
+      val parsed2 = viaPrettyFormat.parseJson()
+      val parsed3 = viaToFormattedString.parseJson()
 
       parsed2.stringValue("name") shouldBe parsed1.stringValue("name")
       parsed3.stringValue("name") shouldBe parsed2.stringValue("name")

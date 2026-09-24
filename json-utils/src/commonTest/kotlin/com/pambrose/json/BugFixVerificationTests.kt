@@ -25,6 +25,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlin.collections.get
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -47,11 +48,13 @@ class BugFixVerificationTests : StringSpec() {
       JsonPrimitive("").isEmpty() shouldBe true
     }
 
+    // Typed as JsonElement so these call the library's isEmpty extension; on a JsonArray or JsonObject, the List or
+    // Map member would win instead and the test could not fail.
     "is empty works for json arrays" {
-      val emptyArray = JsonArray(emptyList())
+      val emptyArray: JsonElement = JsonArray(emptyList())
       emptyArray.isEmpty() shouldBe true
 
-      val nonEmptyArray =
+      val nonEmptyArray: JsonElement =
         buildJsonArray {
           add(JsonPrimitive(1))
           add(JsonPrimitive(2))
@@ -60,10 +63,10 @@ class BugFixVerificationTests : StringSpec() {
     }
 
     "is empty works for json objects" {
-      val emptyObject = JsonObject(emptyMap())
+      val emptyObject: JsonElement = JsonObject(emptyMap())
       emptyObject.isEmpty() shouldBe true
 
-      val nonEmptyObject = JsonObject(mapOf("key" to JsonPrimitive("value")))
+      val nonEmptyObject: JsonElement = JsonObject(mapOf("key" to JsonPrimitive("value")))
       nonEmptyObject.isEmpty() shouldBe false
     }
 

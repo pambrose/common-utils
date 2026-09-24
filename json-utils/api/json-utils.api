@@ -35,6 +35,7 @@ public final class com/pambrose/common/json/JsonElementUtilsKt {
 	public static final fun getIntValue (Lkotlinx/serialization/json/JsonElement;)I
 	public static final fun getJsonObjectValue (Lkotlinx/serialization/json/JsonElement;)Lkotlinx/serialization/json/JsonObject;
 	public static final fun getKeys (Lkotlinx/serialization/json/JsonElement;)Ljava/util/Set;
+	public static final fun getLongValue (Lkotlinx/serialization/json/JsonElement;)J
 	public static final fun getOrNull (Lkotlinx/serialization/json/JsonElement;[Ljava/lang/String;)Lkotlinx/serialization/json/JsonElement;
 	public static final fun getSize (Lkotlinx/serialization/json/JsonElement;)I
 	public static final fun getStringValue (Lkotlinx/serialization/json/JsonElement;)Ljava/lang/String;
@@ -51,6 +52,10 @@ public final class com/pambrose/common/json/JsonElementUtilsKt {
 	public static final fun jsonElementListOrNull (Lkotlinx/serialization/json/JsonElement;[Ljava/lang/String;)Ljava/util/List;
 	public static final fun jsonObjectValue (Lkotlinx/serialization/json/JsonElement;[Ljava/lang/String;)Lkotlinx/serialization/json/JsonObject;
 	public static final fun jsonObjectValueOrNull (Lkotlinx/serialization/json/JsonElement;[Ljava/lang/String;)Lkotlinx/serialization/json/JsonObject;
+	public static final fun longValue (Lkotlinx/serialization/json/JsonElement;[Ljava/lang/String;)J
+	public static final fun longValueOrNull (Lkotlinx/serialization/json/JsonElement;[Ljava/lang/String;)Ljava/lang/Long;
+	public static final fun parseJson (Ljava/lang/String;Z)Lkotlinx/serialization/json/JsonElement;
+	public static synthetic fun parseJson$default (Ljava/lang/String;ZILjava/lang/Object;)Lkotlinx/serialization/json/JsonElement;
 	public static final fun reformatJson (Ljava/lang/String;Z)Ljava/lang/String;
 	public static synthetic fun reformatJson$default (Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;
 	public static final fun stringValue (Lkotlinx/serialization/json/JsonElement;[Ljava/lang/String;)Ljava/lang/String;

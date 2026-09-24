@@ -12,7 +12,7 @@ Type checks (`isObject`, `isArray`, `isString`, …) and simple accessors (`stri
 
 ### Typed Value Access
 
-- `stringValue`, `intValue`, `doubleValue`, `booleanValue`, `jsonObjectValue` as properties
+- `stringValue`, `intValue`, `longValue`, `doubleValue`, `booleanValue`, `jsonObjectValue` as properties
 - Matching `xxxValue(vararg keys)` / `xxxValueOrNull(vararg keys)` functions for nested lookups
 
 ### Navigation
@@ -26,7 +26,8 @@ Type checks (`isObject`, `isArray`, `isString`, …) and simple accessors (`stri
 - `keys`, `size`, `isEmpty()`, `isNotEmpty()`, `containsKeys(...)`
 - `isObject`, `isArray`, `isPrimitive`, `isString`, `isNumber`
 - `deepCopy()`, `toMap()`, `toJsonElementList()`, `forEachJsonObject { }`
-- `toJsonString()` (objects), `reformatJson(prettyPrint)` (JSON strings), `toJsonElement()`, `toFormattedString(indent)`
+- `parseJson()` (JSON text), `toJsonString()` (objects), `reformatJson(prettyPrint)` (JSON strings),
+  `toJsonElement()` (objects), `toFormattedString(indent)`
 
 ### Json Formats
 
@@ -145,7 +146,8 @@ import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
 
-// String -> JsonElement -> pretty String
+// JSON text -> JsonElement, and JSON text -> pretty String
+val element = """{"a":1}""".parseJson()
 val pretty = """{"a":1}""".reformatJson()
 
 // Any serializable value -> JSON
@@ -158,9 +160,18 @@ val map = json.toMap()
 // Independent copy
 val copy = json.deepCopy()
 
-// Custom indent
+// Custom indent: spaces, tabs, \r and \n only (kotlinx.serialization rejects anything else)
 println(json.toFormattedString(indent = "    "))
 ```
+
+`parseJson` (and `reformatJson`, which uses it) accepts only valid JSON. kotlinx.serialization's tree parser takes
+any unquoted token as a literal, so `hello`, `007`, `+3` and `0x10` would otherwise be accepted and then re-encoded
+differently on each platform; they throw `SerializationException` instead. `NaN`, `Infinity` and `-Infinity`, which
+kotlinx writes for non-finite doubles, are accepted.
+
+`parseJson` was called `toJsonElement` on a `String`, which shadowed the generic `T.toJsonElement()`: `"42"` parsed
+to the number 42 on a `String` but serialized to the string `"42"` in generic code. The old name still works, and is
+deprecated.
 
 ### Json Formats
 
@@ -182,7 +193,9 @@ in your own `Json { }` block.
 
 ### Properties
 
-- `keys`, `size`, `stringValue`, `intValue`, `doubleValue`, `booleanValue`, `jsonObjectValue`
+- `keys`, `size`, `stringValue`, `intValue`, `longValue`, `doubleValue`, `booleanValue`, `jsonObjectValue`
+- `intValue` and `longValue` accept only JSON integers (`-?(0|[1-9][0-9]*)`, quoted or not), so `007`, `+5` and
+  non-ASCII digits are rejected on every platform
 - `isObject`, `isArray`, `isPrimitive`, `isString`, `isNumber`
 
 ### Navigation
@@ -194,7 +207,8 @@ in your own `Json { }` block.
 
 ### Nested Accessors
 
-`stringValue`, `stringValueOrNull`, `intValue`, `intValueOrNull`, `doubleValue`, `doubleValueOrNull`,
+`stringValue`, `stringValueOrNull`, `intValue`, `intValueOrNull`, `longValue`, `longValueOrNull`, `doubleValue`,
+`doubleValueOrNull`,
 `booleanValue`, `booleanValueOrNull`, `jsonObjectValue`, `jsonObjectValueOrNull`, `jsonElementList`,
 `jsonElementListOrNull` — each taking `vararg keys: String`.
 
@@ -209,8 +223,10 @@ in your own `Json { }` block.
 - `fun String.reformatJson(prettyPrint: Boolean = true): String`
 - `fun String.toJsonString(): String` (deprecated; use `reformatJson`)
 - `inline fun <reified T> T.toJsonString(prettyPrint: Boolean = true): String`
-- `inline fun <reified T> T.toJsonElement(): JsonElement`
-- `fun String.toJsonElement(verbose: Boolean = false): JsonElement`
+- `inline fun <reified T> T.toJsonElement(): JsonElement` — serializes a value; a `String` becomes a JSON string
+- `fun String.parseJson(verbose: Boolean = false): JsonElement` — parses JSON text; throws `SerializationException`
+  if it is not valid JSON
+- `fun String.toJsonElement(verbose: Boolean = false): JsonElement` (deprecated; use `parseJson`)
 
 ### Formats
 

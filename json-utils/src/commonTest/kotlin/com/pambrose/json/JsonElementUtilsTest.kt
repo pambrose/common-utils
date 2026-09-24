@@ -44,6 +44,7 @@ import com.pambrose.common.json.reformatJson
 import com.pambrose.common.json.size
 import com.pambrose.common.json.stringValue
 import com.pambrose.common.json.stringValueOrNull
+import com.pambrose.common.json.parseJson
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
@@ -130,7 +131,7 @@ class JsonElementUtilsTest : StringSpec() {
 
     "basic type checking properties" {
       val jsonString = """{"name": "test", "count": 42, "active": true, "items": [1,2,3]}"""
-      val json = jsonString.toJsonElement() as JsonObject
+      val json = jsonString.parseJson() as JsonObject
 
       // Test root object
       json.isObject shouldBe true
@@ -183,7 +184,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "nested path access using dot notation" {
-      val complexJson = complexJsonString.toJsonElement()
+      val complexJson = complexJsonString.parseJson()
 
       complexJson.intValue("user.id") shouldBe 123
       complexJson.stringValue("user.profile.name") shouldBe "Jane Smith"
@@ -197,7 +198,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "path access using forward slash notation" {
-      val complexJson = complexJsonString.toJsonElement()
+      val complexJson = complexJsonString.parseJson()
 
       complexJson.getByPath("user/profile/name")?.stringValue shouldBe "Jane Smith"
       complexJson.getByPath("user/profile/contact/email")?.stringValue shouldBe "jane@example.com"
@@ -208,7 +209,7 @@ class JsonElementUtilsTest : StringSpec() {
 
     "contains key functionality" {
       val userJson = sampleUser.toJsonElement()
-      val complexJson = complexJsonString.toJsonElement()
+      val complexJson = complexJsonString.parseJson()
 
       // Simple keys
       userJson.containsKeys("id") shouldBe true
@@ -228,7 +229,7 @@ class JsonElementUtilsTest : StringSpec() {
 
     "array operations" {
       val userJson = sampleUser.toJsonElement()
-      val complexJson = complexJsonString.toJsonElement()
+      val complexJson = complexJsonString.parseJson()
 
       // Test list extraction
       val tags = userJson.jsonElementList("tags")
@@ -248,7 +249,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "object operations" {
-      val complexJson = complexJsonString.toJsonElement()
+      val complexJson = complexJsonString.parseJson()
 
       val userObject = complexJson.jsonObjectValue("user")
       userObject.containsKeys("id") shouldBe true
@@ -281,7 +282,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "to map conversion with nested objects" {
-      val complexJson = complexJsonString.toJsonElement()
+      val complexJson = complexJsonString.parseJson()
       val map = complexJson.toMap()
 
       @Suppress("UNCHECKED_CAST")
@@ -306,7 +307,8 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "is empty and is not empty" {
-      val emptyObject = JsonObject(emptyMap())
+      // Typed as JsonElement so the library's extensions are called, not Map.isEmpty.
+      val emptyObject: JsonElement = JsonObject(emptyMap())
       val nonEmptyObject = sampleUser.toJsonElement()
       val primitiveElement = JsonPrimitive("test")
 
@@ -330,8 +332,10 @@ class JsonElementUtilsTest : StringSpec() {
       val userJson = sampleUser.toJsonElement()
       userJson.size shouldBe 6 // id, name, email, active, score, tags
 
-      val emptyObject = JsonObject(emptyMap())
+      val emptyObject: JsonElement = JsonObject(emptyMap())
       emptyObject.size shouldBe 0
+      val emptyArray: JsonElement = JsonArray(emptyList())
+      emptyArray.size shouldBe 0
     }
 
     "keys property" {
@@ -404,7 +408,7 @@ class JsonElementUtilsTest : StringSpec() {
 
     "error handling for type mismatches" {
       val jsonString = """{"name": "test", "count": 42}"""
-      val json = jsonString.toJsonElement()
+      val json = jsonString.parseJson()
 
       // These should throw exceptions due to type mismatches
       shouldThrow<NumberFormatException> {
@@ -418,7 +422,7 @@ class JsonElementUtilsTest : StringSpec() {
 
     "null handling" {
       val jsonString = """{"name": "test", "value": null, "count": 42}"""
-      val json = jsonString.toJsonElement()
+      val json = jsonString.parseJson()
 
       // Null values should be handled gracefully
       json.containsKeys("value") shouldBe true
@@ -449,7 +453,7 @@ class JsonElementUtilsTest : StringSpec() {
                     }
                 }
             }
-        """.trimIndent().toJsonElement()
+        """.trimIndent().parseJson()
 
       nestedJson.stringValue("level1.level2.level3.value") shouldBe "deep"
       nestedJson.intValue("level1.level2.level3.number") shouldBe 42
@@ -469,7 +473,7 @@ class JsonElementUtilsTest : StringSpec() {
                 "emptyObject": {},
                 "whitespace": "   "
             }
-        """.trimIndent().toJsonElement()
+        """.trimIndent().parseJson()
 
       edgeCaseJson.stringValue("emptyString") shouldBe ""
       edgeCaseJson.stringValue("whitespace") shouldBe "   "
@@ -518,12 +522,12 @@ class JsonElementUtilsTest : StringSpec() {
       val validJson = """{"name": "test", "value": 42}"""
 
       // Should work with verbose = false (default)
-      val result1 = validJson.toJsonElement()
+      val result1 = validJson.parseJson()
       result1.stringValue("name") shouldBe "test"
       result1.intValue("value") shouldBe 42
 
       // Should work with verbose = true
-      val result2 = validJson.toJsonElement(verbose = true)
+      val result2 = validJson.parseJson(verbose = true)
       result2.stringValue("name") shouldBe "test"
       result2.intValue("value") shouldBe 42
     }
@@ -533,17 +537,17 @@ class JsonElementUtilsTest : StringSpec() {
 
       // Should throw with verbose = false (default)
       shouldThrow<SerializationException> {
-        invalidJson.toJsonElement()
+        invalidJson.parseJson()
       }
 
       // Should throw with verbose = true (logs warning before throwing)
       shouldThrow<SerializationException> {
-        invalidJson.toJsonElement(verbose = true)
+        invalidJson.parseJson(verbose = true)
       }
     }
 
     "non-OrNull accessors reject JSON null instead of returning placeholder values" {
-      val json = """{"value": null}""".toJsonElement()
+      val json = """{"value": null}""".parseJson()
       shouldThrow<IllegalArgumentException> { json.stringValue("value") }
       shouldThrow<IllegalArgumentException> { json.intValue("value") }
       shouldThrow<IllegalArgumentException> { json.doubleValue("value") }
@@ -551,7 +555,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "OrNull accessors return null on a type mismatch" {
-      val json = """{"name": "test", "obj": {}, "list": [1], "flag": "maybe", "num": 3.5}""".toJsonElement()
+      val json = """{"name": "test", "obj": {}, "list": [1], "flag": "maybe", "num": 3.5}""".parseJson()
       json.intValueOrNull("name") shouldBe null
       json.doubleValueOrNull("name") shouldBe null
       json.stringValueOrNull("obj") shouldBe null
@@ -563,7 +567,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "booleanValue accepts only true and false" {
-      val json = """{"yes": "yes", "one": 1, "t": true, "f": false}""".toJsonElement()
+      val json = """{"yes": "yes", "one": 1, "t": true, "f": false}""".parseJson()
       json.booleanValue("t") shouldBe true
       json.booleanValue("f") shouldBe false
       shouldThrow<IllegalArgumentException> { json.booleanValue("yes") }
@@ -578,7 +582,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "path navigation ignores empty segments consistently" {
-      val json = """{"a": {"b": 1}}""".toJsonElement()
+      val json = """{"a": {"b": 1}}""".parseJson()
       json.intValue("a..b") shouldBe 1
       json.intValueOrNull(".a.b.") shouldBe 1
       json.containsKeys("a..b") shouldBe true
@@ -586,14 +590,14 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "a key containing a dot is reachable through getByPath" {
-      val json = """{"a.b": 1}""".toJsonElement()
+      val json = """{"a.b": 1}""".parseJson()
       json.getByPath("a.b")?.intValue shouldBe 1
       json.getOrNull("a.b") shouldBe null
     }
 
     "size counts array elements as well as object entries" {
-      """["apple", "banana", "orange"]""".toJsonElement().size shouldBe 3
-      """{"a": 1}""".toJsonElement().size shouldBe 1
+      """["apple", "banana", "orange"]""".parseJson().size shouldBe 3
+      """{"a": 1}""".parseJson().size shouldBe 1
       shouldThrow<IllegalArgumentException> { JsonPrimitive("x").size }
     }
 
@@ -628,18 +632,18 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "getByPath returns null when the path crosses a non-object" {
-      """{"a": 1}""".toJsonElement().getByPath("a/b") shouldBe null
-      """{"a": null}""".toJsonElement().getByPath("a/b") shouldBe null
-      """{"a": [{"b": 1}]}""".toJsonElement().getByPath("a/b") shouldBe null
+      """{"a": 1}""".parseJson().getByPath("a/b") shouldBe null
+      """{"a": null}""".parseJson().getByPath("a/b") shouldBe null
+      """{"a": [{"b": 1}]}""".parseJson().getByPath("a/b") shouldBe null
       JsonPrimitive("x").getByPath("a") shouldBe null
     }
 
     "getByPath returns JsonNull for a key that is present but null" {
-      """{"a": {"b": null}}""".toJsonElement().getByPath("a/b") shouldBe JsonNull
+      """{"a": {"b": null}}""".parseJson().getByPath("a/b") shouldBe JsonNull
     }
 
     "OrNull accessors return the value when the type matches" {
-      val json = """{"obj": {"k": 1}, "list": [1, "two"]}""".toJsonElement()
+      val json = """{"obj": {"k": 1}, "list": [1, "two"]}""".parseJson()
       json.jsonObjectValueOrNull("obj") shouldBe JsonObject(mapOf("k" to JsonPrimitive(1)))
       json.jsonObjectValueOrNull("obj")?.intValue("k") shouldBe 1
       json.jsonElementListOrNull("list") shouldBe [JsonPrimitive(1), JsonPrimitive("two")]
@@ -647,7 +651,7 @@ class JsonElementUtilsTest : StringSpec() {
 
     "number accessors accept every form of JSON number" {
       val json = """{"int": -12, "zero": 0, "frac": 3.25, "exp": 1e3, "negExp": 25E-1, "posExp": 1.5e+2}"""
-        .toJsonElement()
+        .parseJson()
       json.doubleValue("int") shouldBe -12.0
       json.doubleValue("zero") shouldBe 0.0
       json.doubleValue("frac") shouldBe 3.25
@@ -689,14 +693,14 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "a quoted JSON number is still read by the number accessors but is not isNumber" {
-      val json = """{"n": "2.5"}""".toJsonElement()
+      val json = """{"n": "2.5"}""".parseJson()
       json.doubleValue("n") shouldBe 2.5
       json.doubleValueOrNull("n") shouldBe 2.5
       json["n"].isNumber shouldBe false
     }
 
     "toMap keeps the source text of a parsed number" {
-      val map = """{"a": 1.0, "b": 1e3, "c": -0}""".toJsonElement().toMap()
+      val map = """{"a": 1.0, "b": 1e3, "c": -0}""".parseJson().toMap()
       map shouldBe mapOf("a" to "1.0", "b" to "1e3", "c" to "-0")
     }
 
@@ -712,7 +716,7 @@ class JsonElementUtilsTest : StringSpec() {
           element.booleanValueOrNull() shouldBe null
         }
       }
-      val json = """{"obj": {"k": 1}, "list": [true]}""".toJsonElement()
+      val json = """{"obj": {"k": 1}, "list": [true]}""".parseJson()
       json.intValueOrNull("list") shouldBe null
       json.doubleValueOrNull("obj") shouldBe null
       json.booleanValueOrNull("list") shouldBe null
@@ -720,7 +724,7 @@ class JsonElementUtilsTest : StringSpec() {
 
     "forEachJsonObject skips array elements that are not objects without recursing" {
       val seen: MutableList<JsonObject> = []
-      """[{"a": 1}, 2, "x", null, [{"b": 2}], {"c": 3}]""".toJsonElement().forEachJsonObject { seen += it }
+      """[{"a": 1}, 2, "x", null, [{"b": 2}], {"c": 3}]""".parseJson().forEachJsonObject { seen += it }
       seen.map { it.keys } shouldBe [setOf("a"), setOf("c")]
     }
 
@@ -734,7 +738,7 @@ class JsonElementUtilsTest : StringSpec() {
     }
 
     "deepCopy rebuilds every object and array and shares the primitives" {
-      val original = """{"obj": {"list": [{"k": 1}]}, "s": "x"}""".toJsonElement()
+      val original = """{"obj": {"list": [{"k": 1}]}, "s": "x"}""".parseJson()
       val copy = original.deepCopy()
 
       copy shouldBe original
