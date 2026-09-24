@@ -49,7 +49,7 @@
 ## Issues
 
 ### core-utils
-- [ ] **RV-001** `HIGH` · security — `toObjectSecure` filter limits still let a tiny payload exhaust memory or CPU (follows CR-001) ([details](#rv-001))
+- [x] **RV-001** `HIGH` · security — `toObjectSecure` filter limits still let a tiny payload exhaust memory or CPU (follows CR-001) ([details](#rv-001)) — fixed in 0a797a4
 - [ ] **RV-002** `LOW` · security — `maskUrlCredentials` masks only the first URL in a string ([details](#rv-002))
 - [ ] **RV-003** `LOW` · security — `ContentRoot.file(path)` has no containment; any path containing `://` is fetched as a URL ([details](#rv-003))
 - [ ] **RV-004** `LOW` · bug — `criticalSection` clears the flag while another section is still running ([details](#rv-004))
@@ -84,10 +84,10 @@
 - [ ] **RV-027** `LOW` · API — Servlet adapters export `Nothing`/`Void` members, and the body `KtorServletResponse` holds can't be read ([details](#rv-027))
 
 ### service-utils
-- [ ] **RV-028** `MEDIUM` · security — A blank Ktor admin path serves that endpoint (e.g. the thread dump) at `/` instead of disabling it ([details](#rv-028))
+- [x] **RV-028** `MEDIUM` · security — A blank Ktor admin path serves that endpoint (e.g. the thread dump) at `/` instead of disabling it ([details](#rv-028)) — fixed in f24cb8c
 - [ ] **RV-029** `MEDIUM` · leak — A failed `KtorServletService` start leaks Ktor's shutdown hook and never destroys the servlets (follows CR-046) ([details](#rv-029))
-- [ ] **RV-030** `LOW` · bug — `"ping"` and `"/ping"` collide: Jetty fails to start, Ktor ignores the override ([details](#rv-030))
-- [ ] **RV-031** `LOW` · security — The Jetty admin and metrics servers disclose the Jetty version ([details](#rv-031))
+- [x] **RV-030** `LOW` · bug — `"ping"` and `"/ping"` collide: Jetty fails to start, Ktor ignores the override ([details](#rv-030)) — fixed in f24cb8c
+- [x] **RV-031** `LOW` · security — The Jetty admin and metrics servers disclose the Jetty version ([details](#rv-031)) — fixed in f24cb8c
 - [ ] **RV-032** `LOW` · bug — `initMetricsAndHealthChecks()` has no double-init guard (follows CR-051) ([details](#rv-032))
 - [ ] **RV-033** `LOW` · API — Lifecycle-critical service properties have public setters ([details](#rv-033))
 - [ ] **RV-034** `LOW` · docs — README example imports `Compression`, which consumers don't get; call-logging and compression ship unused ([details](#rv-034))
@@ -126,11 +126,11 @@
 - [ ] **RV-059** `LOW` · API — Mutable internals (`valueMap`, `channel`) are exposed as `protected` ([details](#rv-059))
 
 ### email-utils
-- [ ] **RV-060** `MEDIUM` · security — `isValidEmail` throws `StackOverflowError` on a ~4 KB input, and has no length cap ([details](#rv-060))
-- [ ] **RV-061** `MEDIUM` · leak — `ResendService.sendEmail` builds a new OkHttp client for every email ([details](#rv-061))
-- [ ] **RV-062** `LOW` · docs — Network failures surface as `RuntimeException`, not the documented `ResendException` ([details](#rv-062))
+- [x] **RV-060** `MEDIUM` · security — `isValidEmail` throws `StackOverflowError` on a ~4 KB input, and has no length cap ([details](#rv-060)) — fixed in c39565e
+- [x] **RV-061** `MEDIUM` · leak — `ResendService.sendEmail` builds a new OkHttp client for every email ([details](#rv-061)) — fixed in c39565e
+- [x] **RV-062** `LOW` · docs — Network failures surface as `RuntimeException`, not the documented `ResendException` ([details](#rv-062)) — fixed in c39565e
 - [ ] **RV-063** `LOW` · bug — `ResendWebhookMsg.decode` likely fails on non-email events *(PLAUSIBLE)* ([details](#rv-063))
-- [ ] **RV-064** `LOW` · docs — A README snippet needs `-Xcollection-literals`, and an example logs the IP address ([details](#rv-064))
+- [x] **RV-064** `LOW` · docs — A README snippet needs `-Xcollection-literals`, and an example logs the IP address ([details](#rv-064)) — fixed in c39565e
 
 ### recaptcha-utils
 - [ ] **RV-065** `LOW` · API — The process-wide client can't be reopened after the `close()` the README recommends *(PLAUSIBLE)* ([details](#rv-065))
@@ -166,10 +166,10 @@
 - [ ] **RV-085** `LOW` · cleanup — Detekt's `VariableNaming` excludes miss `*Tests.kt` ([details](#rv-085))
 
 ### CI & supply chain
-- [ ] **RV-086** `MEDIUM` · security — The wrapper scripts are marked `binary`, which hides their diffs, and the distribution has no checksum ([details](#rv-086))
+- [x] **RV-086** `MEDIUM` · security — The wrapper scripts are marked `binary`, which hides their diffs, and the distribution has no checksum ([details](#rv-086)) — fixed in a700d43
 - [ ] **RV-087** `LOW` · ci — The Linux job has no Kotlin/Native cache, and the native caches have no restore keys ([details](#rv-087))
 - [ ] **RV-088** `LOW` · ci — CI never exercises publishing ([details](#rv-088))
-- [ ] **RV-089** `LOW` · security — Actions are still pinned by mutable tags, and no job has a timeout (follows CR-135) ([details](#rv-089))
+- [x] **RV-089** `LOW` · security — Actions are still pinned by mutable tags, and no job has a timeout (follows CR-135) ([details](#rv-089)) — fixed in a700d43
 
 ### Project documentation
 - [ ] **RV-090** `LOW` · docs — llms.txt and the README overstate dropwizard-utils and zipkin-utils (follows CR-136) ([details](#rv-090))
