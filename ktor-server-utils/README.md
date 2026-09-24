@@ -21,7 +21,6 @@ Each helper exists on both `ApplicationCall` and `RoutingContext`, so it works w
 ### Servlet Bridge
 
 - **`Route.servlet(path, servlet)`**: mounts a Jakarta `HttpServlet` inside a Ktor route
-- **`KtorServletRequest` / `KtorServletResponse`**: the adapters used by that bridge
 
 ## Usage Examples
 
@@ -109,7 +108,7 @@ Configuration properties are `host`, `sslPort`, `permanentRedirect` and `exclude
 ### Mounting a Servlet
 
 `Route.servlet` initializes the servlet once through `init(ServletConfig)`, the way a container does, then
-translates each Ktor request into a `KtorServletRequest`/`KtorServletResponse` pair. Servlet processing runs
+translates each Ktor request into an internal `HttpServletRequest`/`HttpServletResponse` pair. Servlet processing runs
 on `Dispatchers.IO`, and the servlet's status, headers and body are forwarded back through the Ktor pipeline.
 The servlet's `destroy()` is called when the application stops.
 
@@ -178,7 +177,6 @@ dependencies {
 ### Servlet Bridge
 
 - `fun Route.servlet(path: String, servlet: HttpServlet)`
-- `class KtorServletRequest`, `class KtorServletResponse`
 
 ## Dependencies
 

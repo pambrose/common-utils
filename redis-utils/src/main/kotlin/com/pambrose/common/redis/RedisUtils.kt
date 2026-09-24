@@ -89,7 +89,7 @@ object RedisUtils {
    * @property user the username extracted from the URL's userinfo
    * @property password the password extracted from the URL's userinfo
    */
-  class RedisInfo(
+  internal class RedisInfo(
     val uri: URI,
     val user: String,
     val password: String,

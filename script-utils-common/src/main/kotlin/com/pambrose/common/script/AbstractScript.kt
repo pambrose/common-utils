@@ -54,7 +54,10 @@ abstract class AbstractScript(
   // Variables added since they were last bound to the engine.
   private val unboundNames = LinkedHashSet<String>()
 
-  protected val valueMap = mutableMapOf<String, Any>()
+  private val values = mutableMapOf<String, Any>()
+
+  /** The variables added so far, by name. Read-only, so it stays in step with their types and binding state. */
+  protected val valueMap: Map<String, Any> get() = values
 
   /** Whether an evaluation has been prepared since the last reset. */
   @Deprecated("No longer used: variables added after an evaluation are bound before the next one.")
@@ -74,7 +77,7 @@ abstract class AbstractScript(
   @Synchronized
   fun resetContext(nullGlobalContext: Boolean) {
     _initialized.store(false)
-    valueMap.clear()
+    values.clear()
     typeMap.clear()
     unboundNames.clear()
     scriptEngine.resetContext(nullGlobalContext)
@@ -186,7 +189,7 @@ abstract class AbstractScript(
     value: Any,
     types: Array<out KType> = emptyArray(),
   ) {
-    valueMap[name] = value
+    values[name] = value
     typeMap[name] = types
     unboundNames += name
   }
@@ -222,7 +225,7 @@ abstract class AbstractScript(
   protected fun prepare(code: String) {
     checkCode(code)
     if (unboundNames.isNotEmpty()) {
-      bindVariables(unboundNames.associateWith { valueMap.getValue(it) })
+      bindVariables(unboundNames.associateWith { values.getValue(it) })
       unboundNames.clear()
     }
     _initialized.store(true)

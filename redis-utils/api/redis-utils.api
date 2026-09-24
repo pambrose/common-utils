@@ -27,11 +27,3 @@ public final class com/pambrose/common/redis/RedisUtils {
 	public static synthetic fun withSuspendingRedisPool$default (Lcom/pambrose/common/redis/RedisUtils;Lredis/clients/jedis/RedisClient;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
-public final class com/pambrose/common/redis/RedisUtils$RedisInfo {
-	public fun <init> (Ljava/net/URI;Ljava/lang/String;Ljava/lang/String;)V
-	public final fun getIncludeUserInAuth ()Z
-	public final fun getPassword ()Ljava/lang/String;
-	public final fun getUri ()Ljava/net/URI;
-	public final fun getUser ()Ljava/lang/String;
-}
-

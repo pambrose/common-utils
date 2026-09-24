@@ -31,7 +31,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transactionManager
 
 /** Internal holder for the module-level logger. */
-object ExposedUtils {
+internal object ExposedUtils {
   internal val logger = KotlinLogging.logger {}
 }
 

@@ -46,13 +46,9 @@ public final class com/pambrose/common/email/EmailUtils {
 }
 
 public final class com/pambrose/common/email/ResendService {
-	public static final field Companion Lcom/pambrose/common/email/ResendService$Companion;
 	public fun <init> (Ljava/lang/String;)V
 	public final fun sendEmail-hnCGNAg (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
 	public static synthetic fun sendEmail-hnCGNAg$default (Lcom/pambrose/common/email/ResendService;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
-}
-
-public final class com/pambrose/common/email/ResendService$Companion {
 }
 
 public final class com/pambrose/common/webhook/Bounce {

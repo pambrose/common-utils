@@ -100,7 +100,7 @@ object RecaptchaService : Closeable {
    * @property challengeTs the timestamp of the challenge in ISO 8601 format.
    */
   @Serializable
-  data class RecaptchaResponse(
+  internal data class RecaptchaResponse(
     val success: Boolean,
     @SerialName("error-codes")
     val errorCodes: List<String> = emptyList(),

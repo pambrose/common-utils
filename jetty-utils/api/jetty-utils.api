@@ -9,20 +9,12 @@ public final class com/pambrose/common/dsl/JettyDsl {
 }
 
 public class com/pambrose/common/servlet/LambdaServlet : jakarta/servlet/http/HttpServlet {
-	public static final field Companion Lcom/pambrose/common/servlet/LambdaServlet$Companion;
 	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
 	public fun <init> (Lkotlin/jvm/functions/Function0;)V
 	protected final fun doGet (Ljakarta/servlet/http/HttpServletRequest;Ljakarta/servlet/http/HttpServletResponse;)V
 }
 
-public final class com/pambrose/common/servlet/LambdaServlet$Companion {
-}
-
 public final class com/pambrose/common/servlet/VersionServlet : com/pambrose/common/servlet/LambdaServlet {
-	public static final field Companion Lcom/pambrose/common/servlet/VersionServlet$Companion;
 	public fun <init> (Ljava/lang/String;)V
-}
-
-public final class com/pambrose/common/servlet/VersionServlet$Companion {
 }
 

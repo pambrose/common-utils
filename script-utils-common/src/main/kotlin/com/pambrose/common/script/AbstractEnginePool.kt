@@ -39,8 +39,9 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
     require(size > 0) { "Pool size must be positive, but was $size" }
   }
 
-  /** Channel used as a bounded buffer for pooling instances. */
-  protected val channel: Channel<T> = Channel(size) { returnToPool(it) }
+  // Bounded buffer holding the idle instances. Private, so every instance goes out through borrow and back through
+  // the reset in returnToPool.
+  private val channel: Channel<T> = Channel(size) { returnToPool(it) }
 
   /**
    * Returns an approximate, point-in-time indication of whether the pool currently has no instances

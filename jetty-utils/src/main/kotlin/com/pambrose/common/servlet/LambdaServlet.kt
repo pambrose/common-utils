@@ -67,7 +67,7 @@ open class LambdaServlet(
     }
   }
 
-  companion object {
+  private companion object {
     private const val serialVersionUID = -9215048679370216254L
   }
 }

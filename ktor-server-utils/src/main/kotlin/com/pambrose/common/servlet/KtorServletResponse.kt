@@ -42,7 +42,7 @@ import java.util.*
  *
  * @see servlet
  */
-class KtorServletResponse : HttpServletResponse {
+internal class KtorServletResponse : HttpServletResponse {
   // HTTP header field names are case-insensitive (RFC 9110 §5.1). A TreeMap with the
   // case-insensitive comparator matches header names regardless of casing while retaining
   // the first-inserted casing for getHeaderNames().
@@ -250,17 +250,17 @@ class KtorServletResponse : HttpServletResponse {
 
   // Unsupported methods below
 
-  override fun addCookie(cookie: Cookie) = throw UnsupportedOperationException()
+  override fun addCookie(cookie: Cookie): Unit = throw UnsupportedOperationException()
 
   override fun encodeURL(url: String): String = throw UnsupportedOperationException()
 
   override fun encodeRedirectURL(url: String): String = throw UnsupportedOperationException()
 
-  override fun setBufferSize(size: Int) = throw UnsupportedOperationException()
+  override fun setBufferSize(size: Int): Unit = throw UnsupportedOperationException()
 
   override fun getBufferSize(): Int = throw UnsupportedOperationException()
 
-  override fun setLocale(loc: Locale) = throw UnsupportedOperationException()
+  override fun setLocale(loc: Locale): Unit = throw UnsupportedOperationException()
 
   override fun getLocale(): Locale = throw UnsupportedOperationException()
 }

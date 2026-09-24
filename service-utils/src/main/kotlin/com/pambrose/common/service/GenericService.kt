@@ -51,6 +51,7 @@ abstract class GenericService<T> protected constructor(
 ) : AbstractGenericService<T>(configVals, adminConfig, metricsConfig, zipkinConfig, isTestMode) {
   /** The Jetty-based servlet service hosting admin endpoints. Initialized when admin is enabled. */
   lateinit var servletService: ServletService
+    private set
 
   override val servletServiceOrNull: GenericIdleService?
     get() = if (::servletService.isInitialized) servletService else null

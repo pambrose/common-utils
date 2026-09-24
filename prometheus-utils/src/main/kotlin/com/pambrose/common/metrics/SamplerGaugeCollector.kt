@@ -96,7 +96,7 @@ class SamplerGaugeCollector(
     return [MetricFamilySamples(name, Type.GAUGE, help, [sample])]
   }
 
-  companion object {
+  private companion object {
     private val logger = KotlinLogging.logger {}
   }
 }

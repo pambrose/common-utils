@@ -103,12 +103,15 @@ abstract class AbstractGenericService<T> protected constructor(
 
   /** The JMX reporter for Dropwizard metrics. Initialized when metrics are enabled. */
   lateinit var jmxReporter: JmxReporter
+    private set
 
   /** The Prometheus metrics service. Initialized when metrics are enabled. */
   lateinit var metricsService: MetricsService
+    private set
 
   /** The Zipkin span reporter service. Initialized when Zipkin tracing is enabled. */
   lateinit var zipkinReporterService: ZipkinReporterService
+    private set
 
   /** The elapsed time since the service was created. */
   val upTime get() = startTime.elapsedNow()

@@ -9,10 +9,6 @@ public final class com/pambrose/common/exposed/CustomExprKt {
 	public static final fun dateTimeExpr (Ljava/lang/String;)Lcom/pambrose/common/exposed/CustomExpr;
 }
 
-public final class com/pambrose/common/exposed/ExposedUtils {
-	public static final field INSTANCE Lcom/pambrose/common/exposed/ExposedUtils;
-}
-
 public final class com/pambrose/common/exposed/ExposedUtilsKt {
 	public static final fun get (Lorg/jetbrains/exposed/v1/core/ResultRow;I)Ljava/lang/Object;
 	public static final fun readonlyTx (Lorg/jetbrains/exposed/v1/jdbc/Database;Ljava/lang/Integer;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;

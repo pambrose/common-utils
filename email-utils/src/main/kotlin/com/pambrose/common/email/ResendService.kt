@@ -72,7 +72,7 @@ class ResendService(
     logger.info { "Sent email [${response.id}] to ${to.size} to, ${cc.size} cc, and ${bcc.size} bcc recipients" }
   }
 
-  companion object {
+  private companion object {
     private val logger = logger {}
   }
 }

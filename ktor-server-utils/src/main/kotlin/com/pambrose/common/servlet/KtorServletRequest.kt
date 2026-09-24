@@ -56,7 +56,7 @@ import java.util.*
  * @param request the Ktor [ApplicationRequest] to delegate to
  * @see servlet
  */
-class KtorServletRequest(
+internal class KtorServletRequest(
   private val request: ApplicationRequest,
 ) : HttpServletRequest {
   // Case-insensitive, and names that differ only in case are merged: ?id=1&ID=2 gives getParameterValues("id") == [1, 2].
@@ -195,9 +195,9 @@ class KtorServletRequest(
   override fun login(
     username: String,
     password: String,
-  ) = throw UnsupportedOperationException()
+  ): Unit = throw UnsupportedOperationException()
 
-  override fun logout() = throw UnsupportedOperationException()
+  override fun logout(): Unit = throw UnsupportedOperationException()
 
   override fun getParts(): Collection<Part> = throw UnsupportedOperationException()
 
@@ -207,7 +207,7 @@ class KtorServletRequest(
 
   override fun getHttpServletMapping(): HttpServletMapping = throw UnsupportedOperationException()
 
-  override fun setCharacterEncoding(env: String) = throw UnsupportedOperationException()
+  override fun setCharacterEncoding(env: String): Unit = throw UnsupportedOperationException()
 
   override fun getInputStream(): ServletInputStream = throw UnsupportedOperationException()
 
