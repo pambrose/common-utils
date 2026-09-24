@@ -84,8 +84,11 @@ script.add("class", 5) // ScriptException: not a valid identifier
 
 ### Generated Declarations
 
-Each bound value is put in the engine bindings under a temporary name, and a `val` declaration casts it back to a
-type the script can name. When the value's own runtime class is not public — the list behind `listOf(1, 2)`, for
+Every bound value is stored in one `ScriptVariables` holder, the only engine binding, and a `val` declaration reads
+it back and casts it to a type the script can name. The Kotlin engine turns each binding into a script property typed
+by the value's runtime class, so binding values directly let a lambda or a JDK-internal class (such as
+`String.CASE_INSENSITIVE_ORDER`) break every later evaluation, and let a variable named `a_tmp` collide with another's
+binding. `bindings` and `__variables` are reserved and cannot be used as variable names. When the value's own runtime class is not public — the list behind `listOf(1, 2)`, for
 instance — the cast uses the nearest public class or interface, with fully-qualified names, so such values bind
 normally.
 
@@ -107,7 +110,7 @@ not what you expected:
 ```kotlin
 KotlinScript().use { script ->
   script.add("list", mutableListOf<Int?>(), typeOf<Int?>())
-  script.varDecls // val list = bindings["list_tmp"] as java.util.ArrayList<kotlin.Int?>
+  script.varDecls // val list = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["list"] as java.util.ArrayList<kotlin.Int?>
 }
 ```
 
@@ -118,8 +121,8 @@ KotlinScript().use { script ->
   script.add("ints", arrayOf(1, 2), typeOf<Int>())
   script.add("counts", intArrayOf(1, 2))
   script.varDecls
-  // val ints = bindings["ints_tmp"] as kotlin.Array<kotlin.Int>
-  // val counts = bindings["counts_tmp"] as kotlin.IntArray
+  // val ints = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["ints"] as kotlin.Array<kotlin.Int>
+  // val counts = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["counts"] as kotlin.IntArray
 }
 ```
 
