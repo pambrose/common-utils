@@ -49,11 +49,10 @@ class ReadResourcesTests : StringSpec() {
     }
 
     "MiscFuncs.waitForPortAvailable returns true immediately for a free port" {
-      // Bind to find a free port, then close it so the port is unbound,
-      // then verify waitForPortAvailable returns without retrying.
-      val freePort = ServerSocket(0).use { it.localPort }
+      // Port 0 always binds (the OS picks a free port), so the first attempt succeeds without a race. Choosing a port by
+      // binding and releasing one would let another test JVM take it in between, and a retry here sleeps a minute.
       val start = System.currentTimeMillis()
-      MiscFuncs.waitForPortAvailable(port = freePort, maxAttempts = 3, delayMs = 60_000) shouldBe true
+      MiscFuncs.waitForPortAvailable(port = 0, maxAttempts = 3, delayMs = 60_000) shouldBe true
       val elapsed = System.currentTimeMillis() - start
       // A single retry would sleep for a minute, so half that is a generous bound even on a slow runner.
       (elapsed < 30_000) shouldBe true
@@ -84,12 +83,8 @@ class ReadResourcesTests : StringSpec() {
     }
 
     "MiscFuncs.waitForPortAvailable with default arguments returns for a free port" {
-      // Bind to find a free port, then close it so the port is unbound. With the port
-      // already free, the first attempt succeeds and the defaults never trigger a retry.
-      val freePort = ServerSocket(0).use { it.localPort }
-      MiscFuncs.waitForPortAvailable(freePort) shouldBe true
-      // The port is still bindable after the call returns
-      ServerSocket(freePort).use { it.localPort shouldBe freePort }
+      // Port 0 always binds, so the first attempt succeeds and the defaults never trigger a retry.
+      MiscFuncs.waitForPortAvailable(0) shouldBe true
     }
 
     "MiscFuncs.waitForPortAvailable returns false after maxAttempts when the port stays bound" {
@@ -97,8 +92,18 @@ class ReadResourcesTests : StringSpec() {
         val start = System.currentTimeMillis()
         MiscFuncs.waitForPortAvailable(port = occupied.localPort, maxAttempts = 2, delayMs = 10) shouldBe false
         val elapsed = System.currentTimeMillis() - start
-        // Should at least sleep maxAttempts * delayMs before reporting that the port never freed up.
-        (elapsed >= 20) shouldBe true
+        // It sleeps between attempts, but not after the last one, so (maxAttempts - 1) * delayMs.
+        (elapsed >= 10) shouldBe true
+      }
+    }
+
+    // It used to sleep after the final failed attempt too, adding a whole delay before reporting failure.
+    "MiscFuncs.waitForPortAvailable does not sleep after its last attempt" {
+      ServerSocket(0).use { occupied ->
+        val start = System.currentTimeMillis()
+        MiscFuncs.waitForPortAvailable(port = occupied.localPort, maxAttempts = 1, delayMs = 60_000) shouldBe false
+        // A sleep would take a minute, so half that is a generous bound even on a slow runner.
+        (System.currentTimeMillis() - start < 30_000) shouldBe true
       }
     }
 

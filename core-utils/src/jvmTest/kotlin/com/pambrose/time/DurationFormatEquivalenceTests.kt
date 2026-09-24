@@ -39,9 +39,12 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Golden-master equivalence guard for [com.pambrose.common.time.format]. [oldFormat] is a verbatim
  * copy of the original implementation; every assertion compares the live `format` against it across
- * a wide range of durations. This pins `format`'s exact, byte-for-byte behavior (including the known
- * Long.MIN_VALUE/-INFINITE overflow quirk), so any future change to the output becomes a deliberate,
- * visible diff against this oracle.
+ * a wide range of durations. This pins `format`'s exact, byte-for-byte behavior, so any future change to the
+ * output becomes a deliberate, visible diff against this oracle.
+ *
+ * Two deliberate changes are excluded (see [changedOnPurpose]); `DurationFormatTests` pins their new output:
+ * `-INFINITE` (the oracle's `Long.MIN_VALUE` overflow printed `--106751991167:-7:-12:-55`) and a negative duration
+ * shorter than a millisecond (the oracle printed `-0:00:00:00`).
  */
 class DurationFormatEquivalenceTests : StringSpec() {
   // Verbatim copy of the ORIGINAL implementation, used as the behavior oracle.
@@ -66,6 +69,9 @@ class DurationFormatEquivalenceTests : StringSpec() {
     else
       String.format(Locale.ROOT, "$prefix%d:%02d:%02d:%02d", day, hr, min, sec)
   }
+
+  // -INFINITE's whole milliseconds are Long.MIN_VALUE; a negative sub-millisecond duration's are 0.
+  private fun changedOnPurpose(d: Duration) = d.isNegative() && (d.isInfinite() || d.inWholeMilliseconds == 0L)
 
   init {
     // Hand-picked edge cases (and the negatives of the finite ones) checked against the oracle.
@@ -97,7 +103,7 @@ class DurationFormatEquivalenceTests : StringSpec() {
     val all = edgeCases + edgeCases.filter { it.isFinite() }.map { -it }
 
     "format matches the original oracle for all edge cases (both flags)" {
-      all.forEach { d ->
+      all.filterNot(::changedOnPurpose).forEach { d ->
         d.format(false) shouldBe oldFormat(d, false)
         d.format(true) shouldBe oldFormat(d, true)
       }
@@ -107,8 +113,10 @@ class DurationFormatEquivalenceTests : StringSpec() {
       val rnd = Random(424242L)
       repeat(50_000) {
         val d = rnd.nextLong().milliseconds // full Long range, incl. negatives and clamping
-        d.format(false) shouldBe oldFormat(d, false)
-        d.format(true) shouldBe oldFormat(d, true)
+        if (!changedOnPurpose(d)) {
+          d.format(false) shouldBe oldFormat(d, false)
+          d.format(true) shouldBe oldFormat(d, true)
+        }
       }
       // Dense sweep of small magnitudes around each unit boundary.
       for (base in longArrayOf(0, 1000, 60_000, 3_600_000, 86_400_000)) {

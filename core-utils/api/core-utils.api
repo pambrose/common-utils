@@ -39,6 +39,7 @@ public abstract class com/pambrose/common/util/AbstractRepo : com/pambrose/commo
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/pambrose/common/util/OwnerType;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun file (Ljava/lang/String;)Lcom/pambrose/common/util/ContentSource;
 	public fun file (Ljava/lang/String;)Lcom/pambrose/common/util/UrlSource;
+	public final fun file-5qebJ5I (Ljava/lang/String;JJ)Lcom/pambrose/common/util/UrlSource;
 	public final fun getDomainName ()Ljava/lang/String;
 	public final fun getOwnerName ()Ljava/lang/String;
 	public final fun getOwnerType ()Lcom/pambrose/common/util/OwnerType;
@@ -149,6 +150,8 @@ public final class com/pambrose/common/util/FileSystemSource : com/pambrose/comm
 
 public class com/pambrose/common/util/GitHubFile : com/pambrose/common/util/UrlSource {
 	public fun <init> (Lcom/pambrose/common/util/GitHubRepo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/pambrose/common/util/GitHubRepo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lcom/pambrose/common/util/GitHubRepo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getBranchName ()Ljava/lang/String;
 	public final fun getFileName ()Ljava/lang/String;
 	public final fun getRepo ()Lcom/pambrose/common/util/GitHubRepo;
@@ -165,6 +168,8 @@ public final class com/pambrose/common/util/GitHubRepo : com/pambrose/common/uti
 
 public class com/pambrose/common/util/GitLabFile : com/pambrose/common/util/UrlSource {
 	public fun <init> (Lcom/pambrose/common/util/GitLabRepo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/pambrose/common/util/GitLabRepo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lcom/pambrose/common/util/GitLabRepo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getBranchName ()Ljava/lang/String;
 	public final fun getFileName ()Ljava/lang/String;
 	public final fun getRepo ()Lcom/pambrose/common/util/GitLabRepo;
@@ -358,6 +363,7 @@ public class com/pambrose/common/util/UrlSource : com/pambrose/common/util/Conte
 	public fun <init> (Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Ljava/lang/String;JJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/time/Duration;Ljava/time/Duration;)V
 	public fun getContent ()Ljava/lang/String;
 	public fun getRemote ()Z
 	public fun getSource ()Ljava/lang/String;

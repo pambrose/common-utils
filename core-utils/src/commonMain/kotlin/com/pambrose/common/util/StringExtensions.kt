@@ -102,7 +102,8 @@ fun String.ensureSuffix(suffix: CharSequence) = if (this.endsWith(suffix)) this 
 fun String.ensureLeadingSlash() = ensurePrefix("/")
 
 /**
- * Joins this list of strings into a path without leading or trailing separators.
+ * Joins this list of strings into a path, adding no leading or trailing separator of its own: a separator the first
+ * element starts with, or the last one ends with, is kept.
  *
  * Extension function on [List]<[String]>.
  *
@@ -128,8 +129,9 @@ fun List<String>.toRootPath(
 /**
  * Joins this list of strings into a path with configurable leading and trailing separators.
  *
- * Extension function on [List]<[String]>. Empty elements are skipped, and a leading [separator] on any
- * element after the first is removed, so elements never produce doubled separators.
+ * Extension function on [List]<[String]>. Every leading [separator] on an element after the first, and every
+ * trailing one on an element before the last, is removed, and elements left empty are skipped, so elements never
+ * produce doubled separators.
  *
  * @param addPrefix whether to prepend [separator] to the first element if it lacks one (default `true`)
  * @param addTrailing whether to append [separator] to the last element (default `true`)
@@ -141,11 +143,29 @@ fun List<String>.toPath(
   addTrailing: Boolean = true,
   separator: CharSequence = "/",
 ): String {
-  val elems = filter { it.isNotEmpty() }
+  if (separator.isEmpty()) return filter { it.isNotEmpty() }.joinToString("")
+  val elems =
+    filter { it.isNotEmpty() }
+      .mapIndexed { i, s -> if (i == 0) s else s.trimStart(separator) }
+      .filterIndexed { i, s -> i == 0 || s.isNotEmpty() }
   return elems
-    .mapIndexed { i, s -> if (i == 0) (if (addPrefix) s.ensurePrefix(separator) else s) else s.removePrefix(separator) }
-    .mapIndexed { i, s -> if (i < elems.size - 1 || addTrailing) s.ensureSuffix(separator) else s }
+    .mapIndexed { i, s ->
+      val start = if (i == 0 && addPrefix) s.ensurePrefix(separator) else s
+      if (i < elems.size - 1) start.trimEnd(separator).ensureSuffix(separator) else start
+    }.mapIndexed { i, s -> if (i == elems.size - 1 && addTrailing) s.ensureSuffix(separator) else s }
     .joinToString("")
+}
+
+private fun String.trimStart(separator: CharSequence): String {
+  var s = this
+  while (s.startsWith(separator)) s = s.removePrefix(separator)
+  return s
+}
+
+private fun String.trimEnd(separator: CharSequence): String {
+  var s = this
+  while (s.endsWith(separator)) s = s.removeSuffix(separator)
+  return s
 }
 
 /**
@@ -369,23 +389,32 @@ fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.fil
 private val AUTHORITY_TERMINATORS = charArrayOf('/', '?', '#')
 
 /**
- * Masks username and password in a URL string, replacing them with `*****`.
+ * Masks username and password in every URL in a string, replacing them with `*****`.
  *
- * For example, the credentials in `"https://user:pass@host.com"` become `*****:*****`. Only an `@`
- * inside the authority (between `://` and the first `/`, `?`, or `#`) separates credentials, so an `@` in
- * the path, query, or fragment is left alone. Credentials must be percent-encoded as RFC 3986 requires: an
- * unencoded `/`, `?`, or `#` in a password ends the authority early.
+ * For example, the credentials in `"https://user:pass@host.com"` become `*****:*****`, and in a log line holding
+ * several URLs each one is masked. Only an `@` inside an authority (between `://` and the first `/`, `?`, `#` or
+ * whitespace) separates credentials, so an `@` in the path, query, or fragment is left alone. Credentials must be
+ * percent-encoded as RFC 3986 requires: an unencoded `/`, `?`, `#` or space in a password ends the authority early.
  *
- * @return the URL with masked credentials, or the original string if no credentials are present
+ * @return the string with masked credentials, or the original string if no credentials are present
  */
 fun String.maskUrlCredentials(): String {
-  val schemeEnd = indexOf("://")
-  if (schemeEnd == -1) return this
-
-  val authorityStart = schemeEnd + 3
-  val authorityEnd = indexOfAny(AUTHORITY_TERMINATORS, authorityStart).takeIf { it >= 0 } ?: length
-  val at = lastIndexOf('@', authorityEnd - 1)
-  return if (at >= authorityStart) replaceRange(authorityStart, at, "*****:*****") else this
+  val masked = StringBuilder()
+  var copied = 0
+  var schemeEnd = indexOf("://")
+  while (schemeEnd != -1) {
+    val authorityStart = schemeEnd + 3
+    val authorityEnd =
+      (authorityStart until length).firstOrNull { this[it] in AUTHORITY_TERMINATORS || this[it].isWhitespace() }
+        ?: length
+    val at = lastIndexOf('@', authorityEnd - 1)
+    if (at >= authorityStart) {
+      masked.append(substring(copied, authorityStart)).append("*****:*****")
+      copied = at
+    }
+    schemeEnd = indexOf("://", authorityEnd)
+  }
+  return if (copied == 0) this else masked.append(substring(copied)).toString()
 }
 
 /**

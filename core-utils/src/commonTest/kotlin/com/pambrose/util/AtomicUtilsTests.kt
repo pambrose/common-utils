@@ -41,6 +41,16 @@ class AtomicUtilsTests : StringSpec() {
     }
 
     // Bug #9: the block's result used to be discarded.
+    // Storing false on exit cleared the flag for an outer section while it was still running.
+    "a nested criticalSection leaves the flag set for the outer one" {
+      val flag = AtomicBoolean(false)
+      flag.criticalSection {
+        flag.criticalSection { flag.load() shouldBe true }
+        flag.load() shouldBe true
+      }
+      flag.load() shouldBe false
+    }
+
     "criticalSection returns the block's result" {
       val flag = AtomicBoolean(false)
       flag.criticalSection { 42 } shouldBe 42

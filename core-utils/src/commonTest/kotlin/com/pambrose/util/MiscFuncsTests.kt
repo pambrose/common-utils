@@ -39,6 +39,12 @@ class MiscFuncsTests : StringSpec() {
       nonNullValue.isNotNull() shouldBe true
     }
 
+    "lpad of a negative number to a width of 0 or 1 returns the number unpadded" {
+      (-5).lpad(0) shouldBe "-5"
+      (-5).lpad(1) shouldBe "-5"
+      5.lpad(0) shouldBe "5"
+    }
+
     "lpad test" {
       1.lpad(3) shouldBe "001"
       42.lpad(5) shouldBe "00042"

@@ -60,7 +60,8 @@ fun timeUnitToDuration(
 /**
  * Formats this [Duration] as `d:HH:MM:SS` (or `d:HH:MM:SS.mmm` when [includeMillis] is `true`).
  *
- * Negative durations are prefixed with `-`.
+ * Negative durations are prefixed with `-`; one that rounds down to zero milliseconds has no sign. An infinite
+ * duration formats as the largest finite one, `106751991167:07:12:55`, with a `-` when negative.
  *
  * Extension function on [Duration].
  *
@@ -68,8 +69,10 @@ fun timeUnitToDuration(
  * @return the formatted duration string
  */
 fun Duration.format(includeMillis: Boolean = false): String {
-  val negative = isNegative()
-  val diff = kotlin.math.abs(inWholeMilliseconds)
+  // inWholeMilliseconds is Long.MIN_VALUE for -INFINITE, whose abs() is still negative, so clamp it to mirror INFINITE.
+  val millis = inWholeMilliseconds.coerceAtLeast(-Long.MAX_VALUE)
+  val negative = millis < 0
+  val diff = kotlin.math.abs(millis)
   val day = MILLISECONDS.toDays(diff)
   val hr = MILLISECONDS.toHours(diff) % 24
   val min = MILLISECONDS.toMinutes(diff) % 60

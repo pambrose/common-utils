@@ -231,7 +231,7 @@ class StreamObserverHelperTests : StringSpec() {
         ]
       registrations.forEach { registerTwice ->
         val exception = shouldThrow<IllegalStateException> { GrpcDsl.streamObserver(registerTwice) }
-        exception.message shouldContain "cannot be assigned more than once"
+        exception.message shouldContain "has already been set"
       }
     }
   }

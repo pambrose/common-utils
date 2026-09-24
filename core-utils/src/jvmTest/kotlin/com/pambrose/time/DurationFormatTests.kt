@@ -21,14 +21,26 @@ package com.pambrose.time
 import com.pambrose.common.time.format
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class DurationFormatTests : StringSpec() {
   init {
+    // abs(Long.MIN_VALUE) is still negative, so -INFINITE used to format as "--106751991167:-7:-12:-55".
+    "a negative infinite duration mirrors the positive one" {
+      Duration.INFINITE.format() shouldBe "106751991167:07:12:55"
+      (-Duration.INFINITE).format() shouldBe "-106751991167:07:12:55"
+    }
+
+    "a negative duration that rounds down to zero milliseconds has no sign" {
+      (-500).microseconds.format() shouldBe "0:00:00:00"
+    }
+
     "format zero duration" {
       val duration = 0.seconds
       duration.format() shouldBe "0:00:00:00"

@@ -568,7 +568,8 @@ All notable changes to Common Utils are documented in this file.
 - The public `JsonElementUtils.logger` holder (json-utils) is deprecated; the utilities use a private logger.
 - `KtorDsl.blockingGet` (ktor-client-utils) accepts `httpClient` and `expectSuccess`, like `withHttpClient`.
   The previous signature is kept as a hidden deprecation, so compiled callers keep linking and calls like
-  `blockingGet(url) { … }` still compile.
+  `blockingGet(url) { … }` still compile. A call that passes `setUp` by position, `blockingGet(url, { … }) { … }`,
+  no longer compiles, since `httpClient` now comes second: name the argument, `blockingGet(url, setUp = { … }) { … }`.
 - `UrlSource` (core-utils) now applies connect and read timeouts, 10 and 30 seconds by default and
   configurable through new constructor parameters. Before, an unresponsive server blocked the reading thread
   forever. The URL is parsed with `URI(source).toURL()` instead of the deprecated `URL(String)` constructor.

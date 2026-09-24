@@ -340,6 +340,15 @@ class StringExtensionTests : StringSpec() {
       Long.MIN_VALUE.length shouldBe 19
     }
 
+    // An element that is only separators, or has several, used to leave a doubled separator behind.
+    "join, toPath and pathOf never produce doubled separators" {
+      pathOf("a", "/", "b") shouldBe "a/b"
+      ["a", "//b"].join() shouldBe "a/b"
+      ["a//", "b"].join() shouldBe "a/b"
+      ["a", "//", "b"].toPath() shouldBe "/a/b/"
+      ["x", "y/"].join() shouldBe "x/y/"
+    }
+
     "join and toPath strip a whole multi-character separator and skip empty elements" {
       ["a", "::b"].join("::") shouldBe "a::b"
       ["a::", "::b"].join("::") shouldBe "a::b"
@@ -450,6 +459,10 @@ class StringExtensionTests : StringSpec() {
       "https://example.com#section@2".maskUrlCredentials() shouldBe "https://example.com#section@2"
       "https://u:p@host.com/a@b".maskUrlCredentials() shouldBe "https://*****:*****@host.com/a@b"
       "https://u:p@host.com?next=me@x.com".maskUrlCredentials() shouldBe "https://*****:*****@host.com?next=me@x.com"
+      // Every URL in a string is masked, not only the first.
+      "from https://a:b@h1 to https://c:d@h2".maskUrlCredentials() shouldBe
+        "from https://*****:*****@h1 to https://*****:*****@h2"
+      "see scheme:// then https://c:d@h2/x".maskUrlCredentials() shouldBe "see scheme:// then https://*****:*****@h2/x"
     }
 
     "obfuscate test" {

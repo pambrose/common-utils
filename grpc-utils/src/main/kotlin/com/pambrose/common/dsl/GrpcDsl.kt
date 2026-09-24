@@ -16,7 +16,7 @@
 
 package com.pambrose.common.dsl
 
-import com.pambrose.common.delegate.SingleAssignVar.singleAssign
+import com.pambrose.common.delegate.AtomicDelegates.singleSetReference
 import com.pambrose.common.util.isNotNull
 import com.pambrose.common.util.toDoubleQuoted
 import com.pambrose.common.utils.TlsContext
@@ -216,9 +216,9 @@ object GrpcDsl {
    * @param T the response element type
    */
   class StreamObserverHelper<T> : StreamObserver<T> {
-    private var onNextBlock: ((T) -> Unit)? by singleAssign()
-    private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
-    private var completedBlock: (() -> Unit)? by singleAssign()
+    private var onNextBlock: ((T) -> Unit)? by singleSetReference()
+    private var onErrorBlock: ((Throwable) -> Unit)? by singleSetReference()
+    private var completedBlock: (() -> Unit)? by singleSetReference()
 
     override fun onNext(response: T) {
       onNextBlock?.invoke(response)
