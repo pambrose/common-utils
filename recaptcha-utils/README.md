@@ -147,9 +147,9 @@ fun Application.module() {
 }
 ```
 
-`close()` releases the underlying `HttpClient` and its connection and thread pools. After it is called,
-`validateRecaptcha` can no longer perform server-side verification: while reCAPTCHA is fully configured, every
-submission gets the `400` failure response and an error is logged. Close only on shutdown.
+`close()` releases the underlying `HttpClient` and its connection and thread pools. `ApplicationStopped` also
+fires on Ktor auto-reload, for a second embedded application in the same JVM, and between `testApplication`s, so
+a verification after `close()` builds a new client (and logs that at info level) rather than failing.
 
 ## API Reference
 

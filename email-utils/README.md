@@ -149,6 +149,23 @@ when (msg.type) {
 }
 ```
 
+Only `email.*` events decode. `Data.emailId` and `Data.from` are required, and other event families (such as
+`contact.*` and `domain.*`) do not send them, so `decode` throws `MissingFieldException` for those payloads. An
+endpoint subscribed to other events should check `type` before decoding:
+
+```kotlin
+import com.pambrose.common.webhook.ResendWebhookMsg
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+val body = call.receiveText()
+val type = ResendWebhookMsg.json.parseToJsonElement(body).jsonObject["type"]?.jsonPrimitive?.content
+if (type?.startsWith("email.") == true) {
+  val msg = ResendWebhookMsg.decode(body)
+  // ...
+}
+```
+
 `decode` uses the companion's `json`, which ignores unknown keys so an event carrying fields these models do
 not declare still decodes instead of failing outright. Register that same `Json` wherever Ktor decodes the body
 for you, so `call.receive<ResendWebhookMsg>()` is just as tolerant:

@@ -3,7 +3,9 @@ public final class com/pambrose/common/dsl/GrpcDsl {
 	public final fun attributes (Lkotlin/jvm/functions/Function1;)Lio/grpc/Attributes;
 	public final fun channel (Ljava/lang/String;IZILcom/pambrose/common/utils/TlsContext;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/grpc/ManagedChannel;
 	public static synthetic fun channel$default (Lcom/pambrose/common/dsl/GrpcDsl;Ljava/lang/String;IZILcom/pambrose/common/utils/TlsContext;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/grpc/ManagedChannel;
-	public final fun server (ILcom/pambrose/common/utils/TlsContext;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/grpc/Server;
+	public final fun server (ILcom/pambrose/common/utils/TlsContext;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/grpc/Server;
+	public final synthetic fun server (ILcom/pambrose/common/utils/TlsContext;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/grpc/Server;
+	public static synthetic fun server$default (Lcom/pambrose/common/dsl/GrpcDsl;ILcom/pambrose/common/utils/TlsContext;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/grpc/Server;
 	public static synthetic fun server$default (Lcom/pambrose/common/dsl/GrpcDsl;ILcom/pambrose/common/utils/TlsContext;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/grpc/Server;
 	public final fun streamObserver (Lkotlin/jvm/functions/Function1;)Lio/grpc/stub/StreamObserver;
 }

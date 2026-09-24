@@ -23,7 +23,7 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.engine.mock.MockEngine
@@ -116,19 +116,25 @@ class RecaptchaVerificationTests : StringSpec() {
       verify(exactly = 1) { config.recaptchaSecretKey }
     }
 
-    // A closed client fails requests with a CancellationException. That must not pass for a cancelled call:
-    // the request gets the ordinary 400, and nothing is sent.
-    "after close, verification fails without contacting Google" {
+    // close() is documented for ApplicationStopped, which also fires on Ktor auto-reload and between
+    // testApplications. A closed client used to fail every later verification; now a new one is built.
+    "after close, the next verification builds a new client and still contacts Google" {
       val engine = successEngine()
 
       val (result, events) =
         capturingRecaptchaLogs { logs ->
-          postToken(engine, beforePost = { RecaptchaService.close() }) to logs()
+          postToken(
+            engine,
+            beforePost = {
+              RecaptchaService.close()
+              RecaptchaService.close()
+            },
+          ) to logs()
         }
 
-      result shouldBe (HttpStatusCode.BadRequest to "reCAPTCHA verification failed")
-      engine.requestHistory.shouldBeEmpty()
-      events.single { it.level == Level.ERROR }.formattedMessage shouldContain "close()"
+      result shouldBe (HttpStatusCode.OK to "passed")
+      engine.requestHistory shouldHaveSize 1
+      events.single { "new reCAPTCHA HttpClient" in it.formattedMessage }.level shouldBe Level.INFO
     }
 
     // Enabled but missing a key means no bot protection at all, so it must not pass silently.

@@ -19,7 +19,8 @@ real gRPC builder methods such as `addService(...)` or `directExecutor()`.
 ### TLS Configuration
 
 - **`TlsUtils`**: builds client and server `TlsContext`s from certificate files
-- **Mutual authentication**: supplying a trust collection enables mutual auth
+- **Mutual authentication**: on a server, supplying a trust collection requires client certificates; on a client,
+  supplying a certificate chain and private key presents one
 - **`TlsContext.PLAINTEXT_CONTEXT`**: the non-TLS context
 
 ### Server Management
@@ -55,6 +56,12 @@ val tlsServer =
     addService(MyServiceImpl())
   }
 
+// Server listening on the loopback address only; without bindAddress it listens on every interface
+val localServer =
+  GrpcDsl.server(port = 8080, bindAddress = "127.0.0.1") {
+    addService(MyServiceImpl())
+  }
+
 // In-process server, ignoring port and TLS
 val inProcessServer =
   GrpcDsl.server(inProcessServerName = "test-server") {
@@ -67,7 +74,9 @@ plaintextServer.start()
 
 ### Creating gRPC Channels
 
-`channel` requires `tlsContext` — pass `PLAINTEXT_CONTEXT` for a non-TLS channel.
+`tlsContext` defaults to `PLAINTEXT_CONTEXT`; pass a context from `TlsUtils` for a TLS channel. The Netty
+transport needs `hostName` and a `port` in `0..65535`, and `channel` throws `IllegalArgumentException` without
+them.
 
 ```kotlin
 import com.pambrose.common.dsl.GrpcDsl
@@ -190,9 +199,9 @@ server.shutdownGracefully(maxWaitTime = 10.seconds)
 ```
 
 `shutdownGracefully` calls `shutdown()`, waits up to the timeout via `awaitTermination`, and then calls
-`shutdownNow()` in a `finally` block so the server always stops — including when `shutdown()` itself throws,
-as it does on an already-terminated server. It throws `InterruptedException` if the waiting thread is
-interrupted.
+`shutdownNow()` in a `finally` block so the server always stops, however those calls end. Calling it on a
+server that has already terminated is harmless: `shutdown()` then returns at once. It throws
+`InterruptedException` if the waiting thread is interrupted.
 
 `shutdownWithJvm` runs the same sequence from a JVM shutdown hook, swallowing any failure since nothing can
 observe it at that point. It rejects a timeout under a millisecond when the hook is registered, rather than
@@ -203,7 +212,9 @@ failing at JVM exit where it would skip the shutdown entirely.
 ### `GrpcDsl`
 
 - `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = true, maxRetryAttempts: Int = 5, tlsContext: TlsContext = PLAINTEXT_CONTEXT, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
-- `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", block: ServerBuilder<*>.() -> Unit): Server`
+- `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", bindAddress: String? = null, block: ServerBuilder<*>.() -> Unit): Server`
+  — without `inProcessServerName`, `port` must be in `0..65535` (`0` lets the OS choose), or it throws
+  `IllegalArgumentException`
 - `attributes(block: Attributes.Builder.() -> Unit): Attributes`
 - `streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserver<T>` — each callback may be
   registered at most once; a second registration throws `IllegalStateException`
