@@ -17,6 +17,7 @@
 package com.pambrose.common.features
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
@@ -26,8 +27,8 @@ import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.header
 import io.ktor.server.request.path
+import io.ktor.server.request.uri
 import io.ktor.server.response.respondRedirect
-import io.ktor.server.util.url
 import io.ktor.util.AttributeKey
 
 /** A predicate applied to an [ApplicationCall] to determine whether HTTPS redirect should be skipped. */
@@ -139,12 +140,15 @@ class HerokuHttpsRedirect(
         if (scheme == "http" &&
           feature.excludePredicates.none { predicate: CallPredicate -> predicate(call) }
         ) {
-          val redirectUrl =
-            call.url {
-              protocol = URLProtocol.HTTPS
-              feature.host?.let { host = it }
-              port = feature.redirectPort
-            }
+          // Append the raw request target rather than rebuilding it from the decoded, case-insensitive query
+          // parameters, which reorders them and changes their case and encoding (breaking signed URLs).
+          val origin =
+            URLBuilder(
+              protocol = URLProtocol.HTTPS,
+              host = feature.host ?: call.request.origin.serverHost,
+              port = feature.redirectPort,
+            ).buildString().removeSuffix("/")
+          val redirectUrl = origin + call.request.uri
           logger.debug { "Redirecting to: $redirectUrl" }
           call.respondRedirect(redirectUrl, feature.permanent)
           finish()

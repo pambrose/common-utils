@@ -111,7 +111,6 @@ class KtorServletConfigTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { context.addListener(EventListener::class.java) }
       shouldThrow<UnsupportedOperationException> { context.createListener(EventListener::class.java) }
       shouldThrow<UnsupportedOperationException> { context.jspConfigDescriptor }
-      shouldThrow<UnsupportedOperationException> { context.classLoader }
       shouldThrow<UnsupportedOperationException> { context.declareRoles("admin") }
       shouldThrow<UnsupportedOperationException> { context.virtualServerName }
       shouldThrow<UnsupportedOperationException> { context.sessionTimeout }

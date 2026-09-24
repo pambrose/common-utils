@@ -14,6 +14,7 @@ dependencies {
     compileOnlyApi(libs.jakarta.servlet.api)
 
     testImplementation(libs.jakarta.servlet.api)
+    testImplementation(libs.ktor.server.cio)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.mockk)
 }

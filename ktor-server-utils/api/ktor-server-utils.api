@@ -121,16 +121,13 @@ public final class com/pambrose/common/servlet/KtorServletResponse : jakarta/ser
 	public fun <init> ()V
 	public fun addCookie (Ljakarta/servlet/http/Cookie;)Ljava/lang/Void;
 	public synthetic fun addCookie (Ljakarta/servlet/http/Cookie;)V
-	public fun addDateHeader (Ljava/lang/String;J)Ljava/lang/Void;
-	public synthetic fun addDateHeader (Ljava/lang/String;J)V
+	public fun addDateHeader (Ljava/lang/String;J)V
 	public fun addHeader (Ljava/lang/String;Ljava/lang/String;)V
-	public fun addIntHeader (Ljava/lang/String;I)Ljava/lang/Void;
-	public synthetic fun addIntHeader (Ljava/lang/String;I)V
+	public fun addIntHeader (Ljava/lang/String;I)V
 	public fun containsHeader (Ljava/lang/String;)Z
 	public fun encodeRedirectURL (Ljava/lang/String;)Ljava/lang/String;
 	public fun encodeURL (Ljava/lang/String;)Ljava/lang/String;
-	public fun flushBuffer ()Ljava/lang/Void;
-	public synthetic fun flushBuffer ()V
+	public fun flushBuffer ()V
 	public fun getBufferSize ()I
 	public fun getCharacterEncoding ()Ljava/lang/String;
 	public fun getContentType ()Ljava/lang/String;
@@ -142,10 +139,8 @@ public final class com/pambrose/common/servlet/KtorServletResponse : jakarta/ser
 	public fun getStatus ()I
 	public fun getWriter ()Ljava/io/PrintWriter;
 	public fun isCommitted ()Z
-	public fun reset ()Ljava/lang/Void;
-	public synthetic fun reset ()V
-	public fun resetBuffer ()Ljava/lang/Void;
-	public synthetic fun resetBuffer ()V
+	public fun reset ()V
+	public fun resetBuffer ()V
 	public fun sendError (I)V
 	public fun sendError (ILjava/lang/String;)V
 	public fun sendRedirect (Ljava/lang/String;)V
@@ -153,16 +148,12 @@ public final class com/pambrose/common/servlet/KtorServletResponse : jakarta/ser
 	public fun setBufferSize (I)Ljava/lang/Void;
 	public synthetic fun setBufferSize (I)V
 	public fun setCharacterEncoding (Ljava/lang/String;)V
-	public fun setContentLength (I)Ljava/lang/Void;
-	public synthetic fun setContentLength (I)V
-	public fun setContentLengthLong (J)Ljava/lang/Void;
-	public synthetic fun setContentLengthLong (J)V
+	public fun setContentLength (I)V
+	public fun setContentLengthLong (J)V
 	public fun setContentType (Ljava/lang/String;)V
-	public fun setDateHeader (Ljava/lang/String;J)Ljava/lang/Void;
-	public synthetic fun setDateHeader (Ljava/lang/String;J)V
+	public fun setDateHeader (Ljava/lang/String;J)V
 	public fun setHeader (Ljava/lang/String;Ljava/lang/String;)V
-	public fun setIntHeader (Ljava/lang/String;I)Ljava/lang/Void;
-	public synthetic fun setIntHeader (Ljava/lang/String;I)V
+	public fun setIntHeader (Ljava/lang/String;I)V
 	public fun setLocale (Ljava/util/Locale;)Ljava/lang/Void;
 	public synthetic fun setLocale (Ljava/util/Locale;)V
 	public fun setStatus (I)V

@@ -20,8 +20,12 @@ package com.pambrose.common.servlet
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.request.httpMethod
+import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
@@ -56,7 +60,8 @@ fun Route.servlet(
 ) {
   // init(ServletConfig) stores the config and then calls the no-arg init(); servlets such as
   // Dropwizard's HealthCheckServlet do their setup only in the former.
-  servlet.init(KtorServletConfig(servlet.javaClass.name, KtorServletContext()))
+  val context = KtorServletContext()
+  servlet.init(KtorServletConfig(servlet.javaClass.name, context))
   // Mirror a container's lifecycle: destroy the servlet when this application stops. The event bus can outlive
   // the application (development-mode reloads), so ignore other applications and unsubscribe once done.
   val app = application
@@ -70,7 +75,7 @@ fun Route.servlet(
     }
   route(path) {
     handle {
-      val request = KtorServletRequest(call.request)
+      val request = KtorServletRequest(call.request).also { it.context = context }
       val response = KtorServletResponse()
       @Suppress("InjectDispatcher")
       withContext(Dispatchers.IO) { servlet.service(request, response) }
@@ -89,8 +94,22 @@ fun Route.servlet(
             .onFailure { logger.warn { "Servlet ${servlet.javaClass.name} set a malformed content type: $type" } }
             .getOrNull()
         } ?: ContentType.Application.OctetStream
-      call.response.status(HttpStatusCode.fromValue(response.status))
-      call.respondBytes(response.getBodyBytes(), contentType)
+      val status = HttpStatusCode.fromValue(response.status)
+      val body = response.getBodyBytes()
+      if (call.request.httpMethod == HttpMethod.Head) {
+        // HttpServlet.doHead runs doGet, leaving the container to drop the body. Ktor sends whatever it is given, and
+        // a body after a HEAD response corrupts the connection, so send only the headers GET would have sent.
+        call.respond(
+          object : OutgoingContent.NoContent() {
+            override val status = status
+            override val contentType = contentType
+            override val contentLength = body.size.toLong()
+          },
+        )
+      } else {
+        call.response.status(status)
+        call.respondBytes(body, contentType)
+      }
     }
   }
 }

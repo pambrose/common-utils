@@ -17,7 +17,9 @@
 
 package com.pambrose.common.servlet
 
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.fromHttpToGmtDate
 import io.ktor.http.Parameters
 import io.ktor.server.request.ApplicationRequest
 import io.ktor.server.request.httpMethod
@@ -60,6 +62,9 @@ class KtorServletRequest(
   // Case-insensitive, and names that differ only in case are merged: ?id=1&ID=2 gives getParameterValues("id") == [1, 2].
   private val params: Parameters by lazy { request.queryParameters }
   private val attributes = mutableMapOf<String, Any>()
+
+  // Set by Route.servlet to the context the servlet was initialized with.
+  internal var context: ServletContext? = null
 
   override fun getMethod(): String = request.httpMethod.value
 
@@ -118,15 +123,50 @@ class KtorServletRequest(
     attributes.remove(name)
   }
 
+  // As the servlet spec defines, null when the request carries no cookies.
+  override fun getCookies(): Array<Cookie>? =
+    request.cookies.rawCookies
+      .map { (name, value) -> Cookie(name, value) }
+      .takeIf { it.isNotEmpty() }
+      ?.toTypedArray()
+
+  // -1 when the header is absent; IllegalArgumentException when it is not an HTTP date, as the servlet spec defines.
+  override fun getDateHeader(name: String): Long =
+    getHeader(name)?.let { value ->
+      runCatching { value.fromHttpToGmtDate().timestamp }
+        .getOrElse { throw IllegalArgumentException("Header $name is not a date: $value", it) }
+    } ?: -1L
+
+  // -1 when the header is absent; NumberFormatException when it is not an integer, as the servlet spec defines.
+  override fun getIntHeader(name: String): Int = getHeader(name)?.trim()?.toInt() ?: -1
+
+  override fun getRequestURL(): StringBuffer =
+    StringBuffer().apply {
+      append(scheme).append("://").append(serverName)
+      val defaultPort = if (isSecure) 443 else 80
+      if (serverPort > 0 && serverPort != defaultPort)
+        append(':').append(serverPort)
+      append(requestURI)
+    }
+
+  override fun isSecure(): Boolean = scheme.equals("https", ignoreCase = true)
+
+  // The charset parameter of the Content-Type header, or null when there is none.
+  override fun getCharacterEncoding(): String? =
+    contentType?.let { runCatching { ContentType.parse(it).parameter("charset") }.getOrNull() }
+
+  override fun getContentLength(): Int = contentLengthLong.let { if (it > Int.MAX_VALUE) -1 else it.toInt() }
+
+  override fun getContentLengthLong(): Long = getHeader(HttpHeaders.ContentLength)?.trim()?.toLongOrNull() ?: -1L
+
+  override fun getDispatcherType(): DispatcherType = DispatcherType.REQUEST
+
+  override fun getServletContext(): ServletContext =
+    context ?: throw UnsupportedOperationException("This request is not bound to a servlet context")
+
   // Unsupported methods below
 
   override fun getAuthType(): String = throw UnsupportedOperationException()
-
-  override fun getCookies(): Array<Cookie> = throw UnsupportedOperationException()
-
-  override fun getDateHeader(name: String): Long = throw UnsupportedOperationException()
-
-  override fun getIntHeader(name: String): Int = throw UnsupportedOperationException()
 
   override fun getPathTranslated(): String = throw UnsupportedOperationException()
 
@@ -137,8 +177,6 @@ class KtorServletRequest(
   override fun getUserPrincipal(): Principal = throw UnsupportedOperationException()
 
   override fun getRequestedSessionId(): String = throw UnsupportedOperationException()
-
-  override fun getRequestURL(): StringBuffer = throw UnsupportedOperationException()
 
   override fun getSession(create: Boolean): HttpSession = throw UnsupportedOperationException()
 
@@ -169,13 +207,7 @@ class KtorServletRequest(
 
   override fun getHttpServletMapping(): HttpServletMapping = throw UnsupportedOperationException()
 
-  override fun getCharacterEncoding(): String = throw UnsupportedOperationException()
-
   override fun setCharacterEncoding(env: String) = throw UnsupportedOperationException()
-
-  override fun getContentLength(): Int = throw UnsupportedOperationException()
-
-  override fun getContentLengthLong(): Long = throw UnsupportedOperationException()
 
   override fun getInputStream(): ServletInputStream = throw UnsupportedOperationException()
 
@@ -184,8 +216,6 @@ class KtorServletRequest(
   override fun getLocalAddr(): String = throw UnsupportedOperationException()
 
   override fun getLocalPort(): Int = throw UnsupportedOperationException()
-
-  override fun getServletContext(): ServletContext = throw UnsupportedOperationException()
 
   override fun startAsync(): AsyncContext = throw UnsupportedOperationException()
 
@@ -200,8 +230,6 @@ class KtorServletRequest(
 
   override fun getAsyncContext(): AsyncContext = throw UnsupportedOperationException()
 
-  override fun getDispatcherType(): DispatcherType = throw UnsupportedOperationException()
-
   override fun getRemoteHost(): String = throw UnsupportedOperationException()
 
   override fun getRemotePort(): Int = throw UnsupportedOperationException()
@@ -209,8 +237,6 @@ class KtorServletRequest(
   override fun getLocale(): Locale = throw UnsupportedOperationException()
 
   override fun getLocales(): Enumeration<Locale> = throw UnsupportedOperationException()
-
-  override fun isSecure(): Boolean = throw UnsupportedOperationException()
 
   override fun getRequestDispatcher(path: String): RequestDispatcher = throw UnsupportedOperationException()
 

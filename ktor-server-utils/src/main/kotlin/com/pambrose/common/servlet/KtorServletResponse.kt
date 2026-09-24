@@ -20,6 +20,8 @@ package com.pambrose.common.servlet
 import io.ktor.http.ContentType
 import io.ktor.http.HeaderValueParam
 import io.ktor.http.HttpHeaders
+import io.ktor.http.toHttpDate
+import io.ktor.util.date.GMTDate
 import jakarta.servlet.ServletOutputStream
 import jakarta.servlet.WriteListener
 import jakarta.servlet.http.Cookie
@@ -71,19 +73,49 @@ class KtorServletResponse : HttpServletResponse {
   // As in a servlet container, a Content-Type header is the content type: setting it sets the character encoding
   // too, reading it returns getContentType(), and it is not listed in getHeaderNames().
 
+  // As the servlet spec defines, a null value removes the header in setHeader and is ignored by addHeader.
+
   override fun setHeader(
     name: String,
-    value: String,
+    value: String?,
   ) {
-    if (name.isContentType()) setContentType(value) else headers[name] = [value]
+    when {
+      name.isContentType() -> setContentType(value)
+      value == null -> headers.remove(name)
+      else -> headers[name] = [value]
+    }
   }
 
   override fun addHeader(
     name: String,
-    value: String,
+    value: String?,
   ) {
-    if (name.isContentType()) setContentType(value) else headers.getOrPut(name) { [] }.add(value)
+    when {
+      value == null -> Unit
+      name.isContentType() -> setContentType(value)
+      else -> headers.getOrPut(name) { [] }.add(value)
+    }
   }
+
+  override fun setDateHeader(
+    name: String,
+    date: Long,
+  ) = setHeader(name, GMTDate(date).toHttpDate())
+
+  override fun addDateHeader(
+    name: String,
+    date: Long,
+  ) = addHeader(name, GMTDate(date).toHttpDate())
+
+  override fun setIntHeader(
+    name: String,
+    value: Int,
+  ) = setHeader(name, value.toString())
+
+  override fun addIntHeader(
+    name: String,
+    value: Int,
+  ) = addHeader(name, value.toString())
 
   override fun containsHeader(name: String): Boolean = getHeaders(name).isNotEmpty()
 
@@ -94,10 +126,13 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun getHeaderNames(): Collection<String> = headers.keys
 
-  override fun setContentType(type: String) {
+  // A null type clears the content type, as the servlet spec defines.
+  override fun setContentType(type: String?) {
     contentTypeValue = type
     // As in a servlet container, a charset parameter in the content type sets the character encoding.
-    runCatching { ContentType.parse(type).parameter("charset") }.getOrNull()?.let(::setCharacterEncoding)
+    type
+      ?.let { runCatching { ContentType.parse(it).parameter("charset") }.getOrNull() }
+      ?.let(::setCharacterEncoding)
   }
 
   // As the servlet spec requires, the content type includes the character encoding once one has been specified
@@ -107,7 +142,8 @@ class KtorServletResponse : HttpServletResponse {
       if (charEncodingValue == null && !writerUsed) type else type.withCharset(characterEncoding)
     }
 
-  override fun setCharacterEncoding(charset: String) {
+  // A null charset clears the encoding, as the servlet spec defines.
+  override fun setCharacterEncoding(charset: String?) {
     // As in a servlet container, the encoding cannot change once getWriter() has been called.
     if (!writerUsed)
       charEncodingValue = charset
@@ -182,6 +218,31 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun isCommitted(): Boolean = committed
 
+  // The route sets Content-Length from the body it actually sends, as it does for a Content-Length header.
+  override fun setContentLength(len: Int) = Unit
+
+  override fun setContentLengthLong(len: Long) = Unit
+
+  // The whole response is buffered until the servlet returns, so flushing only commits it.
+  override fun flushBuffer() {
+    printWriter?.flush()
+    committed = true
+  }
+
+  override fun resetBuffer() {
+    check(!committed) { "The response has already been committed" }
+    discardBufferedOutput()
+  }
+
+  override fun reset() {
+    resetBuffer()
+    headers.clear()
+    statusCode = HttpServletResponse.SC_OK
+    contentTypeValue = null
+    if (!writerUsed)
+      charEncodingValue = null
+  }
+
   private fun discardBufferedOutput() {
     printWriter?.flush()
     buffer.reset()
@@ -195,39 +256,9 @@ class KtorServletResponse : HttpServletResponse {
 
   override fun encodeRedirectURL(url: String): String = throw UnsupportedOperationException()
 
-  override fun setDateHeader(
-    name: String,
-    date: Long,
-  ) = throw UnsupportedOperationException()
-
-  override fun addDateHeader(
-    name: String,
-    date: Long,
-  ) = throw UnsupportedOperationException()
-
-  override fun setIntHeader(
-    name: String,
-    value: Int,
-  ) = throw UnsupportedOperationException()
-
-  override fun addIntHeader(
-    name: String,
-    value: Int,
-  ) = throw UnsupportedOperationException()
-
-  override fun setContentLength(len: Int) = throw UnsupportedOperationException()
-
-  override fun setContentLengthLong(len: Long) = throw UnsupportedOperationException()
-
   override fun setBufferSize(size: Int) = throw UnsupportedOperationException()
 
   override fun getBufferSize(): Int = throw UnsupportedOperationException()
-
-  override fun flushBuffer() = throw UnsupportedOperationException()
-
-  override fun resetBuffer() = throw UnsupportedOperationException()
-
-  override fun reset() = throw UnsupportedOperationException()
 
   override fun setLocale(loc: Locale) = throw UnsupportedOperationException()
 
