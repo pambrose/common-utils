@@ -96,6 +96,28 @@ class EmailUtilsTests : StringSpec() {
       "user@example.${"a".repeat(64)}".isNotValidEmail() shouldBe true
     }
 
+    "accepts an address of exactly 254 characters with a 64-character local part" {
+      val domain = "${"a".repeat(61)}.".repeat(3) + "com"
+      val address = "${"l".repeat(64)}@$domain"
+      address.length shouldBe 254
+      address.isValidEmail() shouldBe true
+    }
+
+    "rejects an address over 254 characters or with a local part over 64" {
+      "${"l".repeat(65)}@example.com".isNotValidEmail() shouldBe true
+      ("${"l".repeat(64)}@" + "${"a".repeat(61)}.".repeat(3) + "comm").isNotValidEmail() shouldBe true
+    }
+
+    "rejects a domain label longer than 63 characters" {
+      "user@${"a".repeat(63)}.com".isValidEmail() shouldBe true
+      "user@${"a".repeat(64)}.com".isNotValidEmail() shouldBe true
+    }
+
+    // The regex engine recurses once per domain label, so a few thousand labels used to overflow the stack.
+    "rejects a very long address instead of overflowing the stack" {
+      ("a@" + "a.".repeat(5_000) + "com").isValidEmail() shouldBe false
+    }
+
     "email() builds an HTML doc with embedded css and body content" {
       val html = email {
         h1 { +"Hello" }

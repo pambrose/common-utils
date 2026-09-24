@@ -29,7 +29,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging.logger
 class ResendService(
   envResendApiKey: String,
 ) {
-  private val resend = Resend(envResendApiKey)
+  // Resend.emails() builds a new OkHttp client on every call, so take one Emails service and reuse it.
+  private val emails = Resend(envResendApiKey).emails()
 
   /**
    * Sends an email via the Resend API.
@@ -44,7 +45,9 @@ class ResendService(
    * @param bcc the list of BCC recipient email addresses. Defaults to empty.
    * @param subject the email subject line.
    * @param html the HTML body content of the email.
-   * @throws com.resend.core.exception.ResendException if the Resend API call fails.
+   * @throws com.resend.core.exception.ResendException if Resend rejects the request (a non-2xx response).
+   * @throws RuntimeException if the request cannot be delivered (DNS, connection or read timeout); the Resend SDK
+   *   wraps the underlying [java.io.IOException] as its cause.
    */
   fun sendEmail(
     from: Email,
@@ -64,7 +67,7 @@ class ResendService(
         html(html)
         build()
       }
-    val response: CreateEmailResponse = resend.emails().send(request)
+    val response: CreateEmailResponse = emails.send(request)
 
     logger.info { "Sent email [${response.id}] to ${to.size} to, ${cc.size} cc, and ${bcc.size} bcc recipients" }
   }

@@ -121,17 +121,19 @@ val service = ResendService(System.getenv("RESEND_API_KEY"))
 
 service.sendEmail(
   from = Email("noreply@example.com"),
-  to = [Email("first@example.com"), Email("second@example.com")],
-  cc = [Email("manager@example.com")],   // defaults to empty
-  bcc = [Email("audit@example.com")],    // defaults to empty
+  to = listOf(Email("first@example.com"), Email("second@example.com")),
+  cc = listOf(Email("manager@example.com")),   // defaults to empty
+  bcc = listOf(Email("audit@example.com")),    // defaults to empty
   subject = "Welcome",
   html = email { h1 { +"Welcome" } },
 )
 ```
 
 A successful send is logged at info level with the recipient counts and the Resend message id. The addresses
-themselves are never logged, since they are personal data. A failure is thrown as a `ResendException` and is
-deliberately not logged here, so it is reported once — by the caller that catches it — instead of twice.
+themselves are never logged, since they are personal data. A failure is thrown and deliberately not logged here,
+so it is reported once — by the caller that catches it — instead of twice. Resend rejecting the request (a non-2xx
+response) throws `ResendException`; a transport failure (DNS, connect or read timeout) throws a plain
+`RuntimeException` wrapping the `IOException`, so catch both.
 
 ### Decoding Webhooks
 
@@ -142,7 +144,7 @@ val msg = ResendWebhookMsg.decode(call.receiveText())
 
 when (msg.type) {
   "email.bounced" -> msg.data.bounce?.let { logger.warn { "Bounced (${it.type}): ${it.message}" } }
-  "email.clicked" -> msg.data.click?.let { logger.info { "Clicked ${it.link} from ${it.ipAddress}" } }
+  "email.clicked" -> msg.data.click?.let { logger.info { "Clicked ${it.link}" } }
   else -> logger.info { "${msg.type} for email ${msg.data.emailId}" }
 }
 ```
@@ -189,7 +191,7 @@ declare each `@SerialName` accordingly, so Kotlin-side property names stay unifo
 
 ### `EmailUtils`
 
-- `fun String.isValidEmail(): Boolean`
+- `fun String.isValidEmail(): Boolean` — rejects addresses over 254 characters or with a local part over 64
 - `fun String.isNotValidEmail(): Boolean`
 - `fun email(cssFilename: String = "css/email.css", block: BODY.() -> Unit): String`
 
@@ -197,7 +199,8 @@ declare each `@SerialName` accordingly, so Kotlin-side property names stay unifo
 
 - `class ResendService(envResendApiKey: String)`
 - `fun sendEmail(from: Email, to: List<Email>, cc: List<Email> = emptyList(), bcc: List<Email> = emptyList(), subject: String, html: String)`
-  — throws `com.resend.core.exception.ResendException` if the API call fails
+  — throws `com.resend.core.exception.ResendException` if Resend rejects the request, or a `RuntimeException`
+  wrapping an `IOException` if it cannot be delivered
 
 ### Webhook Models
 
@@ -264,7 +267,8 @@ dependencies {
 
 - `Email` is an immutable value class, and `EmailUtils` holds only a lazily compiled, immutable `Pattern`
 - `ResendWebhookMsg.json` is a single immutable `Json` instance shared by every call to `decode`
-- Each `ResendService` creates its own Resend client in its constructor and reuses it for every send
+- Each `ResendService` creates its own Resend client, and the HTTP client behind it, in its constructor and
+  reuses them for every send
 
 ## License
 
