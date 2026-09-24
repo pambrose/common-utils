@@ -24,6 +24,11 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.lowerCase
+import org.jetbrains.exposed.v1.core.vendors.H2Dialect
+import org.jetbrains.exposed.v1.core.vendors.MariaDBDialect
+import org.jetbrains.exposed.v1.core.vendors.MysqlDialect
+import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.exceptions.UnsupportedByDialectException
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -49,6 +54,22 @@ private val emailIndex get() = UpsertUsersTable.indices.single { it.columns == [
 private object UpsertOtherTable : Table("upsert_test_other") {
   val code = varchar("code", 50).uniqueIndex()
 }
+
+// Never created: its functional and partial indexes only need to reach the upsert's validation. The unique id index
+// comes first, so an upsert that forwarded no columns would silently fall back to it.
+private object UpsertIndexKindsTable : Table("upsert_test_index_kinds") {
+  val id = integer("id").uniqueIndex()
+  val email = varchar("email", 100)
+  val active = bool("active")
+
+  init {
+    uniqueIndex("u_lower_email", functions = listOf(email.lowerCase()))
+    uniqueIndex("u_email_mixed", email, functions = listOf(email.lowerCase()))
+    uniqueIndex("u_active_email", email, filterCondition = { active eq true })
+  }
+}
+
+private fun indexNamed(name: String) = UpsertIndexKindsTable.indices.single { it.indexName == name }
 
 class UpsertStatementTests : StringSpec() {
   private lateinit var db: Database
@@ -162,6 +183,44 @@ class UpsertStatementTests : StringSpec() {
           }
         exception.message shouldContain "unique"
       }
+    }
+
+    "upsert rejects a functional index instead of falling back to another unique index" {
+      transaction(db) {
+        listOf("u_lower_email", "u_email_mixed").forEach { name ->
+          val exception =
+            shouldThrow<IllegalArgumentException> {
+              UpsertIndexKindsTable.upsert(indexNamed(name)) {
+                it[id] = 1
+                it[email] = "alice@example.com"
+                it[active] = true
+              }
+            }
+          exception.message shouldContain "functional"
+        }
+      }
+    }
+
+    "upsert rejects a partial index" {
+      transaction(db) {
+        val exception =
+          shouldThrow<IllegalArgumentException> {
+            UpsertIndexKindsTable.upsert(indexNamed("u_active_email")) {
+              it[id] = 1
+              it[email] = "alice@example.com"
+              it[active] = true
+            }
+          }
+        exception.message shouldContain "partial"
+      }
+    }
+
+    // H2 in MySQL mode keeps H2's own upsert, so the dialect check is exercised directly.
+    "MySQL and MariaDB are rejected, since ON DUPLICATE KEY UPDATE cannot target one index" {
+      shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MysqlDialect()) }
+      shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MariaDBDialect()) }
+      checkConflictIndexSupported(H2Dialect())
+      checkConflictIndexSupported(PostgreSQLDialect())
     }
 
     "upsert rejects an index belonging to another table" {

@@ -17,6 +17,9 @@ with the `db` argument, or omit it to use Exposed's default.
 
 - **`readonlyTx`**: read-only transaction
 - **`timedTransaction` / `timedReadOnlyTx`**: transactions that return a `TimedValue` with the elapsed duration
+- Called inside another transaction, these join it (or, with `useNestedTransactions`, inherit its read-only flag
+  and isolation level), so neither read-only mode nor the isolation argument is enforced there, and the timing
+  covers a block that has not committed yet
 
 ### ResultRow Extensions
 
@@ -130,8 +133,8 @@ transaction(database) {
 }
 ```
 
-`KotlinSqlLogger` logs each statement at info level with its arguments expanded. Pass your own `KLogger` to
-route the output elsewhere.
+`KotlinSqlLogger` logs each statement at debug level with its arguments expanded, like Exposed's own
+`Slf4jSqlDebugLogger`. Pass your own `KLogger` to route the output elsewhere.
 
 ### Upsert
 
@@ -158,9 +161,11 @@ transaction(database) {
 
 The overload forwards the index's columns as the `keys` of the underlying `ON CONFLICT (...)` clause, so the
 named index definition stays the single source of truth for the conflict columns. It accepts only a unique
-`Index` belonging to the same table, and throws `IllegalArgumentException` otherwise, rather than letting the
-database reject the statement at runtime. To conflict on a single column, declare a single-column `uniqueIndex`
-and pass that.
+`Index` of plain columns belonging to the same table, and throws `IllegalArgumentException` otherwise, rather than
+letting the database reject the statement at runtime. Functional and partial indexes are rejected too: neither can
+be named by its columns in `ON CONFLICT (...)`, and forwarding no columns would make Exposed fall back to the
+primary key or the first unique index, silently matching on the wrong key. To conflict on a single column,
+declare a single-column `uniqueIndex` and pass that.
 
 Exposed's own `onUpdate`, `onUpdateExclude` and `where` options are passed straight through:
 
@@ -234,10 +239,12 @@ dependencies {
 
 ## Database Compatibility
 
-`upsert` delegates to Exposed's native `upsert`, so it works on every database Exposed supports that
-statement for — this module's own tests exercise it against H2. It is not PostgreSQL-specific. How much of
-`onUpdate`, `onUpdateExclude` and `where` each database accepts is dialect-specific: the MERGE-based statement
-H2 uses rejects `where`, for example.
+`upsert` delegates to Exposed's native `upsert`, so it works on the databases whose upsert can name its conflict
+columns: PostgreSQL, SQLite, H2, Oracle and SQL Server (this module's own tests exercise it against H2). It is
+not supported on **MySQL or MariaDB**, whose `ON DUPLICATE KEY UPDATE` fires on any unique key and cannot be limited
+to one index; there it throws `UnsupportedByDialectException`, and Exposed's own `upsert` without a conflict index
+is the right call. How much of `onUpdate`, `onUpdateExclude` and `where` each database accepts is
+dialect-specific: the MERGE-based statement H2 uses rejects `where`, for example.
 
 ## Security Considerations
 
@@ -246,6 +253,10 @@ H2 uses rejects `where`, for example.
 - Never build a `CustomExpr` from user-supplied input
 - Reserve it for fixed SQL fragments such as `NOW()` or `CURRENT_DATE`
 - Use Exposed's parameterized expressions for anything derived from request data
+
+⚠️ **`KotlinSqlLogger` inlines bound arguments into each logged statement**, so the log holds whatever values were
+written, passwords and personal data included. It logs at debug level for that reason; think twice before
+enabling debug logging for it in production.
 
 ## Performance Notes
 
