@@ -12,6 +12,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":core-utils"))
+            // JsonElement and the kotlinx.serialization types appear throughout the public API.
+            api(libs.kotlinx.serialization.json)
+            implementation(libs.kotlin.logging)
         }
         commonTest.dependencies {
             implementation(libs.kotest.assertions.core)

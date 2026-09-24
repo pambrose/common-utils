@@ -1,7 +1,8 @@
 description = "Jetbrains Exposed ORM extension utilities"
 
 dependencies {
-    api(project(":core-utils"))
+    // KotlinSqlLogger takes a KLogger.
+    api(libs.kotlin.logging)
 
     api(libs.exposed.core)
     api(libs.exposed.jdbc)

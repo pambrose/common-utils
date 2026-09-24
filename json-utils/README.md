@@ -240,6 +240,7 @@ This module depends on:
 - Kotlin Standard Library
 - core-utils
 - Kotlinx Serialization JSON
+- kotlin-logging (internally)
 
 ## Installation
 

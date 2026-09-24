@@ -1,8 +1,6 @@
 description = "Dropwizard framework integration utilities"
 
 dependencies {
-    api(project(":core-utils"))
-
-    api(libs.dropwizard.core)
+    // metrics-healthchecks brings metrics-core with it.
     api(libs.dropwizard.healthcheck)
 }

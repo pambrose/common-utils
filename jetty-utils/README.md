@@ -128,7 +128,6 @@ addServlet(ServletHolder(VersionServlet(MyApp::class.versionDesc())), "/version"
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
 - Jetty EE11 Servlet (`org.eclipse.jetty.ee11:jetty-ee11-servlet`)
 
 Jetty 12 EE11 implements Jakarta Servlet 6.1, so servlets use the `jakarta.servlet` packages rather than

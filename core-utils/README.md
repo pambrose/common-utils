@@ -422,8 +422,7 @@ This module depends on:
 - Kotlin Standard Library
 - Kotlinx Coroutines
 - Kotlinx DateTime
-- Kotlinx Serialization JSON
-- kotlin-logging
+- On the JVM only: kotlin-reflect and kotlin-logging (both `api`), and Kotlinx Serialization JSON (internally)
 
 ## Installation
 

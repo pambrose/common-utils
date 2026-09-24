@@ -208,7 +208,7 @@ MyTable.upsert(conflictIndex, onUpdateExclude = listOf(MyTable.email)) {
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
+- kotlin-logging (`KotlinSqlLogger` takes a `KLogger`)
 - JetBrains Exposed Core
 - JetBrains Exposed JDBC
 - JetBrains Exposed Joda-Time (used by the `DateTime` expression helpers)

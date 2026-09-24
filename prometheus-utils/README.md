@@ -185,7 +185,7 @@ Each takes `registry: CollectorRegistry = CollectorRegistry.defaultRegistry` as 
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
+- kotlin-logging (internally)
 - Prometheus simpleclient
 - Prometheus simpleclient_hotspot
 

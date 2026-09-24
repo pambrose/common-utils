@@ -9,8 +9,10 @@ cases. Published on Maven Central.
 
 Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, and **ktor-client-utils**. They target
 JVM, JS, wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code lives in `src/commonMain`, JVM-bound
-code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM and depend
-on core-utils' jvm variant via ordinary project dependencies.
+code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM. Most depend
+on core-utils' jvm variant via ordinary project dependencies; jetty-utils, dropwizard-utils, prometheus-utils,
+exposed-utils and ktor-server-utils do not (they declare kotlin-logging directly where they log), and neither does
+ktor-client-utils. Don't add core-utils to a module for one helper: every consumer inherits its whole `api` surface.
 
 ## Common Development Commands
 

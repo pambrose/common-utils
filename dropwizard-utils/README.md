@@ -97,9 +97,7 @@ All are `@JvmStatic`.
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
-- Dropwizard Metrics Core
-- Dropwizard Metrics Health Checks
+- Dropwizard Metrics Health Checks (which brings Metrics Core)
 
 ## Installation
 

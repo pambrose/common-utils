@@ -8,7 +8,8 @@ dependencies {
     // SslContextBuilder) that arrive through grpc-netty, so consumers need it on their compile classpath.
     api(libs.grpc.netty)
 
-    implementation(libs.bundles.grpc)
+    // The in-process transport; grpc-netty comes in through the api line above.
+    implementation(libs.grpc.inprocess)
 
     runtimeOnly(libs.netty.tcnative)
     // The main tcnative jar holds no native code. Its POM adds the per-platform jars as classifier dependencies on

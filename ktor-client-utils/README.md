@@ -147,7 +147,6 @@ val strictBody = KtorDsl.blockingGet("https://example.com/api", expectSuccess = 
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
 - Ktor Client Core
 
 No engine is included, and `newHttpClient` (like `withHttpClient`/`httpClient` without a client) uses whichever
