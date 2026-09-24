@@ -137,6 +137,21 @@ class SamplerGaugeCollectorTests : StringSpec() {
       ).forEach { create -> shouldThrow<IllegalArgumentException> { create() } }
     }
 
+    "the constructors without a registry register with the default one" {
+      val labelled = SamplerGaugeCollector("test_sampler_gauge_default_labelled", "h", ["a"], ["x"]) { 1.0 }
+      val unlabelled = SamplerGaugeCollector(name = "test_sampler_gauge_default_plain", help = "h", labelNames = []) {
+        2.0
+      }
+      try {
+        val registry = CollectorRegistry.defaultRegistry
+        registry.getSampleValue("test_sampler_gauge_default_labelled", arrayOf("a"), arrayOf("x")) shouldBe 1.0
+        registry.getSampleValue("test_sampler_gauge_default_plain") shouldBe 2.0
+      } finally {
+        CollectorRegistry.defaultRegistry.unregister(labelled)
+        CollectorRegistry.defaultRegistry.unregister(unlabelled)
+      }
+    }
+
     "the collector can register with a given registry instead of the default one" {
       val registry = CollectorRegistry()
       SamplerGaugeCollector(name = "test_sampler_gauge_isolated", help = "isolated", registry = registry) { 3.0 }

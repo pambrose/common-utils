@@ -178,6 +178,12 @@ class GenericServicesTests : StringSpec() {
       service.isRunning shouldBe true
       service.stopSync(java.time.Duration.ofSeconds(HANG_GUARD_SECONDS))
       service.state() shouldBe Service.State.TERMINATED
+
+      val idle = SlowIdleService(startupDelay = 0.milliseconds)
+      idle.startSync(java.time.Duration.ofSeconds(HANG_GUARD_SECONDS))
+      idle.isRunning shouldBe true
+      idle.stopSync(java.time.Duration.ofSeconds(HANG_GUARD_SECONDS))
+      idle.state() shouldBe Service.State.TERMINATED
     }
 
     "startSync throws TimeoutException when the service does not start in time" {

@@ -173,6 +173,17 @@ class KtorServletRequestTests : StringSpec() {
       servletRequest.dispatcherType shouldBe DispatcherType.REQUEST
     }
 
+    "an unparseable Content-Type has no charset, and an unusable Content-Length reports -1" {
+      listOf("12345678901", "twelve").forEach { length ->
+        val request = mockk<ApplicationRequest>()
+        every { request.headers } returns
+          headersOf(HttpHeaders.ContentType to ["not a content type"], HttpHeaders.ContentLength to [length])
+        val servletRequest = KtorServletRequest(request)
+        servletRequest.characterEncoding shouldBe null
+        servletRequest.contentLength shouldBe -1
+      }
+    }
+
     "getRequestURL omits the default port and isSecure follows the scheme" {
       val servletRequest = KtorServletRequest(connectedRequest(uri = "/api/items?id=42"))
       servletRequest.requestURL.toString() shouldBe "https://example.com:8443/api/items"

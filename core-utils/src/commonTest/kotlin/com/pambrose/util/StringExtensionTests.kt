@@ -184,6 +184,7 @@ class StringExtensionTests : StringSpec() {
       ["a", "b", "c"].toRootPath() shouldBe "/a/b/c"
       ["a", "b", "c"].toRootPath(true) shouldBe "/a/b/c/"
       ["a", "b", "c"].toPath(addPrefix = false, addTrailing = true) shouldBe "a/b/c/"
+      ["a", "", "c"].toPath(separator = "") shouldBe "ac"
       ["a", "b", "c"].toPath() shouldBe "/a/b/c/"
       ["/a", "/b", "c"].toPath() shouldBe "/a/b/c/"
       ["/a", "/b", "c/"].toPath() shouldBe "/a/b/c/"

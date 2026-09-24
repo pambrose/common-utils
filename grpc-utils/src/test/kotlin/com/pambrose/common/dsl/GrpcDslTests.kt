@@ -27,6 +27,7 @@ import io.grpc.CallOptions
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Server
+import io.grpc.ServerBuilder
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.netty.NettyChannelBuilder
@@ -46,6 +47,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.net.InetSocketAddress
+import java.lang.reflect.InvocationTargetException
 import kotlin.reflect.KClass
 
 // A built ManagedChannel exposes no way to read its retry configuration back, so the transport's builder is
@@ -368,6 +370,33 @@ class GrpcDslTests : StringSpec() {
       shouldThrow<IllegalArgumentException> {
         GrpcDsl.channel(hostName = "localhost") {}
       }.message shouldContain "port"
+      shouldThrow<IllegalArgumentException> {
+        GrpcDsl.channel(hostName = "localhost", port = 65536) {}
+      }.message shouldContain "65536"
+    }
+
+    // Callers compiled before bindAddress was added link against the old signature and its $default bridge.
+    "the pre-bindAddress server signature still links and delegates" {
+      val oldDefault =
+        GrpcDsl::class.java.getMethod(
+          "server\$default",
+          GrpcDsl::class.java,
+          Int::class.javaPrimitiveType,
+          TlsContext::class.java,
+          String::class.java,
+          Function1::class.java,
+          Int::class.javaPrimitiveType,
+          Any::class.java,
+        )
+      val block: ServerBuilder<*>.() -> Unit = {}
+
+      // Every argument defaulted: port -1 is rejected once the defaults are applied.
+      shouldThrow<InvocationTargetException> { oldDefault.invoke(null, GrpcDsl, 0, null, null, block, 0b0111, null) }
+        .cause.shouldBeInstanceOf<IllegalArgumentException>()
+
+      val serverName = InProcessServerBuilder.generateName()
+      val server = oldDefault.invoke(null, GrpcDsl, 0, null, serverName, block, 0b0011, null) as Server
+      server.isShutdown shouldBe false
     }
   }
 }

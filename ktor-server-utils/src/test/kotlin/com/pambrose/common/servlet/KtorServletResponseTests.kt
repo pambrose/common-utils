@@ -198,6 +198,16 @@ class KtorServletResponseTests : StringSpec() {
       response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "kept"
     }
 
+    "reset before the writer is used forgets the character encoding, and flushBuffer commits without a writer" {
+      val response = KtorServletResponse()
+      val default = response.characterEncoding
+      response.characterEncoding = "ISO-8859-1"
+      response.reset()
+      response.characterEncoding shouldBe default
+      response.flushBuffer()
+      response.isCommitted shouldBe true
+    }
+
     "sendError sets the status, discards buffered output, writes the message, and commits" {
       val response = KtorServletResponse()
       response.writer.print("partial output")

@@ -153,6 +153,13 @@ class ContentSourceTests : StringSpec() {
       repo.file("main/app.kt", 1.seconds, 2.seconds).source shouldBe "https://raw.githubusercontent.com/u/r/main/app.kt"
       GitHubFile(repo, "main", "src", "App.kt", connectTimeout = 1.seconds).source shouldBe
         "https://raw.githubusercontent.com/u/r/main/src/App.kt"
+      GitHubFile(repo, "main", "src", "App.kt", readTimeout = 2.seconds).source shouldBe
+        "https://raw.githubusercontent.com/u/r/main/src/App.kt"
+      val gitLab = GitLabRepo(OwnerType.User, "u", "r")
+      GitLabFile(gitLab, "main", "src", "App.kt", connectTimeout = 1.seconds).source shouldBe
+        "https://gitlab.com/u/r/-/raw/main/src/App.kt"
+      GitLabFile(gitLab, "main", "src", "App.kt", readTimeout = 2.seconds).source shouldBe
+        "https://gitlab.com/u/r/-/raw/main/src/App.kt"
       UrlSource("https://example.com", java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(2)).source shouldBe
         "https://example.com"
       shouldThrow<IllegalArgumentException> {

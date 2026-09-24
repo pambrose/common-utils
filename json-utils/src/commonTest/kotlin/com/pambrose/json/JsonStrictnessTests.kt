@@ -87,6 +87,7 @@ class JsonStrictnessTests : StringSpec() {
       json.longValueOrNull("lead") shouldBe null
       json.longValueOrNull("over") shouldBe null
       json.longValueOrNull("missing") shouldBe null
+      """{"n": null}""".parseJson().longValueOrNull("n") shouldBe null
       shouldThrow<NumberFormatException> { json.longValue("over") }
     }
 
@@ -96,6 +97,11 @@ class JsonStrictnessTests : StringSpec() {
       message shouldContain "\"missing\""
       message shouldContain "\"secret\""
       message shouldNotContain "s3cr3t-value"
+
+      val wide = (1..12).joinToString(",", "{", "}") { "\"k$it\": $it" }.parseJson()
+      val wideMessage = shouldThrow<IllegalArgumentException> { wide["missing"] }.message.orEmpty()
+      wideMessage shouldContain "(12 keys)"
+      wideMessage shouldNotContain "\"k11\""
     }
 
     "toFormattedString accepts whitespace indents and rejects others" {
