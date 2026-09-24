@@ -45,7 +45,10 @@ object SystemMetrics {
    * This method is synchronized and safe to call repeatedly: an exporter already registered by an earlier call is
    * skipped, and one requested for the first time is registered. An exporter whose metrics another collector
    * already provides, such as one registered by `DefaultExports.initialize()`, is skipped with a warning instead
-   * of failing the call. Registrations are tracked per registry, so an exporter later removed with
+   * of failing the call. That detection relies on the registry knowing the exporter's metric names, which only an
+   * auto-describing registry does: the default registry and `CollectorRegistry(true)`. A registry built with
+   * `CollectorRegistry()` learns no names from the hotspot exporters, so there a duplicate is registered silently and
+   * its metric families appear twice. Registrations are tracked per registry, so an exporter later removed with
    * [CollectorRegistry.clear] or [CollectorRegistry.unregister] is not registered again.
    *
    * @param enableStandardExports whether to register standard JMX metrics (process CPU, open file descriptors, etc.).

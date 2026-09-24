@@ -32,6 +32,25 @@ class JettyDslTests : StringSpec() {
       server.isStarted shouldBe false
     }
 
+    "server with a host binds its single connector to that address" {
+      val server = JettyDsl.server(0, "127.0.0.1")
+
+      val connector = server.connectors.single().shouldBeInstanceOf<ServerConnector>()
+      connector.host shouldBe "127.0.0.1"
+      connector.port shouldBe 0
+      server.isStarted shouldBe false
+    }
+
+    "server with a null host listens on every interface and still runs the block" {
+      val handler = JettyDsl.servletContextHandler()
+      val server = JettyDsl.server(8080, null) { this.handler = handler }
+
+      val connector = server.connectors.single().shouldBeInstanceOf<ServerConnector>()
+      connector.host shouldBe null
+      connector.port shouldBe 8080
+      server.handler shouldBe handler
+    }
+
     "servlet context handler creation" {
       val handler =
         JettyDsl.servletContextHandler {

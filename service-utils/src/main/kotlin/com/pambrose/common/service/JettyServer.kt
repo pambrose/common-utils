@@ -16,10 +16,10 @@
 
 package com.pambrose.common.service
 
+import com.pambrose.common.dsl.JettyDsl
 import com.pambrose.common.dsl.JettyDsl.servletContextHandler
 import org.eclipse.jetty.ee11.servlet.ErrorHandler
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler
-import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
@@ -36,14 +36,9 @@ internal fun jettyServer(
   port: Int,
   servlets: ServletContextHandler.() -> Unit,
 ): Server =
-  Server().apply {
-    addConnector(
-      ServerConnector(this, HttpConnectionFactory(HttpConfiguration().apply { sendServerVersion = false }))
-        .also { connector ->
-          connector.host = host
-          connector.port = port
-        },
-    )
+  JettyDsl.server(port, host) {
+    connectors.single().getConnectionFactory(HttpConnectionFactory::class.java).httpConfiguration.sendServerVersion =
+      false
     handler =
       servletContextHandler {
         contextPath = "/"

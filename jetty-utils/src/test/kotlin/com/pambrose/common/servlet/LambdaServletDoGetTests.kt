@@ -45,7 +45,7 @@ class LambdaServletDoGetTests : StringSpec() {
 
       LambdaServlet { "Hello, World!" }.service(createGetRequest(), response)
 
-      stringWriter.toString().trim() shouldBe "Hello, World!"
+      stringWriter.toString() shouldBe "Hello, World!"
     }
 
     "default constructor yields a text/plain content type" {
@@ -65,7 +65,7 @@ class LambdaServletDoGetTests : StringSpec() {
       LambdaServlet("application/json") { """{"status":"ok"}""" }.service(createGetRequest(), response)
 
       verify { response.contentType = "application/json" }
-      stringWriter.toString().trim() shouldBe """{"status":"ok"}"""
+      stringWriter.toString() shouldBe """{"status":"ok"}"""
     }
 
     "status is set to SC_OK" {
@@ -100,8 +100,8 @@ class LambdaServletDoGetTests : StringSpec() {
       every { secondResponse.writer } returns PrintWriter(secondWriter)
       servlet.service(createGetRequest(), secondResponse)
 
-      firstWriter.toString().trim() shouldBe "count=1"
-      secondWriter.toString().trim() shouldBe "count=2"
+      firstWriter.toString() shouldBe "count=1"
+      secondWriter.toString() shouldBe "count=2"
     }
 
     "a throwing lambda leaves the response untouched, so the container can still send an error" {

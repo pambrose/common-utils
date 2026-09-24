@@ -27,8 +27,11 @@ import java.io.IOException
  * An [HttpServlet] that serves the result of a lambda function as the HTTP GET response body.
  *
  * Responses include `Cache-Control: must-revalidate,no-cache,no-store` headers. The body is encoded as UTF-8
- * unless [contentType] names a charset. If the lambda throws, the response is left untouched, so the container
- * reports the error instead of an empty `200`.
+ * unless [contentType] names a charset, and holds exactly what the lambda returned, with no line separator
+ * appended. If the lambda throws, the response is left untouched, so the container reports the error instead of an
+ * empty `200`.
+ *
+ * Only `doGet` is overridden, and [HttpServlet] answers `HEAD` through it, so a `HEAD` request runs the lambda too.
  *
  * @param contentType the MIME content type for the response. Defaults to `"text/plain"`.
  * @param block a lambda that produces the response body string.
@@ -60,7 +63,7 @@ open class LambdaServlet(
       // type, so a charset named there still wins.
       characterEncoding = "UTF-8"
       contentType = this@LambdaServlet.contentType
-      writer.use { it.println(body) }
+      writer.use { it.print(body) }
     }
   }
 

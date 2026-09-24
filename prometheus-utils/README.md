@@ -88,7 +88,8 @@ SamplerGaugeCollector(
   Runtime.getRuntime().freeMemory().toDouble()
 }
 
-// With labels: labelNames and labelValues must be the same length
+// With labels: labelNames and labelValues must be the same length. The labels are constants on the collector's single
+// series; a registry accepts one collector per name, so a second "queue_depth" for another queue is rejected
 SamplerGaugeCollector(
   name = "queue_depth",
   help = "Pending items in the queue",
@@ -99,11 +100,13 @@ SamplerGaugeCollector(
 }
 ```
 
-Mismatched `labelNames` / `labelValues` sizes throw `IllegalArgumentException`.
+Mismatched `labelNames` / `labelValues` sizes, an invalid metric or label name (`queue-depth`, `__x`), and a
+repeated label name throw `IllegalArgumentException`, rather than producing an exposition Prometheus rejects.
 
 ### InstrumentedThreadFactory
 
-Wraps an existing `ThreadFactory` and exports counters for threads created, running and terminated. Pass
+Wraps an existing `ThreadFactory` and exports counters for threads created and terminated, and a gauge for threads
+running: `<name>_threads_created_total`, `<name>_threads_terminated_total` and `<name>_threads_running`. Pass
 `registry` to register the metrics somewhere other than the default registry; two factories with the same
 `name` need separate registries. If any of the three metric names is already taken, the constructor throws
 `IllegalArgumentException` and leaves none of them registered. When the delegate rejects a thread by returning
@@ -128,7 +131,9 @@ val executor = Executors.newFixedThreadPool(4, factory)
 Every exporter is **off by default** — opt into the ones you want. Calling `initialize` again is safe: an
 exporter registered by an earlier call is skipped, and one requested for the first time is registered. An
 exporter whose metrics are already registered elsewhere, for example by `DefaultExports.initialize()`, is
-skipped with a warning. Pass `registry` to use a registry other than the default one.
+skipped with a warning. Pass `registry` to use a registry other than the default one. Duplicate detection needs an
+auto-describing registry (the default one, or `CollectorRegistry(true)`): on a plain `CollectorRegistry()` a
+duplicate exporter is registered silently and its families appear twice.
 
 ```kotlin
 import com.pambrose.common.metrics.SystemMetrics
