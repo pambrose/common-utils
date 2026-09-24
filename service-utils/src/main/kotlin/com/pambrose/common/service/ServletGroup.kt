@@ -16,6 +16,7 @@
 
 package com.pambrose.common.service
 
+import com.pambrose.common.util.ensureLeadingSlash
 import jakarta.servlet.Servlet
 
 /**
@@ -28,7 +29,8 @@ class ServletGroup {
   internal val servletMap: MutableMap<String, Servlet> = mutableMapOf()
 
   /**
-   * Registers a servlet at the given URL path. Paths that are empty or blank are silently ignored.
+   * Registers a servlet at the given URL path. Paths that are empty or blank are silently ignored, and a
+   * leading slash is added when missing, so `"ping"` and `"/ping"` are the same endpoint.
    *
    * @param path The URL path to map the servlet to.
    * @param servlet The [Servlet] instance to register.
@@ -37,7 +39,9 @@ class ServletGroup {
     path: String,
     servlet: Servlet,
   ) {
+    // Check for blank before normalizing, since "".ensureLeadingSlash() is "/"; normalize before keying, so
+    // "ping" and "/ping" name the same endpoint and the later registration replaces the earlier one.
     if (path.isNotBlank())
-      servletMap[path] = servlet
+      servletMap[path.ensureLeadingSlash()] = servlet
   }
 }

@@ -17,13 +17,19 @@
 package com.pambrose.common.service
 
 import com.pambrose.common.dsl.JettyDsl.servletContextHandler
+import org.eclipse.jetty.ee11.servlet.ErrorHandler
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler
+import org.eclipse.jetty.server.HttpConfiguration
+import org.eclipse.jetty.server.HttpConnectionFactory
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 
 /**
  * Creates a Jetty [Server] with one connector on [port], bound to [host] or to every interface when [host] is
  * `null`, whose root context (`/`) holds the servlets that [servlets] adds.
+ *
+ * The admin and metrics endpoints it serves are unauthenticated, so responses do not reveal the Jetty version
+ * (no `Server` header, no "Powered by" footer on error pages) and error pages carry no stack traces.
  */
 internal fun jettyServer(
   host: String?,
@@ -32,14 +38,16 @@ internal fun jettyServer(
 ): Server =
   Server().apply {
     addConnector(
-      ServerConnector(this).also { connector ->
-        connector.host = host
-        connector.port = port
-      },
+      ServerConnector(this, HttpConnectionFactory(HttpConfiguration().apply { sendServerVersion = false }))
+        .also { connector ->
+          connector.host = host
+          connector.port = port
+        },
     )
     handler =
       servletContextHandler {
         contextPath = "/"
+        errorHandler = ErrorHandler().apply { isShowStacks = false }
         servlets()
       }
   }

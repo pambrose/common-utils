@@ -32,6 +32,7 @@ import com.google.common.util.concurrent.Service
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.core.test.Enabled
 import io.kotest.core.test.EnabledOrReasonIf
@@ -654,6 +655,54 @@ class GenericServiceTests : StringSpec() {
         httpGet(service.adminPort, "/added-route").body() shouldBe "added-route"
         httpGet(service.adminPort, "/added").body().trim() shouldBe "added-servlet"
         httpGet(service.adminPort, "/ping").body().trim() shouldBe "pong"
+      }
+    }
+
+    // A blank admin path turns that endpoint off. The Ktor variant used to normalize "" to "/" before the blank
+    // check, and so served the thread dump at the root.
+    "a blank admin path disables that endpoint on both variants" {
+      Variant.entries.forEach { variant ->
+        variant.newService(admin = enabledAdmin().copy(threadDumpPath = "")).use { service ->
+          service.startSync()
+          withClue(variant) {
+            httpGet(service.adminPort, "/").statusCode() shouldBe 404
+            httpGet(service.adminPort, "/threaddump").statusCode() shouldBe 404
+            httpGet(service.adminPort, "/ping").body().trim() shouldBe "pong"
+          }
+        }
+      }
+    }
+
+    // The config spells "ping" without a slash and servletInit adds "/ping"; Jetty used to refuse to start with two
+    // servlets on one path, and Ktor used to keep serving the built-in one.
+    "servletInit replaces a built-in endpoint whatever the leading-slash spelling, on both variants" {
+      val admin = enabledAdmin(prefix = "")
+      val services =
+        listOf(
+          TestJettyService(admin = admin, servletInit = { addServlet("/ping", VersionServlet("custom-ping")) }),
+          TestKtorService(admin = admin, servletInit = { addServlet("/ping", VersionServlet("custom-ping")) }),
+        )
+      services.forEach { service ->
+        service.use {
+          it.startSync()
+          withClue(it::class.simpleName) {
+            httpGet(it.adminPort, "/ping").body().trim() shouldBe "custom-ping"
+          }
+        }
+      }
+    }
+
+    "the Jetty admin and metrics servers do not reveal the Jetty version" {
+      TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics()).use { service ->
+        service.startSync()
+        listOf(service.adminPort, service.metricsService.boundPort).forEach { port ->
+          httpGet(port, "/ping").headers().firstValue("Server").isPresent shouldBe false
+          httpGet(port, "/no-such-endpoint").apply {
+            statusCode() shouldBe 404
+            headers().firstValue("Server").isPresent shouldBe false
+            body() shouldNotContain "Jetty"
+          }
+        }
       }
     }
 

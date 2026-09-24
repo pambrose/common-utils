@@ -20,7 +20,7 @@ classpath. See [Dependencies](#dependencies).
 ### Admin Endpoints
 
 - **Ping, version, health check, and thread dump servlets**: registered from `AdminConfig` paths, which may be
-  given with or without a leading slash
+  given with or without a leading slash. A blank path turns that endpoint off
 - **`ServletGroup` / `HttpServletGroup`**: mutable path-to-servlet maps for the Jetty and Ktor variants
 
 ### Servlet Hosting Services
@@ -248,7 +248,8 @@ metrics.stopSync()
 - `class ServletGroup` — `addServlet(path: String, servlet: jakarta.servlet.Servlet)`
 - `class HttpServletGroup` — `addServlet(path: String, servlet: HttpServlet)`,
   `addServlets(vararg servlets: Pair<String, HttpServlet>)`
-- Both silently ignore empty or blank paths, and a later servlet at the same path replaces the earlier one
+- Both silently ignore empty or blank paths, add a missing leading slash, and let a later servlet at the same
+  path replace the earlier one — so `"ping"` and `"/ping"` name one endpoint
 - `class ServletService(port: Int, servletGroup: ServletGroup, host: String? = null, initBlock: ServletService.() -> Unit = {}) : GenericIdleService`
 - `class KtorServletService(port: Int, servletGroup: HttpServletGroup, initKtor: Application.() -> Unit = {}, host: String? = null, initBlock: KtorServletService.() -> Unit = {}) : GenericIdleService`
 
@@ -357,6 +358,9 @@ reporter fails.
   to `"127.0.0.1"` to accept only local connections.
 - Admin and metrics paths may be written with or without a leading slash — `"ping"` and `"/ping"` reach the same
   endpoint.
+- A blank admin path disables that endpoint on both variants; it is never served at `/`.
+- The Jetty admin and metrics servers send no `Server` header and no version on error pages, and their error
+  pages carry no stack traces.
 
 ## License
 
