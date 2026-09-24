@@ -50,8 +50,8 @@ class SamplerGaugeCollector(
   private val data: () -> Double,
 ) : Collector(),
   Collector.Describable {
-  // Explicit overloads for Java rather than @JvmOverloads, which also generated a (name, help, labelNames, data)
-  // constructor that defaulted labelValues to empty and so threw for any non-empty labelNames.
+  // Explicit overloads for Java rather than @JvmOverloads, which also generated a public (name, help, labelNames,
+  // data) constructor that defaulted labelValues to empty and so threw for any non-empty labelNames.
 
   /** Creates an unlabelled gauge registered with [CollectorRegistry.defaultRegistry]. */
   constructor(name: String, help: String, data: () -> Double) :
@@ -60,6 +60,12 @@ class SamplerGaugeCollector(
   /** Creates a gauge with the given labels, registered with [CollectorRegistry.defaultRegistry]. */
   constructor(name: String, help: String, labelNames: List<String>, labelValues: List<String>, data: () -> Double) :
     this(name, help, labelNames, labelValues, CollectorRegistry.defaultRegistry, data)
+
+  // The constructor @JvmOverloads generated, kept for binary compatibility only: hidden and synthetic, so neither
+  // Kotlin nor Java source can call it. It works only with an empty labelNames, as it always did.
+  @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
+  constructor(name: String, help: String, labelNames: List<String>, data: () -> Double) :
+    this(name, help, labelNames, emptyList(), CollectorRegistry.defaultRegistry, data)
 
   init {
     // Validate eagerly. Neither the registry nor MetricFamilySamples.Sample checks names or sizes, and the text

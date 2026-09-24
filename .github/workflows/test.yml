@@ -35,9 +35,24 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
+      # `build` compiles linuxX64 (and links its tests), which downloads the Kotlin/Native toolchain.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
       # `build` runs lintKotlin and detekt through `check`, so there is no separate lint step.
       - name: Build and test
         run: ./gradlew build
+
+      # Builds the POMs, Gradle module metadata, and sources and javadoc jars, which otherwise surface only at
+      # release time. The JVM modules' publication, and the KMP modules' root and jvm ones; the Apple targets'
+      # publications need a macOS host. No signing key is configured, so nothing is signed.
+      - name: Publish to the local Maven repository
+        run: >-
+          ./gradlew publishMavenPublicationToMavenLocal publishJvmPublicationToMavenLocal
+          publishKotlinMultiplatformPublicationToMavenLocal
 
       - name: Generate Kover XML coverage report
         run: ./gradlew koverXmlReport
@@ -76,6 +91,8 @@ jobs:
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what is missing.
+          restore-keys: konan-${{ runner.os }}-
 
       - name: Run macOS and iOS simulator tests
         run: ./gradlew macosArm64Test iosSimulatorArm64Test
@@ -100,6 +117,8 @@ jobs:
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what is missing.
+          restore-keys: konan-${{ runner.os }}-
 
       - name: Run mingwX64 tests
         shell: bash

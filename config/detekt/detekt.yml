@@ -44,7 +44,7 @@ style:
 
 naming:
   VariableNaming:
-    excludes: ['**/test/**', '**/*Test.kt', '**/*Spec.kt']
+    excludes: ['**/test/**', '**/*Test.kt', '**/*Tests.kt', '**/*Spec.kt']
 
 empty-blocks:
   EmptyFunctionBlock:

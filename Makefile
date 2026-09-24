@@ -71,11 +71,12 @@ abi-check: ## Check the public ABI against the committed <module>/api dumps (als
 abi-update: ## Rewrite the <module>/api dumps after an intended public API change
 	./gradlew updateKotlinAbi
 
-# cleanAllTests exists only in the KMP modules; cleanTest covers the JVM ones. With the build cache on,
-# a cleaned test task can still come back FROM-CACHE, so re-run coverage with --rerun-tasks.
+# cleanTest covers the JVM modules and cleanJvmTest the KMP ones (whose jvmTest results Kover reads);
+# cleanAllTests only removes the KMP aggregate test report. With the build cache on, a cleaned test task can
+# still come back FROM-CACHE, so re-run coverage with --rerun-tasks.
 coverage-clean: ## Clean Kover outputs and previous test results
-	./gradlew cleanTest cleanAllTests
-	rm -rf build/reports/kover build/kover
+	./gradlew cleanTest cleanJvmTest cleanAllTests
+	rm -rf build/reports/kover build/kover */build/kover
 
 refresh: ## Refresh dependencies and re-run dependencyUpdates
 	./gradlew --refresh-dependencies dependencyUpdates --no-configuration-cache
