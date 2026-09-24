@@ -84,12 +84,18 @@ Each pool setting defaults to a system property, and then to a fixed value:
 | `maxWaitSecs` | `redis.maxWaitSecs` | 1       |
 
 `maxPoolSize` must be positive, or `UNLIMITED_POOL_SIZE` (-1) for no limit; 0 would create a pool that can never
-lend a connection. Pooled connections are validated when they are borrowed and while they sit idle, but not when
+lend a connection. `maxIdleSize` also accepts -1 for no limit. A `minIdleSize` above `maxIdleSize` is lowered to it
+by commons-pool2, and a warning is logged. Pooled connections are validated when they are borrowed and while they sit idle, but not when
 they are returned, which would add a second round-trip to every command.
 
 The `withRedisPool` family pings the client first. When that fails — including pool exhaustion and authentication
-failures, which arrive as a plain `JedisException` — it logs the error, including the stack trace when
-`printStackTrace = true`, and then passes `null` to the block or returns `null`.
+failures, which arrive as a plain `JedisException` — it logs the error with the exception's message, including the
+stack trace when `printStackTrace = true`, and then passes `null` to the block or returns `null`.
+
+The suspending variants connect, ping and close on `Dispatchers.IO`, since each of those is a blocking Jedis call
+that can take the full 2-second timeout when Redis is down. The block itself runs in the caller's context, so
+Jedis calls inside it still block their thread: wrap them in `withContext(Dispatchers.IO)` when calling from a
+limited dispatcher such as `Dispatchers.Default` or a Ktor event loop.
 
 ### Scanning Keys
 
@@ -100,6 +106,10 @@ client.scanKeys("user:*").forEach { key -> println(key) }
 ```
 
 `count`, which defaults to 100, is a hint for how many keys each `SCAN` call returns.
+
+`scanKeys` is for a standalone server. On a cluster client (`RedisClusterClient`) Jedis sends `SCAN` to one node:
+it rejects a pattern without a `{hash-tag}`, and with one it returns only that tag's slot. Use Jedis'
+`scanIteration` to scan a whole cluster.
 
 ## API Reference
 

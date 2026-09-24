@@ -18,10 +18,12 @@
 
 package com.pambrose.common.redis
 
+import ch.qos.logback.classic.Level
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import java.net.URI
 import java.time.Duration
 
@@ -36,7 +38,24 @@ class RedisUtilsTests : StringSpec() {
 
     "new redis client validation negative idle size" {
       shouldThrow<IllegalArgumentException> {
-        RedisUtils.newRedisClient(maxIdleSize = -1)
+        RedisUtils.newRedisClient(maxIdleSize = -2)
+      }
+    }
+
+    // -1 is commons-pool2's "no limit", accepted for maxIdleSize as it is for maxPoolSize.
+    "a max idle size of -1 means unlimited and is accepted" {
+      RedisUtils.newRedisClient(redisUrl = "redis://localhost:1", maxIdleSize = -1).use { client ->
+        client.pool.maxIdle shouldBe -1
+      }
+    }
+
+    // commons-pool2 silently lowers minIdle to maxIdle, so the mismatch is at least reported.
+    "a min idle size above the max idle size is reported" {
+      capturingRedisLogs { logs ->
+        RedisUtils.newRedisClient(redisUrl = "redis://localhost:1", maxIdleSize = 2, minIdleSize = 5).use { client ->
+          client.pool.minIdle shouldBe 2
+        }
+        logs().single { it.level == Level.WARN }.formattedMessage shouldContain "min idle size 5 exceeds max idle size 2"
       }
     }
 
