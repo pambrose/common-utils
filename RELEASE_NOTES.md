@@ -775,7 +775,7 @@ No custom repository declaration is needed — Maven Central is the default in G
 
 ---
 
-## 2.4.13 — 2026-02-05
+## v2.4.13 — 2026-02-05
 
 - Fix maven bom issue
 

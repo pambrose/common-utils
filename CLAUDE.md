@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Multi-module Kotlin/Java utility library (20+ modules) providing common functionality for various frameworks and use
+Multi-module Kotlin/Java utility library (19 modules) providing common functionality for various frameworks and use
 cases. Published on Maven Central.
 
 Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, and **ktor-client-utils**. They target
@@ -109,9 +109,11 @@ they move the scripting artifacts, `kotlin-reflect` and the plugin ids together.
 `io.netty:netty-tcnative-boringssl-static` gets no automatic PR at all, because it must match the version grpc-java
 pins for the grpc release in use (bump it by hand alongside grpc, and note the rule suppresses security-update PRs
 too, though alerts still fire). The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
-Dependabot only proposes candidates carrying the same suffix — and it must be kept, since
-`exposed-kotlin-datetime` links against the deprecated `kotlinx.datetime.Instant` that only the compat
-artifacts ship. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
+Dependabot only proposes candidates carrying the same suffix. Nothing in this repo needs the compat line
+(exposed-utils uses `exposed-jodatime`, and core-utils' API uses `kotlin.time.Instant`), but core-utils exports
+kotlinx-datetime as `api`, so consumers inherit it: keep the compat artifacts so a consumer that also uses a
+library linked against the deprecated `kotlinx.datetime.Instant` (such as `exposed-kotlin-datetime`) keeps
+working. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
 `make upgrade-wrapper` reads, so that entry goes stale after a Dependabot wrapper bump.
 
 `gradle-wrapper.properties` carries a `distributionSha256Sum`, so the wrapper verifies every distribution it
@@ -236,7 +238,8 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Project-wide rule:** 90% line and 80% branch across the aggregated report.
 - **Per-package rule:** 90% line in every package.
 
-They are floors, not targets. As of 4.1.0 the project sits at 99.8% line and 97.2% branch, and the weakest package
+They are floors, not targets, and this is the one place the current figures are kept (the root build script and
+`codecov.yml` point here). As of 4.1.0 the project sits at 99.8% line and 97.2% branch, and the weakest package
 by line coverage is `script` at 98.5%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
@@ -244,7 +247,7 @@ by line coverage is `script` at 98.5%.
 - **Why no per-package branch floor:** `response` has only four branches, two of them compiler-generated and
   unreachable, so it sits at 50%.
 - Raise any floor only after lifting the weakest packages, or the next unrelated PR goes red.
-- Packages span modules (`com.pambrose.common.dsl` lives in six), so the per-package rule is not a
+- Packages span modules (`com.pambrose.common.dsl` lives in seven), so the per-package rule is not a
   per-module guarantee.
 
 `koverVerify` runs as part of `check`, so `./gradlew build` and CI enforce the floors. `make build` passes
@@ -275,3 +278,9 @@ All modules use: `com.pambrose.common.*`
 
 - Project version and group live in `gradle.properties`; override the version at publish time with
   `-PoverrideVersion=...` (used by the Makefile snapshot/publish targets).
+- Versioning policy (the practice since 4.0.0): a minor release stays binary compatible, but may carry
+  source-breaking changes, such as a return type becoming nullable or a narrower exception type, each listed
+  under "Changed" in the CHANGELOG. A signature is not removed or changed in the ABI dump without a major
+  release: keep the old one as a `@Deprecated(level = DeprecationLevel.HIDDEN)` overload, as
+  `GrpcDsl.server` and `SamplerGaugeCollector` do. A declaration that could never be called successfully
+  (for example one that always threw) may be dropped in a minor release, with a CHANGELOG note.

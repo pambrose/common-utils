@@ -127,8 +127,8 @@ servlet block:
 import com.pambrose.common.service.GenericKtorService
 import com.pambrose.common.service.HttpServletGroup
 import io.ktor.server.application.Application
-import io.ktor.server.plugins.compression.Compression
 import io.ktor.server.application.install
+import io.ktor.server.plugins.compression.Compression // add io.ktor:ktor-server-compression yourself
 
 class MyKtorService(configVals: MyConfig) :
   GenericKtorService<MyConfig>(
@@ -148,6 +148,10 @@ class MyKtorService(configVals: MyConfig) :
   }
 }
 ```
+
+service-utils uses Ktor's compression and call-logging plugins only as runtime `implementation` dependencies, so
+they are not on your compile classpath. To install `Compression` as above, depend on
+`io.ktor:ktor-server-compression` yourself.
 
 ### Health Checks and Metrics
 

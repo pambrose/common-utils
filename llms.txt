@@ -28,9 +28,9 @@ Use core-utils for general Kotlin/Java utility needs. Other modules target speci
 - [ktor-client-utils](ktor-client-utils/README.md): Ktor HTTP client DSL (multiplatform; `blockingGet` is JVM-only). Use for client configuration and request/response utilities. Declares no HTTP engine: js/wasmJs fall back to ktor-client-core's Js engine, but JVM and Native consumers must add one (CIO, Darwin, Curl, WinHttp) before the DSL creates a client. Depends on: core-utils.
 - [jetty-utils](jetty-utils/README.md): Jetty 12 (EE11) server DSL. Use for server config, lambda-based servlets (Jakarta Servlet 6.1), version endpoints. Depends on: core-utils.
 - [grpc-utils](grpc-utils/README.md): gRPC channel/server DSL. Use for TLS/SSL setup, server lifecycle, StreamObserver helpers. Ships the netty-tcnative BoringSSL native jars for Linux, macOS and Windows, so TLS uses OpenSSL there and the JDK provider elsewhere. Depends on: core-utils.
-- [dropwizard-utils](dropwizard-utils/README.md): Dropwizard Metrics DSL. Use for metric definitions and health checks. Depends on: core-utils.
+- [dropwizard-utils](dropwizard-utils/README.md): Dropwizard health-check DSL and ready-made backlog/map-size health checks. Depends on: core-utils.
 - [prometheus-utils](prometheus-utils/README.md): Prometheus metrics DSL. Use for counters/gauges/histograms, system metrics, instrumented thread factories. Depends on: core-utils.
-- [zipkin-utils](zipkin-utils/README.md): Zipkin tracing DSL. Use for distributed tracing configuration and span management. Depends on: core-utils.
+- [zipkin-utils](zipkin-utils/README.md): DSL for building a Brave `Tracing` that reports to Zipkin. Use for distributed tracing configuration. Depends on: core-utils.
 - [script-utils-kotlin](script-utils-kotlin/README.md): Kotlin scripting engine. Use for Kotlin script execution, expression evaluation, and script pooling. Depends on: script-utils-common.
 - [script-utils-java](script-utils-java/README.md): Java scripting engine. Use for compiling and evaluating Java source, with script pooling. Depends on: script-utils-common.
 - [script-utils-python](script-utils-python/README.md): Jython engine. Use for Python 2.7 script execution and expression evaluation, with script pooling. Depends on: script-utils-common.

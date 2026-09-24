@@ -122,8 +122,7 @@ Prometheus metrics integration.
 
 Zipkin distributed tracing utilities.
 
-- Tracing configuration DSL
-- Span management utilities
+- DSL for building a Brave `Tracing` that reports to Zipkin
 
 ### Persistence & Caching
 
@@ -307,10 +306,13 @@ This project maintains high code quality standards:
 ### Adding New Modules
 
 1. Create module directory with `build.gradle.kts`
-2. Add module to `settings.gradle.kts`
-3. Create module-specific `README.md`
+2. Add module to `settings.gradle.kts`, and to `kmpModuleNames` in the root `build.gradle.kts` if it is
+   multiplatform
+3. Create module-specific `README.md`, and list the module in this README and in `llms.txt`
 4. Follow existing package structure: `com.pambrose.common.*`
 5. Add comprehensive tests using Kotest
+6. Generate its ABI dump with `make abi-update` and commit `<module>/api/`; without it `checkKotlinAbi` fails
+7. Add a component for it to `component_management` in `codecov.yml`
 
 ## Contributing
 

@@ -3,7 +3,7 @@
 
 Rows are packages by default, or modules with --by-module. Each row shows the line and branch
 coverage that the koverVerify floors are expressed in, sorted weakest branch coverage first.
-Packages span modules (com.pambrose.common.dsl lives in six), so --by-module maps every source
+Packages span modules (com.pambrose.common.dsl lives in seven), so --by-module maps every source
 file in the report back to the module whose main source set contains it.
 """
 
