@@ -300,7 +300,9 @@ class IOExtensionsTests : StringSpec() {
     if (depth == 0) arrayListOf() else arrayListOf(nestedLists(depth - 1))
 
   // ISO-8859-1 maps every byte to one char and back, so the rest of the stream is untouched.
-  // The classic nested-HashSet denial-of-service graph: two sets per level, each containing both of the next.
+  // The classic nested-HashSet denial-of-service graph: two sets per level, each containing both of the next. The
+  // walk needs reassignable references to mutable sets.
+  @Suppress("DoubleMutabilityForCollection")
   private fun hashSetBomb(depth: Int): HashSet<Any> {
     val root = HashSet<Any>()
     var s1: HashSet<Any> = root
