@@ -161,15 +161,23 @@ class GenericServicesTests : StringSpec() {
       verify(exactly = 1) { logger.info(any<() -> Any?>()) }
     }
 
-    "startSync and stopSync declare TimeoutException for Java callers" {
+    // The Kotlin Duration overloads compile under mangled names (startSync-LRDsOJo), which Java cannot call, so the
+    // java.time.Duration overloads are what Java callers use; they must declare the checked TimeoutException.
+    "Java callers get startSync and stopSync overloads that declare TimeoutException" {
       [GenericIdleService::class.java, GenericExecutionThreadService::class.java].forEach { type ->
-        val methods =
-          type.declaredMethods.filter {
-            !it.isSynthetic && (it.name.startsWith("startSync") || it.name.startsWith("stopSync"))
-          }
-        methods.size shouldBe 2
-        methods.forEach { it.exceptionTypes.toList() shouldContain TimeoutException::class.java }
+        listOf("startSync", "stopSync").forEach { name ->
+          type.getDeclaredMethod(name, java.time.Duration::class.java).exceptionTypes.toList() shouldContain
+            TimeoutException::class.java
+        }
       }
+    }
+
+    "the java.time.Duration overloads start and stop a service" {
+      val service = BlockingService()
+      service.startSync(java.time.Duration.ofSeconds(HANG_GUARD_SECONDS))
+      service.isRunning shouldBe true
+      service.stopSync(java.time.Duration.ofSeconds(HANG_GUARD_SECONDS))
+      service.state() shouldBe Service.State.TERMINATED
     }
 
     "startSync throws TimeoutException when the service does not start in time" {

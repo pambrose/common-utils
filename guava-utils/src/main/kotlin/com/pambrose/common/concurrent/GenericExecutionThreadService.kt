@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
+import kotlin.time.toKotlinDuration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -53,4 +54,25 @@ abstract class GenericExecutionThreadService : AbstractExecutionThreadService() 
     stopAsync()
     awaitTerminated(timeout.inWholeNanoseconds, NANOSECONDS)
   }
+
+  /**
+   * Starts the service and blocks until it is running, for Java callers: the overload taking a Kotlin [Duration] is
+   * compiled under a mangled name that Java cannot call.
+   *
+   * @param timeout the maximum duration to wait for the service to start.
+   * @throws TimeoutException if the service is not running within [timeout].
+   * @throws IllegalStateException if the service fails, or reaches a state from which it cannot start.
+   */
+  @Throws(TimeoutException::class)
+  fun startSync(timeout: java.time.Duration) = startSync(timeout.toKotlinDuration())
+
+  /**
+   * Stops the service and blocks until it has terminated, for Java callers; see the `java.time.Duration` [startSync].
+   *
+   * @param timeout the maximum duration to wait for the service to stop.
+   * @throws TimeoutException if the service has not terminated within [timeout].
+   * @throws IllegalStateException if the service fails.
+   */
+  @Throws(TimeoutException::class)
+  fun stopSync(timeout: java.time.Duration) = stopSync(timeout.toKotlinDuration())
 }

@@ -18,6 +18,7 @@
 package com.pambrose.common.concurrent
 
 import com.google.common.util.concurrent.Monitor
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import kotlin.time.Duration
 import kotlin.time.TimeSource.Monotonic
@@ -29,6 +30,8 @@ import kotlin.time.TimeSource.Monotonic
  * Return `true` to continue waiting, or `false` to abort.
  */
 typealias MonitorAction = () -> Boolean
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Abstract base class providing thread-blocking wait methods backed by a Guava [Monitor].
@@ -42,8 +45,10 @@ typealias MonitorAction = () -> Boolean
  * outside the monitor can leave waiting threads blocked.
  *
  * The retrying waits make attempts of `timeout`, which must be at least 1 ms, and no attempt waits past `maxWait`.
- * For `maxWait`, [Duration.INFINITE] waits without limit, [Duration.ZERO] checks the condition once, and a negative
- * value also waits without limit.
+ * For `maxWait`, [Duration.INFINITE] waits without limit and [Duration.ZERO] checks the condition once. A negative
+ * value also waits without limit, but that is deprecated and logs a warning: a computed `deadline - now` that has
+ * passed would otherwise block forever. Pass [Duration.INFINITE] for no limit; a later release will treat a negative
+ * `maxWait` like [Duration.ZERO], as a negative `waitTime` already is.
  */
 abstract class GenericMonitor {
   protected val monitor = Monitor()
@@ -266,6 +271,10 @@ abstract class GenericMonitor {
     attempt: (Duration) -> Boolean,
   ): Boolean {
     requireRetryInterval(timeout)
+    if (maxWait.isNegative())
+      logger.warn {
+        "A negative maxWait ($maxWait) waits without limit, which is deprecated; pass Duration.INFINITE for no limit"
+      }
     val limit = if (maxWait.isNegative()) Duration.INFINITE else maxWait
     val start = Monotonic.markNow()
     while (true) {
