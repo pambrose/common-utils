@@ -68,30 +68,30 @@
 - [ ] **RV-015** `LOW` · docs — README says the `get` member extension can't be imported ([details](#rv-015))
 
 ### json-utils
-- [ ] **RV-016** `MEDIUM` · bug — `reformatJson`/`toJsonElement` accept invalid JSON and silently rewrite bare tokens ([details](#rv-016))
-- [ ] **RV-017** `LOW` · API — `String.toJsonElement()` shadows the generic `T.toJsonElement()` (the CR-026 trap); misplaced KDoc ([details](#rv-017))
-- [ ] **RV-018** `LOW` · bug — `intValue`/`intValueOrNull` accept `007`, `+5` and non-ASCII digits that `isNumber` rejects ([details](#rv-018))
-- [ ] **RV-019** `LOW` · security — Missing-key errors serialize the whole document and put payload text in the message ([details](#rv-019))
-- [ ] **RV-020** `LOW` · API — No `Long` accessor ([details](#rv-020))
-- [ ] **RV-021** `LOW` · docs — `toFormattedString(indent)` throws for non-whitespace indents without documenting it, and builds a new `Json` per call ([details](#rv-021))
-- [ ] **RV-022** `LOW` · tests — `isEmpty`/`size` tests call kotlinx members, not the library's extensions ([details](#rv-022))
+- [x] **RV-016** `MEDIUM` · bug — `reformatJson`/`toJsonElement` accept invalid JSON and silently rewrite bare tokens ([details](#rv-016)) — fixed in 38785ba
+- [x] **RV-017** `LOW` · API — `String.toJsonElement()` shadows the generic `T.toJsonElement()` (the CR-026 trap); misplaced KDoc ([details](#rv-017)) — fixed in 38785ba
+- [x] **RV-018** `LOW` · bug — `intValue`/`intValueOrNull` accept `007`, `+5` and non-ASCII digits that `isNumber` rejects ([details](#rv-018)) — fixed in 38785ba
+- [x] **RV-019** `LOW` · security — Missing-key errors serialize the whole document and put payload text in the message ([details](#rv-019)) — fixed in 38785ba
+- [x] **RV-020** `LOW` · API — No `Long` accessor ([details](#rv-020)) — fixed in 38785ba
+- [x] **RV-021** `LOW` · docs — `toFormattedString(indent)` throws for non-whitespace indents without documenting it, and builds a new `Json` per call ([details](#rv-021)) — fixed in 38785ba
+- [x] **RV-022** `LOW` · tests — `isEmpty`/`size` tests call kotlinx members, not the library's extensions ([details](#rv-022)) — fixed in 38785ba
 
 ### ktor-server-utils
-- [ ] **RV-023** `MEDIUM` · bug — HEAD requests through `Route.servlet` get a body, corrupting keep-alive connections ([details](#rv-023))
-- [ ] **RV-024** `LOW` · bug — `KtorServletResponse` throws NPE on `null` arguments the Servlet spec defines ([details](#rv-024))
-- [ ] **RV-025** `LOW` · bug — The bridge throws `UnsupportedOperationException` for simple methods, so TRACE, `getLastModified` and `setContentLength` return 500 ([details](#rv-025))
-- [ ] **RV-026** `LOW` · bug — `HerokuHttpsRedirect` reorders and lower-cases the query string ([details](#rv-026))
+- [x] **RV-023** `MEDIUM` · bug — HEAD requests through `Route.servlet` get a body, corrupting keep-alive connections ([details](#rv-023)) — fixed in 086525a
+- [x] **RV-024** `LOW` · bug — `KtorServletResponse` throws NPE on `null` arguments the Servlet spec defines ([details](#rv-024)) — fixed in 086525a
+- [x] **RV-025** `LOW` · bug — The bridge throws `UnsupportedOperationException` for simple methods, so TRACE, `getLastModified` and `setContentLength` return 500 ([details](#rv-025)) — fixed in 086525a
+- [x] **RV-026** `LOW` · bug — `HerokuHttpsRedirect` reorders and lower-cases the query string ([details](#rv-026)) — fixed in 086525a
 - [ ] **RV-027** `LOW` · API — Servlet adapters export `Nothing`/`Void` members, and the body `KtorServletResponse` holds can't be read ([details](#rv-027))
 
 ### service-utils
 - [x] **RV-028** `MEDIUM` · security — A blank Ktor admin path serves that endpoint (e.g. the thread dump) at `/` instead of disabling it ([details](#rv-028)) — fixed in f24cb8c
-- [ ] **RV-029** `MEDIUM` · leak — A failed `KtorServletService` start leaks Ktor's shutdown hook and never destroys the servlets (follows CR-046) ([details](#rv-029))
+- [x] **RV-029** `MEDIUM` · leak — A failed `KtorServletService` start leaks Ktor's shutdown hook and never destroys the servlets (follows CR-046) ([details](#rv-029)) — fixed in 44a3287
 - [x] **RV-030** `LOW` · bug — `"ping"` and `"/ping"` collide: Jetty fails to start, Ktor ignores the override ([details](#rv-030)) — fixed in f24cb8c
 - [x] **RV-031** `LOW` · security — The Jetty admin and metrics servers disclose the Jetty version ([details](#rv-031)) — fixed in f24cb8c
-- [ ] **RV-032** `LOW` · bug — `initMetricsAndHealthChecks()` has no double-init guard (follows CR-051) ([details](#rv-032))
+- [x] **RV-032** `LOW` · bug — `initMetricsAndHealthChecks()` has no double-init guard (follows CR-051) ([details](#rv-032)) — fixed in 44a3287
 - [ ] **RV-033** `LOW` · API — Lifecycle-critical service properties have public setters ([details](#rv-033))
 - [ ] **RV-034** `LOW` · docs — README example imports `Compression`, which consumers don't get; call-logging and compression ship unused ([details](#rv-034))
-- [ ] **RV-035** `LOW` · tests — Self-referential and duplicated config specs ([details](#rv-035))
+- [x] **RV-035** `LOW` · tests — Self-referential and duplicated config specs ([details](#rv-035)) — fixed in 44a3287
 
 ### prometheus-utils
 - [ ] **RV-036** `LOW` · API — A labelled `SamplerGaugeCollector` can expose only one series, and one Java constructor always throws ([details](#rv-036))
@@ -106,7 +106,7 @@
 - [ ] **RV-043** `LOW` · API — `JettyDsl.server(port)` can't set a bind address ([details](#rv-043))
 
 ### guava-utils
-- [ ] **RV-044** `MEDIUM` · concurrency — `GenericValueWaiter` waits forever on a zero or negative timeout under an immediate dispatcher ([details](#rv-044))
+- [x] **RV-044** `MEDIUM` · concurrency — `GenericValueWaiter` waits forever on a zero or negative timeout under an immediate dispatcher ([details](#rv-044)) — fixed in 893bcb1
 - [ ] **RV-045** `LOW` · API — A negative `maxWait` means "forever", but a negative `waitTime` means "check once" ([details](#rv-045))
 - [ ] **RV-046** `LOW` · API — `@Throws` on the `Duration` overloads is invisible to Java (follows CR-069) ([details](#rv-046))
 - [ ] **RV-047** `LOW` · docs — The README's "Choosing a Waiting Primitive" table is stale ([details](#rv-047))
@@ -136,19 +136,19 @@
 - [ ] **RV-065** `LOW` · API — The process-wide client can't be reopened after the `close()` the README recommends *(PLAUSIBLE)* ([details](#rv-065))
 
 ### redis-utils
-- [ ] **RV-066** `MEDIUM` · concurrency — The `suspend` helpers do blocking Jedis I/O on the caller's dispatcher ([details](#rv-066))
-- [ ] **RV-067** `LOW` · bug — Pool idle ordering is still not validated (follows CR-112) ([details](#rv-067))
-- [ ] **RV-068** `LOW` · API — `scanKeys` on `UnifiedJedis` fails on cluster clients ([details](#rv-068))
-- [ ] **RV-069** `LOW` · diagnostics — Failures are logged without their cause, and underscore hosts are reported as "no host" ([details](#rv-069))
+- [x] **RV-066** `MEDIUM` · concurrency — The `suspend` helpers do blocking Jedis I/O on the caller's dispatcher ([details](#rv-066)) — fixed in 8311321
+- [x] **RV-067** `LOW` · bug — Pool idle ordering is still not validated (follows CR-112) ([details](#rv-067)) — fixed in 8311321
+- [x] **RV-068** `LOW` · API — `scanKeys` on `UnifiedJedis` fails on cluster clients ([details](#rv-068)) — fixed in 8311321
+- [x] **RV-069** `LOW` · diagnostics — Failures are logged without their cause, and underscore hosts are reported as "no host" ([details](#rv-069)) — fixed in 8311321
 
 ### exposed-utils
-- [ ] **RV-070** `MEDIUM` · bug — `upsert(conflictIndex)` always throws on MySQL/MariaDB; README says it works everywhere ([details](#rv-070))
-- [ ] **RV-071** `MEDIUM` · bug — Functional and partial unique indexes pass validation; a functional index silently upserts on a different key (follows TC-069) ([details](#rv-071))
-- [ ] **RV-072** `LOW` · docs — `readonlyTx` and `timed*` don't enforce read-only or isolation when nested ([details](#rv-072))
-- [ ] **RV-073** `LOW` · security — `KotlinSqlLogger` logs bound parameter values at INFO ([details](#rv-073))
+- [x] **RV-070** `MEDIUM` · bug — `upsert(conflictIndex)` always throws on MySQL/MariaDB; README says it works everywhere ([details](#rv-070)) — fixed in 919d410
+- [x] **RV-071** `MEDIUM` · bug — Functional and partial unique indexes pass validation; a functional index silently upserts on a different key (follows TC-069) ([details](#rv-071)) — fixed in 919d410
+- [x] **RV-072** `LOW` · docs — `readonlyTx` and `timed*` don't enforce read-only or isolation when nested ([details](#rv-072)) — fixed in 919d410
+- [x] **RV-073** `LOW` · security — `KotlinSqlLogger` logs bound parameter values at INFO ([details](#rv-073)) — fixed in 919d410
 
 ### grpc-utils
-- [ ] **RV-074** `MEDIUM` · bug — The default channel now disables all retry, including transparent retry (regression from CR-116) ([details](#rv-074))
+- [x] **RV-074** `MEDIUM` · bug — The default channel now disables all retry, including transparent retry (regression from CR-116) ([details](#rv-074)) — fixed in 9680445
 - [ ] **RV-075** `LOW` · API — `GrpcDsl.server` can't bind an address, and its defaults can never work ([details](#rv-075))
 - [ ] **RV-076** `LOW` · build — Unused grpc-protobuf and grpc-services are shipped to every consumer ([details](#rv-076))
 - [ ] **RV-077** `LOW` · docs — README/KDoc drift: `tlsContext` "required", `shutdown()` "throws", client mutual auth ([details](#rv-077))

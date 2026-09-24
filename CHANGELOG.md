@@ -12,9 +12,46 @@ All notable changes to Common Utils are documented in this file.
   kept serving the first.
 - service-utils' Jetty admin and metrics servers no longer send a `Server: Jetty(…)` header or a version on error
   pages, and their error pages no longer include stack traces.
+- grpc-utils `GrpcDsl.channel` defaults `enableRetry` to `true`, grpc-java's own default. 4.1.0 made the default
+  `false` call `disableRetry()`, which also turned off transparent retries (for example on a refused stream during a
+  server restart) on every channel that never mentioned retry.
+- json-utils `String.toJsonElement(verbose)` is renamed `parseJson`; the old name is deprecated. It shadowed the
+  generic `T.toJsonElement()`, so `"42"` parsed to a number on a `String` but serialized to a string in generic code.
+- json-utils `parseJson`, and so `reformatJson`, rejects unquoted tokens that are not JSON literals (`hello`, `007`,
+  `+3`, `0x10`) with `SerializationException`. kotlinx's tree parser accepted them, and they were re-encoded
+  differently on each platform.
+- json-utils `intValue` and `intValueOrNull` accept only JSON integers, as `isNumber` and `doubleValue` already did:
+  `007`, `+5` and non-ASCII digits are rejected.
+- json-utils: a missing-key error names the key and the keys present instead of quoting the document.
+- exposed-utils `upsert(conflictIndex)` throws `IllegalArgumentException` for a functional or partial index, and
+  `UnsupportedByDialectException` on MySQL and MariaDB, whose `ON DUPLICATE KEY UPDATE` cannot target one index.
+- exposed-utils `KotlinSqlLogger` logs at debug level, like Exposed's own SQL logger, since each statement carries its
+  bound values.
+- ktor-server-utils `KtorServletResponse` implements the date and int header setters, `flushBuffer`, `resetBuffer` and
+  `reset`, ignores `setContentLength`, and accepts the `null` arguments the servlet spec defines. Their
+  `Void`-returning variants, which always threw, are gone from the ABI.
+- redis-utils `newRedisClient` accepts -1 (unlimited) for `maxIdleSize`, and warns when `minIdleSize` exceeds it.
+
+### Added
+
+- json-utils `longValue`, `longValue(vararg keys)` and `longValueOrNull(vararg keys)`.
+- ktor-server-utils `KtorServletRequest` implements `getCookies`, `getDateHeader`, `getIntHeader`, `getRequestURL`,
+  `isSecure`, `getCharacterEncoding`, `getContentLength`, `getDispatcherType` and `getServletContext`.
 
 ### Bug fixes
 
+- ktor-server-utils `Route.servlet` answers HEAD with GET's headers and no body. Ktor sent the body, so a pipelined
+  response after a HEAD was read as part of it; this hit the `GenericKtorService` admin endpoints. TRACE and servlets
+  that override `getLastModified` no longer fail with a 500.
+- ktor-server-utils `HerokuHttpsRedirect` keeps the query string exactly as sent; it used to reorder and lower-case
+  the parameters, breaking signed URLs.
+- service-utils `KtorServletService` stops the embedded server when it fails to start, so a port conflict no longer
+  leaves Ktor's shutdown hook registered and the servlets undestroyed.
+- service-utils `initMetricsAndHealthChecks()` fails fast when called a second time.
+- guava-utils `GenericValueWaiter` returns at once for a zero or negative timeout. Under a dispatcher that runs work
+  inline, it used to wait until the value next changed.
+- redis-utils' suspending helpers connect, ping and close on `Dispatchers.IO` rather than blocking the caller's thread
+  for up to the 2-second timeout; connection failures are logged with their cause.
 - core-utils `toObjectSecure` bounds array lengths and object references by the size of the payload, and nesting
   at 20 levels (was 32). The old limits let a 35-byte payload allocate 80 MB, a 62-byte `ArrayList` allocate a
   10-million-slot array, and a 1.7 KB nested-`HashSet` payload take about a minute of CPU.
