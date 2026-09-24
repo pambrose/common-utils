@@ -50,7 +50,8 @@ class BooleanWaiter(
   /**
    * Suspends until the value is (or becomes) `true`, or the timeout expires.
    *
-   * @param timeoutDuration the maximum duration to wait. Defaults to [Duration.INFINITE].
+   * @param timeoutDuration the maximum duration to wait; zero or negative checks once without waiting. Defaults
+   *   to [Duration.INFINITE].
    * @return `true` if the value was `true` before the timeout, `false` if the timeout expired.
    */
   suspend fun waitUntilTrue(timeoutDuration: Duration = Duration.INFINITE): Boolean =
@@ -59,7 +60,8 @@ class BooleanWaiter(
   /**
    * Suspends until the value is (or becomes) `false`, or the timeout expires.
    *
-   * @param timeoutDuration the maximum duration to wait. Defaults to [Duration.INFINITE].
+   * @param timeoutDuration the maximum duration to wait; zero or negative checks once without waiting. Defaults
+   *   to [Duration.INFINITE].
    * @return `true` if the value was `false` before the timeout, `false` if the timeout expired.
    */
   suspend fun waitUntilFalse(timeoutDuration: Duration = Duration.INFINITE): Boolean =
@@ -107,7 +109,8 @@ abstract class GenericValueWaiter<T>(
    * should read only the monitored value, not block or suspend.
    *
    * @param predicate the condition this caller is waiting for.
-   * @param timeoutDuration the maximum duration to wait; a non-finite duration waits indefinitely.
+   * @param timeoutDuration the maximum duration to wait; a non-finite duration waits indefinitely, and a zero or
+   *   negative one checks [predicate] once without waiting.
    * @return `true` if the predicate was satisfied, `false` if the timeout expired.
    */
   protected suspend fun waitForCondition(
@@ -118,30 +121,37 @@ abstract class GenericValueWaiter<T>(
       suspendCancellableCoroutine { continuation ->
         val waiter = Waiter(predicate, continuation)
 
-        val alreadySatisfied =
+        // true or false settles the call at once; null means the waiter was registered and waits.
+        val immediate =
           lock.withLock {
-            if (predicate()) {
-              true
-            } else {
-              // Arm the timeout and register the waiter under the same lock. checkCondition removes the
-              // waiter under this lock too, so it is guaranteed to observe a non-null timeoutJob and
-              // cancel it; otherwise a satisfied waiter could stall until the full timeout elapsed,
-              // because the structured coroutineScope cannot return while the orphaned delay is running.
-              if (timeoutDuration.isFinite()) {
-                waiter.timeoutJob =
-                  launch {
-                    delay(timeoutDuration)
-                    if (lock.withLock { waiters.remove(waiter) })
-                      continuation.resume(false)
-                  }
+            when {
+              predicate() -> true
+
+              // Nothing to wait for. Arming a timeout would not help: under a dispatcher that runs launch inline,
+              // a zero or negative delay would fire before the waiter was registered, leaving it waiting forever.
+              !timeoutDuration.isPositive() -> false
+
+              else -> {
+                // Register the waiter, then arm the timeout, under the same lock. checkCondition removes the
+                // waiter under this lock too, so it is guaranteed to observe a non-null timeoutJob and
+                // cancel it; otherwise a satisfied waiter could stall until the full timeout elapsed,
+                // because the structured coroutineScope cannot return while the orphaned delay is running.
+                waiters += waiter
+                if (timeoutDuration.isFinite()) {
+                  waiter.timeoutJob =
+                    launch {
+                      delay(timeoutDuration)
+                      if (lock.withLock { waiters.remove(waiter) })
+                        continuation.resume(false)
+                    }
+                }
+                null
               }
-              waiters += waiter
-              false
             }
           }
 
-        if (alreadySatisfied) {
-          continuation.resume(true)
+        if (immediate != null) {
+          continuation.resume(immediate)
         } else {
           continuation.invokeOnCancellation {
             lock.withLock { waiters.remove(waiter) }
