@@ -50,22 +50,22 @@
 
 ### core-utils
 - [x] **RV-001** `HIGH` · security — `toObjectSecure` filter limits still let a tiny payload exhaust memory or CPU (follows CR-001) ([details](#rv-001)) — fixed in 0a797a4
-- [ ] **RV-002** `LOW` · security — `maskUrlCredentials` masks only the first URL in a string ([details](#rv-002))
-- [ ] **RV-003** `LOW` · security — `ContentRoot.file(path)` has no containment; any path containing `://` is fetched as a URL ([details](#rv-003))
-- [ ] **RV-004** `LOW` · bug — `criticalSection` clears the flag while another section is still running ([details](#rv-004))
-- [ ] **RV-005** `LOW` · bug — `join`/`toPath`/`pathOf` can double or keep separators, contrary to their KDoc ([details](#rv-005))
-- [ ] **RV-006** `LOW` · bug — `lpad` and `Duration.format` edge cases: `(-5).lpad(0)` throws, `-INFINITE` is garbled ([details](#rv-006))
-- [ ] **RV-007** `LOW` · bug — `waitForPortAvailable` can report a busy port as free on macOS, and sleeps after the last attempt *(PLAUSIBLE)* ([details](#rv-007))
-- [ ] **RV-008** `LOW` · docs — `toUTCDateTime` is billed as an inclusive end-of-day bound but returns 23:59:00.001 ([details](#rv-008))
-- [ ] **RV-009** `LOW` · API — `UrlSource` timeouts can't be set for repo-based sources or from Java ([details](#rv-009))
-- [ ] **RV-010** `LOW` · cleanup — `SingleAssignVar` duplicates `singleSetReference` and is JVM-only ([details](#rv-010))
-- [ ] **RV-011** `LOW` · docs — core-utils README: an import that doesn't compile, a date example that mixes zones, an inconsistent `@Version` example ([details](#rv-011))
+- [x] **RV-002** `LOW` · security — `maskUrlCredentials` masks only the first URL in a string ([details](#rv-002)) — fixed in 6b09d26
+- [x] **RV-003** `LOW` · security — `ContentRoot.file(path)` has no containment; any path containing `://` is fetched as a URL ([details](#rv-003)) — fixed in 6b09d26
+- [x] **RV-004** `LOW` · bug — `criticalSection` clears the flag while another section is still running ([details](#rv-004)) — fixed in 6b09d26
+- [x] **RV-005** `LOW` · bug — `join`/`toPath`/`pathOf` can double or keep separators, contrary to their KDoc ([details](#rv-005)) — fixed in 6b09d26
+- [x] **RV-006** `LOW` · bug — `lpad` and `Duration.format` edge cases: `(-5).lpad(0)` throws, `-INFINITE` is garbled ([details](#rv-006)) — fixed in 6b09d26
+- [x] **RV-007** `LOW` · bug — `waitForPortAvailable` can report a busy port as free on macOS, and sleeps after the last attempt *(PLAUSIBLE)* ([details](#rv-007)) — fixed in 6b09d26
+- [x] **RV-008** `LOW` · docs — `toUTCDateTime` is billed as an inclusive end-of-day bound but returns 23:59:00.001 ([details](#rv-008)) — fixed in 6b09d26
+- [x] **RV-009** `LOW` · API — `UrlSource` timeouts can't be set for repo-based sources or from Java ([details](#rv-009)) — fixed in 6b09d26
+- [x] **RV-010** `LOW` · cleanup — `SingleAssignVar` duplicates `singleSetReference` and is JVM-only ([details](#rv-010)) — fixed in 6b09d26
+- [x] **RV-011** `LOW` · docs — core-utils README: an import that doesn't compile, a date example that mixes zones, an inconsistent `@Version` example ([details](#rv-011)) — fixed in 6b09d26
 - [ ] **RV-012** `LOW` · build — core-utils exports JVM-only dependencies from `commonMain`; unused serialization plugin ([details](#rv-012))
-- [ ] **RV-013** `LOW` · tests — `ReadResourcesTests` picks a port with `ServerSocket(0)` and can stall for ~3 minutes ([details](#rv-013))
+- [x] **RV-013** `LOW` · tests — `ReadResourcesTests` picks a port with `ServerSocket(0)` and can stall for ~3 minutes ([details](#rv-013)) — fixed in 6b09d26
 
 ### ktor-client-utils
-- [ ] **RV-014** `LOW` · API — `blockingGet(url, setUp) { … }` no longer compiles, and the CHANGELOG doesn't say so (follows CR-037) ([details](#rv-014))
-- [ ] **RV-015** `LOW` · docs — README says the `get` member extension can't be imported ([details](#rv-015))
+- [x] **RV-014** `LOW` · API — `blockingGet(url, setUp) { … }` no longer compiles, and the CHANGELOG doesn't say so (follows CR-037) ([details](#rv-014)) — fixed in 6b09d26
+- [x] **RV-015** `LOW` · docs — README says the `get` member extension can't be imported ([details](#rv-015)) — fixed in 6b09d26
 
 ### json-utils
 - [x] **RV-016** `MEDIUM` · bug — `reformatJson`/`toJsonElement` accept invalid JSON and silently rewrite bare tokens ([details](#rv-016)) — fixed in 38785ba
@@ -90,26 +90,26 @@
 - [x] **RV-031** `LOW` · security — The Jetty admin and metrics servers disclose the Jetty version ([details](#rv-031)) — fixed in f24cb8c
 - [x] **RV-032** `LOW` · bug — `initMetricsAndHealthChecks()` has no double-init guard (follows CR-051) ([details](#rv-032)) — fixed in 44a3287
 - [ ] **RV-033** `LOW` · API — Lifecycle-critical service properties have public setters ([details](#rv-033))
-- [ ] **RV-034** `LOW` · docs — README example imports `Compression`, which consumers don't get; call-logging and compression ship unused ([details](#rv-034))
+- [ ] **RV-034** `LOW` · docs — README example imports `Compression`, which consumers don't get; call-logging and compression ship unused ([details](#rv-034)) — README fixed in 9f225de; dropping the bundle entries is Phase 5
 - [x] **RV-035** `LOW` · tests — Self-referential and duplicated config specs ([details](#rv-035)) — fixed in 44a3287
 
 ### prometheus-utils
-- [ ] **RV-036** `LOW` · API — A labelled `SamplerGaugeCollector` can expose only one series, and one Java constructor always throws ([details](#rv-036))
-- [ ] **RV-037** `LOW` · bug — `SamplerGaugeCollector` never validates metric or label names ([details](#rv-037))
-- [ ] **RV-038** `LOW` · docs — `SystemMetrics`'s "duplicates are skipped" is false for a `CollectorRegistry()` ([details](#rv-038))
-- [ ] **RV-039** `LOW` · docs — `InstrumentedThreadFactory` docs give the wrong series names ([details](#rv-039))
-- [ ] **RV-040** `LOW` · tests — Tests leak ~20 collectors, one of them a throwing sampler, into the default registry ([details](#rv-040))
+- [x] **RV-036** `LOW` · API — A labelled `SamplerGaugeCollector` can expose only one series, and one Java constructor always throws ([details](#rv-036)) — fixed in 48c5575
+- [x] **RV-037** `LOW` · bug — `SamplerGaugeCollector` never validates metric or label names ([details](#rv-037)) — fixed in 48c5575
+- [x] **RV-038** `LOW` · docs — `SystemMetrics`'s "duplicates are skipped" is false for a `CollectorRegistry()` ([details](#rv-038)) — fixed in 48c5575
+- [x] **RV-039** `LOW` · docs — `InstrumentedThreadFactory` docs give the wrong series names ([details](#rv-039)) — fixed in 48c5575
+- [x] **RV-040** `LOW` · tests — Tests leak ~20 collectors, one of them a throwing sampler, into the default registry ([details](#rv-040)) — fixed in 48c5575
 
 ### jetty-utils
-- [ ] **RV-041** `LOW` · docs — README says non-GET methods return 405, but HEAD runs the lambda and OPTIONS/TRACE return 200 ([details](#rv-041))
-- [ ] **RV-042** `LOW` · bug — `LambdaServlet` appends a platform line separator, which the tests `.trim()` away ([details](#rv-042))
-- [ ] **RV-043** `LOW` · API — `JettyDsl.server(port)` can't set a bind address ([details](#rv-043))
+- [x] **RV-041** `LOW` · docs — README says non-GET methods return 405, but HEAD runs the lambda and OPTIONS/TRACE return 200 ([details](#rv-041)) — fixed in 48c5575
+- [x] **RV-042** `LOW` · bug — `LambdaServlet` appends a platform line separator, which the tests `.trim()` away ([details](#rv-042)) — fixed in 48c5575
+- [x] **RV-043** `LOW` · API — `JettyDsl.server(port)` can't set a bind address ([details](#rv-043)) — fixed in 48c5575
 
 ### guava-utils
 - [x] **RV-044** `MEDIUM` · concurrency — `GenericValueWaiter` waits forever on a zero or negative timeout under an immediate dispatcher ([details](#rv-044)) — fixed in 893bcb1
-- [ ] **RV-045** `LOW` · API — A negative `maxWait` means "forever", but a negative `waitTime` means "check once" ([details](#rv-045))
-- [ ] **RV-046** `LOW` · API — `@Throws` on the `Duration` overloads is invisible to Java (follows CR-069) ([details](#rv-046))
-- [ ] **RV-047** `LOW` · docs — The README's "Choosing a Waiting Primitive" table is stale ([details](#rv-047))
+- [x] **RV-045** `LOW` · API — A negative `maxWait` means "forever", but a negative `waitTime` means "check once" ([details](#rv-045)) — fixed in 034678e
+- [x] **RV-046** `LOW` · API — `@Throws` on the `Duration` overloads is invisible to Java (follows CR-069) ([details](#rv-046)) — fixed in 034678e
+- [x] **RV-047** `LOW` · docs — The README's "Choosing a Waiting Primitive" table is stale ([details](#rv-047)) — fixed in 034678e
 
 ### script-utils (common / java / kotlin / python)
 - [x] **RV-048** `HIGH` · bug — `KotlinScript`'s per-variable `_tmp` bindings break evals (lambdas, name collisions) and very likely cause the Kotlin 2.4.20 hold ([details](#rv-048)) — fixed in 91f8fc0
@@ -129,11 +129,11 @@
 - [x] **RV-060** `MEDIUM` · security — `isValidEmail` throws `StackOverflowError` on a ~4 KB input, and has no length cap ([details](#rv-060)) — fixed in c39565e
 - [x] **RV-061** `MEDIUM` · leak — `ResendService.sendEmail` builds a new OkHttp client for every email ([details](#rv-061)) — fixed in c39565e
 - [x] **RV-062** `LOW` · docs — Network failures surface as `RuntimeException`, not the documented `ResendException` ([details](#rv-062)) — fixed in c39565e
-- [ ] **RV-063** `LOW` · bug — `ResendWebhookMsg.decode` likely fails on non-email events *(PLAUSIBLE)* ([details](#rv-063))
+- [x] **RV-063** `LOW` · bug — `ResendWebhookMsg.decode` likely fails on non-email events *(PLAUSIBLE)* ([details](#rv-063)) — documented as email.*-only in 1cb8147 (Resend unreachable, so the model is unchanged)
 - [x] **RV-064** `LOW` · docs — A README snippet needs `-Xcollection-literals`, and an example logs the IP address ([details](#rv-064)) — fixed in c39565e
 
 ### recaptcha-utils
-- [ ] **RV-065** `LOW` · API — The process-wide client can't be reopened after the `close()` the README recommends *(PLAUSIBLE)* ([details](#rv-065))
+- [x] **RV-065** `LOW` · API — The process-wide client can't be reopened after the `close()` the README recommends *(PLAUSIBLE)* ([details](#rv-065)) — fixed in 1cb8147
 
 ### redis-utils
 - [x] **RV-066** `MEDIUM` · concurrency — The `suspend` helpers do blocking Jedis I/O on the caller's dispatcher ([details](#rv-066)) — fixed in 8311321
@@ -149,33 +149,33 @@
 
 ### grpc-utils
 - [x] **RV-074** `MEDIUM` · bug — The default channel now disables all retry, including transparent retry (regression from CR-116) ([details](#rv-074)) — fixed in 9680445
-- [ ] **RV-075** `LOW` · API — `GrpcDsl.server` can't bind an address, and its defaults can never work ([details](#rv-075))
+- [x] **RV-075** `LOW` · API — `GrpcDsl.server` can't bind an address, and its defaults can never work ([details](#rv-075)) — fixed in 1cb8147
 - [ ] **RV-076** `LOW` · build — Unused grpc-protobuf and grpc-services are shipped to every consumer ([details](#rv-076))
-- [ ] **RV-077** `LOW` · docs — README/KDoc drift: `tlsContext` "required", `shutdown()` "throws", client mutual auth ([details](#rv-077))
+- [x] **RV-077** `LOW` · docs — README/KDoc drift: `tlsContext` "required", `shutdown()` "throws", client mutual auth ([details](#rv-077)) — fixed in 1cb8147
 
 ### Cross-module API surface
 - [ ] **RV-078** `LOW` · API — Public types and empty companions that should be internal or private ([details](#rv-078))
 
 ### Build & publishing
 - [ ] **RV-079** `LOW` · build — Five modules export core-utils as `api` but use little or none of it ([details](#rv-079))
-- [ ] **RV-080** `LOW` · publishing — ktor-server-utils' `compileOnlyApi` servlet API is published at Maven `compile` scope ([details](#rv-080))
+- [x] **RV-080** `LOW` · publishing — ktor-server-utils' `compileOnlyApi` servlet API is published at Maven `compile` scope ([details](#rv-080)) — fixed in 96aa00d
 - [x] **RV-081** `LOW` · deps — Dependabot's held Kotlin group also takes `kotlin-reflect`, so CR-126 can recur ([details](#rv-081)) — fixed in 31d5a7a (kotlin-reflect rides the unified `kotlin` version again)
-- [ ] **RV-082** `LOW` · build — `make coverage-clean` doesn't clear the KMP `jvmTest` results (follows CR-129) *(PLAUSIBLE)* ([details](#rv-082))
-- [ ] **RV-083** `LOW` · build — The disabled watchOS/tvOS test tasks still link their test binaries *(PLAUSIBLE)* ([details](#rv-083))
+- [x] **RV-082** `LOW` · build — `make coverage-clean` doesn't clear the KMP `jvmTest` results (follows CR-129) *(PLAUSIBLE)* ([details](#rv-082)) — fixed in 96aa00d
+- [x] **RV-083** `LOW` · build — The disabled watchOS/tvOS test tasks still link their test binaries *(PLAUSIBLE)* ([details](#rv-083)) — fixed in 96aa00d
 - [ ] **RV-084** `LOW` · publishing — No BOM for 19 co-versioned artifacts ([details](#rv-084))
-- [ ] **RV-085** `LOW` · cleanup — Detekt's `VariableNaming` excludes miss `*Tests.kt` ([details](#rv-085))
+- [x] **RV-085** `LOW` · cleanup — Detekt's `VariableNaming` excludes miss `*Tests.kt` ([details](#rv-085)) — fixed in 96aa00d
 
 ### CI & supply chain
 - [x] **RV-086** `MEDIUM` · security — The wrapper scripts are marked `binary`, which hides their diffs, and the distribution has no checksum ([details](#rv-086)) — fixed in a700d43
-- [ ] **RV-087** `LOW` · ci — The Linux job has no Kotlin/Native cache, and the native caches have no restore keys ([details](#rv-087))
-- [ ] **RV-088** `LOW` · ci — CI never exercises publishing ([details](#rv-088))
+- [x] **RV-087** `LOW` · ci — The Linux job has no Kotlin/Native cache, and the native caches have no restore keys ([details](#rv-087)) — fixed in 96aa00d
+- [x] **RV-088** `LOW` · ci — CI never exercises publishing ([details](#rv-088)) — fixed in 96aa00d
 - [x] **RV-089** `LOW` · security — Actions are still pinned by mutable tags, and no job has a timeout (follows CR-135) ([details](#rv-089)) — fixed in a700d43
 
 ### Project documentation
-- [ ] **RV-090** `LOW` · docs — llms.txt and the README overstate dropwizard-utils and zipkin-utils (follows CR-136) ([details](#rv-090))
-- [ ] **RV-091** `LOW` · docs — The build script, codecov.yml and CLAUDE.md give different coverage figures ([details](#rv-091))
-- [ ] **RV-092** `LOW` · docs — CLAUDE.md drift (module count, `dsl` package count, compat rationale), and no versioning policy ([details](#rv-092))
-- [ ] **RV-093** `LOW` · docs — "Adding New Modules" is incomplete, and the CHANGELOG history has gaps ([details](#rv-093))
+- [x] **RV-090** `LOW` · docs — llms.txt and the README overstate dropwizard-utils and zipkin-utils (follows CR-136) ([details](#rv-090)) — fixed in 9f225de
+- [x] **RV-091** `LOW` · docs — The build script, codecov.yml and CLAUDE.md give different coverage figures ([details](#rv-091)) — fixed in 9f225de
+- [x] **RV-092** `LOW` · docs — CLAUDE.md drift (module count, `dsl` package count, compat rationale), and no versioning policy ([details](#rv-092)) — fixed in 9f225de
+- [x] **RV-093** `LOW` · docs — "Adding New Modules" is incomplete, and the CHANGELOG history has gaps ([details](#rv-093)) — fixed in 9f225de
 
 ---
 

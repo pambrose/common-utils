@@ -39,10 +39,32 @@ All notable changes to Common Utils are documented in this file.
   `reset`, ignores `setContentLength`, and accepts the `null` arguments the servlet spec defines. Their
   `Void`-returning variants, which always threw, are gone from the ABI.
 - redis-utils `newRedisClient` accepts -1 (unlimited) for `maxIdleSize`, and warns when `minIdleSize` exceeds it.
+- core-utils `Duration.format()` renders `-INFINITE` as the mirror of `INFINITE` instead of overflowing, and a
+  negative duration under a millisecond has no sign.
+- core-utils `SingleAssignVar.singleAssign` is deprecated in favour of `AtomicDelegates.singleSetReference`.
+- core-utils: a repository path counts as a full URL only when it starts with a scheme (`https://…`), not when
+  `://` appears anywhere in it.
+- guava-utils `GenericMonitor` logs a deprecation warning for a negative `maxWait`, which will stop meaning
+  "wait forever" in a future major release.
+- prometheus-utils `SamplerGaugeCollector` rejects an invalid metric or label name and a repeated label name at
+  construction, rather than producing an exposition Prometheus rejects. The Java constructor
+  `(name, help, labelNames, data)`, which threw for any labels, is hidden from source.
+- jetty-utils `LambdaServlet` (and so `VersionServlet`) no longer appends a platform line separator to the body.
+- recaptcha-utils: a verification after `RecaptchaService.close()` builds a new HTTP client instead of failing,
+  so Ktor auto-reload and successive `testApplication`s keep verifying.
+- grpc-utils `GrpcDsl.server` and `GrpcDsl.channel` throw `IllegalArgumentException` with a clear message for the
+  Netty transport's missing host or out-of-range port, instead of failing inside Netty.
+- ktor-server-utils' POM marks `jakarta.servlet-api` optional, so Maven consumers no longer get it at runtime.
 
 ### Added
 
 - json-utils `longValue`, `longValue(vararg keys)` and `longValueOrNull(vararg keys)`.
+- core-utils repository files (`GitHubFile`, `GitLabFile`, `AbstractRepo.file`) take connect and read timeouts, and
+  `UrlSource` has a constructor taking `java.time.Duration` timeouts for Java callers.
+- guava-utils `GenericIdleService` and `GenericExecutionThreadService` have `startSync`/`stopSync` overloads taking
+  `java.time.Duration`.
+- jetty-utils `JettyDsl.server(port, host)` binds its connector to one address.
+- grpc-utils `GrpcDsl.server(bindAddress = …)` listens on one address.
 - ktor-server-utils `KtorServletRequest` implements `getCookies`, `getDateHeader`, `getIntHeader`, `getRequestURL`,
   `isSecure`, `getCharacterEncoding`, `getContentLength`, `getDispatcherType` and `getServletContext`.
 
@@ -78,12 +100,20 @@ All notable changes to Common Utils are documented in this file.
   OkHttp client on every call, so each email opened its own connection pool and TLS handshake.
 - service-utils `GenericKtorService` treats a blank admin path as disabling that endpoint, as the Jetty variant
   does. It used to normalize `""` to `"/"` first, so a blank `threadDumpPath` served the thread dump at the root.
+- core-utils `maskUrlCredentials` masks every URL in a string, not only the first.
+- core-utils `criticalSection` restores the flag's previous value, so a nested section no longer clears it early.
+- core-utils `join`, `toPath` and `pathOf` no longer double or keep separators between elements.
+- core-utils `(-5).lpad(0)` no longer throws, and `waitForPortAvailable` no longer sleeps after its last attempt.
 
 ### Build
 
 - `gradle-wrapper.properties` pins `distributionSha256Sum`, and `make upgrade-wrapper` keeps it up to date.
 - `gradlew` and `gradlew.bat` are no longer marked `binary` in `.gitattributes`, so their diffs are visible.
 - CI actions are pinned to commit SHAs, and every job has a timeout.
+- CI publishes to the local Maven repository, so a broken POM or javadoc jar shows up before release; the Linux
+  job caches the Kotlin/Native toolchain, and the native caches have restore keys.
+- The disabled watchOS/tvOS simulator test tasks no longer link their test binaries.
+- `make coverage-clean` also cleans the KMP modules' `jvmTest` results and every module's Kover data.
 
 ## [4.1.0] - 2026-09-16
 
@@ -1112,7 +1142,7 @@ All notable changes to Common Utils are documented in this file.
 - Add `.superset/` to `.gitignore`
 - Bump project version to 2.8.0
 
-## [2.7.1] - 2026-04-04
+## [2.7.1] - 2026-04-17
 
 - Consolidate Dokka docs generation in root project with GitHub Actions workflow
 - Fix missing POM description by deferring evaluation with provider
@@ -1136,6 +1166,17 @@ All notable changes to Common Utils are documented in this file.
 - Update copyright headers to 2026
 - Upgrade Gradle wrapper to 9.4.1
 - Update dependencies
+
+## [2.6.4] - 2026-04-01
+
+- Dependency updates, CHANGELOG, and README badges
+
+## [2.6.3] - 2026-03-19
+
+- Extract JitPack URLs into Makefile variables (`JITPACK_BUILD_LOG`, `JITPACK_API_URL`)
+- Update dependencies: gRPC 1.80.0, Resend 4.13.0
+- Update `CODE_REVIEW.md` dependency versions and move to `docs/`
+- Bump version references across all module READMEs and docs
 
 ## [2.6.2] - 2026-03-16
 
