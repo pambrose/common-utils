@@ -3,7 +3,14 @@ public final class com/pambrose/common/script/KotlinExprEvaluator : com/pambrose
 }
 
 public final class com/pambrose/common/script/KotlinExprEvaluatorPool : com/pambrose/common/script/AbstractExprEvaluatorPool {
+	public static final field Companion Lcom/pambrose/common/script/KotlinExprEvaluatorPool$Companion;
+	public static final field DEFAULT_RESET_EVERY I
 	public fun <init> (I)V
+	public fun <init> (II)V
+	public synthetic fun <init> (IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class com/pambrose/common/script/KotlinExprEvaluatorPool$Companion {
 }
 
 public final class com/pambrose/common/script/KotlinScript : com/pambrose/common/script/AbstractScript {

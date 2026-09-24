@@ -71,6 +71,25 @@ class AbstractEnginePoolTests : StringSpec() {
       e.suppressed.map { it.message } shouldBe ["cannot close evaluator 0", "cannot close evaluator 1"]
     }
 
+    // A fresh Kotlin REPL costs several times an evaluation, so resetting on every return made pools slower than a lone
+    // evaluator. The context is replaced on reset, so its identity shows when resets happen.
+    "an evaluator's context is reset every resetEvery returns" {
+      withTimeout(TIMEOUT) {
+        val pool = FakeEvaluatorPool(size = 1, resetEvery = 3)
+        val contexts = List(7) { pool.borrow { evaluator -> evaluator.fakeEngine.context } }
+        contexts.map { System.identityHashCode(it) }.distinct().size shouldBe 3
+        (contexts[0] === contexts[2]) shouldBe true
+        (contexts[2] === contexts[3]) shouldBe false
+        (contexts[3] === contexts[5]) shouldBe true
+        (contexts[5] === contexts[6]) shouldBe false
+      }
+    }
+
+    "resetEvery must be positive" {
+      shouldThrow<IllegalArgumentException> { FakeEvaluatorPool(size = 1, resetEvery = 0) }.message shouldBe
+        "resetEvery must be positive, but was 0"
+    }
+
     "closing a pool closes its instances and fails later borrows" {
       withTimeout(TIMEOUT) {
         val pool = FakeEvaluatorPool(size = 2)

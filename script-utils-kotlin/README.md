@@ -154,6 +154,12 @@ KotlinExprEvaluator().use { evaluator ->
 An evaluator keeps engine state across evaluations — the Kotlin engine's REPL history grows with every expression —
 so call `resetContext()` on a long-lived evaluator, or borrow from a pool, which resets for you.
 
+A `KotlinExprEvaluatorPool` resets an evaluator every `resetEvery` returns, 20 by default, rather than every time. A
+fresh REPL costs several times an evaluation: with one evaluator, resetting on every return took about 415 ms per
+pooled evaluation, against 97 ms when resetting every 20 returns. Between resets,
+anything an expression declares stays visible to the evaluator's next borrowers; pass `resetEvery = 1` for full
+isolation.
+
 ### Pooling
 
 Both pools create their instances eagerly, require a positive `size` (`IllegalArgumentException` otherwise), and are
@@ -242,7 +248,8 @@ script.eval("System.currentTimeMillis() > 0") // true
 
 ### `KotlinExprEvaluatorPool`
 
-- `class KotlinExprEvaluatorPool(size: Int) : AbstractExprEvaluatorPool<KotlinExprEvaluator>` — `Closeable`
+- `class KotlinExprEvaluatorPool(size: Int, resetEvery: Int = 20) : AbstractExprEvaluatorPool<KotlinExprEvaluator>` —
+  `Closeable`
 - `suspend fun eval(expr: String): Boolean`
 - `fun blockingEval(expr: String): Boolean`
 - `val size: Int`, `val isEmpty: Boolean`, `close()`

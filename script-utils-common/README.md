@@ -132,7 +132,8 @@ whatever the expression produced, including `null`. `ScriptEngineManager` hands 
 `Bindings`, so each evaluator resets its context on construction to get bindings of its own.
 
 Engine state accumulates across evaluations — the Kotlin engine's REPL history grows with every expression — so call
-`resetContext` periodically, or use a pool, which resets each evaluator on return.
+`resetContext` periodically, or use a pool, which resets each evaluator every `resetEvery` returns (every return
+unless a subclass passes more; `KotlinExprEvaluatorPool` defaults to 20).
 
 ### Pools
 
