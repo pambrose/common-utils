@@ -57,6 +57,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "common-utils"
 
+include("common-utils-bom")
 include("core-utils")
 include("dropwizard-utils")
 include("email-utils")

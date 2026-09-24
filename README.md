@@ -214,6 +214,17 @@ dependencies {
 }
 ```
 
+From 5.0.0, the `common-utils-bom` platform aligns every module on one version, so the modules themselves can be
+declared without one:
+
+```kotlin
+dependencies {
+  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.0.0"))
+  implementation("com.pambrose.common-utils:core-utils")
+  implementation("com.pambrose.common-utils:service-utils")
+}
+```
+
 ### Maven
 
 For the multiplatform modules (**core-utils**, **json-utils**, **ktor-client-utils**), Maven consumers must
@@ -229,6 +240,23 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
+```
+
+From 5.0.0, import the BOM in `<dependencyManagement>` instead to align every module (it lists the `-jvm`
+artifacts too):
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>com.pambrose.common-utils</groupId>
+            <artifactId>common-utils-bom</artifactId>
+            <version>5.0.0</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
 ```
 
 ## Technology Stack
@@ -313,6 +341,8 @@ This project maintains high code quality standards:
 5. Add comprehensive tests using Kotest
 6. Generate its ABI dump with `make abi-update` and commit `<module>/api/`; without it `checkKotlinAbi` fails
 7. Add a component for it to `component_management` in `codecov.yml`
+
+`common-utils-bom` picks up every module in `settings.gradle.kts` by itself.
 
 ## Contributing
 

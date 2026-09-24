@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Multi-module Kotlin/Java utility library (19 modules) providing common functionality for various frameworks and use
+Multi-module Kotlin/Java utility library (19 modules, plus the `common-utils-bom` platform) providing common functionality for various frameworks and use
 cases. Published on Maven Central.
 
 Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, and **ktor-client-utils**. They target
@@ -65,6 +65,9 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 - `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
 - `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
+- `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
+  on the KMP modules' `-jvm` artifacts), published through the same POM setup; it skips all the Kotlin, lint,
+  coverage and docs configuration
 - `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
 - `configurePitest()` - applies `info.solidsoft.pitest` and the Kotest PIT plugin to the modules in
   `mutationModuleNames`. `targetTests` is widened to `com.pambrose.*` because some specs live outside
