@@ -112,17 +112,17 @@
 - [ ] **RV-047** `LOW` · docs — The README's "Choosing a Waiting Primitive" table is stale ([details](#rv-047))
 
 ### script-utils (common / java / kotlin / python)
-- [ ] **RV-048** `HIGH` · bug — `KotlinScript`'s per-variable `_tmp` bindings break evals (lambdas, name collisions) and very likely cause the Kotlin 2.4.20 hold ([details](#rv-048))
-- [ ] **RV-049** `MEDIUM` · performance — Kotlin expression pools are ~8× slower than a lone evaluator (follows CR-086) ([details](#rv-049))
-- [ ] **RV-050** `MEDIUM` · bug — `JavaScript.evalScript` leaves extra public fields in the bindings, and every later eval fails ([details](#rv-050))
-- [ ] **RV-051** `MEDIUM` · bug — `accessibleClass` ignores module exports, so a `Charset` is declared as `sun.nio.cs.UTF_8` (follows CR-084/CR-095) ([details](#rv-051))
-- [ ] **RV-052** `MEDIUM` · bug — The declared type is the first public supertype (a comparator becomes `Enum`); star projections are unusable; callers can't override ([details](#rv-052))
-- [ ] **RV-053** `LOW` · bug — `JavaScript.import` emits binary names for nested classes, and `import` can't be called from Java ([details](#rv-053))
-- [ ] **RV-054** `LOW` · docs — The `Isolated` classloader README is wrong, and `NoClassDefFoundError` escapes unwrapped ([details](#rv-054))
-- [ ] **RV-055** `LOW` · docs — The `JavaScript` null-global-context KDoc is wrong, and passing `true` causes an NPE ([details](#rv-055))
-- [ ] **RV-056** `LOW` · concurrency — The thread-safety claim doesn't cover the unsynchronized public readers *(PLAUSIBLE)* ([details](#rv-056))
-- [ ] **RV-057** `LOW` · bug — The shared `ScriptEngineManager` keeps the first caller's context classloader *(PLAUSIBLE)* ([details](#rv-057))
-- [ ] **RV-058** `LOW` · bug — `withInstance` loses the block's exception when `reset` also throws ([details](#rv-058))
+- [x] **RV-048** `HIGH` · bug — `KotlinScript`'s per-variable `_tmp` bindings break evals (lambdas, name collisions) and very likely cause the Kotlin 2.4.20 hold ([details](#rv-048)) — fixed in 91f8fc0
+- [x] **RV-049** `MEDIUM` · performance — Kotlin expression pools are ~8× slower than a lone evaluator (follows CR-086) ([details](#rv-049)) — fixed in 30370a7
+- [x] **RV-050** `MEDIUM` · bug — `JavaScript.evalScript` leaves extra public fields in the bindings, and every later eval fails ([details](#rv-050)) — fixed in 154ebf4
+- [x] **RV-051** `MEDIUM` · bug — `accessibleClass` ignores module exports, so a `Charset` is declared as `sun.nio.cs.UTF_8` (follows CR-084/CR-095) ([details](#rv-051)) — fixed in 154ebf4
+- [x] **RV-052** `MEDIUM` · bug — The declared type is the first public supertype (a comparator becomes `Enum`); star projections are unusable; callers can't override ([details](#rv-052)) — fixed in 154ebf4
+- [x] **RV-053** `LOW` · bug — `JavaScript.import` emits binary names for nested classes, and `import` can't be called from Java ([details](#rv-053)) — fixed in 154ebf4
+- [x] **RV-054** `LOW` · docs — The `Isolated` classloader README is wrong, and `NoClassDefFoundError` escapes unwrapped ([details](#rv-054)) — fixed in 154ebf4
+- [x] **RV-055** `LOW` · docs — The `JavaScript` null-global-context KDoc is wrong, and passing `true` causes an NPE ([details](#rv-055)) — fixed in 154ebf4
+- [x] **RV-056** `LOW` · concurrency — The thread-safety claim doesn't cover the unsynchronized public readers *(PLAUSIBLE)* ([details](#rv-056)) — fixed in 154ebf4
+- [x] **RV-057** `LOW` · bug — The shared `ScriptEngineManager` keeps the first caller's context classloader *(PLAUSIBLE)* ([details](#rv-057)) — fixed in 154ebf4
+- [x] **RV-058** `LOW` · bug — `withInstance` loses the block's exception when `reset` also throws ([details](#rv-058)) — fixed in 154ebf4
 - [ ] **RV-059** `LOW` · API — Mutable internals (`valueMap`, `channel`) are exposed as `protected` ([details](#rv-059))
 
 ### email-utils
@@ -159,7 +159,7 @@
 ### Build & publishing
 - [ ] **RV-079** `LOW` · build — Five modules export core-utils as `api` but use little or none of it ([details](#rv-079))
 - [ ] **RV-080** `LOW` · publishing — ktor-server-utils' `compileOnlyApi` servlet API is published at Maven `compile` scope ([details](#rv-080))
-- [ ] **RV-081** `LOW` · deps — Dependabot's held Kotlin group also takes `kotlin-reflect`, so CR-126 can recur ([details](#rv-081))
+- [x] **RV-081** `LOW` · deps — Dependabot's held Kotlin group also takes `kotlin-reflect`, so CR-126 can recur ([details](#rv-081)) — fixed in 31d5a7a (kotlin-reflect rides the unified `kotlin` version again)
 - [ ] **RV-082** `LOW` · build — `make coverage-clean` doesn't clear the KMP `jvmTest` results (follows CR-129) *(PLAUSIBLE)* ([details](#rv-082))
 - [ ] **RV-083** `LOW` · build — The disabled watchOS/tvOS test tasks still link their test binaries *(PLAUSIBLE)* ([details](#rv-083))
 - [ ] **RV-084** `LOW` · publishing — No BOM for 19 co-versioned artifacts ([details](#rv-084))

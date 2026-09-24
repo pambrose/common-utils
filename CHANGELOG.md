@@ -6,6 +6,14 @@ All notable changes to Common Utils are documented in this file.
 
 ### Changed
 
+- Kotlin is no longer held at 2.4.10: the catalog, the `kotlin-scripting-*` artifacts and `kotlin-reflect` all move to
+  2.4.20, the compiler the build already used. The regression that caused the hold came from `KotlinScript` binding
+  each variable as its own engine binding, which is fixed below.
+- script-utils-kotlin `KotlinScript` stores its variables in a single `ScriptVariables` holder, the only engine
+  binding, and reads them from it in the generated declarations. `bindings` and `__variables` are now reserved names.
+- script-utils `KotlinExprEvaluatorPool` resets an evaluator's context every 20 returns (`resetEvery`), not on every
+  return, which made a pooled evaluation about four times slower. `AbstractExprEvaluatorPool` takes `resetEvery`; its
+  one-argument constructor keeps resetting on every return.
 - service-utils `ServletGroup.addServlet` and `HttpServletGroup.addServlet` add a missing leading slash to the path,
   so `"ping"` and `"/ping"` register one endpoint and the later servlet replaces the earlier one. Before, both were
   registered: the Jetty admin server failed to start with "Multiple servlets map to path /ping", and the Ktor one
@@ -40,6 +48,15 @@ All notable changes to Common Utils are documented in this file.
 
 ### Bug fixes
 
+- script-utils-kotlin `KotlinScript`: binding a lambda or a JDK-internal class (`String.CASE_INSENSITIVE_ORDER`) no
+  longer breaks every later evaluation, and a variable named `a_tmp` no longer reads `a`'s value.
+- script-utils: a `Charset` or other value whose class sits in an unexported JDK package is declared as an exported
+  supertype; the enum behind `Comparator.naturalOrder()` is declared as a `Comparator`; and a lambda or such a
+  comparator can be given its type arguments and called.
+- script-utils-java `JavaScript.evalScript` no longer leaves extra public fields in the bindings, which broke every later
+  evaluation; `import` handles nested classes (and `addImport` is callable from Java); a `NoClassDefFoundError` from
+  the script is reported as a `ScriptException`; and `resetForReuse(true)` keeps the global scope the engine needs.
+- script-utils pools keep the block's exception when resetting the instance also fails.
 - ktor-server-utils `Route.servlet` answers HEAD with GET's headers and no body. Ktor sent the body, so a pipelined
   response after a HEAD was read as part of it; this hit the `GenericKtorService` admin endpoints. TRACE and servlets
   that override `getLastModified` no longer fail with a 500.
