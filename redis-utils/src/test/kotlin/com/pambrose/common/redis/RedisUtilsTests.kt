@@ -55,7 +55,8 @@ class RedisUtilsTests : StringSpec() {
         RedisUtils.newRedisClient(redisUrl = "redis://localhost:1", maxIdleSize = 2, minIdleSize = 5).use { client ->
           client.pool.minIdle shouldBe 2
         }
-        logs().single { it.level == Level.WARN }.formattedMessage shouldContain "min idle size 5 exceeds max idle size 2"
+        logs().single { it.level == Level.WARN }.formattedMessage shouldContain
+          "min idle size 5 exceeds max idle size 2"
       }
     }
 

@@ -125,11 +125,15 @@ abstract class GenericValueWaiter<T>(
         val immediate =
           lock.withLock {
             when {
-              predicate() -> true
+              predicate() -> {
+                true
+              }
 
               // Nothing to wait for. Arming a timeout would not help: under a dispatcher that runs launch inline,
               // a zero or negative delay would fire before the waiter was registered, leaving it waiting forever.
-              !timeoutDuration.isPositive() -> false
+              !timeoutDuration.isPositive() -> {
+                false
+              }
 
               else -> {
                 // Register the waiter, then arm the timeout, under the same lock. checkCondition removes the

@@ -439,29 +439,27 @@ object RedisUtils {
 
   // The suspending helpers connect, ping and close on Dispatchers.IO: each is a blocking Jedis call that can take the
   // full 2 s connect or socket timeout when Redis is down, which would otherwise stall the caller's dispatcher thread.
+  @Suppress("InjectDispatcher")
+  private val ioDispatcher = Dispatchers.IO
+
   private suspend fun RedisClient.pingSucceedsOnIo(printStackTrace: Boolean) =
-    withContext(Dispatchers.IO) { pingSucceeds(printStackTrace) }
+    withContext(ioDispatcher) { pingSucceeds(printStackTrace) }
 
   private suspend fun connectOrNullOnIo(
     redisUrl: String,
     printStackTrace: Boolean,
-  ) = withContext(Dispatchers.IO) { connectOrNull(redisUrl, printStackTrace) }
+  ) = withContext(ioDispatcher) { connectOrNull(redisUrl, printStackTrace) }
 
+  // Like use(), but closes on the IO dispatcher, and under NonCancellable so a cancelled block still closes it.
   private suspend fun <T> RedisClient.useOnIo(block: suspend (RedisClient) -> T): T {
-    var failure: Throwable? = null
-    try {
-      return block(this)
-    } catch (e: Throwable) {
-      failure = e
-      throw e
-    } finally {
-      // NonCancellable, so the client is closed even when the block was cancelled.
-      withContext(NonCancellable + Dispatchers.IO) {
-        runCatching { close() }.exceptionOrNull()?.let { closeFailure ->
-          failure?.addSuppressed(closeFailure) ?: throw closeFailure
-        }
-      }
+    val result = runCatching { block(this) }
+    val closeFailure = withContext(NonCancellable + ioDispatcher) { runCatching { close() }.exceptionOrNull() }
+    result.exceptionOrNull()?.let { failure ->
+      closeFailure?.let(failure::addSuppressed)
+      throw failure
     }
+    closeFailure?.let { throw it }
+    return result.getOrThrow()
   }
 
   /**

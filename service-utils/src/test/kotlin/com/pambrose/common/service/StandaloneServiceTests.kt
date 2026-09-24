@@ -113,7 +113,13 @@ class StandaloneServiceTests : StringSpec() {
         }
       occupiedLoopbackPort().use { occupied ->
         val service =
-          KtorServletService(occupied.localPort, HttpServletGroup().apply { addServlet("/x", servlet) }, host = LOOPBACK)
+          KtorServletService(
+            occupied.localPort,
+            HttpServletGroup().apply {
+            addServlet("/x", servlet)
+          },
+            host = LOOPBACK,
+          )
         shouldThrow<IllegalStateException> { service.startSync() }
         service.state() shouldBe Service.State.FAILED
       }
