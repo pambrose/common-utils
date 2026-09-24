@@ -234,7 +234,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
 
 ## Technology Stack
 
-- **Languages**: Kotlin 2.4.20 (the `kotlin-scripting-*` artifacts are pinned to 2.4.10), Java
+- **Languages**: Kotlin 2.4.20, Java
 - **Build System**: Gradle 9.7.1 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization

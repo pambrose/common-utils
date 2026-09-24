@@ -89,32 +89,26 @@ Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 
-The catalog's `kotlin` version is **deliberately held at 2.4.10** (see the comment above it). Kotlin
-2.4.20 regressed the JSR-223 K2 REPL that `script-utils-kotlin` depends on: binding a value whose runtime
-class is a generic Java class (`ArrayList`, `LinkedHashMap`, `HashMap`) via `ScriptEngine.put()` makes
-every subsequent `eval()` fail to compile, including snippets that never reference the binding. Do not
-bump it without re-running `:script-utils-kotlin:test` and confirming that suite still passes.
+The catalog's `kotlin` version governs the `kotlin-scripting-*` artifacts, `kotlin-reflect` and the Kotlin plugin
+ids. It was held at 2.4.10 until `KotlinScript` stopped binding each variable as its own engine binding: the JSR-223
+engine turns every binding into a script property typed by the value's runtime class, and 2.4.20 cannot declare one
+for a generic Java class such as `ArrayList`. Variables now live in a single non-generic `ScriptVariables` holder,
+so `:script-utils-kotlin:test` passes on 2.4.20. Re-run that suite on every Kotlin bump all the same.
 
-That entry governs the `kotlin-scripting-*` artifacts and nothing else. `kotlin-reflect` deliberately has its
-own `kotlinReflect` catalog version, aligned with the compiler rather than the hold: core-utils exports reflect
-as `api`, so riding the held version would publish a POM pairing stdlib 2.4.20 with reflect 2.4.10. Keep the two
-in step when the compiler moves.
-
-The hold does **not** cover the compiler either: `pambrose-gradle-plugins`
-pulls a `kotlin-gradle-plugin` of its own, which wins on the buildscript classpath, so the project is
+It does **not** govern the compiler: `pambrose-gradle-plugins`
+pulls a `kotlin-gradle-plugin` of its own, which wins on the buildscript classpath, so the project can be
 compiled by a newer Kotlin than the catalog names. Run `./gradlew buildEnvironment` to see the version
 actually in use rather than assuming the catalog value — and be aware that a convention-plugin bump can
-therefore change the compiler, and the resolved JS toolchain npm versions, without touching the catalog.
+therefore change the compiler, and the resolved JS toolchain npm versions, without touching the catalog. Keep the
+catalog's `kotlin` in step with that compiler: core-utils exports `kotlin-reflect` as `api`, so a lag would publish a
+POM pairing the compiler's stdlib with an older reflect.
 
 Dependabot (`.github/dependabot.yml`) opens weekly version-update PRs for the Gradle ecosystem (catalog
-libraries and plugins, plus the Gradle wrapper) and for GitHub Actions. Because of the Kotlin hold, Kotlin
-updates get their own group: expect that PR to fail `:script-utils-kotlin:test` in CI until the regression
-is fixed, and don't merge it red. Two `ignore` rules back that up: `io.netty:netty-tcnative-boringssl-static`
-gets no automatic PR at all, because it must match the version grpc-java pins for the grpc release in use
-(bump it by hand alongside grpc, and note the rule suppresses security-update PRs too, though alerts still
-fire); and Kotlin `2.4.20` is ignored by exact version, so Dependabot stops re-proposing the release that
-broke the JSR-223 REPL while later releases (2.4.21, 2.4.30, …) still arrive in the kotlin group. Remove
-the four Kotlin entries once the hold is lifted. The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
+libraries and plugins, plus the Gradle wrapper) and for GitHub Actions. Kotlin updates get their own group, since
+they move the scripting artifacts, `kotlin-reflect` and the plugin ids together. One `ignore` rule:
+`io.netty:netty-tcnative-boringssl-static` gets no automatic PR at all, because it must match the version grpc-java
+pins for the grpc release in use (bump it by hand alongside grpc, and note the rule suppresses security-update PRs
+too, though alerts still fire). The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
 Dependabot only proposes candidates carrying the same suffix — and it must be kept, since
 `exposed-kotlin-datetime` links against the deprecated `kotlinx.datetime.Instant` that only the compat
 artifacts ship. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that

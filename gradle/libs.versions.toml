@@ -14,20 +14,11 @@ pitestPlugin = "1.19.0"
 versions = "0.63.1"
 
 # Kotlin & kotlinx
-# Held at 2.4.10: 2.4.20 regressed the JSR-223 K2 REPL used by script-utils-kotlin. Binding a value
-# whose runtime class is a generic Java class (ArrayList, LinkedHashMap, ...) via ScriptEngine.put()
-# makes every subsequent eval() fail to compile — even one that never references the binding — with
-# "One type argument expected for 'class ArrayList<E>'". The generated declaration for the binding
-# drops its type arguments. There is no workaround on our side; retry the bump on a later release.
-#
-# Note this pin governs only the kotlin-scripting-* artifacts (where the bug lives) — kotlin-reflect has its
-# own `kotlinReflect` version below, aligned with the compiler — and not the compiler itself:
-# pambrose-gradle-plugins pulls kotlin-gradle-plugin 2.4.20, which wins on the buildscript classpath,
-# so the project is *compiled* by 2.4.20. Check `gradlew buildEnvironment` before assuming otherwise.
-kotlin = "2.4.10"
-# kotlin-reflect ships with the stdlib and must match the compiler (2.4.20), not the scripting hold above.
-# core-utils exports reflect as `api`, so a mismatch puts reflect 2.4.10 next to stdlib 2.4.20 in consumers' POMs.
-kotlinReflect = "2.4.20"
+# Governs the kotlin-scripting-* artifacts, kotlin-reflect and the Kotlin plugin ids. It is not what compiles the
+# project: pambrose-gradle-plugins pulls a kotlin-gradle-plugin of its own, which wins on the buildscript classpath
+# (check `gradlew buildEnvironment`). Keep this in step with that compiler: core-utils exports kotlin-reflect as `api`,
+# so a lag publishes a POM pairing the compiler's stdlib with an older reflect.
+kotlin = "2.4.20"
 coroutines = "1.11.0"
 datetime = "0.8.0-0.6.x-compat"
 kotlinxHtml = "0.12.0"
@@ -75,7 +66,7 @@ mockk = "1.14.11"
 
 [libraries]
 # Kotlin & kotlinx
-kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlinReflect" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 kotlinx-html = { module = "org.jetbrains.kotlinx:kotlinx-html", version.ref = "kotlinxHtml" }
