@@ -16,6 +16,7 @@
 
 package com.pambrose.common.servlet
 
+import com.pambrose.common.rawHttpExchange
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -35,9 +36,7 @@ import io.ktor.http.charset
 import io.ktor.http.contentType
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
-import io.ktor.server.cio.CIO
 import io.ktor.server.config.MapApplicationConfig
-import io.ktor.server.engine.embeddedServer
 import io.ktor.server.routing.application
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
@@ -47,7 +46,6 @@ import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import java.net.Socket
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.incrementAndFetch
 
@@ -58,34 +56,16 @@ class ServletRouteTests : StringSpec() {
     // HttpServlet.doHead runs doGet and leaves the container to drop the body. A body after a HEAD response is read
     // by the client as the start of the next response on the connection, so pipeline a GET after the HEAD.
     "HEAD sends GET's headers without a body, so a pipelined response is not corrupted" {
-      val server =
-        embeddedServer(CIO, port = 0, host = "127.0.0.1") {
-          routing { servlet("/hello", HelloServlet()) }
-        }.start(wait = false)
-      try {
-        val port = server.engine.resolvedConnectors().first().port
-        val text =
-          Socket("127.0.0.1", port).use { socket ->
-            socket.soTimeout = 10_000
-            socket.getOutputStream().apply {
-              write(
-                (
-                  "HEAD /hello HTTP/1.1\r\nHost: localhost\r\n\r\n" +
-                    "GET /hello HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
-                ).toByteArray(),
-              )
-              flush()
-            }
-            socket.getInputStream().readBytes().toString(Charsets.ISO_8859_1)
-          }
-        val responses = text.split("HTTP/1.1 ").filter { it.isNotEmpty() }
-        responses.size shouldBe 2
-        responses[0].lowercase() shouldContain "content-length: 13"
-        responses[0].substringAfter("\r\n\r\n") shouldBe ""
-        responses[1].substringAfter("\r\n\r\n") shouldBe "Hello, World!"
-      } finally {
-        server.stop(0, 0)
-      }
+      val text =
+        rawHttpExchange(
+          "HEAD /hello HTTP/1.1\r\nHost: localhost\r\n\r\n" +
+            "GET /hello HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+        ) { routing { servlet("/hello", HelloServlet()) } }
+      val responses = text.split("HTTP/1.1 ").filter { it.isNotEmpty() }
+      responses.size shouldBe 2
+      responses[0].lowercase() shouldContain "content-length: 13"
+      responses[0].substringAfter("\r\n\r\n") shouldBe ""
+      responses[1].substringAfter("\r\n\r\n") shouldBe "Hello, World!"
     }
 
     "TRACE is answered by HttpServlet.doTrace instead of failing with a 500" {

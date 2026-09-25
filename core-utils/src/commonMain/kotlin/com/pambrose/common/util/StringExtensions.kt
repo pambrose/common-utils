@@ -143,17 +143,19 @@ fun List<String>.toPath(
   addTrailing: Boolean = true,
   separator: CharSequence = "/",
 ): String {
-  if (separator.isEmpty()) return filter { it.isNotEmpty() }.joinToString("")
-  val elems =
-    filter { it.isNotEmpty() }
-      .mapIndexed { i, s -> if (i == 0) s else s.trimStart(separator) }
-      .filterIndexed { i, s -> i == 0 || s.isNotEmpty() }
+  val nonEmpty = filter { it.isNotEmpty() }
+  if (separator.isEmpty()) return nonEmpty.joinToString("")
+  // The first element keeps its leading separators; a later one loses them, and is skipped if nothing is left.
+  val elems = nonEmpty.take(1) + nonEmpty.drop(1).map { it.trimStart(separator) }.filter { it.isNotEmpty() }
   return elems
     .mapIndexed { i, s ->
       val start = if (i == 0 && addPrefix) s.ensurePrefix(separator) else s
-      if (i < elems.size - 1) start.trimEnd(separator).ensureSuffix(separator) else start
-    }.mapIndexed { i, s -> if (i == elems.size - 1 && addTrailing) s.ensureSuffix(separator) else s }
-    .joinToString("")
+      when {
+        i < elems.lastIndex -> start.trimEnd(separator)
+        addTrailing -> start.ensureSuffix(separator)
+        else -> start
+      }
+    }.joinToString(separator)
 }
 
 private fun String.trimStart(separator: CharSequence): String {

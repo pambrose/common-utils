@@ -64,6 +64,12 @@ internal class KtorServletResponse : HttpServletResponse {
     return buffer.toByteArray()
   }
 
+  // The size of the body getBodyBytes() returns, without copying it.
+  internal fun getBodySize(): Int {
+    printWriter?.flush()
+    return buffer.size()
+  }
+
   override fun getStatus(): Int = statusCode
 
   override fun setStatus(sc: Int) {
@@ -130,9 +136,7 @@ internal class KtorServletResponse : HttpServletResponse {
   override fun setContentType(type: String?) {
     contentTypeValue = type
     // As in a servlet container, a charset parameter in the content type sets the character encoding.
-    type
-      ?.let { runCatching { ContentType.parse(it).parameter("charset") }.getOrNull() }
-      ?.let(::setCharacterEncoding)
+    type?.charsetParameter()?.let(::setCharacterEncoding)
   }
 
   // As the servlet spec requires, the content type includes the character encoding once one has been specified
@@ -266,6 +270,10 @@ internal class KtorServletResponse : HttpServletResponse {
 }
 
 private fun String.isContentType() = equals(HttpHeaders.ContentType, ignoreCase = true)
+
+// The charset parameter of a Content-Type value, or null when it has none or does not parse.
+internal fun String.charsetParameter(): String? =
+  runCatching { ContentType.parse(this).parameter("charset") }.getOrNull()
 
 // ContentType.withCharset would add a second charset parameter, so any existing one is replaced instead.
 private fun String.withCharset(charset: String): String =

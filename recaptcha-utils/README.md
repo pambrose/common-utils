@@ -119,8 +119,9 @@ and returns `true` when verification succeeds or when reCAPTCHA is not fully con
 | Google reports `success: false`                         | `400` `reCAPTCHA verification failed`   | `false` |
 | Verification could not be completed                     | `400` `reCAPTCHA verification failed`   | `false` |
 | Reply is not a 2xx, or its body is not a valid response | `400` `reCAPTCHA verification failed`   | `false` |
-| `RecaptchaService.close()` has been called              | `400` `reCAPTCHA verification failed`   | `false` |
 | Google reports `success: true` in a 2xx reply           | none                                    | `true`  |
+
+A call after `RecaptchaService.close()` is verified like any other: it builds a new client (see [Shutdown](#shutdown)).
 
 The verification request is a form POST to `https://www.google.com/recaptcha/api/siteverify` carrying `secret`
 and `response`, plus `remoteip` when one is available. That address comes from `call.request.origin.remoteAddress`

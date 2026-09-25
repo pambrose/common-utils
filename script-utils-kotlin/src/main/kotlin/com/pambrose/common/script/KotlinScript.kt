@@ -52,7 +52,7 @@ class KotlinScript(
    * and cast it to a type the script can name, with its type arguments.
    */
   val varDecls: String
-    get() = declarations(valueMap.keys)
+    @Synchronized get() = declarations(valueMap.keys)
 
   private fun declarations(names: Collection<String>) =
     names.joinToString("\n") { name ->

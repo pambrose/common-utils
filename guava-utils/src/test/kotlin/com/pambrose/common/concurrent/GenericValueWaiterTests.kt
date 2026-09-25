@@ -61,15 +61,15 @@ class GenericValueWaiterTests : StringSpec() {
     // registered: a zero or negative delay fired, found nothing to remove, and the waiter then waited forever.
     "a zero or negative timeout returns false at once, even under a dispatcher that runs work inline" {
       listOf(Duration.ZERO, (-5).milliseconds).forEach { timeout ->
-        withTimeout(hangGuard) {
-          CoroutineScope(Dispatchers.Unconfined)
-            .async(start = UNDISPATCHED) { BooleanWaiter(false).waitUntilTrue(timeout) }
-            .await() shouldBe false
-        }
-        withTimeout(hangGuard) {
-          CoroutineScope(Dispatchers.Unconfined)
-            .async(start = UNDISPATCHED) { BooleanWaiter(true).waitUntilTrue(timeout) }
-            .await() shouldBe true
+        // A value that already holds still returns true.
+        listOf(false, true).forEach { initial ->
+          withTimeout(hangGuard) {
+            withDetachedScope { scope ->
+              scope
+                .async(Dispatchers.Unconfined, start = UNDISPATCHED) { BooleanWaiter(initial).waitUntilTrue(timeout) }
+                .await() shouldBe initial
+            }
+          }
         }
       }
     }

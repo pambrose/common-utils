@@ -16,7 +16,6 @@
 
 package com.pambrose.common.script
 
-import java.util.IdentityHashMap
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -50,15 +49,11 @@ abstract class AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(
     require(resetEvery > 0) { "resetEvery must be positive, but was $resetEvery" }
   }
 
-  // Returns since each evaluator's last reset, by identity.
-  private val returnsSinceReset = IdentityHashMap<T, Int>()
-
   override fun reset(instance: T) {
-    val returns = synchronized(returnsSinceReset) { returnsSinceReset.merge(instance, 1, Int::plus) ?: 1 }
-    if (returns >= resetEvery) {
+    if (++instance.returnsSinceReset >= resetEvery) {
       // Count the reset only once it succeeds, so a failed one is retried on the next return.
       instance.resetContext()
-      synchronized(returnsSinceReset) { returnsSinceReset[instance] = 0 }
+      instance.returnsSinceReset = 0
     }
   }
 

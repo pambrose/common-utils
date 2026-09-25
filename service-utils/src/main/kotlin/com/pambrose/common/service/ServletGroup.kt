@@ -38,10 +38,16 @@ class ServletGroup {
   fun addServlet(
     path: String,
     servlet: Servlet,
-  ) {
-    // Check for blank before normalizing, since "".ensureLeadingSlash() is "/"; normalize before keying, so
-    // "ping" and "/ping" name the same endpoint and the later registration replaces the earlier one.
-    if (path.isNotBlank())
-      servletMap[path.ensureLeadingSlash()] = servlet
-  }
+  ) = servletMap.putServlet(path, servlet)
+}
+
+// Registers servlet at path for ServletGroup and HttpServletGroup. Check for blank before normalizing, since
+// "".ensureLeadingSlash() is "/"; normalize before keying, so "ping" and "/ping" name the same endpoint and the
+// later registration replaces the earlier one.
+internal fun <S> MutableMap<String, S>.putServlet(
+  path: String,
+  servlet: S,
+) {
+  if (path.isNotBlank())
+    this[path.ensureLeadingSlash()] = servlet
 }
