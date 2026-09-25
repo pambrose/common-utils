@@ -134,13 +134,19 @@ POM lists, update that list to match.
 
 ### Experimental Kotlin Features
 
-These opt-ins are enabled globally:
+These opt-ins are enabled project-wide:
 
 - `kotlin.contracts.ExperimentalContracts`
 - `kotlinx.coroutines.ExperimentalCoroutinesApi`
 - `kotlin.time.ExperimentalTime`
 - `kotlin.concurrent.atomics.ExperimentalAtomicApi`
 - `kotlinx.serialization.ExperimentalSerializationApi`
+
+The three stdlib markers are applied to every source set. The two library markers (`libraryOptIns` in the root
+build script, keyed to the jar that declares each one) are applied on the KMP modules unconditionally, but on the
+JVM modules only to a `KotlinCompile` task whose classpath holds that jar, since the compiler warns about an
+opt-in whose marker it cannot resolve. A new library-declared marker belongs in `libraryOptIns`, not
+`stdlibOptIns`.
 
 Additionally, the experimental `-Xcollection-literals` compiler flag is enabled on every compilation
 (JVM and KMP, main and test) so `[...]` collection-literal syntax can be used in place of `listOf(...)` /
