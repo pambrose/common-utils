@@ -75,13 +75,20 @@ val projectHomepage = "https://$scmHost"
 val jvmTargetVersion = libs.versions.jvmTarget.get()
 val detektConfigDir = "config/detekt"
 
-val experimentalOptIns = listOf(
+val stdlibOptIns = listOf(
     "kotlin.contracts.ExperimentalContracts",
-    "kotlinx.coroutines.ExperimentalCoroutinesApi",
     "kotlin.time.ExperimentalTime",
     "kotlin.concurrent.atomics.ExperimentalAtomicApi",
-    "kotlinx.serialization.ExperimentalSerializationApi",
 )
+
+// Markers declared by libraries, keyed to the jar that declares them. The compiler warns about an opt-in
+// whose marker is not on the classpath, so the JVM modules opt in only where that jar is a compile dependency.
+val libraryOptIns = mapOf(
+    "kotlinx.coroutines.ExperimentalCoroutinesApi" to "kotlinx-coroutines-core",
+    "kotlinx.serialization.ExperimentalSerializationApi" to "kotlinx-serialization-core",
+)
+
+val experimentalOptIns = stdlibOptIns + libraryOptIns.keys
 
 val returnValueCheckerArg = "-Xreturn-value-checker=check"
 
@@ -291,9 +298,20 @@ fun Project.configureKotlinJvm() {
         abiValidation()
 
         sourceSets.all {
-            experimentalOptIns.forEach {
+            stdlibOptIns.forEach {
                 languageSettings.optIn(it)
             }
+        }
+
+        tasks.withType<KotlinCompile>().configureEach {
+            // A local copy, so the provider below does not capture the build script (configuration cache).
+            val markerJars = libraryOptIns.toMap()
+            val jarNames = libraries.elements.map { jars -> jars.map { it.asFile.name } }
+            compilerOptions.optIn.addAll(
+                jarNames.map { names ->
+                    markerJars.filterValues { jar -> names.any { it.startsWith(jar) } }.keys
+                },
+            )
         }
 
         // Run the unused-return-value checker over production code only. Kotest's
