@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [5.0.0] - Unreleased
+## [5.0.0] - 2026-09-25
 
 ### Breaking
 
@@ -53,9 +53,9 @@ release.
   `UnsupportedByDialectException` on MySQL and MariaDB, whose `ON DUPLICATE KEY UPDATE` cannot target one index.
 - exposed-utils `KotlinSqlLogger` logs at debug level, like Exposed's own SQL logger, since each statement carries its
   bound values.
-- ktor-server-utils `KtorServletResponse` implements the date and int header setters, `flushBuffer`, `resetBuffer` and
-  `reset`, ignores `setContentLength`, and accepts the `null` arguments the servlet spec defines. Their
-  `Void`-returning variants, which always threw, are gone from the ABI.
+- ktor-server-utils: the response a servlet mounted with `Route.servlet` writes to implements the date and int header
+  setters, `flushBuffer`, `resetBuffer` and `reset`, ignores `setContentLength`, and accepts the `null` arguments the
+  servlet spec defines.
 - redis-utils `newRedisClient` accepts -1 (unlimited) for `maxIdleSize`, and warns when `minIdleSize` exceeds it.
 - core-utils `Duration.format()` renders `-INFINITE` as the mirror of `INFINITE` instead of overflowing, and a
   negative duration under a millisecond has no sign.
@@ -72,7 +72,6 @@ release.
   so Ktor auto-reload and successive `testApplication`s keep verifying.
 - grpc-utils `GrpcDsl.server` and `GrpcDsl.channel` throw `IllegalArgumentException` with a clear message for the
   Netty transport's missing host or out-of-range port, instead of failing inside Netty.
-- ktor-server-utils' POM marks `jakarta.servlet-api` optional, so Maven consumers no longer get it at runtime.
 
 ### Added
 
@@ -84,8 +83,9 @@ release.
   `java.time.Duration`.
 - jetty-utils `JettyDsl.server(port, host)` binds its connector to one address.
 - grpc-utils `GrpcDsl.server(bindAddress = …)` listens on one address.
-- ktor-server-utils `KtorServletRequest` implements `getCookies`, `getDateHeader`, `getIntHeader`, `getRequestURL`,
-  `isSecure`, `getCharacterEncoding`, `getContentLength`, `getDispatcherType` and `getServletContext`.
+- ktor-server-utils: the request a servlet mounted with `Route.servlet` receives implements `getCookies`,
+  `getDateHeader`, `getIntHeader`, `getRequestURL`, `isSecure`, `getCharacterEncoding`, `getContentLength`,
+  `getDispatcherType` and `getServletContext`.
 
 ### Bug fixes
 
@@ -133,6 +133,25 @@ release.
   job caches the Kotlin/Native toolchain, and the native caches have restore keys.
 - The disabled watchOS/tvOS simulator test tasks no longer link their test binaries.
 - `make coverage-clean` also cleans the KMP modules' `jvmTest` results and every module's Kover data.
+- ktor-server-utils' POM marks `jakarta.servlet-api` optional, so Maven consumers no longer get it at runtime.
+- Detekt's `VariableNaming` exclusions cover the `*Tests.kt` specs.
+
+### Documentation
+
+- `docs/CODE_REVIEW_2026-09-24.md` reviews 4.1.0; all 93 of its items are fixed in this release.
+- CLAUDE.md states the versioning policy: a minor release stays binary compatible, and removing or changing a
+  signature waits for a major one.
+- email-utils documents that `ResendWebhookMsg.decode` handles `email.*` events only, and how to check `type` first.
+- The READMEs correct the jetty-utils HTTP method handling, the grpc-utils TLS and shutdown notes, the prometheus-utils
+  series names, the service-utils `Compression` example, the module descriptions in llms.txt, and the steps for
+  adding a module.
+- The CHANGELOG backfills 2.6.3 and 2.6.4 and corrects the 2.7.1 date.
+
+### Dependency changes
+
+- `kotlin-scripting-*` 2.4.10 → 2.4.20, matching the compiler and `kotlin-reflect`.
+- Removed from the published dependencies: grpc-protobuf, grpc-services, ktor-server-call-logging,
+  ktor-server-compression, and (from jetty-utils, dropwizard-utils and ktor-client-utils) core-utils. See Breaking.
 
 ## [4.1.0] - 2026-09-16
 
