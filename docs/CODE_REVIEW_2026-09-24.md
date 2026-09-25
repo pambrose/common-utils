@@ -120,7 +120,7 @@
 - [x] **RV-053** `LOW` · bug — `JavaScript.import` emits binary names for nested classes, and `import` can't be called from Java ([details](#rv-053)) — fixed in 154ebf4
 - [x] **RV-054** `LOW` · docs — The `Isolated` classloader README is wrong, and `NoClassDefFoundError` escapes unwrapped ([details](#rv-054)) — fixed in 154ebf4
 - [x] **RV-055** `LOW` · docs — The `JavaScript` null-global-context KDoc is wrong, and passing `true` causes an NPE ([details](#rv-055)) — fixed in 154ebf4
-- [x] **RV-056** `LOW` · concurrency — The thread-safety claim doesn't cover the unsynchronized public readers *(PLAUSIBLE)* ([details](#rv-056)) — fixed in 154ebf4
+- [x] **RV-056** `LOW` · concurrency — The thread-safety claim doesn't cover the unsynchronized public readers *(PLAUSIBLE)* ([details](#rv-056)) — fixed in 154ebf4; `KotlinScript.varDecls` in #209
 - [x] **RV-057** `LOW` · bug — The shared `ScriptEngineManager` keeps the first caller's context classloader *(PLAUSIBLE)* ([details](#rv-057)) — fixed in 154ebf4
 - [x] **RV-058** `LOW` · bug — `withInstance` loses the block's exception when `reset` also throws ([details](#rv-058)) — fixed in 154ebf4
 - [x] **RV-059** `LOW` · API — Mutable internals (`valueMap`, `channel`) are exposed as `protected` ([details](#rv-059)) — fixed in 02d4408

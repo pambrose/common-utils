@@ -28,7 +28,8 @@ API and some exposed metric names. The release also fixes all 93 items from the 
     no longer serves the thread dump at `/`.
 - **Scripting**: script-utils-kotlin binds variables through a single holder, which lifts the Kotlin 2.4.10 hold.
   Pooled Kotlin evaluators are about four times faster, because they reset every 20 returns instead of every
-  return. Lambdas, JDK-internal classes, nested imports and failed resets no longer break later evaluations.
+  return. Lambdas, JDK-internal classes, nested imports and failed resets no longer break later evaluations, and
+  reading a shared script's declarations while another thread adds a variable is safe.
 - **grpc-utils retry default restored**: 4.1.0 turned off grpc's transparent retries on every channel that
   never set `enableRetry`; channels get grpc's own default back.
 - **Ktor servlet bridge**: HEAD responses no longer carry a body, which had corrupted pipelined keep-alive
@@ -45,7 +46,9 @@ API and some exposed metric names. The release also fixes all 93 items from the 
   - json-utils `longValue`.
 - **Build and CI**:
   - The wrapper distribution is checksum-verified, and CI actions are pinned to commit SHAs.
-  - CI publishes to the local Maven repository, so broken publications show up before a release.
+  - CI publishes to the local Maven repository, so broken publications show up before a release. Pull requests
+    skip rendering the javadoc jars, since the KDocs workflow already runs Dokka for each one.
+  - Gradle 9.8.0.
 
 ### Migrating from 4.x: Prometheus Java client 1.x
 
@@ -210,8 +213,13 @@ SimpleclientCollector.builder().collectorRegistry(oldRegistry).register(newRegis
 
 - Prometheus Java client 0.16.0 → 1.9.0 (`simpleclient*` → `prometheus-metrics-*`; see the migration section)
 - `kotlin-scripting-*` 2.4.10 → 2.4.20
+- `resend` 4.25.0 → 4.26.0
 - Removed from published dependencies: `grpc-protobuf`, `grpc-services`, `ktor-server-call-logging`,
   `ktor-server-compression`
+- Gradle wrapper 9.7.1 → 9.8.0
+- `gradlePlugins` 1.1.5 → 1.1.6 (build-only)
+- `versions` 0.63.1 → 0.64.0 (build-only)
+- `logback` 1.6.3 → 1.6.4 (tests only)
 
 **Full Changelog**: https://github.com/pambrose/common-utils/compare/4.1.0...5.0.0
 
