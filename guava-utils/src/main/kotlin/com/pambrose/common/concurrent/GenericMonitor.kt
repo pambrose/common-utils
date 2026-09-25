@@ -271,11 +271,15 @@ abstract class GenericMonitor {
     attempt: (Duration) -> Boolean,
   ): Boolean {
     requireRetryInterval(timeout)
-    if (maxWait.isNegative())
-      logger.warn {
-        "A negative maxWait ($maxWait) waits without limit, which is deprecated; pass Duration.INFINITE for no limit"
+    val limit =
+      if (maxWait.isNegative()) {
+        logger.warn {
+          "A negative maxWait ($maxWait) waits without limit, which is deprecated; pass Duration.INFINITE for no limit"
+        }
+        Duration.INFINITE
+      } else {
+        maxWait
       }
-    val limit = if (maxWait.isNegative()) Duration.INFINITE else maxWait
     val start = Monotonic.markNow()
     while (true) {
       if (attempt(minOf(timeout, limit - start.elapsedNow())))

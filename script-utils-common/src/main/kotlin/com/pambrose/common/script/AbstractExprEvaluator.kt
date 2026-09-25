@@ -25,7 +25,8 @@ import com.pambrose.common.script.ScriptUtils.resetContext
  * (see [ScriptGuards]), but this is **not** a security sandbox: do not evaluate untrusted input in-process.
  *
  * The engine keeps state across evaluations, such as the Kotlin engine's REPL history, which grows with every
- * expression until [resetContext] is called. [AbstractExprEvaluatorPool] resets an evaluator each time it is returned.
+ * expression until [resetContext] is called. [AbstractExprEvaluatorPool] resets an evaluator once it has been returned
+ * [resetEvery][AbstractExprEvaluatorPool.resetEvery] times.
  *
  * @param extension the file extension used to look up the script engine (e.g., `"kts"`, `"py"`)
  */
@@ -33,6 +34,10 @@ import com.pambrose.common.script.ScriptUtils.resetContext
 abstract class AbstractExprEvaluator(
   extension: String,
 ) : AbstractEngine(extension) {
+  // How many times AbstractExprEvaluatorPool has had this evaluator returned since it last reset it. Only the borrower
+  // returning the evaluator touches it, and the pool's channel hands it on to the next borrower.
+  internal var returnsSinceReset = 0
+
   init {
     // ScriptEngineManager gives every engine it creates the same global Bindings, so give this one its own.
     scriptEngine.resetContext()

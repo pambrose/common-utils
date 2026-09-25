@@ -35,12 +35,12 @@ Code changes:
   longer served by `MetricsService` or any 1.x registry; to keep serving them, also take the incremental path
   below.
 
-  | 0.16.0 | 1.9.0 | Brought in by |
-  |---|---|---|
-  | `io.prometheus:simpleclient` | `io.prometheus:prometheus-metrics-core` | prometheus-utils (`api`); service-utils exports only its `prometheus-metrics-model` (`api`) |
-  | `io.prometheus:simpleclient_hotspot` | `io.prometheus:prometheus-metrics-instrumentation-jvm` | prometheus-utils (`api`) |
-  | `io.prometheus:simpleclient_servlet_jakarta` | `io.prometheus:prometheus-metrics-exporter-servlet-jakarta` | service-utils (`implementation`) |
-  | `io.prometheus:simpleclient_dropwizard` | `io.prometheus:prometheus-metrics-instrumentation-dropwizard` | service-utils (`implementation`) |
+  | 0.16.0                                       | 1.9.0                                                         | Brought in by                                                                               |
+  |----------------------------------------------|---------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+  | `io.prometheus:simpleclient`                 | `io.prometheus:prometheus-metrics-core`                       | prometheus-utils (`api`); service-utils exports only its `prometheus-metrics-model` (`api`) |
+  | `io.prometheus:simpleclient_hotspot`         | `io.prometheus:prometheus-metrics-instrumentation-jvm`        | prometheus-utils (`api`)                                                                    |
+  | `io.prometheus:simpleclient_servlet_jakarta` | `io.prometheus:prometheus-metrics-exporter-servlet-jakarta`   | service-utils (`implementation`)                                                            |
+  | `io.prometheus:simpleclient_dropwizard`      | `io.prometheus:prometheus-metrics-instrumentation-dropwizard` | service-utils (`implementation`)                                                            |
 
 - Every `registry` parameter takes `io.prometheus.metrics.model.registry.PrometheusRegistry` (default
   `PrometheusRegistry.defaultRegistry`) instead of `io.prometheus.client.CollectorRegistry`: `PrometheusDsl`,

@@ -75,7 +75,7 @@ fun Route.servlet(
     }
   route(path) {
     handle {
-      val request = KtorServletRequest(call.request).also { it.context = context }
+      val request = KtorServletRequest(call.request, context)
       val response = KtorServletResponse()
       @Suppress("InjectDispatcher")
       withContext(Dispatchers.IO) { servlet.service(request, response) }
@@ -95,7 +95,6 @@ fun Route.servlet(
             .getOrNull()
         } ?: ContentType.Application.OctetStream
       val status = HttpStatusCode.fromValue(response.status)
-      val body = response.getBodyBytes()
       if (call.request.httpMethod == HttpMethod.Head) {
         // HttpServlet.doHead runs doGet, leaving the container to drop the body. Ktor sends whatever it is given, and
         // a body after a HEAD response corrupts the connection, so send only the headers GET would have sent.
@@ -103,12 +102,12 @@ fun Route.servlet(
           object : OutgoingContent.NoContent() {
             override val status = status
             override val contentType = contentType
-            override val contentLength = body.size.toLong()
+            override val contentLength = response.getBodySize().toLong()
           },
         )
       } else {
         call.response.status(status)
-        call.respondBytes(body, contentType)
+        call.respondBytes(response.getBodyBytes(), contentType)
       }
     }
   }

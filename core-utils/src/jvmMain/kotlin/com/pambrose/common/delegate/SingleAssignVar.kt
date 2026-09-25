@@ -17,9 +17,7 @@
 
 package com.pambrose.common.delegate
 
-import kotlin.concurrent.atomics.AtomicReference
 import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
 
 /** Factory for creating single-assignment property delegates; superseded by [AtomicDelegates.singleSetReference]. */
 object SingleAssignVar {
@@ -27,7 +25,8 @@ object SingleAssignVar {
    * Returns a property delegate for a read/write property that can be assigned only once.
    * This implementation is thread-safe and prevents race conditions.
    *
-   * [AtomicDelegates.singleSetReference] does the same, and is available on every platform, not only the JVM.
+   * It is the delegate [AtomicDelegates.singleSetReference] returns, which is available on every platform, not only
+   * the JVM.
    *
    * @throws IllegalStateException if the property is assigned more than once
    */
@@ -35,30 +34,5 @@ object SingleAssignVar {
     "Duplicates AtomicDelegates.singleSetReference, which is available on every platform.",
     ReplaceWith("AtomicDelegates.singleSetReference<T>()", "com.pambrose.common.delegate.AtomicDelegates"),
   )
-  fun <T> singleAssign(): ReadWriteProperty<Any?, T?> = ThreadSafeSingleAssignVar()
-
-  private class ThreadSafeSingleAssignVar<T> : ReadWriteProperty<Any?, T?> {
-    private val atomicValue = AtomicReference<ValueHolder<T>?>(null)
-
-    // Wrapper to distinguish between null value and unset value
-    private data class ValueHolder<T>(
-      val value: T?,
-    )
-
-    override fun getValue(
-      thisRef: Any?,
-      property: KProperty<*>,
-    ): T? = atomicValue.load()?.value
-
-    override fun setValue(
-      thisRef: Any?,
-      property: KProperty<*>,
-      value: T?,
-    ) {
-      val holder = ValueHolder(value)
-      if (!atomicValue.compareAndSet(null, holder)) {
-        error("Property ${property.name} cannot be assigned more than once.")
-      }
-    }
-  }
+  fun <T> singleAssign(): ReadWriteProperty<Any?, T?> = AtomicDelegates.singleSetReference()
 }

@@ -84,20 +84,15 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
    */
   protected suspend fun <R> withInstance(block: (T) -> R): R {
     val instance = channel.receive()
-    val result = runCatching { block(instance) }
-    // Nested, so a failing reset cannot keep the instance out of the pool: a size-1 pool would then wait forever.
-    val resetFailure =
+    // use() keeps the block's exception, with a reset failure attached as suppressed. The finally returns the instance
+    // even when reset throws, so a failing reset cannot keep it out of the pool: a size-1 pool would then wait forever.
+    return AutoCloseable {
       try {
-        runCatching { reset(instance) }.exceptionOrNull()
+        reset(instance)
       } finally {
         returnToPool(instance)
       }
-    result.exceptionOrNull()?.let { failure ->
-      resetFailure?.let(failure::addSuppressed)
-      throw failure
-    }
-    resetFailure?.let { throw it }
-    return result.getOrThrow()
+    }.use { block(instance) }
   }
 
   // Puts instance back into the channel, or closes it once the pool has been closed.

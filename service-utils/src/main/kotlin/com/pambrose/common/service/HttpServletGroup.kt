@@ -16,7 +16,6 @@
 
 package com.pambrose.common.service
 
-import com.pambrose.common.util.ensureLeadingSlash
 import jakarta.servlet.http.HttpServlet
 
 /**
@@ -47,10 +46,5 @@ class HttpServletGroup {
   fun addServlet(
     path: String,
     servlet: HttpServlet,
-  ) {
-    // Check for blank before normalizing, since "".ensureLeadingSlash() is "/"; normalize before keying, so
-    // "ping" and "/ping" name the same endpoint and the later registration replaces the earlier one.
-    if (path.isNotBlank())
-      servletMap[path.ensureLeadingSlash()] = servlet
-  }
+  ) = servletMap.putServlet(path, servlet)
 }

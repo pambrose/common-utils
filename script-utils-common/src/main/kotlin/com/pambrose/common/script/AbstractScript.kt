@@ -56,7 +56,11 @@ abstract class AbstractScript(
 
   private val values = mutableMapOf<String, Any>()
 
-  /** The variables added so far, by name. Read-only, so it stays in step with their types and binding state. */
+  /**
+   * The variables added so far, by name. Read-only, so it stays in step with their types and binding state. It is a
+   * live view that [add] and [resetContext] change, so read it only while holding the instance's lock, as the
+   * `@Synchronized` members do.
+   */
   protected val valueMap: Map<String, Any> get() = values
 
   /** Whether an evaluation has been prepared since the last reset. */

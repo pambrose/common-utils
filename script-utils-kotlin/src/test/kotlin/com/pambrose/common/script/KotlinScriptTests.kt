@@ -24,6 +24,9 @@ import java.util.Properties
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
 
+// How a generated declaration reads its variable back from the ScriptVariables holder.
+private const val HOLDER = """(bindings["__variables"] as com.pambrose.common.script.ScriptVariables)"""
+
 class IncClass(
   var i: Int = 0,
 ) {
@@ -191,7 +194,7 @@ class KotlinScriptTests : StringSpec() {
           add("list", list, typeOf<Int?>())
 
           varDecls shouldBe
-            "val list = (bindings[\"__variables\"] as com.pambrose.common.script.ScriptVariables)[\"list\"] as java.util.ArrayList<kotlin.Int?>"
+            "val list = $HOLDER[\"list\"] as java.util.ArrayList<kotlin.Int?>"
 
           list.size shouldBe eval("list.size")
 
@@ -366,9 +369,9 @@ class KotlinScriptTests : StringSpec() {
           add("primitives", intArrayOf(1, 2, 3, 4))
           varDecls shouldBe
             """
-            |val ints = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["ints"] as kotlin.Array<kotlin.Int>
-            |val lists = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["lists"] as kotlin.Array<kotlin.collections.List<kotlin.Int>>
-            |val primitives = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["primitives"] as kotlin.IntArray
+            |val ints = $HOLDER["ints"] as kotlin.Array<kotlin.Int>
+            |val lists = $HOLDER["lists"] as kotlin.Array<kotlin.collections.List<kotlin.Int>>
+            |val primitives = $HOLDER["primitives"] as kotlin.IntArray
             """.trimMargin()
           eval("ints.size + ints[1]") shouldBe 4
           eval("lists[0].size") shouldBe 3
@@ -383,7 +386,7 @@ class KotlinScriptTests : StringSpec() {
           add("pair", InternalPair(1, "a"), typeOf<Int>(), typeOf<String>())
           // It used to be cast to kotlin.Any<kotlin.Int, kotlin.String>, which does not compile.
           varDecls shouldBe
-            """val pair = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["pair"] as kotlin.Any"""
+            """val pair = $HOLDER["pair"] as kotlin.Any"""
           eval("pair.toString()") shouldBe "[1]"
           eval("0") shouldBe 0
         }
@@ -395,7 +398,7 @@ class KotlinScriptTests : StringSpec() {
         it.apply {
           add("props", Properties().apply { setProperty("k", "v") })
           varDecls shouldBe
-            """val props = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["props"] as java.util.Properties"""
+            """val props = $HOLDER["props"] as java.util.Properties"""
           eval("""props.getProperty("k")""") shouldBe "v"
         }
       }

@@ -17,7 +17,6 @@
 
 package com.pambrose.common.servlet
 
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.fromHttpToGmtDate
 import io.ktor.http.Parameters
@@ -54,17 +53,16 @@ import java.util.*
  * servlet container, and [getPathInfo] is always `null` because the servlet is mounted at its exact path.
  *
  * @param request the Ktor [ApplicationRequest] to delegate to
+ * @param context the context the servlet was initialized with, returned by [getServletContext]
  * @see servlet
  */
 internal class KtorServletRequest(
   private val request: ApplicationRequest,
+  private val context: ServletContext? = null,
 ) : HttpServletRequest {
   // Case-insensitive, and names that differ only in case are merged: ?id=1&ID=2 gives getParameterValues("id") == [1, 2].
   private val params: Parameters by lazy { request.queryParameters }
   private val attributes = mutableMapOf<String, Any>()
-
-  // Set by Route.servlet to the context the servlet was initialized with.
-  internal var context: ServletContext? = null
 
   override fun getMethod(): String = request.httpMethod.value
 
@@ -152,8 +150,7 @@ internal class KtorServletRequest(
   override fun isSecure(): Boolean = scheme.equals("https", ignoreCase = true)
 
   // The charset parameter of the Content-Type header, or null when there is none.
-  override fun getCharacterEncoding(): String? =
-    contentType?.let { runCatching { ContentType.parse(it).parameter("charset") }.getOrNull() }
+  override fun getCharacterEncoding(): String? = contentType?.charsetParameter()
 
   override fun getContentLength(): Int = contentLengthLong.let { if (it > Int.MAX_VALUE) -1 else it.toInt() }
 

@@ -49,10 +49,14 @@ jobs:
       # Builds the POMs, Gradle module metadata, and sources and javadoc jars, which otherwise surface only at
       # release time. The JVM modules' publication, and the KMP modules' root and jvm ones; the Apple targets'
       # publications need a macOS host. No signing key is configured, so nothing is signed.
+      # Rendering the javadoc jars' Dokka HTML takes over a minute, so pull requests skip it and publish empty javadoc
+      # jars: the KDocs workflow already runs Dokka over every module for each pull request, and pushes to master
+      # build the javadoc jars in full.
       - name: Publish to the local Maven repository
         run: >-
           ./gradlew publishMavenPublicationToMavenLocal publishJvmPublicationToMavenLocal
           publishKotlinMultiplatformPublicationToMavenLocal
+          ${{ github.event_name == 'pull_request' && '-x dokkaGeneratePublicationHtml' || '' }}
 
       - name: Generate Kover XML coverage report
         run: ./gradlew koverXmlReport

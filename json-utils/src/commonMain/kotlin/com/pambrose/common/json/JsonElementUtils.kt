@@ -18,6 +18,7 @@ package com.pambrose.common.json
 
 import com.pambrose.common.json.JsonDefaults.json
 import com.pambrose.common.util.simpleClassName
+import com.pambrose.common.util.toDoubleQuoted
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -491,9 +492,8 @@ private fun JsonElement.toAny(): Any? =
 internal fun JsonElement.element(key: String) =
   elementOrNull(key) ?: throw IllegalArgumentException(
     jsonObject.keys.let { keys ->
-      val shown = keys.take(MAX_KEYS_SHOWN).joinToString(", ") { "\"$it\"" }
-      val more = if (keys.size > MAX_KEYS_SHOWN) ", ... (${keys.size} keys)" else ""
-      """JsonElement key "$key" not found; available keys: [$shown$more]"""
+      val shown = keys.joinToString(", ", "[", "]", MAX_KEYS_SHOWN, "... (${keys.size} keys)") { it.toDoubleQuoted() }
+      """JsonElement key "$key" not found; available keys: $shown"""
     },
   )
 
