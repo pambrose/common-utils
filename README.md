@@ -207,9 +207,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:4.1.0")
-  implementation("com.pambrose.common-utils:json-utils:4.1.0")
-  implementation("com.pambrose.common-utils:ktor-server-utils:4.1.0")
+  implementation("com.pambrose.common-utils:core-utils:5.0.0")
+  implementation("com.pambrose.common-utils:json-utils:5.0.0")
+  implementation("com.pambrose.common-utils:ktor-server-utils:5.0.0")
     // ... other modules
 }
 ```
@@ -236,7 +236,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>4.1.0</version>
+      <version>5.0.0</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>

@@ -2,9 +2,9 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.0.0] - Unreleased
 
-### Breaking (release as 5.0.0)
+### Breaking
 
 These change the published API or dependency lists, so under the versioning policy in CLAUDE.md they need a major
 release.
