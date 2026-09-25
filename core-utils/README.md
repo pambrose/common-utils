@@ -121,10 +121,22 @@ Built on `kotlinx-datetime`. Note that core-utils bundles **no IANA time-zone da
 package on JS/wasm, so they are left to consumers.
 
 ```kotlin
-import com.pambrose.common.util.DateUtils.*
+// DateUtils is an object, so its members are imported one by one (a star import from an object does not compile)
+import com.pambrose.common.util.DateUtils.age
+import com.pambrose.common.util.DateUtils.instantNow
+import com.pambrose.common.util.DateUtils.localDateNow
+import com.pambrose.common.util.DateUtils.localDateTimeNow
+import com.pambrose.common.util.DateUtils.parseToLocalDate
+import com.pambrose.common.util.DateUtils.parseToLocalDateTime
+import com.pambrose.common.util.DateUtils.toDashedYYYYMMDD
+import com.pambrose.common.util.DateUtils.toFullDateString
+import com.pambrose.common.util.DateUtils.toISO8601
+import com.pambrose.common.util.DateUtils.toLogString
+import com.pambrose.common.util.DateUtils.toMMDDYY
 import kotlinx.datetime.TimeZone
 
-val now = localDateTimeNow()
+// In UTC, so toISO8601()'s trailing Z and age(TimeZone.UTC) below describe it correctly
+val now = localDateTimeNow(TimeZone.UTC)
 val today = localDateNow()
 val instant = instantNow()
 
@@ -167,7 +179,8 @@ val current = shared.value
 shared.setWithLock { "updated" }
 val result = shared.withLock { length }   // the current value is the receiver
 
-// Sets the flag to true while the block runs and back to false afterward; it does not exclude other callers
+// Sets the flag to true while the block runs and restores its previous value afterward, so nested sections keep it
+// set; it does not exclude other callers, and overlapping threads can clear it while another is still inside
 val started = AtomicBoolean(false)
 started.criticalSection { println("started is true while this runs") }
 ```
@@ -240,8 +253,11 @@ The allow-list is required and must be non-empty, and it has to name every class
 superclasses (an `Integer` also needs `Number`). A blocklist is checked first and rejects `java.lang.Runtime`,
 `java.lang.Process` and `java.lang.ProcessBuilder`, plus anything under `java.rmi.`, `javax.management.` or the
 Commons Collections `functors` packages, even when allow-listed. A JEP 290 `ObjectInputFilter` bounds the stream
-as well — at most 32 levels of nesting and 10,485,760 array elements — and is merged with any JVM-wide
-`jdk.serialFilter` rather than replacing it. The serialized input itself is capped at 10 MB.
+as well — at most 20 levels of nesting, and no array length or object-reference count larger than the payload's
+size in bytes — and is merged with any JVM-wide `jdk.serialFilter` rather than replacing it. The serialized input
+itself is capped at 10 MB. Allow-list hash-based collections (`HashSet`, `HashMap`, `Hashtable`) sparingly for
+untrusted input: nested sets cost hashing time that grows exponentially with depth, which the depth limit only
+bounds.
 
 ```kotlin
 import com.pambrose.common.util.*
@@ -263,7 +279,11 @@ limits are exceeded.
 ### Content Sources (JVM)
 
 A `ContentRoot` resolves a relative path against its location and returns a `ContentSource`, which exposes
-`content`. Absolute file paths and full URLs are used unchanged:
+`content`. Absolute file paths and full URLs (paths that start with a scheme such as `https://`) are used unchanged.
+No containment is applied: `..` and absolute paths escape a `FileSystemSource`'s directory, and a repository reads any
+full URL, `file:` URLs and internal hosts included, so validate paths that come from user input. Repository files take
+the same optional `connectTimeout` and `readTimeout` as `UrlSource` (`repo.file(path, connect, read)`,
+`GitHubFile(..., connectTimeout = ...)`), and Java callers can pass `java.time.Duration` timeouts to `UrlSource`:
 
 ```kotlin
 import com.pambrose.common.util.FileSource
@@ -272,6 +292,7 @@ import com.pambrose.common.util.GitHubFile
 import com.pambrose.common.util.GitHubRepo
 import com.pambrose.common.util.OwnerType
 import com.pambrose.common.util.UrlSource
+import kotlin.time.Duration.Companion.seconds
 
 // Local filesystem
 val local = FileSystemSource("/var/data")
@@ -313,10 +334,10 @@ import com.pambrose.common.util.Version.Companion.buildString
 import com.pambrose.common.util.Version.Companion.version
 import com.pambrose.common.util.Version.Companion.versionDesc
 
-@Version(version = "2.2.6", releaseDate = "2026-09-07", buildTime = 1757260800000L)
+@Version(version = "2.2.6", releaseDate = "2026-09-07", buildTime = 1788739200000L)  // 2026-09-07T00:00:00Z
 object MyApp
 
-MyApp::class.version()          // "3.2.3", or "Unknown" if unannotated
+MyApp::class.version()          // "2.2.6", or "Unknown" if unannotated
 MyApp::class.buildString()      // formatted build timestamp
 MyApp::class.versionDesc()      // plain-text summary
 MyApp::class.versionDesc(true)  // JSON summary
@@ -401,8 +422,7 @@ This module depends on:
 - Kotlin Standard Library
 - Kotlinx Coroutines
 - Kotlinx DateTime
-- Kotlinx Serialization JSON
-- kotlin-logging
+- On the JVM only: kotlin-reflect and kotlin-logging (both `api`), and Kotlinx Serialization JSON (internally)
 
 ## Installation
 

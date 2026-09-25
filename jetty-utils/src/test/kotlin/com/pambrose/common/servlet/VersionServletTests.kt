@@ -54,7 +54,7 @@ class VersionServletTests : StringSpec() {
       val servlet = VersionServlet("1.0.0")
       servlet.service(request, response)
 
-      stringWriter.toString().trim() shouldBe "1.0.0"
+      stringWriter.toString() shouldBe "1.0.0"
     }
 
     "different version strings work correctly" {
@@ -69,7 +69,7 @@ class VersionServletTests : StringSpec() {
         val servlet = VersionServlet(version)
         servlet.service(request, response)
 
-        stringWriter.toString().trim() shouldBe version
+        stringWriter.toString() shouldBe version
       }
     }
   }

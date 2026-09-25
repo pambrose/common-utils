@@ -19,7 +19,8 @@ real gRPC builder methods such as `addService(...)` or `directExecutor()`.
 ### TLS Configuration
 
 - **`TlsUtils`**: builds client and server `TlsContext`s from certificate files
-- **Mutual authentication**: supplying a trust collection enables mutual auth
+- **Mutual authentication**: on a server, supplying a trust collection requires client certificates; on a client,
+  supplying a certificate chain and private key presents one
 - **`TlsContext.PLAINTEXT_CONTEXT`**: the non-TLS context
 
 ### Server Management
@@ -55,6 +56,12 @@ val tlsServer =
     addService(MyServiceImpl())
   }
 
+// Server listening on the loopback address only; without bindAddress it listens on every interface
+val localServer =
+  GrpcDsl.server(port = 8080, bindAddress = "127.0.0.1") {
+    addService(MyServiceImpl())
+  }
+
 // In-process server, ignoring port and TLS
 val inProcessServer =
   GrpcDsl.server(inProcessServerName = "test-server") {
@@ -67,7 +74,9 @@ plaintextServer.start()
 
 ### Creating gRPC Channels
 
-`channel` requires `tlsContext` — pass `PLAINTEXT_CONTEXT` for a non-TLS channel.
+`tlsContext` defaults to `PLAINTEXT_CONTEXT`; pass a context from `TlsUtils` for a TLS channel. The Netty
+transport needs `hostName` and a `port` in `0..65535`, and `channel` throws `IllegalArgumentException` without
+them.
 
 ```kotlin
 import com.pambrose.common.dsl.GrpcDsl
@@ -84,12 +93,12 @@ val plaintextChannel =
     // configure the ManagedChannelBuilder here
   }
 
-// TLS channel with retry enabled
+// TLS channel that retries UNAVAILABLE calls. Retry is on by default (as in grpc-java), but only transparent
+// retries happen until a retry policy is supplied through the service config.
 val tlsChannel =
   GrpcDsl.channel(
     hostName = "api.example.com",
     port = 443,
-    enableRetry = true,
     maxRetryAttempts = 5,
     tlsContext = TlsUtils.buildClientTlsContext(
       certChainFilePath = "client.crt",
@@ -97,6 +106,22 @@ val tlsChannel =
       trustCertCollectionFilePath = "ca.crt",
     ),
   ) {
+    defaultServiceConfig(
+      mapOf(
+        "methodConfig" to listOf(
+          mapOf(
+            "name" to listOf(mapOf<String, Any>()),
+            "retryPolicy" to mapOf(
+              "maxAttempts" to 5.0,
+              "initialBackoff" to "0.1s",
+              "maxBackoff" to "1s",
+              "backoffMultiplier" to 2.0,
+              "retryableStatusCodes" to listOf("UNAVAILABLE"),
+            ),
+          ),
+        ),
+      ),
+    )
   }
 
 // In-process channel, ignoring host, port and TLS
@@ -174,9 +199,9 @@ server.shutdownGracefully(maxWaitTime = 10.seconds)
 ```
 
 `shutdownGracefully` calls `shutdown()`, waits up to the timeout via `awaitTermination`, and then calls
-`shutdownNow()` in a `finally` block so the server always stops — including when `shutdown()` itself throws,
-as it does on an already-terminated server. It throws `InterruptedException` if the waiting thread is
-interrupted.
+`shutdownNow()` in a `finally` block so the server always stops, however those calls end. Calling it on a
+server that has already terminated is harmless: `shutdown()` then returns at once. It throws
+`InterruptedException` if the waiting thread is interrupted.
 
 `shutdownWithJvm` runs the same sequence from a JVM shutdown hook, swallowing any failure since nothing can
 observe it at that point. It rejects a timeout under a millisecond when the hook is registered, rather than
@@ -186,8 +211,10 @@ failing at JVM exit where it would skip the shutdown entirely.
 
 ### `GrpcDsl`
 
-- `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = false, maxRetryAttempts: Int = 5, tlsContext: TlsContext = PLAINTEXT_CONTEXT, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
-- `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", block: ServerBuilder<*>.() -> Unit): Server`
+- `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = true, maxRetryAttempts: Int = 5, tlsContext: TlsContext = PLAINTEXT_CONTEXT, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
+- `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", bindAddress: String? = null, block: ServerBuilder<*>.() -> Unit): Server`
+  — without `inProcessServerName`, `port` must be in `0..65535` (`0` lets the OS choose), or it throws
+  `IllegalArgumentException`
 - `attributes(block: Attributes.Builder.() -> Unit): Attributes`
 - `streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserver<T>` — each callback may be
   registered at most once; a second registration throws `IllegalStateException`
@@ -215,7 +242,8 @@ This module depends on:
 
 - Kotlin Standard Library
 - core-utils
-- gRPC Netty, In-Process, Protobuf and Services
+- gRPC Netty, Stub and In-Process. Protobuf and the gRPC services are not included; add
+  `grpc-protobuf` or `grpc-services` yourself if you use them
 - Netty tcnative (BoringSSL) for TLS, with its native libraries for Linux (x86_64, aarch_64), macOS (x86_64,
   aarch_64) and Windows (x86_64) as runtime dependencies. Netty uses OpenSSL on those platforms and falls back to
   the JDK TLS provider elsewhere. Exclude `io.netty:netty-tcnative-boringssl-static` to always use the JDK provider.

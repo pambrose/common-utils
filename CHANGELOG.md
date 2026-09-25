@@ -2,6 +2,157 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [5.0.0] - 2026-09-25
+
+### Breaking
+
+These change the published API or dependency lists, so under the versioning policy in CLAUDE.md they need a major
+release.
+
+- ktor-server-utils `KtorServletRequest` and `KtorServletResponse` are internal; mount servlets with `Route.servlet`.
+- service-utils `jmxReporter`, `metricsService`, `zipkinReporterService` and `servletService` have private setters.
+- script-utils-common `AbstractScript.valueMap` is a read-only `Map`, and `AbstractEnginePool.channel` is private.
+- `ExposedUtils`, `RedisUtils.RedisInfo` and `RecaptchaService.RecaptchaResponse` are internal, and the companion
+  objects of `LambdaServlet`, `VersionServlet`, `SamplerGaugeCollector` and `ResendService` are private.
+- Narrower dependencies. Add any of these yourself if your code used them without declaring them:
+  - core-utils no longer exports kotlinx-serialization-json on any platform, nor kotlin-logging on JS, wasm and
+    native (the JVM artifact still exports kotlin-logging).
+  - jetty-utils, dropwizard-utils and ktor-client-utils no longer depend on core-utils; prometheus-utils and
+    exposed-utils depend on kotlin-logging instead of core-utils.
+  - grpc-utils no longer ships grpc-protobuf and grpc-services.
+  - service-utils no longer ships Ktor's call-logging and compression plugins.
+
+### Changed
+
+- Kotlin is no longer held at 2.4.10: the catalog, the `kotlin-scripting-*` artifacts and `kotlin-reflect` all move to
+  2.4.20, the compiler the build already used. The regression that caused the hold came from `KotlinScript` binding
+  each variable as its own engine binding, which is fixed below.
+- script-utils-kotlin `KotlinScript` stores its variables in a single `ScriptVariables` holder, the only engine
+  binding, and reads them from it in the generated declarations. `bindings` and `__variables` are now reserved names.
+- script-utils `KotlinExprEvaluatorPool` resets an evaluator's context every 20 returns (`resetEvery`), not on every
+  return, which made a pooled evaluation about four times slower. `AbstractExprEvaluatorPool` takes `resetEvery`; its
+  one-argument constructor keeps resetting on every return.
+- service-utils `ServletGroup.addServlet` and `HttpServletGroup.addServlet` add a missing leading slash to the path,
+  so `"ping"` and `"/ping"` register one endpoint and the later servlet replaces the earlier one. Before, both were
+  registered: the Jetty admin server failed to start with "Multiple servlets map to path /ping", and the Ktor one
+  kept serving the first.
+- service-utils' Jetty admin and metrics servers no longer send a `Server: Jetty(…)` header or a version on error
+  pages, and their error pages no longer include stack traces.
+- grpc-utils `GrpcDsl.channel` defaults `enableRetry` to `true`, grpc-java's own default. 4.1.0 made the default
+  `false` call `disableRetry()`, which also turned off transparent retries (for example on a refused stream during a
+  server restart) on every channel that never mentioned retry.
+- json-utils `String.toJsonElement(verbose)` is renamed `parseJson`; the old name is deprecated. It shadowed the
+  generic `T.toJsonElement()`, so `"42"` parsed to a number on a `String` but serialized to a string in generic code.
+- json-utils `parseJson`, and so `reformatJson`, rejects unquoted tokens that are not JSON literals (`hello`, `007`,
+  `+3`, `0x10`) with `SerializationException`. kotlinx's tree parser accepted them, and they were re-encoded
+  differently on each platform.
+- json-utils `intValue` and `intValueOrNull` accept only JSON integers, as `isNumber` and `doubleValue` already did:
+  `007`, `+5` and non-ASCII digits are rejected.
+- json-utils: a missing-key error names the key and the keys present instead of quoting the document.
+- exposed-utils `upsert(conflictIndex)` throws `IllegalArgumentException` for a functional or partial index, and
+  `UnsupportedByDialectException` on MySQL and MariaDB, whose `ON DUPLICATE KEY UPDATE` cannot target one index.
+- exposed-utils `KotlinSqlLogger` logs at debug level, like Exposed's own SQL logger, since each statement carries its
+  bound values.
+- ktor-server-utils: the response a servlet mounted with `Route.servlet` writes to implements the date and int header
+  setters, `flushBuffer`, `resetBuffer` and `reset`, ignores `setContentLength`, and accepts the `null` arguments the
+  servlet spec defines.
+- redis-utils `newRedisClient` accepts -1 (unlimited) for `maxIdleSize`, and warns when `minIdleSize` exceeds it.
+- core-utils `Duration.format()` renders `-INFINITE` as the mirror of `INFINITE` instead of overflowing, and a
+  negative duration under a millisecond has no sign.
+- core-utils `SingleAssignVar.singleAssign` is deprecated in favour of `AtomicDelegates.singleSetReference`.
+- core-utils: a repository path counts as a full URL only when it starts with a scheme (`https://…`), not when
+  `://` appears anywhere in it.
+- guava-utils `GenericMonitor` logs a deprecation warning for a negative `maxWait`, which will stop meaning
+  "wait forever" in a future major release.
+- prometheus-utils `SamplerGaugeCollector` rejects an invalid metric or label name and a repeated label name at
+  construction, rather than producing an exposition Prometheus rejects. The Java constructor
+  `(name, help, labelNames, data)`, which threw for any labels, is hidden from source.
+- jetty-utils `LambdaServlet` (and so `VersionServlet`) no longer appends a platform line separator to the body.
+- recaptcha-utils: a verification after `RecaptchaService.close()` builds a new HTTP client instead of failing,
+  so Ktor auto-reload and successive `testApplication`s keep verifying.
+- grpc-utils `GrpcDsl.server` and `GrpcDsl.channel` throw `IllegalArgumentException` with a clear message for the
+  Netty transport's missing host or out-of-range port, instead of failing inside Netty.
+
+### Added
+
+- `common-utils-bom`, a BOM that aligns every module (and the multiplatform modules' `-jvm` artifacts) on one version.
+- json-utils `longValue`, `longValue(vararg keys)` and `longValueOrNull(vararg keys)`.
+- core-utils repository files (`GitHubFile`, `GitLabFile`, `AbstractRepo.file`) take connect and read timeouts, and
+  `UrlSource` has a constructor taking `java.time.Duration` timeouts for Java callers.
+- guava-utils `GenericIdleService` and `GenericExecutionThreadService` have `startSync`/`stopSync` overloads taking
+  `java.time.Duration`.
+- jetty-utils `JettyDsl.server(port, host)` binds its connector to one address.
+- grpc-utils `GrpcDsl.server(bindAddress = …)` listens on one address.
+- ktor-server-utils: the request a servlet mounted with `Route.servlet` receives implements `getCookies`,
+  `getDateHeader`, `getIntHeader`, `getRequestURL`, `isSecure`, `getCharacterEncoding`, `getContentLength`,
+  `getDispatcherType` and `getServletContext`.
+
+### Bug fixes
+
+- script-utils-kotlin `KotlinScript`: binding a lambda or a JDK-internal class (`String.CASE_INSENSITIVE_ORDER`) no
+  longer breaks every later evaluation, and a variable named `a_tmp` no longer reads `a`'s value.
+- script-utils: a `Charset` or other value whose class sits in an unexported JDK package is declared as an exported
+  supertype; the enum behind `Comparator.naturalOrder()` is declared as a `Comparator`; and a lambda or such a
+  comparator can be given its type arguments and called.
+- script-utils-java `JavaScript.evalScript` no longer leaves extra public fields in the bindings, which broke every later
+  evaluation; `import` handles nested classes (and `addImport` is callable from Java); a `NoClassDefFoundError` from
+  the script is reported as a `ScriptException`; and `resetForReuse(true)` keeps the global scope the engine needs.
+- script-utils pools keep the block's exception when resetting the instance also fails.
+- ktor-server-utils `Route.servlet` answers HEAD with GET's headers and no body. Ktor sent the body, so a pipelined
+  response after a HEAD was read as part of it; this hit the `GenericKtorService` admin endpoints. TRACE and servlets
+  that override `getLastModified` no longer fail with a 500.
+- ktor-server-utils `HerokuHttpsRedirect` keeps the query string exactly as sent; it used to reorder and lower-case
+  the parameters, breaking signed URLs.
+- service-utils `KtorServletService` stops the embedded server when it fails to start, so a port conflict no longer
+  leaves Ktor's shutdown hook registered and the servlets undestroyed.
+- service-utils `initMetricsAndHealthChecks()` fails fast when called a second time.
+- guava-utils `GenericValueWaiter` returns at once for a zero or negative timeout. Under a dispatcher that runs work
+  inline, it used to wait until the value next changed.
+- redis-utils' suspending helpers connect, ping and close on `Dispatchers.IO` rather than blocking the caller's thread
+  for up to the 2-second timeout; connection failures are logged with their cause.
+- core-utils `toObjectSecure` bounds array lengths and object references by the size of the payload, and nesting
+  at 20 levels (was 32). The old limits let a 35-byte payload allocate 80 MB, a 62-byte `ArrayList` allocate a
+  10-million-slot array, and a 1.7 KB nested-`HashSet` payload take about a minute of CPU.
+- email-utils `isValidEmail` rejects addresses over 254 characters, local parts over 64 and domain labels over 63
+  before running its pattern. An address with a few thousand domain labels threw `StackOverflowError`.
+- email-utils `ResendService` creates the Resend emails client once and reuses it. `Resend.emails()` builds a new
+  OkHttp client on every call, so each email opened its own connection pool and TLS handshake.
+- service-utils `GenericKtorService` treats a blank admin path as disabling that endpoint, as the Jetty variant
+  does. It used to normalize `""` to `"/"` first, so a blank `threadDumpPath` served the thread dump at the root.
+- core-utils `maskUrlCredentials` masks every URL in a string, not only the first.
+- core-utils `criticalSection` restores the flag's previous value, so a nested section no longer clears it early.
+- core-utils `join`, `toPath` and `pathOf` no longer double or keep separators between elements.
+- core-utils `(-5).lpad(0)` no longer throws, and `waitForPortAvailable` no longer sleeps after its last attempt.
+
+### Build
+
+- `gradle-wrapper.properties` pins `distributionSha256Sum`, and `make upgrade-wrapper` keeps it up to date.
+- `gradlew` and `gradlew.bat` are no longer marked `binary` in `.gitattributes`, so their diffs are visible.
+- CI actions are pinned to commit SHAs, and every job has a timeout.
+- CI publishes to the local Maven repository, so a broken POM or javadoc jar shows up before release; the Linux
+  job caches the Kotlin/Native toolchain, and the native caches have restore keys.
+- The disabled watchOS/tvOS simulator test tasks no longer link their test binaries.
+- `make coverage-clean` also cleans the KMP modules' `jvmTest` results and every module's Kover data.
+- ktor-server-utils' POM marks `jakarta.servlet-api` optional, so Maven consumers no longer get it at runtime.
+- Detekt's `VariableNaming` exclusions cover the `*Tests.kt` specs.
+
+### Documentation
+
+- `docs/CODE_REVIEW_2026-09-24.md` reviews 4.1.0; all 93 of its items are fixed in this release.
+- CLAUDE.md states the versioning policy: a minor release stays binary compatible, and removing or changing a
+  signature waits for a major one.
+- email-utils documents that `ResendWebhookMsg.decode` handles `email.*` events only, and how to check `type` first.
+- The READMEs correct the jetty-utils HTTP method handling, the grpc-utils TLS and shutdown notes, the prometheus-utils
+  series names, the service-utils `Compression` example, the module descriptions in llms.txt, and the steps for
+  adding a module.
+- The CHANGELOG backfills 2.6.3 and 2.6.4 and corrects the 2.7.1 date.
+
+### Dependency changes
+
+- `kotlin-scripting-*` 2.4.10 → 2.4.20, matching the compiler and `kotlin-reflect`.
+- Removed from the published dependencies: grpc-protobuf, grpc-services, ktor-server-call-logging,
+  ktor-server-compression, and (from jetty-utils, dropwizard-utils and ktor-client-utils) core-utils. See Breaking.
+
 ## [4.1.0] - 2026-09-16
 
 ### Changed
@@ -485,7 +636,8 @@ All notable changes to Common Utils are documented in this file.
 - The public `JsonElementUtils.logger` holder (json-utils) is deprecated; the utilities use a private logger.
 - `KtorDsl.blockingGet` (ktor-client-utils) accepts `httpClient` and `expectSuccess`, like `withHttpClient`.
   The previous signature is kept as a hidden deprecation, so compiled callers keep linking and calls like
-  `blockingGet(url) { … }` still compile.
+  `blockingGet(url) { … }` still compile. A call that passes `setUp` by position, `blockingGet(url, { … }) { … }`,
+  no longer compiles, since `httpClient` now comes second: name the argument, `blockingGet(url, setUp = { … }) { … }`.
 - `UrlSource` (core-utils) now applies connect and read timeouts, 10 and 30 seconds by default and
   configurable through new constructor parameters. Before, an unresponsive server blocked the reading thread
   forever. The URL is parsed with `URI(source).toURL()` instead of the deprecated `URL(String)` constructor.
@@ -1028,7 +1180,7 @@ All notable changes to Common Utils are documented in this file.
 - Add `.superset/` to `.gitignore`
 - Bump project version to 2.8.0
 
-## [2.7.1] - 2026-04-04
+## [2.7.1] - 2026-04-17
 
 - Consolidate Dokka docs generation in root project with GitHub Actions workflow
 - Fix missing POM description by deferring evaluation with provider
@@ -1052,6 +1204,17 @@ All notable changes to Common Utils are documented in this file.
 - Update copyright headers to 2026
 - Upgrade Gradle wrapper to 9.4.1
 - Update dependencies
+
+## [2.6.4] - 2026-04-01
+
+- Dependency updates, CHANGELOG, and README badges
+
+## [2.6.3] - 2026-03-19
+
+- Extract JitPack URLs into Makefile variables (`JITPACK_BUILD_LOG`, `JITPACK_API_URL`)
+- Update dependencies: gRPC 1.80.0, Resend 4.13.0
+- Update `CODE_REVIEW.md` dependency versions and move to `docs/`
+- Bump version references across all module READMEs and docs
 
 ## [2.6.2] - 2026-03-16
 

@@ -33,7 +33,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.Runs
@@ -46,6 +48,9 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.time.Duration
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.withContext
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -175,6 +180,26 @@ class RedisUtilsMockTests : StringSpec() {
       verify(exactly = 1) { client.ping() }
     }
 
+    // Ping blocks for up to the socket timeout when Redis is down, so it must not run on the caller's thread.
+    "the suspending pool helpers ping on Dispatchers.IO, not the caller's thread" {
+      val client = mockk<RedisClient>()
+      val pingThreads: MutableList<String> = []
+      every { client.ping() } answers {
+        pingThreads += Thread.currentThread().name
+        "PONG"
+      }
+      val caller =
+        Executors.newSingleThreadExecutor { Thread(it, "redis-caller") }.asCoroutineDispatcher().use { dispatcher ->
+          withContext(dispatcher) {
+            client.withSuspendingRedisPool { it.shouldNotBeNull() }
+            client.withSuspendingNonNullRedisPool { it }
+            Thread.currentThread().name
+          }
+        }
+      pingThreads.size shouldBe 2
+      pingThreads.forEach { it shouldNotBe caller }
+    }
+
     "a pool helper logs a failure with its stack trace only when printStackTrace is true" {
       val failure = JedisConnectionException("simulated ping failure")
       val client = mockk<RedisClient>()
@@ -184,10 +209,12 @@ class RedisUtilsMockTests : StringSpec() {
         client.withRedisPool(printStackTrace = true) { it } shouldBe null
         client.withRedisPool(printStackTrace = false) { it } shouldBe null
 
+        // The cause's message tells an auth failure from an unreachable host or an exhausted pool.
         val (withTrace, withoutTrace) = logs().filter { it.level == Level.ERROR }
-        withTrace.formattedMessage shouldBe "Failed to connect to redis"
+        withTrace.formattedMessage shouldBe "Failed to connect to redis: simulated ping failure"
         withTrace.throwableProxy.shouldBeInstanceOf<ThrowableProxy>().throwable shouldBeSameInstanceAs failure
-        withoutTrace.formattedMessage shouldBe "Failed to connect to redis"
+        withoutTrace.formattedMessage shouldBe
+          "Failed to connect to redis: JedisConnectionException: simulated ping failure"
         withoutTrace.throwableProxy shouldBe null
       }
     }

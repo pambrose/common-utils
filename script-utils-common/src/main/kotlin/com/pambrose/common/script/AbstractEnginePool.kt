@@ -39,8 +39,9 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
     require(size > 0) { "Pool size must be positive, but was $size" }
   }
 
-  /** Channel used as a bounded buffer for pooling instances. */
-  protected val channel: Channel<T> = Channel(size) { returnToPool(it) }
+  // Bounded buffer holding the idle instances. Private, so every instance goes out through borrow and back through
+  // the reset in returnToPool.
+  private val channel: Channel<T> = Channel(size) { returnToPool(it) }
 
   /**
    * Returns an approximate, point-in-time indication of whether the pool currently has no instances
@@ -74,7 +75,8 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
 
   /**
    * Suspends until an instance can be borrowed, runs [block] with it, then resets it with [reset] and returns it to the
-   * pool, even if [block] or [reset] throws. An exception from [reset] propagates to the caller.
+   * pool, even if [block] or [reset] throws. An exception from [reset] propagates to the caller, unless [block] threw
+   * too: then the block's exception propagates, with the reset failure attached as suppressed.
    *
    * @param block the work to do with the borrowed instance
    * @return the result of [block]
@@ -82,16 +84,20 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
    */
   protected suspend fun <R> withInstance(block: (T) -> R): R {
     val instance = channel.receive()
-    try {
-      return block(instance)
-    } finally {
-      // Nested, so a failing reset cannot keep the instance out of the pool: a size-1 pool would then wait forever.
+    val result = runCatching { block(instance) }
+    // Nested, so a failing reset cannot keep the instance out of the pool: a size-1 pool would then wait forever.
+    val resetFailure =
       try {
-        reset(instance)
+        runCatching { reset(instance) }.exceptionOrNull()
       } finally {
         returnToPool(instance)
       }
+    result.exceptionOrNull()?.let { failure ->
+      resetFailure?.let(failure::addSuppressed)
+      throw failure
     }
+    resetFailure?.let { throw it }
+    return result.getOrThrow()
   }
 
   // Puts instance back into the channel, or closes it once the pool has been closed.

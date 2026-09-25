@@ -62,16 +62,20 @@ public class com/pambrose/common/concurrent/ConditionalValue {
 
 public abstract class com/pambrose/common/concurrent/GenericExecutionThreadService : com/google/common/util/concurrent/AbstractExecutionThreadService {
 	public fun <init> ()V
+	public final fun startSync (Ljava/time/Duration;)V
 	public final fun startSync-LRDsOJo (J)V
 	public static synthetic fun startSync-LRDsOJo$default (Lcom/pambrose/common/concurrent/GenericExecutionThreadService;JILjava/lang/Object;)V
+	public final fun stopSync (Ljava/time/Duration;)V
 	public final fun stopSync-LRDsOJo (J)V
 	public static synthetic fun stopSync-LRDsOJo$default (Lcom/pambrose/common/concurrent/GenericExecutionThreadService;JILjava/lang/Object;)V
 }
 
 public abstract class com/pambrose/common/concurrent/GenericIdleService : com/google/common/util/concurrent/AbstractIdleService {
 	public fun <init> ()V
+	public final fun startSync (Ljava/time/Duration;)V
 	public final fun startSync-LRDsOJo (J)V
 	public static synthetic fun startSync-LRDsOJo$default (Lcom/pambrose/common/concurrent/GenericIdleService;JILjava/lang/Object;)V
+	public final fun stopSync (Ljava/time/Duration;)V
 	public final fun stopSync-LRDsOJo (J)V
 	public static synthetic fun stopSync-LRDsOJo$default (Lcom/pambrose/common/concurrent/GenericIdleService;JILjava/lang/Object;)V
 }

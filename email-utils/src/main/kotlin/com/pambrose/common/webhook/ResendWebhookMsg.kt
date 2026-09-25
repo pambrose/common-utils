@@ -24,7 +24,8 @@ import kotlinx.serialization.json.Json
  * Represents a webhook message received from the Resend email service.
  *
  * This is the top-level envelope containing the event type, timestamp, and event-specific [Data].
- * Decode incoming request bodies with [decode], which tolerates fields Resend adds later.
+ * Decode incoming request bodies with [decode], which tolerates fields Resend adds later. Only `email.*` events
+ * decode; see [decode].
  *
  * This type models the payload only. It does not verify the Svix signature headers Resend sends
  * (`svix-id`, `svix-timestamp`, `svix-signature`), so a handler that trusts unverified requests will accept
@@ -56,7 +57,11 @@ data class ResendWebhookMsg(
     /**
      * Decodes a Resend webhook request [body] with [json].
      *
-     * Unknown fields are ignored, so an event type carrying fields these models do not declare still decodes.
+     * Unknown fields are ignored, so an `email.*` event carrying fields these models do not declare still decodes.
+     * Only `email.*` events are supported: [Data] requires `email_id` and `from`, which other event families
+     * (such as `contact.*` and `domain.*`) do not send, so their payloads throw
+     * [kotlinx.serialization.MissingFieldException]. An endpoint subscribed to other events should read `type`
+     * first, for example with `json.parseToJsonElement(body).jsonObject["type"]`, and decode only `email.*` ones.
      *
      * @param body the raw JSON request body
      * @return the decoded message

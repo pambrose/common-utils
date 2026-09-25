@@ -15,32 +15,50 @@ concurrency:
   group: test-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Third-party actions are pinned to a commit SHA, with the release in a trailing comment; Dependabot updates both.
+# Every job has a timeout, so a hung test cannot hold a runner for the 6-hour default.
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Nothing here pushes, so keep the token out of .git/config.
           persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      # `build` compiles linuxX64 (and links its tests), which downloads the Kotlin/Native toolchain.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
 
       # `build` runs lintKotlin and detekt through `check`, so there is no separate lint step.
       - name: Build and test
         run: ./gradlew build
 
+      # Builds the POMs, Gradle module metadata, and sources and javadoc jars, which otherwise surface only at
+      # release time. The JVM modules' publication, and the KMP modules' root and jvm ones; the Apple targets'
+      # publications need a macOS host. No signing key is configured, so nothing is signed.
+      - name: Publish to the local Maven repository
+        run: >-
+          ./gradlew publishMavenPublicationToMavenLocal publishJvmPublicationToMavenLocal
+          publishKotlinMultiplatformPublicationToMavenLocal
+
       - name: Generate Kover XML coverage report
         run: ./gradlew koverXmlReport
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: build/reports/kover/report.xml
@@ -53,48 +71,54 @@ jobs:
   # iosX64Test on the arm64 runner.
   native-apple:
     runs-on: macos-latest
+    timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
       # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain. The catalog pins the Kotlin plugin
       # (through the convention plugins), so its hash is a good cache key.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what is missing.
+          restore-keys: konan-${{ runner.os }}-
 
       - name: Run macOS and iOS simulator tests
         run: ./gradlew macosArm64Test iosSimulatorArm64Test
 
   native-windows:
     runs-on: windows-latest
+    timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what is missing.
+          restore-keys: konan-${{ runner.os }}-
 
       - name: Run mingwX64 tests
         shell: bash

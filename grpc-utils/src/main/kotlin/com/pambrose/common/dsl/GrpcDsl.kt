@@ -16,7 +16,7 @@
 
 package com.pambrose.common.dsl
 
-import com.pambrose.common.delegate.SingleAssignVar.singleAssign
+import com.pambrose.common.delegate.AtomicDelegates.singleSetReference
 import com.pambrose.common.util.isNotNull
 import com.pambrose.common.util.toDoubleQuoted
 import com.pambrose.common.utils.TlsContext
@@ -32,6 +32,7 @@ import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
+import java.net.InetSocketAddress
 
 /**
  * DSL entry point for building gRPC channels, servers, attributes, and stream observers.
@@ -40,6 +41,7 @@ import io.grpc.stub.StreamObserver
  */
 object GrpcDsl {
   private val logger = KotlinLogging.logger {}
+  private const val MAX_PORT = 65535
 
   /**
    * Builds a [ManagedChannel] using either a Netty transport or an in-process transport.
@@ -49,8 +51,11 @@ object GrpcDsl {
    *
    * @param hostName the target server hostname (Netty transport only)
    * @param port the target server port (Netty transport only)
-   * @param enableRetry whether to enable gRPC retry on the channel. grpc-java enables retry by default, so
-   *   `false` disables it explicitly rather than leaving that default in place.
+   * @param enableRetry whether gRPC retry is enabled on the channel. `true` (the default) matches grpc-java's own
+   *   default: RPCs get transparent retries (e.g. on a refused stream during a server restart), and any retry
+   *   policy in the channel's service config applies. `false` calls `disableRetry()`, which turns off transparent
+   *   retries as well. Configured retries need a retry policy, supplied in [block] through
+   *   `defaultServiceConfig(...)`; this flag alone does not add one.
    * @param maxRetryAttempts the maximum number of retry attempts per RPC; a negative value leaves grpc's own
    *   default in place
    * @param tlsContext the TLS configuration for the channel; defaults to [PLAINTEXT_CONTEXT]
@@ -58,11 +63,13 @@ object GrpcDsl {
    * @param inProcessServerName if non-empty, creates an in-process channel with this name
    * @param block a configuration block applied to the channel builder before building
    * @return the built [ManagedChannel]
+   * @throws IllegalArgumentException if the Netty transport is chosen and [hostName] is blank or [port] is not in
+   *   `0..65535`
    */
   fun channel(
     hostName: String = "",
     port: Int = -1,
-    enableRetry: Boolean = false,
+    enableRetry: Boolean = true,
     maxRetryAttempts: Int = 5,
     tlsContext: TlsContext = PLAINTEXT_CONTEXT,
     overrideAuthority: String = "",
@@ -118,6 +125,10 @@ object GrpcDsl {
     port: Int,
     tlsContext: TlsContext,
   ): NettyChannelBuilder {
+    require(hostName.isNotBlank()) {
+      "hostName is required for a Netty channel; set inProcessServerName for an in-process one"
+    }
+    require(port in 0..MAX_PORT) { "port must be in 0..$MAX_PORT for a Netty channel, but was $port" }
     logger.info { "Creating connection for gRPC server at $hostName:$port using ${tlsContext.desc()}" }
     return NettyChannelBuilder
       .forAddress(hostName, port)
@@ -132,24 +143,28 @@ object GrpcDsl {
   /**
    * Builds a gRPC [Server] using either a Netty transport or an in-process transport.
    *
-   * When [inProcessServerName] is non-empty, an in-process server is created (ignoring port/TLS).
-   * Otherwise a Netty server is created listening on the given [port].
+   * When [inProcessServerName] is non-empty, an in-process server is created (ignoring port, TLS and bind
+   * address). Otherwise a Netty server is created listening on [port], at [bindAddress] or on every interface.
    *
-   * @param port the port to listen on (Netty transport only)
+   * @param port the port to listen on (Netty transport only); `0` lets the OS choose one
    * @param tlsContext the TLS configuration for the server; defaults to [PLAINTEXT_CONTEXT]
    * @param inProcessServerName if non-empty, creates an in-process server with this name
+   * @param bindAddress the address to listen on, such as `"127.0.0.1"` (Netty transport only); `null`, the
+   *   default, listens on every interface
    * @param block a configuration block applied to the server builder before building
    * @return the built [Server]
+   * @throws IllegalArgumentException if the Netty transport is chosen and [port] is not in `0..65535`
    */
   fun server(
     port: Int = -1,
     tlsContext: TlsContext = PLAINTEXT_CONTEXT,
     inProcessServerName: String = "",
+    bindAddress: String? = null,
     block: ServerBuilder<*>.() -> Unit,
   ): Server {
     val serverBuilder =
       if (inProcessServerName.isEmpty())
-        createNettyServer(port, tlsContext)
+        createNettyServer(port, bindAddress, tlsContext)
       else
         createInProcessServer(inProcessServerName)
 
@@ -159,12 +174,31 @@ object GrpcDsl {
     }
   }
 
+  // The pre-bindAddress signature, kept for binary compatibility; hidden, so source callers resolve to the one above.
+  @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
+  fun server(
+    port: Int = -1,
+    tlsContext: TlsContext = PLAINTEXT_CONTEXT,
+    inProcessServerName: String = "",
+    block: ServerBuilder<*>.() -> Unit,
+  ): Server = server(port, tlsContext, inProcessServerName, null, block)
+
   private fun createNettyServer(
     port: Int,
+    bindAddress: String?,
     tlsContext: TlsContext,
   ): NettyServerBuilder {
-    logger.info { "Listening for gRPC traffic on port $port using ${tlsContext.desc()}" }
-    return NettyServerBuilder.forPort(port).also { builder ->
+    require(port in 0..MAX_PORT) {
+      "port must be in 0..$MAX_PORT for a Netty server, but was $port; set inProcessServerName for an in-process one"
+    }
+    val where = if (bindAddress == null) "port $port" else "$bindAddress:$port"
+    logger.info { "Listening for gRPC traffic on $where using ${tlsContext.desc()}" }
+    val nettyBuilder =
+      if (bindAddress == null)
+        NettyServerBuilder.forPort(port)
+      else
+        NettyServerBuilder.forAddress(InetSocketAddress(bindAddress, port))
+    return nettyBuilder.also { builder ->
       if (tlsContext.sslContext.isNotNull())
         builder.sslContext(tlsContext.sslContext)
     }
@@ -213,9 +247,9 @@ object GrpcDsl {
    * @param T the response element type
    */
   class StreamObserverHelper<T> : StreamObserver<T> {
-    private var onNextBlock: ((T) -> Unit)? by singleAssign()
-    private var onErrorBlock: ((Throwable) -> Unit)? by singleAssign()
-    private var completedBlock: (() -> Unit)? by singleAssign()
+    private var onNextBlock: ((T) -> Unit)? by singleSetReference()
+    private var onErrorBlock: ((Throwable) -> Unit)? by singleSetReference()
+    private var completedBlock: (() -> Unit)? by singleSetReference()
 
     override fun onNext(response: T) {
       onNextBlock?.invoke(response)

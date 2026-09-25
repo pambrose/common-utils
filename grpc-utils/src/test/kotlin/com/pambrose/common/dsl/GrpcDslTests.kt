@@ -27,12 +27,17 @@ import io.grpc.CallOptions
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Server
+import io.grpc.ServerBuilder
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.ClientCalls
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.shouldNotBe
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
@@ -41,6 +46,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import java.net.InetSocketAddress
+import java.lang.reflect.InvocationTargetException
 import kotlin.reflect.KClass
 
 // A built ManagedChannel exposes no way to read its retry configuration back, so the transport's builder is
@@ -199,6 +206,21 @@ class GrpcDslTests : StringSpec() {
       }
     }
 
+    // Before 4.1.0 an unset flag left grpc's default (retry on); 4.1.0 made the default call disableRetry(), which
+    // also turned off transparent retries on every channel that never mentioned retry.
+    "a channel built without enableRetry keeps grpc's retry, including transparent retries" {
+      val builder = mockk<NettyChannelBuilder>(relaxed = true)
+      withStubbedBuilder(
+        NettyChannelBuilder::class,
+        builder,
+        { every { NettyChannelBuilder.forAddress(any<String>(), any<Int>()) } returns builder },
+      ) {
+        GrpcDsl.channel(hostName = "localhost", port = 15559) {}
+
+        verify(exactly = 0) { builder.disableRetry() }
+      }
+    }
+
     "enableRetry = true enables retry" {
       val builder = mockk<NettyChannelBuilder>(relaxed = true)
       withStubbedBuilder(
@@ -329,6 +351,51 @@ class GrpcDslTests : StringSpec() {
       sslContext.applicationProtocolNegotiator().protocols() shouldContain "h2"
 
       val server = GrpcDsl.server(port = 0, tlsContext = TlsContext(sslContext, false)) {}
+      server.isShutdown shouldBe false
+    }
+
+    "a server given a bindAddress listens on that address only" {
+      GrpcDsl.server(port = 0, bindAddress = "127.0.0.1") {}.use { server ->
+        val address = server.listenSockets.single().shouldBeInstanceOf<InetSocketAddress>()
+        address.address.isLoopbackAddress shouldBe true
+        address.port shouldNotBe 0
+      }
+    }
+
+    // The defaults (port -1, hostName "") used to fail deep inside Netty with "port out of range".
+    "the Netty transport rejects an unset port or host with a message naming the fix" {
+      shouldThrow<IllegalArgumentException> { GrpcDsl.server {} }.message shouldContain "inProcessServerName"
+      shouldThrow<IllegalArgumentException> { GrpcDsl.server(port = 65536) {} }.message shouldContain "65536"
+      shouldThrow<IllegalArgumentException> { GrpcDsl.channel(port = 443) {} }.message shouldContain "hostName"
+      shouldThrow<IllegalArgumentException> {
+        GrpcDsl.channel(hostName = "localhost") {}
+      }.message shouldContain "port"
+      shouldThrow<IllegalArgumentException> {
+        GrpcDsl.channel(hostName = "localhost", port = 65536) {}
+      }.message shouldContain "65536"
+    }
+
+    // Callers compiled before bindAddress was added link against the old signature and its $default bridge.
+    "the pre-bindAddress server signature still links and delegates" {
+      val oldDefault =
+        GrpcDsl::class.java.getMethod(
+          "server\$default",
+          GrpcDsl::class.java,
+          Int::class.javaPrimitiveType,
+          TlsContext::class.java,
+          String::class.java,
+          Function1::class.java,
+          Int::class.javaPrimitiveType,
+          Any::class.java,
+        )
+      val block: ServerBuilder<*>.() -> Unit = {}
+
+      // Every argument defaulted: port -1 is rejected once the defaults are applied.
+      shouldThrow<InvocationTargetException> { oldDefault.invoke(null, GrpcDsl, 0, null, null, block, 0b0111, null) }
+        .cause.shouldBeInstanceOf<IllegalArgumentException>()
+
+      val serverName = InProcessServerBuilder.generateName()
+      val server = oldDefault.invoke(null, GrpcDsl, 0, null, serverName, block, 0b0011, null) as Server
       server.isShutdown shouldBe false
     }
   }

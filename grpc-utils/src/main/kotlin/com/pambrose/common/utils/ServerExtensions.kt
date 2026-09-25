@@ -59,8 +59,8 @@ fun Server.shutdownGracefully(maxWaitTime: Duration) =
  * Gracefully shuts down this gRPC [Server], waiting up to the specified [timeout] for termination.
  *
  * Extension function on [Server]. Calls [Server.shutdown], then [Server.awaitTermination], with
- * [Server.shutdownNow] in a `finally` block so the server is stopped however those calls end — including
- * when [Server.shutdown] itself throws, for example on an already-terminated server.
+ * [Server.shutdownNow] in a `finally` block so the server is stopped however those calls end. On a server that has
+ * already terminated, [Server.shutdown] simply returns, so calling this again is harmless.
  *
  * @param timeout the maximum time to wait for graceful termination
  * @param unit the time unit of the [timeout] argument

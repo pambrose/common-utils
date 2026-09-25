@@ -10,7 +10,6 @@ kotlin {
     // Targets, toolchain, opt-ins, and compiler flags are configured in the root build.gradle.kts.
     sourceSets {
         commonMain.dependencies {
-            api(project(":core-utils"))
             api(libs.ktor.client.core)
         }
         commonTest.dependencies {

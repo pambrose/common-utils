@@ -39,8 +39,7 @@ internal fun fetch(
   configure: HttpRequest.Builder.() -> Unit = {},
 ): HttpResponse<ByteArray> {
   val server =
-    JettyDsl.server(0) {
-      (connectors.single() as ServerConnector).host = LOOPBACK
+    JettyDsl.server(0, LOOPBACK) {
       handler = JettyDsl.servletContextHandler { addServlet(ServletHolder(servlet), "/test") }
     }
   server.start()

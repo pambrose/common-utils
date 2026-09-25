@@ -21,20 +21,23 @@ import kotlin.concurrent.atomics.AtomicBoolean
 /** Utility object providing extension functions for atomic types. */
 object AtomicUtils {
   /**
-   * Executes [block] while this [AtomicBoolean] is set to `true`, resetting it to `false` when complete.
+   * Executes [block] while this [AtomicBoolean] is set to `true`, then restores the value it had before.
    *
-   * This is useful for signaling that a critical section is in progress.
+   * This is useful for signaling that a critical section is in progress. Restoring the previous value, rather than
+   * storing `false`, keeps the flag set for an outer section when sections nest. It is still one flag, not a lock or a
+   * count: when two threads overlap, the first to finish restores the value it saw, so the flag cannot say whether
+   * the other is still inside. Use a counter or a lock for that.
    *
    * @param T the return type of the block
    * @param block the code to execute within the critical section
    * @return the result of [block]
    */
   inline fun <T> AtomicBoolean.criticalSection(block: () -> T): T {
-    store(true)
+    val previous = exchange(true)
     try {
       return block()
     } finally {
-      store(false)
+      store(previous)
     }
   }
 }

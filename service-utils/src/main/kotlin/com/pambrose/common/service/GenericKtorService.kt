@@ -18,7 +18,6 @@ package com.pambrose.common.service
 
 import com.pambrose.common.concurrent.GenericIdleService
 import com.pambrose.common.servlet.VersionServlet
-import com.pambrose.common.util.ensureLeadingSlash
 import com.google.common.util.concurrent.Service
 import io.dropwizard.metrics.servlets.HealthCheckServlet
 import io.dropwizard.metrics.servlets.PingServlet
@@ -54,6 +53,7 @@ abstract class GenericKtorService<T> protected constructor(
 ) : AbstractGenericService<T>(configVals, adminConfig, metricsConfig, zipkinConfig, isTestMode) {
   /** The Ktor-based servlet service hosting admin endpoints. Initialized when admin is enabled. */
   lateinit var servletService: KtorServletService
+    private set
 
   override val servletServiceOrNull: GenericIdleService?
     get() = if (::servletService.isInitialized) servletService else null
@@ -80,10 +80,10 @@ abstract class GenericKtorService<T> protected constructor(
         adminConfig.run {
           HttpServletGroup().apply {
             addServlets(
-              pingPath.ensureLeadingSlash() to PingServlet(),
-              versionPath.ensureLeadingSlash() to VersionServlet(versionBlock()),
-              healthCheckPath.ensureLeadingSlash() to HealthCheckServlet(healthCheckRegistry),
-              threadDumpPath.ensureLeadingSlash() to ThreadDumpServlet(),
+              pingPath to PingServlet(),
+              versionPath to VersionServlet(versionBlock()),
+              healthCheckPath to HealthCheckServlet(healthCheckRegistry),
+              threadDumpPath to ThreadDumpServlet(),
             )
             servletInit(this)
           }

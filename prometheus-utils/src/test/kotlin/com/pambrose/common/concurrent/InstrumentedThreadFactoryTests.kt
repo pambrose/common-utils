@@ -18,34 +18,39 @@ import kotlin.concurrent.atomics.AtomicReference
 class InstrumentedThreadFactoryTests : StringSpec() {
   init {
     "newThread creates a non-null thread" {
+      val registry = CollectorRegistry()
       val factory = InstrumentedThreadFactory(
         delegate = Executors.defaultThreadFactory(),
         name = "itf_creates_thread",
         help = "Test",
+        registry = registry,
       )
       factory.newThread {}.shouldNotBeNull()
     }
 
     "tracks created count" {
+      val registry = CollectorRegistry()
       val factory = InstrumentedThreadFactory(
         delegate = Executors.defaultThreadFactory(),
         name = "itf_created_count",
         help = "Test",
+        registry = registry,
       )
       factory.newThread {}
       factory.newThread {}
       factory.newThread {}
 
-      val registry = CollectorRegistry.defaultRegistry
       val createdSample = registry.getSampleValue("itf_created_count_threads_created_total")
       createdSample shouldBe 3.0
     }
 
     "tracks running and terminated counts after thread execution" {
+      val registry = CollectorRegistry()
       val factory = InstrumentedThreadFactory(
         delegate = Executors.defaultThreadFactory(),
         name = "itf_running_terminated",
         help = "Test",
+        registry = registry,
       )
       val startedLatch = CountDownLatch(1)
       val proceedLatch = CountDownLatch(1)
@@ -59,7 +64,6 @@ class InstrumentedThreadFactoryTests : StringSpec() {
       thread.start()
       startedLatch.await()
 
-      val registry = CollectorRegistry.defaultRegistry
       val runningDuring = registry.getSampleValue("itf_running_terminated_threads_running")
       runningDuring shouldBe 1.0
 
@@ -77,16 +81,17 @@ class InstrumentedThreadFactoryTests : StringSpec() {
     // finished thread as neither running nor terminated. terminated.inc() now runs first, and once every created
     // thread has finished, created == running + terminated.
     "running plus terminated equals created after completion" {
+      val registry = CollectorRegistry()
       val factory = InstrumentedThreadFactory(
         delegate = Executors.defaultThreadFactory(),
         name = "itf_invariant",
         help = "Test",
+        registry = registry,
       )
       val thread = factory.newThread {}.shouldNotBeNull()
       thread.start()
       thread.join()
 
-      val registry = CollectorRegistry.defaultRegistry
       val created = registry.getSampleValue("itf_invariant_threads_created_total")
       val running = registry.getSampleValue("itf_invariant_threads_running")
       val terminated = registry.getSampleValue("itf_invariant_threads_terminated_total")
@@ -98,16 +103,17 @@ class InstrumentedThreadFactoryTests : StringSpec() {
     }
 
     "invariant holds after multiple threads complete" {
+      val registry = CollectorRegistry()
       val factory = InstrumentedThreadFactory(
         delegate = Executors.defaultThreadFactory(),
         name = "itf_invariant_multi",
         help = "Test",
+        registry = registry,
       )
       val threads = (1..5).map { factory.newThread {}.shouldNotBeNull() }
       threads.forEach { it.start() }
       threads.forEach { it.join() }
 
-      val registry = CollectorRegistry.defaultRegistry
       val created = registry.getSampleValue("itf_invariant_multi_threads_created_total")
       val running = registry.getSampleValue("itf_invariant_multi_threads_running")
       val terminated = registry.getSampleValue("itf_invariant_multi_threads_terminated_total")
@@ -119,6 +125,7 @@ class InstrumentedThreadFactoryTests : StringSpec() {
     }
 
     "daemon flag is propagated from delegate factory" {
+      val registry = CollectorRegistry()
       val daemonFactory = ThreadFactory { r ->
         Thread(r).apply { isDaemon = true }
       }
@@ -126,12 +133,14 @@ class InstrumentedThreadFactoryTests : StringSpec() {
         delegate = daemonFactory,
         name = "itf_daemon_flag",
         help = "Test",
+        registry = registry,
       )
       val thread = factory.newThread {}.shouldNotBeNull()
       thread.isDaemon shouldBe true
     }
 
     "uses custom thread factory when provided" {
+      val registry = CollectorRegistry()
       var customFactoryCalled = false
       val customFactory = ThreadFactory { r ->
         customFactoryCalled = true
@@ -141,6 +150,7 @@ class InstrumentedThreadFactoryTests : StringSpec() {
         delegate = customFactory,
         name = "itf_custom_factory",
         help = "Test",
+        registry = registry,
       )
       val thread = factory.newThread {}.shouldNotBeNull()
       customFactoryCalled shouldBe true
@@ -149,10 +159,16 @@ class InstrumentedThreadFactoryTests : StringSpec() {
 
     // The ThreadFactory contract lets a delegate reject a request by returning null.
     "a delegate that rejects the thread yields null and is not counted as created" {
-      val factory = InstrumentedThreadFactory(delegate = { null }, name = "itf_rejected", help = "Test")
+      val registry = CollectorRegistry()
+      val factory = InstrumentedThreadFactory(
+        delegate = { null },
+        name = "itf_rejected",
+        help = "Test",
+        registry = registry,
+      )
 
       factory.newThread {} shouldBe null
-      CollectorRegistry.defaultRegistry.getSampleValue("itf_rejected_threads_created_total") shouldBe 0.0
+      registry.getSampleValue("itf_rejected_threads_created_total") shouldBe 0.0
     }
 
     "factories with the same name can coexist in separate registries" {

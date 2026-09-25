@@ -184,7 +184,8 @@ class FakeEvaluatorPool(
   val created: MutableList<FakeEvaluator> = [],
   failAt: Int = -1,
   failClose: Boolean = false,
-) : AbstractExprEvaluatorPool<FakeEvaluator>(size) {
+  resetEvery: Int = 1,
+) : AbstractExprEvaluatorPool<FakeEvaluator>(size, resetEvery) {
   @Volatile
   var onReset: (FakeEvaluator) -> Unit = {}
 

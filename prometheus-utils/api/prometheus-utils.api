@@ -22,17 +22,13 @@ public final class com/pambrose/common/dsl/PrometheusDsl {
 }
 
 public final class com/pambrose/common/metrics/SamplerGaugeCollector : io/prometheus/client/Collector, io/prometheus/client/Collector$Describable {
-	public static final field Companion Lcom/pambrose/common/metrics/SamplerGaugeCollector$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function0;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/prometheus/client/CollectorRegistry;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
 	public fun collect ()Ljava/util/List;
 	public fun describe ()Ljava/util/List;
-}
-
-public final class com/pambrose/common/metrics/SamplerGaugeCollector$Companion {
 }
 
 public final class com/pambrose/common/metrics/SystemMetrics {

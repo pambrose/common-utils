@@ -148,19 +148,64 @@ class KtorServletResponseTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { response.addCookie(Cookie("name", "value")) }
       shouldThrow<UnsupportedOperationException> { response.encodeURL("/url") }
       shouldThrow<UnsupportedOperationException> { response.encodeRedirectURL("/url") }
-      shouldThrow<UnsupportedOperationException> { response.setDateHeader("Date", 0L) }
-      shouldThrow<UnsupportedOperationException> { response.addDateHeader("Date", 0L) }
-      shouldThrow<UnsupportedOperationException> { response.setIntHeader("X-Count", 1) }
-      shouldThrow<UnsupportedOperationException> { response.addIntHeader("X-Count", 1) }
-      shouldThrow<UnsupportedOperationException> { response.setContentLength(10) }
-      shouldThrow<UnsupportedOperationException> { response.setContentLengthLong(10L) }
       shouldThrow<UnsupportedOperationException> { response.setBufferSize(1024) }
       shouldThrow<UnsupportedOperationException> { response.bufferSize }
-      shouldThrow<UnsupportedOperationException> { response.flushBuffer() }
-      shouldThrow<UnsupportedOperationException> { response.resetBuffer() }
-      shouldThrow<UnsupportedOperationException> { response.reset() }
       shouldThrow<UnsupportedOperationException> { response.setLocale(Locale.US) }
       shouldThrow<UnsupportedOperationException> { response.locale }
+    }
+
+    "null header values remove or skip the header, and a null content type or encoding clears it" {
+      val response = KtorServletResponse()
+      response.setHeader("X-A", "1")
+      response.setHeader("X-A", null)
+      response.addHeader("X-B", null)
+      response.containsHeader("X-A") shouldBe false
+      response.containsHeader("X-B") shouldBe false
+      response.contentType = "text/html; charset=ISO-8859-1"
+      response.setContentType(null)
+      response.contentType shouldBe null
+      response.setCharacterEncoding(null as String?)
+      response.characterEncoding shouldBe "UTF-8"
+    }
+
+    "int and date headers are formatted, and content length is left to the route" {
+      val response = KtorServletResponse()
+      response.setIntHeader("X-Count", 1)
+      response.addIntHeader("X-Count", 2)
+      response.setDateHeader("X-When", 1000L)
+      response.addDateHeader("X-When", 2000L)
+      response.setContentLength(10)
+      response.setContentLengthLong(10L)
+      response.getHeaders("X-Count") shouldBe listOf("1", "2")
+      response.getHeaders("X-When") shouldBe listOf("Thu, 01 Jan 1970 00:00:01 GMT", "Thu, 01 Jan 1970 00:00:02 GMT")
+      response.containsHeader("Content-Length") shouldBe false
+    }
+
+    "reset clears status, headers and body; flushBuffer commits, after which resetBuffer fails" {
+      val response = KtorServletResponse()
+      response.status = 404
+      response.setHeader("X-A", "1")
+      response.contentType = "text/plain"
+      response.writer.print("partial")
+      response.reset()
+      response.status shouldBe HttpServletResponse.SC_OK
+      response.containsHeader("X-A") shouldBe false
+      response.getBodyBytes().size shouldBe 0
+      response.writer.print("kept")
+      response.flushBuffer()
+      response.isCommitted shouldBe true
+      shouldThrow<IllegalStateException> { response.resetBuffer() }
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "kept"
+    }
+
+    "reset before the writer is used forgets the character encoding, and flushBuffer commits without a writer" {
+      val response = KtorServletResponse()
+      val default = response.characterEncoding
+      response.characterEncoding = "ISO-8859-1"
+      response.reset()
+      response.characterEncoding shouldBe default
+      response.flushBuffer()
+      response.isCommitted shouldBe true
     }
 
     "sendError sets the status, discards buffered output, writes the message, and commits" {

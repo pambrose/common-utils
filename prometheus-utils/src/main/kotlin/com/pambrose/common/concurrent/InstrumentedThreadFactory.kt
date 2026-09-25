@@ -27,10 +27,12 @@ import java.util.concurrent.ThreadFactory
 /**
  * A [ThreadFactory] decorator that instruments thread lifecycle with Prometheus metrics.
  *
- * Tracks the number of threads created (counter), currently running (gauge), and terminated (counter).
+ * Tracks the number of threads created (counter), currently running (gauge), and terminated (counter). The exposed
+ * series are `<name>_threads_created_total`, `<name>_threads_running` and `<name>_threads_terminated_total`, plus the
+ * counters' `<name>_threads_created_created` and `<name>_threads_terminated_created` creation timestamps.
  *
  * @param delegate the underlying [ThreadFactory] to delegate thread creation to.
- * @param name the base name for the Prometheus metrics (suffixed with `_threads_created`, `_threads_running`, `_threads_terminated`).
+ * @param name the base name for the Prometheus metrics (see above for the series names).
  * @param help the base help text for the Prometheus metrics.
  * @param registry the registry to register the metrics with. Defaults to [CollectorRegistry.defaultRegistry];
  *   factories with the same [name] need separate registries.

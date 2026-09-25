@@ -64,8 +64,9 @@ existing.close()
 
 ### The `get` Helper
 
-`get` is declared as a **member extension** of `KtorDsl`, so it cannot be imported on its own — bring
-`KtorDsl` into scope with `with(KtorDsl) { }`:
+`get` is declared as a **member extension** of `KtorDsl`. Bring `KtorDsl` into scope with `with(KtorDsl) { }`, or
+import the member directly with `import com.pambrose.common.dsl.KtorDsl.get`. With the import, a call ending in a
+trailing lambda can be ambiguous with Ktor's own `io.ktor.client.request.get` if both are imported:
 
 ```kotlin
 import com.pambrose.common.dsl.KtorDsl
@@ -133,18 +134,19 @@ val strictBody = KtorDsl.blockingGet("https://example.com/api", expectSuccess = 
 - `newHttpClient(expectSuccess: Boolean = false): HttpClient`
 - `suspend fun <T> withHttpClient(httpClient: HttpClient? = null, expectSuccess: Boolean = false, block: suspend HttpClient.() -> T): T`
 - `suspend fun <T> httpClient(httpClient: HttpClient? = null, expectSuccess: Boolean = false, block: suspend (HttpClient) -> T): T`
-- `suspend fun <T> HttpClient.get(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> T): T` — member extension; requires `with(KtorDsl)`
+- `suspend fun <T> HttpClient.get(url: String, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> T): T` — member extension; use `with(KtorDsl)` or
+  `import com.pambrose.common.dsl.KtorDsl.get`
 
 ### jvmMain
 
 - `fun <T> KtorDsl.blockingGet(url: String, httpClient: HttpClient? = null, expectSuccess: Boolean = false, setUp: HttpRequestBuilder.() -> Unit = {}, block: suspend (HttpResponse) -> T): T`
+  — pass `setUp` by name (`setUp = { … }`); before 4.1.0 it was the second parameter
 
 ## Dependencies
 
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
 - Ktor Client Core
 
 No engine is included, and `newHttpClient` (like `withHttpClient`/`httpClient` without a client) uses whichever

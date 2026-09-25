@@ -69,13 +69,20 @@ fun Serializable.toByteArraySecure(): ByteArray = toByteArray()
  * Every class in the stream, including superclasses (e.g. [Number] for an [Integer]), must be in
  * [allowedClasses]. Classes matching a small blocklist of known deserialization gadgets are rejected even
  * when allow-listed. The stream is also bounded by a JEP 290 [ObjectInputFilter]: object graphs may nest
- * at most [MAX_DEPTH] levels, and arrays may declare at most [MAX_SERIALIZED_SIZE] elements.
+ * at most [MAX_DEPTH] levels, and no array may declare more elements, nor the stream hold more object
+ * references, than the payload has bytes. Every element and reference costs at least one byte of input, so
+ * these bounds reject nothing a genuine stream contains, while stopping a tiny payload from declaring a huge
+ * array and forcing its allocation before a single element is read.
+ *
+ * Hash-based collections ([HashSet], [HashMap], [java.util.Hashtable]) are risky to allow-list for untrusted
+ * input: nested sets whose hash codes must be recomputed at every level cost time exponential in the depth.
+ * The depth limit keeps that bounded, but prefer lists and arrays where you can.
  *
  * @param expectedClass The expected class type for validation
  * @param allowedClasses Classes allowed for deserialization (security whitelist); must not be empty
  * @throws IllegalArgumentException if [allowedClasses] is empty
  * @throws SecurityException if the payload is too large, or a class is blocklisted or not in [allowedClasses]
- * @throws InvalidClassException if the stream exceeds the depth or array-length limits
+ * @throws InvalidClassException if the stream exceeds the depth, array-length or reference limits
  * @throws ClassCastException if the object cannot be cast to the expected type
  */
 @Throws(IOException::class, ClassNotFoundException::class, SecurityException::class)
@@ -92,7 +99,7 @@ fun <T : Serializable> ByteArray.toObjectSecure(
   }
 
   return ByteArrayInputStream(this).use { bais ->
-    SecureObjectInputStream(bais, allowedClasses).use { ois ->
+    SecureObjectInputStream(bais, allowedClasses, size.toLong()).use { ois ->
       val obj = ois.readObject()
 
       // Validate type
@@ -111,10 +118,15 @@ fun <T : Serializable> ByteArray.toObjectSecure(
 private class SecureObjectInputStream(
   inputStream: InputStream,
   private val allowedClasses: Set<Class<*>>,
+  inputSize: Long,
 ) : ObjectInputStream(inputStream) {
   init {
-    // Merge with any JVM-wide filter (jdk.serialFilter) rather than replacing it
-    val limits = ObjectInputFilter.Config.createFilter("maxdepth=$MAX_DEPTH;maxarray=$MAX_SERIALIZED_SIZE")
+    // Array lengths and reference counts are bounded by the input size, since each element or reference takes at
+    // least one byte. Merge with any JVM-wide filter (jdk.serialFilter) rather than replacing it.
+    val limits =
+      ObjectInputFilter.Config.createFilter(
+        "maxdepth=$MAX_DEPTH;maxarray=$inputSize;maxrefs=$inputSize;maxbytes=$inputSize",
+      )
     objectInputFilter = objectInputFilter?.let { ObjectInputFilter.merge(limits, it) } ?: limits
   }
 
@@ -187,6 +199,7 @@ fun ByteArray.verifyChecksum(): ByteArray {
 
 private const val MAX_SERIALIZED_SIZE = 10 * 1024 * 1024 // 10MB limit
 
-private const val MAX_DEPTH = 32
+// Low enough that a nested-HashSet hash-code bomb within it costs milliseconds, not minutes
+private const val MAX_DEPTH = 20
 
 private const val SHA256_LENGTH = 32

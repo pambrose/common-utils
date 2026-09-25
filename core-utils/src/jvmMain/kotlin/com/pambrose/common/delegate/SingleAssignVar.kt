@@ -21,14 +21,20 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-/** Factory for creating single-assignment property delegates. */
+/** Factory for creating single-assignment property delegates; superseded by [AtomicDelegates.singleSetReference]. */
 object SingleAssignVar {
   /**
    * Returns a property delegate for a read/write property that can be assigned only once.
    * This implementation is thread-safe and prevents race conditions.
    *
+   * [AtomicDelegates.singleSetReference] does the same, and is available on every platform, not only the JVM.
+   *
    * @throws IllegalStateException if the property is assigned more than once
    */
+  @Deprecated(
+    "Duplicates AtomicDelegates.singleSetReference, which is available on every platform.",
+    ReplaceWith("AtomicDelegates.singleSetReference<T>()", "com.pambrose.common.delegate.AtomicDelegates"),
+  )
   fun <T> singleAssign(): ReadWriteProperty<Any?, T?> = ThreadSafeSingleAssignVar()
 
   private class ThreadSafeSingleAssignVar<T> : ReadWriteProperty<Any?, T?> {

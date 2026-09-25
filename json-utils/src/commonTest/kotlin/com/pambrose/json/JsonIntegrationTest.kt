@@ -26,6 +26,7 @@ import com.pambrose.common.json.jsonElementListOrNull
 import com.pambrose.common.json.jsonObjectValueOrNull
 import com.pambrose.common.json.stringValue
 import com.pambrose.common.json.stringValueOrNull
+import com.pambrose.common.json.parseJson
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import io.kotest.assertions.throwables.shouldThrow
@@ -142,7 +143,7 @@ class JsonIntegrationTest : StringSpec() {
       json.contains("johndoe") shouldBe true
 
       // Parse back to JsonElement
-      val jsonElement = json.toJsonElement()
+      val jsonElement = json.parseJson()
 
       // Test top-level fields
       jsonElement.stringValueOrNull("error") shouldBe null
@@ -196,7 +197,7 @@ class JsonIntegrationTest : StringSpec() {
       )
 
       val jsonString = errorResponse.toJsonString()
-      val jsonElement = jsonString.toJsonElement()
+      val jsonElement = jsonString.parseJson()
 
       jsonElement.getOrNull("data") shouldBe null
       jsonElement.booleanValue("success") shouldBe false
@@ -250,7 +251,7 @@ class JsonIntegrationTest : StringSpec() {
             }
         """.trimIndent()
 
-      val jsonElement = externalApiResponse.toJsonElement()
+      val jsonElement = externalApiResponse.parseJson()
 
       // Test response metadata
       jsonElement.stringValue("status") shouldBe "success"
@@ -339,7 +340,7 @@ class JsonIntegrationTest : StringSpec() {
         metadata = mapOf("batchSize" to "3", "processingTime" to "150ms"),
       )
 
-      val jsonElement = batchResponse.toJsonString().toJsonElement()
+      val jsonElement = batchResponse.toJsonString().parseJson()
 
       // Test batch metadata
       jsonElement.booleanValue("success") shouldBe true
@@ -393,7 +394,7 @@ class JsonIntegrationTest : StringSpec() {
             }
         """.trimIndent()
 
-      val jsonElement = minimalJson.toJsonElement()
+      val jsonElement = minimalJson.parseJson()
 
       // Required fields should be present
       jsonElement.booleanValue("success") shouldBe true
@@ -418,8 +419,8 @@ class JsonIntegrationTest : StringSpec() {
       val prettyJson = originalData.toJsonString(prettyPrint = true)
       val compactJson = originalData.toJsonString(prettyPrint = false)
 
-      val prettyParsed = prettyJson.toJsonElement()
-      val compactParsed = compactJson.toJsonElement()
+      val prettyParsed = prettyJson.parseJson()
+      val compactParsed = compactJson.parseJson()
 
       // Data should be identical regardless of formatting
       compactParsed.booleanValue("success") shouldBe prettyParsed.booleanValue("success")

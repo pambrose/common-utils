@@ -17,17 +17,18 @@
 
 package com.pambrose.common.dsl
 
-import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler
+import org.eclipse.jetty.server.Server
+import org.eclipse.jetty.server.ServerConnector
 
 /**
  * Provides a Kotlin DSL for constructing and configuring Jetty [Server] and [ServletContextHandler] instances.
  */
 object JettyDsl {
   /**
-   * Creates and configures a Jetty [Server] on the specified port.
+   * Creates and configures a Jetty [Server] listening on [port] on every interface.
    *
-   * @param port the port number the server will listen on.
+   * @param port the port number the server will listen on; `0` lets the OS choose one.
    * @param block an optional lambda with [Server] as receiver for configuring the server.
    * @return the configured [Server] instance.
    */
@@ -35,6 +36,29 @@ object JettyDsl {
     port: Int,
     block: Server.() -> Unit = {},
   ) = Server(port).apply(block)
+
+  /**
+   * Creates and configures a Jetty [Server] with one [ServerConnector] listening on [port] at [host].
+   *
+   * @param port the port number the server will listen on; `0` lets the OS choose one.
+   * @param host the address to bind, such as `"127.0.0.1"`, or `null` for every interface.
+   * @param block an optional lambda with [Server] as receiver for configuring the server.
+   * @return the configured [Server] instance.
+   */
+  fun server(
+    port: Int,
+    host: String?,
+    block: Server.() -> Unit = {},
+  ): Server =
+    Server().apply {
+      addConnector(
+        ServerConnector(this).also { connector ->
+          connector.host = host
+          connector.port = port
+        },
+      )
+      block()
+    }
 
   /**
    * Creates and configures a [ServletContextHandler].

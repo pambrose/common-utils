@@ -21,7 +21,6 @@ Each helper exists on both `ApplicationCall` and `RoutingContext`, so it works w
 ### Servlet Bridge
 
 - **`Route.servlet(path, servlet)`**: mounts a Jakarta `HttpServlet` inside a Ktor route
-- **`KtorServletRequest` / `KtorServletResponse`**: the adapters used by that bridge
 
 ## Usage Examples
 
@@ -83,7 +82,8 @@ get("/whoami") {
 
 The plugin inspects the `x-forwarded-proto` header. When it is `http`, the request is redirected to HTTPS
 unless an exclusion predicate matches. The redirect goes to the configured `host`, or to the request's own
-host when `host` is not set, and keeps the path and query string.
+host when `host` is not set, and keeps the path and query string exactly as the client sent them (order, case and
+encoding), so signed URLs survive the redirect.
 
 ```kotlin
 import com.pambrose.common.features.HerokuHttpsRedirect
@@ -108,7 +108,7 @@ Configuration properties are `host`, `sslPort`, `permanentRedirect` and `exclude
 ### Mounting a Servlet
 
 `Route.servlet` initializes the servlet once through `init(ServletConfig)`, the way a container does, then
-translates each Ktor request into a `KtorServletRequest`/`KtorServletResponse` pair. Servlet processing runs
+translates each Ktor request into an internal `HttpServletRequest`/`HttpServletResponse` pair. Servlet processing runs
 on `Dispatchers.IO`, and the servlet's status, headers and body are forwarded back through the Ktor pipeline.
 The servlet's `destroy()` is called when the application stops.
 
@@ -118,6 +118,16 @@ The servlet's `destroy()` is called when the application stops.
   container features such as dynamic registration and sessions throw `UnsupportedOperationException`.
 - **Supported:** `sendError` and `sendRedirect`, so an unsupported HTTP method gets `405` from `HttpServlet`'s
   defaults. Also request attributes, and `getPathInfo()`, which is always `null`.
+- **HEAD, TRACE and `getLastModified`:** HEAD runs `doGet` (Servlet 6.1's default) and is answered with the
+  headers and `Content-Length` GET would send, but no body. TRACE and servlets that override `getLastModified`
+  (`If-Modified-Since`, `Last-Modified`) work through `HttpServlet`'s defaults.
+- **Spec-defined helpers:** on the response, `set`/`addDateHeader`, `set`/`addIntHeader`, `flushBuffer` (commits
+  the response), `resetBuffer`, `reset`, and `null` arguments to `setHeader`, `addHeader`, `setContentType` and
+  `setCharacterEncoding`. `setContentLength` is accepted and ignored, like a `Content-Length` header. On the
+  request, `getCookies`, `getDateHeader`, `getIntHeader`, `getRequestURL`, `isSecure`, `getCharacterEncoding`,
+  `getContentLength`, `getDispatcherType` (`REQUEST`) and `getServletContext`.
+- **Request bodies are not available:** `getInputStream`, `getReader` and `getParts` throw
+  `UnsupportedOperationException`, and `getParameter` sees only the query string, not form bodies.
 - **Content type and character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is
   used for the body and included in the `Content-Type`, as a servlet container reports it. It can't change after
   `getWriter()`. A `Content-Type` header set with `setHeader` or `addHeader` is the content type, as in a
@@ -167,7 +177,6 @@ dependencies {
 ### Servlet Bridge
 
 - `fun Route.servlet(path: String, servlet: HttpServlet)`
-- `class KtorServletRequest`, `class KtorServletResponse`
 
 ## Dependencies
 

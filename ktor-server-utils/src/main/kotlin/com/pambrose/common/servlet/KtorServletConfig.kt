@@ -187,7 +187,8 @@ internal class KtorServletContext : ServletContext {
 
   override fun getJspConfigDescriptor(): JspConfigDescriptor = throw UnsupportedOperationException()
 
-  override fun getClassLoader(): ClassLoader = throw UnsupportedOperationException()
+  override fun getClassLoader(): ClassLoader =
+    Thread.currentThread().contextClassLoader ?: KtorServletContext::class.java.classLoader
 
   override fun declareRoles(vararg roleNames: String): Unit = throw UnsupportedOperationException()
 

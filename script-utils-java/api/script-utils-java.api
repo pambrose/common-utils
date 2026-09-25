@@ -1,5 +1,6 @@
 public final class com/pambrose/common/script/JavaScript : com/pambrose/common/script/AbstractScript {
 	public fun <init> ()V
+	public final fun addImport (Ljava/lang/Class;)V
 	public final fun assignIsolation (Lch/obermuhlner/scriptengine/java/Isolation;)V
 	public final fun eval (Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/Object;
 	public static synthetic fun eval$default (Lcom/pambrose/common/script/JavaScript;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/Object;

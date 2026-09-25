@@ -103,12 +103,15 @@ abstract class AbstractGenericService<T> protected constructor(
 
   /** The JMX reporter for Dropwizard metrics. Initialized when metrics are enabled. */
   lateinit var jmxReporter: JmxReporter
+    private set
 
   /** The Prometheus metrics service. Initialized when metrics are enabled. */
   lateinit var metricsService: MetricsService
+    private set
 
   /** The Zipkin span reporter service. Initialized when Zipkin tracing is enabled. */
   lateinit var zipkinReporterService: ZipkinReporterService
+    private set
 
   /** The elapsed time since the service was created. */
   val upTime get() = startTime.elapsedNow()
@@ -128,6 +131,7 @@ abstract class AbstractGenericService<T> protected constructor(
    * that the servlet service is registered ahead of the metrics and Zipkin services.
    */
   protected fun initMetricsAndHealthChecks() {
+    checkNotInitialized()
     if (isMetricsEnabled) {
       logger.info { "Enabling Dropwizard metrics" }
 
@@ -174,8 +178,9 @@ abstract class AbstractGenericService<T> protected constructor(
     registerHealthChecks()
   }
 
-  // Called first by each init method: a second run would replace the admin servlet service, orphaning the first,
-  // and then fail part-way through when registering the health checks again.
+  // Called first by each init method, and again by initMetricsAndHealthChecks for subclasses that call it directly:
+  // a second run would replace the admin servlet service and the metrics and Zipkin services, orphaning the first
+  // ones, and then fail part-way through when registering the health checks again.
   internal fun checkNotInitialized() =
     check(!::serviceManager.isInitialized) {
     "$simpleClassName is already initialized"

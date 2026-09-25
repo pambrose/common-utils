@@ -122,8 +122,7 @@ Prometheus metrics integration.
 
 Zipkin distributed tracing utilities.
 
-- Tracing configuration DSL
-- Span management utilities
+- DSL for building a Brave `Tracing` that reports to Zipkin
 
 ### Persistence & Caching
 
@@ -208,10 +207,21 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:4.1.0")
-  implementation("com.pambrose.common-utils:json-utils:4.1.0")
-  implementation("com.pambrose.common-utils:ktor-server-utils:4.1.0")
+  implementation("com.pambrose.common-utils:core-utils:5.0.0")
+  implementation("com.pambrose.common-utils:json-utils:5.0.0")
+  implementation("com.pambrose.common-utils:ktor-server-utils:5.0.0")
     // ... other modules
+}
+```
+
+From 5.0.0, the `common-utils-bom` platform aligns every module on one version, so the modules themselves can be
+declared without one:
+
+```kotlin
+dependencies {
+  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.0.0"))
+  implementation("com.pambrose.common-utils:core-utils")
+  implementation("com.pambrose.common-utils:service-utils")
 }
 ```
 
@@ -226,15 +236,32 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>4.1.0</version>
+      <version>5.0.0</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
 ```
 
+From 5.0.0, import the BOM in `<dependencyManagement>` instead to align every module (it lists the `-jvm`
+artifacts too):
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>com.pambrose.common-utils</groupId>
+            <artifactId>common-utils-bom</artifactId>
+            <version>5.0.0</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
 ## Technology Stack
 
-- **Languages**: Kotlin 2.4.20 (the `kotlin-scripting-*` artifacts are pinned to 2.4.10), Java
+- **Languages**: Kotlin 2.4.20, Java
 - **Build System**: Gradle 9.7.1 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
@@ -307,10 +334,15 @@ This project maintains high code quality standards:
 ### Adding New Modules
 
 1. Create module directory with `build.gradle.kts`
-2. Add module to `settings.gradle.kts`
-3. Create module-specific `README.md`
+2. Add module to `settings.gradle.kts`, and to `kmpModuleNames` in the root `build.gradle.kts` if it is
+   multiplatform
+3. Create module-specific `README.md`, and list the module in this README and in `llms.txt`
 4. Follow existing package structure: `com.pambrose.common.*`
 5. Add comprehensive tests using Kotest
+6. Generate its ABI dump with `make abi-update` and commit `<module>/api/`; without it `checkKotlinAbi` fails
+7. Add a component for it to `component_management` in `codecov.yml`
+
+`common-utils-bom` picks up every module in `settings.gradle.kts` by itself.
 
 ## Contributing
 

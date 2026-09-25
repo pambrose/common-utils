@@ -26,8 +26,9 @@ import com.pambrose.common.util.toDoubleQuoted
 /**
  * A script engine wrapper for dynamically evaluating Kotlin source code using the `kts` extension.
  *
- * Manages variable bindings via the JSR 223 `Bindings` mechanism and generates Kotlin `val` declarations that cast
- * bound values to types the script can name. A value whose runtime class cannot be named, such as the private list
+ * Stores the variables in a single [ScriptVariables] holder, the only JSR 223 binding, and generates Kotlin `val`
+ * declarations that read each one back and cast it to a type the script can name. `bindings` and `__variables` are
+ * reserved names. A value whose runtime class cannot be named, such as the private list
  * class behind `listOf(1, 2)`, is cast to its nearest public class or interface.
  *
  * Common literal JVM-termination calls (`System.exit`, `exitProcess`, `Runtime.getRuntime().exit/halt`)
@@ -42,10 +43,12 @@ import com.pambrose.common.util.toDoubleQuoted
 class KotlinScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("kts", nullGlobalContext) {
-  override fun isReserved(name: String) = name in KOTLIN_KEYWORDS
+  // bindings is the script's own view of the engine bindings, and the holder's name is taken by the holder, so a
+  // variable named either would shadow what the generated declarations read.
+  override fun isReserved(name: String) = name in KOTLIN_KEYWORDS || name == "bindings" || name == VARIABLES_BINDING
 
   /**
-   * Generates Kotlin `val` declarations that retrieve every bound variable from the engine's bindings
+   * Generates Kotlin `val` declarations that retrieve every bound variable from the [ScriptVariables] holder
    * and cast it to a type the script can name, with its type arguments.
    */
   val varDecls: String
@@ -53,7 +56,7 @@ class KotlinScript(
 
   private fun declarations(names: Collection<String>) =
     names.joinToString("\n") { name ->
-      "val $name = bindings[${name.toTempName().toDoubleQuoted()}] as ${castType(name)}"
+      "val $name = $HOLDER[${name.toDoubleQuoted()}] as ${castType(name)}"
     }
 
   // The accessible class with the registered type arguments, or with star projections when none were registered.
@@ -72,11 +75,13 @@ class KotlinScript(
     return "${clazz.qualifiedName}$typeArguments"
   }
 
-  private fun String.toTempName() = "${this}_tmp"
-
-  // Binds each value under a temporary name, then declares a typed val with the variable's own name.
+  // Stores each value in the holder, which is the only engine binding, then declares a typed val with the variable's
+  // own name. A reset clears the engine scope, so a missing holder is replaced by a fresh, empty one.
   override fun bindVariables(variables: Map<String, Any>) {
-    variables.forEach { (name, value) -> scriptEngine.put(name.toTempName(), value) }
+    val holder =
+      scriptEngine.get(VARIABLES_BINDING) as? ScriptVariables
+        ?: ScriptVariables().also { scriptEngine.put(VARIABLES_BINDING, it) }
+    variables.forEach { (name, value) -> holder[name] = value }
     scriptEngine.eval(declarations(variables.keys))
   }
 
@@ -96,6 +101,13 @@ class KotlinScript(
   }
 
   private companion object {
+    // The engine binding that holds every variable.
+    const val VARIABLES_BINDING = "__variables"
+
+    // Read through the script's bindings rather than the property the engine also derives from the binding: after a
+    // context reset, Kotlin 2.4.20 no longer provides that property, while bindings always reflects the current context.
+    val HOLDER = "(bindings[\"$VARIABLES_BINDING\"] as ${ScriptVariables::class.qualifiedName})"
+
     // Kotlin's hard keywords, which cannot be used as identifiers.
     val KOTLIN_KEYWORDS =
       (

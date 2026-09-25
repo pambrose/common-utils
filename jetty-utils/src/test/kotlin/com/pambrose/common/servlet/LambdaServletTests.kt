@@ -20,6 +20,7 @@ package com.pambrose.common.servlet
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse
 
@@ -35,7 +36,7 @@ class LambdaServletTests : StringSpec() {
       val response = fetch(LambdaServlet { "Hello, World!" })
 
       response.statusCode() shouldBe 200
-      response.body().decodeToString().trim() shouldBe "Hello, World!"
+      response.body().decodeToString() shouldBe "Hello, World!"
       response.mediaType() shouldBe "text/plain"
       response.header("Cache-Control") shouldBe NO_CACHE
     }
@@ -44,7 +45,7 @@ class LambdaServletTests : StringSpec() {
       val response = fetch(LambdaServlet("application/json") { """{"status": "ok"}""" })
 
       response.statusCode() shouldBe 200
-      response.body().decodeToString().trim() shouldBe """{"status": "ok"}"""
+      response.body().decodeToString() shouldBe """{"status": "ok"}"""
       response.mediaType() shouldBe "application/json"
       response.header("Cache-Control") shouldBe NO_CACHE
     }
@@ -53,7 +54,7 @@ class LambdaServletTests : StringSpec() {
       val response = fetch(VersionServlet("1.0.0"))
 
       response.statusCode() shouldBe 200
-      response.body().decodeToString().trim() shouldBe "1.0.0"
+      response.body().decodeToString() shouldBe "1.0.0"
       response.mediaType() shouldBe "text/plain"
       response.header("Cache-Control") shouldBe NO_CACHE
     }
@@ -69,6 +70,31 @@ class LambdaServletTests : StringSpec() {
       val response = fetch(LambdaServlet { "count=${++calls}" }) { POST(BodyPublishers.ofString("ignored")) }
 
       response.statusCode() shouldBe 405
+      calls shouldBe 0
+    }
+
+    // The body used to end with System.lineSeparator(), which differs between Unix and Windows.
+    "the body holds exactly the lambda output, with no line separator appended" {
+      fetch(VersionServlet("1.0.0")).body() shouldBe "1.0.0".toByteArray()
+    }
+
+    // HttpServlet answers HEAD by running doGet and discarding the body, so the lambda still runs.
+    "a HEAD request runs the lambda and gets the headers without a body" {
+      var calls = 0
+      val response = fetch(LambdaServlet { "count=${++calls}" }) { method("HEAD", BodyPublishers.noBody()) }
+
+      response.statusCode() shouldBe 200
+      response.body().size shouldBe 0
+      response.header("Cache-Control") shouldBe NO_CACHE
+      calls shouldBe 1
+    }
+
+    "an OPTIONS request gets a 200 listing the allowed methods and never runs the lambda" {
+      var calls = 0
+      val response = fetch(LambdaServlet { "count=${++calls}" }) { method("OPTIONS", BodyPublishers.noBody()) }
+
+      response.statusCode() shouldBe 200
+      response.header("Allow") shouldContain "GET"
       calls shouldBe 0
     }
   }

@@ -66,10 +66,10 @@ class KotlinSqlLoggerTests : StringSpec() {
       sqlLogger.logger shouldBe customLogger
     }
 
-    "log writes the expanded sql statement at info level" {
+    "log writes the expanded sql statement at debug level" {
       val messages: MutableList<String> = []
       val mockLogger = mockk<KLogger>()
-      every { mockLogger.info(any<() -> Any?>()) } answers {
+      every { mockLogger.debug(any<() -> Any?>()) } answers {
         messages += firstArg<() -> Any?>().invoke().toString()
       }
 
@@ -80,7 +80,7 @@ class KotlinSqlLoggerTests : StringSpec() {
         }
       }
 
-      verify(atLeast = 1) { mockLogger.info(any<() -> Any?>()) }
+      verify(atLeast = 1) { mockLogger.debug(any<() -> Any?>()) }
       messages.any { it.startsWith("SQL: ") && it.contains("INSERT", ignoreCase = true) } shouldBe true
       messages.any { it.contains("logged-value") } shouldBe true
     }

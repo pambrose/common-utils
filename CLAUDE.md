@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Multi-module Kotlin/Java utility library (20+ modules) providing common functionality for various frameworks and use
+Multi-module Kotlin/Java utility library (19 modules, plus the `common-utils-bom` platform) providing common functionality for various frameworks and use
 cases. Published on Maven Central.
 
 Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, and **ktor-client-utils**. They target
 JVM, JS, wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code lives in `src/commonMain`, JVM-bound
-code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM and depend
-on core-utils' jvm variant via ordinary project dependencies.
+code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM. Most depend
+on core-utils' jvm variant via ordinary project dependencies; jetty-utils, dropwizard-utils, prometheus-utils,
+exposed-utils and ktor-server-utils do not (they declare kotlin-logging directly where they log), and neither does
+ktor-client-utils. Don't add core-utils to a module for one helper: every consumer inherits its whole `api` surface.
 
 ## Common Development Commands
 
@@ -63,6 +65,9 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 - `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
 - `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
+- `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
+  on the KMP modules' `-jvm` artifacts), published through the same POM setup; it skips all the Kotlin, lint,
+  coverage and docs configuration
 - `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
 - `configurePitest()` - applies `info.solidsoft.pitest` and the Kotest PIT plugin to the modules in
   `mutationModuleNames`. `targetTests` is widened to `com.pambrose.*` because some specs live outside
@@ -89,36 +94,38 @@ Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 
-The catalog's `kotlin` version is **deliberately held at 2.4.10** (see the comment above it). Kotlin
-2.4.20 regressed the JSR-223 K2 REPL that `script-utils-kotlin` depends on: binding a value whose runtime
-class is a generic Java class (`ArrayList`, `LinkedHashMap`, `HashMap`) via `ScriptEngine.put()` makes
-every subsequent `eval()` fail to compile, including snippets that never reference the binding. Do not
-bump it without re-running `:script-utils-kotlin:test` and confirming that suite still passes.
+The catalog's `kotlin` version governs the `kotlin-scripting-*` artifacts, `kotlin-reflect` and the Kotlin plugin
+ids. It was held at 2.4.10 until `KotlinScript` stopped binding each variable as its own engine binding: the JSR-223
+engine turns every binding into a script property typed by the value's runtime class, and 2.4.20 cannot declare one
+for a generic Java class such as `ArrayList`. Variables now live in a single non-generic `ScriptVariables` holder,
+so `:script-utils-kotlin:test` passes on 2.4.20. Re-run that suite on every Kotlin bump all the same.
 
-That entry governs the `kotlin-scripting-*` artifacts and nothing else. `kotlin-reflect` deliberately has its
-own `kotlinReflect` catalog version, aligned with the compiler rather than the hold: core-utils exports reflect
-as `api`, so riding the held version would publish a POM pairing stdlib 2.4.20 with reflect 2.4.10. Keep the two
-in step when the compiler moves.
-
-The hold does **not** cover the compiler either: `pambrose-gradle-plugins`
-pulls a `kotlin-gradle-plugin` of its own, which wins on the buildscript classpath, so the project is
+It does **not** govern the compiler: `pambrose-gradle-plugins`
+pulls a `kotlin-gradle-plugin` of its own, which wins on the buildscript classpath, so the project can be
 compiled by a newer Kotlin than the catalog names. Run `./gradlew buildEnvironment` to see the version
 actually in use rather than assuming the catalog value — and be aware that a convention-plugin bump can
-therefore change the compiler, and the resolved JS toolchain npm versions, without touching the catalog.
+therefore change the compiler, and the resolved JS toolchain npm versions, without touching the catalog. Keep the
+catalog's `kotlin` in step with that compiler: core-utils exports `kotlin-reflect` as `api`, so a lag would publish a
+POM pairing the compiler's stdlib with an older reflect.
 
 Dependabot (`.github/dependabot.yml`) opens weekly version-update PRs for the Gradle ecosystem (catalog
-libraries and plugins, plus the Gradle wrapper) and for GitHub Actions. Because of the Kotlin hold, Kotlin
-updates get their own group: expect that PR to fail `:script-utils-kotlin:test` in CI until the regression
-is fixed, and don't merge it red. Two `ignore` rules back that up: `io.netty:netty-tcnative-boringssl-static`
-gets no automatic PR at all, because it must match the version grpc-java pins for the grpc release in use
-(bump it by hand alongside grpc, and note the rule suppresses security-update PRs too, though alerts still
-fire); and Kotlin `2.4.20` is ignored by exact version, so Dependabot stops re-proposing the release that
-broke the JSR-223 REPL while later releases (2.4.21, 2.4.30, …) still arrive in the kotlin group. Remove
-the four Kotlin entries once the hold is lifted. The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
-Dependabot only proposes candidates carrying the same suffix — and it must be kept, since
-`exposed-kotlin-datetime` links against the deprecated `kotlinx.datetime.Instant` that only the compat
-artifacts ship. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
+libraries and plugins, plus the Gradle wrapper) and for GitHub Actions. Kotlin updates get their own group, since
+they move the scripting artifacts, `kotlin-reflect` and the plugin ids together. One `ignore` rule:
+`io.netty:netty-tcnative-boringssl-static` gets no automatic PR at all, because it must match the version grpc-java
+pins for the grpc release in use (bump it by hand alongside grpc, and note the rule suppresses security-update PRs
+too, though alerts still fire). The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
+Dependabot only proposes candidates carrying the same suffix. Nothing in this repo needs the compat line
+(exposed-utils uses `exposed-jodatime`, and core-utils' API uses `kotlin.time.Instant`), but core-utils exports
+kotlinx-datetime as `api`, so consumers inherit it: keep the compat artifacts so a consumer that also uses a
+library linked against the deprecated `kotlinx.datetime.Instant` (such as `exposed-kotlin-datetime`) keeps
+working. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
 `make upgrade-wrapper` reads, so that entry goes stale after a Dependabot wrapper bump.
+
+`gradle-wrapper.properties` carries a `distributionSha256Sum`, so the wrapper verifies every distribution it
+downloads; `make upgrade-wrapper` fetches the new release's published checksum and passes it to both wrapper runs,
+and a wrapper bump from any other route must update it too. `gradlew` and `gradlew.bat` are text in
+`.gitattributes` (not `binary`), so changes to them show up in diffs and PR reviews. The workflows pin every
+action to a commit SHA with the release in a trailing comment, and every job sets `timeout-minutes`.
 
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
@@ -236,7 +243,8 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Project-wide rule:** 90% line and 80% branch across the aggregated report.
 - **Per-package rule:** 90% line in every package.
 
-They are floors, not targets. As of 4.1.0 the project sits at 99.8% line and 97.2% branch, and the weakest package
+They are floors, not targets, and this is the one place the current figures are kept (the root build script and
+`codecov.yml` point here). As of 4.1.0 the project sits at 99.8% line and 97.2% branch, and the weakest package
 by line coverage is `script` at 98.5%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
@@ -244,7 +252,7 @@ by line coverage is `script` at 98.5%.
 - **Why no per-package branch floor:** `response` has only four branches, two of them compiler-generated and
   unreachable, so it sits at 50%.
 - Raise any floor only after lifting the weakest packages, or the next unrelated PR goes red.
-- Packages span modules (`com.pambrose.common.dsl` lives in six), so the per-package rule is not a
+- Packages span modules (`com.pambrose.common.dsl` lives in seven), so the per-package rule is not a
   per-module guarantee.
 
 `koverVerify` runs as part of `check`, so `./gradlew build` and CI enforce the floors. `make build` passes
@@ -275,3 +283,9 @@ All modules use: `com.pambrose.common.*`
 
 - Project version and group live in `gradle.properties`; override the version at publish time with
   `-PoverrideVersion=...` (used by the Makefile snapshot/publish targets).
+- Versioning policy (the practice since 4.0.0): a minor release stays binary compatible, but may carry
+  source-breaking changes, such as a return type becoming nullable or a narrower exception type, each listed
+  under "Changed" in the CHANGELOG. A signature is not removed or changed in the ABI dump without a major
+  release: keep the old one as a `@Deprecated(level = DeprecationLevel.HIDDEN)` overload, as
+  `GrpcDsl.server` and `SamplerGaugeCollector` do. A declaration that could never be called successfully
+  (for example one that always threw) may be dropped in a minor release, with a CHANGELOG note.

@@ -26,16 +26,11 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import io.grpc.ServerServiceDefinition
 import io.grpc.StatusRuntimeException
-import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.ClientCalls
 import io.grpc.stub.ServerCalls
 import io.kotest.assertions.throwables.shouldThrow
-import io.mockk.every
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 internal const val LOOPBACK = "127.0.0.1"
@@ -73,22 +68,12 @@ internal fun ManagedChannel.echo(request: String): String =
 internal fun ManagedChannel.echoFailure(request: String): StatusRuntimeException =
   shouldThrow<StatusRuntimeException> { echo(request) }
 
-// GrpcDsl.server binds every interface, and on a developer machine another app's 127.0.0.1 listener can shadow a
-// wildcard listener on the same port. So the Netty builder the DSL starts from is swapped for one bound to
-// 127.0.0.1 on an ephemeral port; the DSL still applies its own TLS configuration to that builder.
+// Bound to 127.0.0.1 rather than every interface: on a developer machine another app's 127.0.0.1 listener can
+// shadow a wildcard listener on the same port.
 internal fun loopbackServer(
   tlsContext: TlsContext,
   block: ServerBuilder<*>.() -> Unit,
-): Server {
-  val loopbackBuilder = NettyServerBuilder.forAddress(InetSocketAddress(LOOPBACK, 0))
-  mockkStatic(NettyServerBuilder::class)
-  try {
-    every { NettyServerBuilder.forPort(0) } returns loopbackBuilder
-    return GrpcDsl.server(port = 0, tlsContext = tlsContext, block = block)
-  } finally {
-    unmockkStatic(NettyServerBuilder::class)
-  }
-}
+): Server = GrpcDsl.server(port = 0, tlsContext = tlsContext, bindAddress = LOOPBACK, block = block)
 
 // Runs block against a started server, shutting the server and every channel it opened down afterwards.
 internal inline fun <T> Server.use(block: (Server) -> T): T {

@@ -5,6 +5,89 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v5.0.0 — 2026-09-25
+
+A major release. It fixes all 93 items from the 2026-09-24 code review of 4.1.0
+(`docs/CODE_REVIEW_2026-09-24.md`). It also narrows the public API and the published dependencies, which is why the
+major version changes. Read **Upgrading from 4.x** before bumping.
+
+### Highlights
+
+- **New `common-utils-bom`**: one `platform(...)` or `<scope>import</scope>` line aligns every module on the same
+  version, including the `-jvm` artifacts of the multiplatform modules.
+- **Security fixes**:
+  - core-utils `toObjectSecure` bounds array lengths and object references by the payload size. Before, a
+    35-byte payload could allocate 80 MB, and a 1.7 KB one could take a minute of CPU.
+  - email-utils `isValidEmail` no longer throws `StackOverflowError` on a long address.
+  - service-utils' Jetty admin server no longer reveals its version or stack traces, and a blank `threadDumpPath`
+    no longer serves the thread dump at `/`.
+- **Scripting**: script-utils-kotlin binds variables through a single holder, which lifts the Kotlin 2.4.10 hold.
+  Pooled Kotlin evaluators are about four times faster, because they reset every 20 returns instead of every
+  return. Lambdas, JDK-internal classes, nested imports and failed resets no longer break later evaluations.
+- **grpc-utils retry default restored**: 4.1.0 turned off grpc's transparent retries on every channel that
+  never set `enableRetry`; channels get grpc's own default back.
+- **Ktor servlet bridge**: HEAD responses no longer carry a body, which had corrupted pipelined keep-alive
+  connections on the Ktor admin endpoints, and more of the servlet request and response API is implemented.
+- **Silent wrong behaviour fixed**:
+  - json-utils parsing and integer accessors are strict and give the same result on every platform.
+  - exposed-utils `upsert` rejects conflict targets it cannot honour.
+  - `GenericValueWaiter` returns at once for a zero or negative timeout.
+  - redis-utils' suspending helpers no longer block the caller's thread.
+- **New options**:
+  - `JettyDsl.server(port, host)` and `GrpcDsl.server(bindAddress = …)` bind a single address.
+  - `java.time.Duration` overloads for Java callers of `startSync`/`stopSync` and `UrlSource`.
+  - Timeouts on repository file sources.
+  - json-utils `longValue`.
+- **Build and CI**:
+  - The wrapper distribution is checksum-verified, and CI actions are pinned to commit SHAs.
+  - CI publishes to the local Maven repository, so broken publications show up before a release.
+
+### Upgrading from 4.x
+
+- **Removed from the public API.** These are now internal or private, and nothing outside the library needs them:
+  - `KtorServletRequest` and `KtorServletResponse`: mount servlets with `Route.servlet`.
+  - `ExposedUtils`, `RedisUtils.RedisInfo` and `RecaptchaService.RecaptchaResponse`.
+  - The companion objects of `LambdaServlet`, `VersionServlet`, `SamplerGaugeCollector` and `ResendService`.
+- **Read-only now.**
+  - service-utils `jmxReporter`, `metricsService`, `zipkinReporterService` and `servletService` can no longer be
+    reassigned.
+  - script-utils-common `AbstractScript.valueMap` is a read-only `Map`, and `AbstractEnginePool.channel` is
+    private.
+- **Dependencies you may need to declare yourself.** Each of these used to arrive transitively:
+  - **kotlinx-serialization-json:** core-utils no longer exports it on any platform.
+  - **kotlin-logging (JS, wasm and native):** core-utils now exports it on the JVM only.
+  - **core-utils:** jetty-utils, dropwizard-utils and ktor-client-utils no longer depend on it, and
+    prometheus-utils and exposed-utils depend on kotlin-logging instead.
+  - **grpc-protobuf and grpc-services:** grpc-utils no longer ships them. A missing one fails at runtime, not
+    at compile time.
+  - **ktor-server-call-logging and ktor-server-compression:** service-utils no longer ships them. They also fail
+    only at runtime.
+
+### Behavior changes
+
+- json-utils `String.toJsonElement` is deprecated in favour of `parseJson`.
+  - `parseJson` rejects unquoted non-JSON tokens.
+  - `intValue` accepts only JSON integers.
+- `ServletGroup.addServlet` adds a missing leading slash, so `"ping"` and `"/ping"` register the same endpoint.
+- jetty-utils `LambdaServlet` and `VersionServlet` no longer append a line separator to the body.
+- recaptcha-utils builds a new HTTP client when verifying after `close()`, instead of failing every request.
+- prometheus-utils `SamplerGaugeCollector` rejects invalid or repeated names at construction.
+- grpc-utils rejects a missing host or out-of-range port for the Netty transport with a clear message.
+- exposed-utils `KotlinSqlLogger` logs at debug level.
+- guava-utils `GenericMonitor` warns that a negative `maxWait` is deprecated.
+- core-utils `SingleAssignVar.singleAssign` is deprecated in favour of `AtomicDelegates.singleSetReference`.
+- ktor-server-utils' POM marks the servlet API optional, so Maven consumers no longer get it at runtime.
+
+### Dependency changes
+
+- `kotlin-scripting-*` 2.4.10 → 2.4.20
+- Removed from published dependencies: `grpc-protobuf`, `grpc-services`, `ktor-server-call-logging`,
+  `ktor-server-compression`
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/4.1.0...5.0.0
+
+---
+
 ## v4.1.0 — 2026-09-16
 
 ### Highlights
@@ -775,7 +858,7 @@ No custom repository declaration is needed — Maven Central is the default in G
 
 ---
 
-## 2.4.13 — 2026-02-05
+## v2.4.13 — 2026-02-05
 
 - Fix maven bom issue
 

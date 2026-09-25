@@ -63,7 +63,7 @@ fun Int.lpad(
 ): String =
   // As with "%0Nd", zeros go between the sign and the digits, and the sign counts toward the width.
   if (this < 0 && padChar == '0')
-    "-" + toString().removePrefix("-").padStart(width - 1, padChar)
+    "-" + toString().removePrefix("-").padStart((width - 1).coerceAtLeast(0), padChar)
   else
     toString().padStart(width, padChar)
 

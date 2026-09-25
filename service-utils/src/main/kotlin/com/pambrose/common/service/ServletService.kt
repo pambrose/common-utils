@@ -19,7 +19,6 @@ package com.pambrose.common.service
 import com.pambrose.common.concurrent.GenericIdleService
 import com.pambrose.common.concurrent.genericServiceListener
 import com.pambrose.common.dsl.GuavaDsl.toStringElements
-import com.pambrose.common.util.ensureLeadingSlash
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.eclipse.jetty.ee11.servlet.ServletHolder
@@ -47,7 +46,7 @@ class ServletService(
   private val server =
     jettyServer(host, port) {
       servletGroup.servletMap.forEach { (path, servlet) ->
-        addServlet(ServletHolder(servlet), path.ensureLeadingSlash())
+        addServlet(ServletHolder(servlet), path)
       }
     }
 
@@ -81,7 +80,7 @@ class ServletService(
   override fun toString() =
     toStringElements {
       add("port", port)
-      add("paths", servletGroup.servletMap.keys.map { it.ensureLeadingSlash() })
+      add("paths", servletGroup.servletMap.keys.toList())
     }
 
   companion object {

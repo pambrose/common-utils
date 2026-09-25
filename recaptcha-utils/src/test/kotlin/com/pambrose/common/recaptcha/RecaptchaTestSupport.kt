@@ -80,7 +80,9 @@ internal fun postToken(
   beforePost: () -> Unit = {},
 ): Pair<HttpStatusCode, String> {
   val previous = RecaptchaService.httpClient
-  RecaptchaService.httpClient = RecaptchaService.verificationClient(engine)
+  val previousFactory = RecaptchaService.clientFactory
+  RecaptchaService.clientFactory = { RecaptchaService.verificationClient(engine) }
+  RecaptchaService.httpClient = RecaptchaService.clientFactory()
   try {
     beforePost()
     var result: Pair<HttpStatusCode, String>? = null
@@ -114,5 +116,6 @@ internal fun postToken(
   } finally {
     RecaptchaService.httpClient.close()
     RecaptchaService.httpClient = previous
+    RecaptchaService.clientFactory = previousFactory
   }
 }

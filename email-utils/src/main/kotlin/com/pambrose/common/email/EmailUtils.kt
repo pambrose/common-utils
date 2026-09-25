@@ -38,7 +38,7 @@ object EmailUtils {
     // specials, including plus-addressing (`user+tag`). The domain accepts single-character labels
     // and modern long TLDs, or a bare IPv4 literal.
     val localPart = "[A-Za-z0-9._%+-]+"
-    val domainName = "([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}"
+    val domainName = "([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}"
     val octet = "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
     val ipv4 = "$octet(\\.$octet){3}"
     Pattern.compile("^$localPart@($domainName|$ipv4)$")
@@ -51,13 +51,24 @@ object EmailUtils {
    * common local-part characters (letters, digits, and `._%+-`, so plus-addressing works), single-character
    * domain labels, modern long TLDs, and bare IPv4-literal domains. It does not accept quoted local parts,
    * internationalized (Unicode) domains, or bracketed/IPv6 address literals.
+   *
+   * Addresses longer than 254 characters, or with a local part longer than 64, are rejected before the
+   * pattern runs (RFC 5321's limits). That also bounds the regex engine's recursion, which grows with the
+   * number of domain labels, so untrusted input cannot overflow the stack.
    */
-  fun String.isValidEmail() = emailPattern.matcher(this).matches()
+  fun String.isValidEmail() =
+    length <= MAX_EMAIL_LENGTH &&
+      substringBefore('@').length <= MAX_LOCAL_PART_LENGTH &&
+      emailPattern.matcher(this).matches()
 
   /**
    * Returns `true` if this [String] does not match a valid email address pattern.
    */
   fun String.isNotValidEmail() = !isValidEmail()
+
+  private const val MAX_EMAIL_LENGTH = 254
+
+  private const val MAX_LOCAL_PART_LENGTH = 64
 
   /**
    * Builds an HTML email string with an embedded CSS stylesheet and the given body content.

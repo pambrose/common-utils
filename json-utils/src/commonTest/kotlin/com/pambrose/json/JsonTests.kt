@@ -28,6 +28,7 @@ import com.pambrose.common.json.jsonObjectValue
 import com.pambrose.common.json.jsonObjectValueOrNull
 import com.pambrose.common.json.stringValue
 import com.pambrose.common.json.stringValueOrNull
+import com.pambrose.common.json.parseJson
 import com.pambrose.common.json.toJsonElement
 import com.pambrose.common.json.toJsonString
 import com.pambrose.common.json.toMap
@@ -90,7 +91,7 @@ class JsonTests : StringSpec() {
       DEFAULT_INT_LIST,
       DEFAULT_DOUBLE_LIST,
     )
-    val json1: JsonElement = obj.toJsonString(true).toJsonElement()
+    val json1: JsonElement = obj.toJsonString(true).parseJson()
     val json2: JsonElement = obj.toJsonElement()
 
     "Check for keys" {

@@ -190,7 +190,8 @@ class KotlinScriptTests : StringSpec() {
         it.apply {
           add("list", list, typeOf<Int?>())
 
-          varDecls shouldBe "val list = bindings[\"list_tmp\"] as java.util.ArrayList<kotlin.Int?>"
+          varDecls shouldBe
+            "val list = (bindings[\"__variables\"] as com.pambrose.common.script.ScriptVariables)[\"list\"] as java.util.ArrayList<kotlin.Int?>"
 
           list.size shouldBe eval("list.size")
 
@@ -365,9 +366,9 @@ class KotlinScriptTests : StringSpec() {
           add("primitives", intArrayOf(1, 2, 3, 4))
           varDecls shouldBe
             """
-            |val ints = bindings["ints_tmp"] as kotlin.Array<kotlin.Int>
-            |val lists = bindings["lists_tmp"] as kotlin.Array<kotlin.collections.List<kotlin.Int>>
-            |val primitives = bindings["primitives_tmp"] as kotlin.IntArray
+            |val ints = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["ints"] as kotlin.Array<kotlin.Int>
+            |val lists = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["lists"] as kotlin.Array<kotlin.collections.List<kotlin.Int>>
+            |val primitives = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["primitives"] as kotlin.IntArray
             """.trimMargin()
           eval("ints.size + ints[1]") shouldBe 4
           eval("lists[0].size") shouldBe 3
@@ -381,7 +382,8 @@ class KotlinScriptTests : StringSpec() {
         it.apply {
           add("pair", InternalPair(1, "a"), typeOf<Int>(), typeOf<String>())
           // It used to be cast to kotlin.Any<kotlin.Int, kotlin.String>, which does not compile.
-          varDecls shouldBe """val pair = bindings["pair_tmp"] as kotlin.Any"""
+          varDecls shouldBe
+            """val pair = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["pair"] as kotlin.Any"""
           eval("pair.toString()") shouldBe "[1]"
           eval("0") shouldBe 0
         }
@@ -392,8 +394,63 @@ class KotlinScriptTests : StringSpec() {
       KotlinScript().use {
         it.apply {
           add("props", Properties().apply { setProperty("k", "v") })
-          varDecls shouldBe """val props = bindings["props_tmp"] as java.util.Properties"""
+          varDecls shouldBe
+            """val props = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["props"] as java.util.Properties"""
           eval("""props.getProperty("k")""") shouldBe "v"
+        }
+      }
+    }
+
+    // Each value used to get its own "<name>_tmp" engine binding, which the engine also exposes as a script property.
+    // A user variable could then collide with one, and values of some classes broke every later evaluation.
+    "a variable named like another's former temporary binding keeps its own value" {
+      KotlinScript().use {
+        it.apply {
+          add("a_tmp", 1)
+          add("a", "s")
+          eval("a_tmp") shouldBe 1
+          eval("a") shouldBe "s"
+        }
+      }
+    }
+
+    "binding a lambda or a JDK-internal class leaves later evaluations working" {
+      KotlinScript().use {
+        it.apply {
+          val increment: (Int) -> Int = { x -> x + 1 }
+          add("increment", increment)
+          add("order", String.CASE_INSENSITIVE_ORDER)
+          eval("1 + 1") shouldBe 2
+          eval("order === order") shouldBe true
+        }
+      }
+    }
+
+    "the names the generated declarations read from are reserved" {
+      KotlinScript().use { script ->
+        listOf("bindings", "__variables").forEach { name ->
+          shouldThrow<ScriptException> { script.add(name, 1) }.message.orEmpty() shouldContain "not a valid identifier"
+        }
+      }
+    }
+
+    "a value whose class is in an unexported JDK package is declared as an exported supertype" {
+      KotlinScript().use {
+        it.apply {
+          add("cs", Charsets.UTF_8)
+          eval("cs.name()") shouldBe "UTF-8"
+        }
+      }
+    }
+
+    "a comparator or a lambda can be declared with its type arguments and called" {
+      KotlinScript().use {
+        it.apply {
+          add("cmp", Comparator.naturalOrder<String>(), typeOf<String>())
+          val increment: (Int) -> Int = { x -> x + 1 }
+          add("increment", increment, typeOf<Int>(), typeOf<Int>())
+          eval("""cmp.compare("a", "b") < 0""") shouldBe true
+          eval("increment(2)") shouldBe 3
         }
       }
     }

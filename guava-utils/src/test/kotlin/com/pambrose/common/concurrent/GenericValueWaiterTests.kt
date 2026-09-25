@@ -57,6 +57,23 @@ private suspend fun <T> withDetachedScope(block: suspend (CoroutineScope) -> T):
 // delay is needed to let it get there.
 class GenericValueWaiterTests : StringSpec() {
   init {
+    // Under a dispatcher that runs launch inline, the timeout job used to be launched before the waiter was
+    // registered: a zero or negative delay fired, found nothing to remove, and the waiter then waited forever.
+    "a zero or negative timeout returns false at once, even under a dispatcher that runs work inline" {
+      listOf(Duration.ZERO, (-5).milliseconds).forEach { timeout ->
+        withTimeout(hangGuard) {
+          CoroutineScope(Dispatchers.Unconfined)
+            .async(start = UNDISPATCHED) { BooleanWaiter(false).waitUntilTrue(timeout) }
+            .await() shouldBe false
+        }
+        withTimeout(hangGuard) {
+          CoroutineScope(Dispatchers.Unconfined)
+            .async(start = UNDISPATCHED) { BooleanWaiter(true).waitUntilTrue(timeout) }
+            .await() shouldBe true
+        }
+      }
+    }
+
     "a satisfied waiter resumes promptly rather than stalling for the full timeout" {
       // Races registering a waiter against satisfying it, with a long timeout. If checkCondition cannot
       // see (and cancel) the timeout job when it removes the waiter, the satisfied wait stalls until the

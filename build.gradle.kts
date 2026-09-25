@@ -4,6 +4,7 @@
 )
 
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import com.vanniktech.maven.publish.JavaPlatform
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.KotlinMultiplatform
@@ -101,12 +102,12 @@ dokka {
 }
 
 // Coverage floors, enforced through `check` (and so through CI's `./gradlew build`). They sit a few points
-// below the current figures (line 98.8%, branch 89.3%) so that ordinary drift does not trip them. `make build`
+// below the current figures (kept in CLAUDE.md's Coverage section) so that ordinary drift does not trip them. `make build`
 // passes -x koverVerify, since that target is documented as building without tests.
 //
 // The project-wide rule alone has a lot of slack: every module except core-utils, service-utils,
 // ktor-server-utils and guava-utils is small enough to lose all of its coverage without pulling the aggregate
-// under 90%. The per-package line rule closes most of that gap (the weakest package, `script`, is at 96.1%).
+// under 90%. The per-package line rule closes most of that gap.
 // It stops at lines on purpose: `response` has four branches, two of them compiler-generated and unreachable,
 // so a per-package branch floor would fail for no reason.
 kover {
@@ -197,6 +198,11 @@ plugins.withType<WasmYarnPlugin> {
     }
 }
 
+// The java-platform module that pins every other module's version. It has no code, so it gets none of the
+// Kotlin, lint, coverage or docs configuration below; see configureBom().
+val bomModuleName = "common-utils-bom"
+val mavenPublishPluginId = libs.plugins.maven.publish.get().pluginId
+
 // Modules built with kotlin("multiplatform"); all other modules stay kotlin("jvm").
 val kmpModuleNames = setOf(
     "core-utils",
@@ -234,6 +240,11 @@ val sharedPluginIds = listOf(
 ).map { it.get().pluginId }
 
 subprojects {
+    if (name == bomModuleName) {
+        configureBom()
+        return@subprojects
+    }
+
     val isKmp = name in kmpModuleNames
 
     ((if (isKmp) kmpPluginIds else jvmPluginIds) + sharedPluginIds).forEach(pluginManager::apply)
@@ -360,6 +371,9 @@ fun Project.configureKotlinMultiplatform() {
             .matching { it.konanTarget.family == Family.WATCHOS || it.konanTarget.family == Family.TVOS }
             .configureEach {
                 tasks.named("${name}Test") { enabled = false }
+                // Disabling the test task alone still links its test binary under check and allTests.
+                val linkTask = "linkDebugTest${name.replaceFirstChar { it.uppercase() }}"
+                tasks.matching { it.name == linkTask }.configureEach { enabled = false }
             }
     }
 
@@ -464,6 +478,39 @@ fun Project.configurePublishing(isKmp: Boolean) {
             else
                 KotlinJvm(javadocJar = javadocJar, sourcesJar = sourcesJar),
         )
+    }
+    configureCoordinatesAndPom()
+}
+
+// Constrains every published module to this build's version. The KMP modules are listed by their root
+// coordinates, which Gradle consumers resolve to the right variant, and by their -jvm artifacts, which Maven
+// consumers depend on directly.
+fun Project.configureBom() {
+    pluginManager.apply("java-platform")
+    pluginManager.apply(mavenPublishPluginId)
+
+    dependencies {
+        constraints {
+            rootProject.subprojects
+                .filter { it.name != bomModuleName }
+                .sortedBy { it.name }
+                .forEach { module ->
+                    add("api", "${module.group}:${module.name}:${module.version}")
+                    if (module.name in kmpModuleNames)
+                        add("api", "${module.group}:${module.name}-jvm:${module.version}")
+                }
+        }
+    }
+
+    extensions.configure<MavenPublishBaseExtension> {
+        configure(JavaPlatform())
+    }
+    configureCoordinatesAndPom()
+}
+
+// Coordinates, POM metadata, Central upload and signing, shared by the code modules and the BOM.
+fun Project.configureCoordinatesAndPom() {
+    extensions.configure<MavenPublishBaseExtension> {
         coordinates(project.group.toString(), project.name, project.version.toString())
 
         pom {

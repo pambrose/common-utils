@@ -27,7 +27,7 @@ package com.pambrose.common.servlet
 class VersionServlet(
   version: String,
 ) : LambdaServlet({ version }) {
-  companion object {
+  private companion object {
     private const val serialVersionUID = -9115048679370256251L
   }
 }

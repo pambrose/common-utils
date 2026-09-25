@@ -226,8 +226,7 @@ class RecaptchaTests : StringSpec() {
     }
 
     // Bug #9: the singleton's HttpClient was never closed. close() now releases it; verify it runs
-    // without throwing and is idempotent. Kept last so it does not close the shared client before
-    // the other tests in this spec run (none of which touch the client anyway).
+    // without throwing and is idempotent. A later verification builds a new client.
     "close releases the http client without throwing and is idempotent" {
       shouldNotThrowAny {
         RecaptchaService.close()

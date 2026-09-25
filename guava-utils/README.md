@@ -293,7 +293,9 @@ import com.pambrose.common.util.isWindows
 ### Services
 
 - `abstract class GenericExecutionThreadService : AbstractExecutionThreadService` — `startSync(timeout = 30.seconds)`,
-  `stopSync(timeout = 30.seconds)`, both `@Throws(TimeoutException::class)`
+  `stopSync(timeout = 30.seconds)`, both `@Throws(TimeoutException::class)`. Java callers use the
+  `startSync(java.time.Duration)` / `stopSync(java.time.Duration)` overloads, since the Kotlin `Duration` ones compile
+  under mangled names Java cannot call
 - `abstract class GenericIdleService : AbstractIdleService` — the same `startSync` / `stopSync`
 - `fun Service.genericServiceListener(logger: KLogger): Service.Listener` — pass the result to `addListener`
 - `GuavaDsl.serviceManager(services: List<Service>, block: ServiceManager.() -> Unit): ServiceManager`
@@ -344,11 +346,15 @@ dependencies {
 
 ## Choosing a Waiting Primitive
 
-| Need                                                | Use                                       |
-|-----------------------------------------------------|-------------------------------------------|
-| Blocking wait on a thread                           | `BooleanMonitor` / `GenericMonitor`       |
-| Suspending wait, value observed as a flow           | `ConditionalBoolean` / `ConditionalValue` |
-| Suspending wait, value set from non-suspending code | `BooleanWaiter` / `GenericValueWaiter`    |
+| Need                                                                          | Use                                       |
+|-------------------------------------------------------------------------------|-------------------------------------------|
+| Blocking wait on a thread                                                     | `BooleanMonitor` / `GenericMonitor`       |
+| Suspending wait on the latest value; rapid updates may be conflated           | `ConditionalBoolean` / `ConditionalValue` |
+| Suspending wait with a condition per waiter; a failing condition fails only its waiter | `BooleanWaiter` / `GenericValueWaiter` |
+
+Both suspending primitives are set from non-suspending code. `ConditionalValue` checks each waiter against the
+latest value only, so a value that changes and changes back before a waiter runs can be missed; `GenericValueWaiter`
+evaluates every waiter's predicate on each change.
 
 ## Thread Safety
 

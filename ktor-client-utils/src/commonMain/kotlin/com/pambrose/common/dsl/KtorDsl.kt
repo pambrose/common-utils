@@ -17,7 +17,6 @@
 
 package com.pambrose.common.dsl
 
-import com.pambrose.common.util.isNull
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.HttpRequestBuilder
@@ -65,7 +64,7 @@ object KtorDsl {
     expectSuccess: Boolean = false,
     block: suspend HttpClient.() -> T,
   ): T =
-    if (httpClient.isNull())
+    if (httpClient == null)
       newHttpClient(expectSuccess).use { client -> client.block() }
     else
       httpClient.block()
@@ -85,7 +84,7 @@ object KtorDsl {
     expectSuccess: Boolean = false,
     block: suspend (HttpClient) -> T,
   ): T =
-    if (httpClient.isNull())
+    if (httpClient == null)
       newHttpClient(expectSuccess).use { client -> block(client) }
     else
       block(httpClient)

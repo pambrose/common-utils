@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotest)
 }
@@ -13,11 +12,13 @@ kotlin {
         commonMain.dependencies {
             api(libs.kotlinx.coroutines)
             api(libs.kotlinx.datetime)
-            api(libs.kotlinx.serialization.json)
-            api(libs.kotlin.logging)
         }
+        // Only the JVM code logs and uses serialization. kotlin-logging stays `api` because the JVM-only modules
+        // get it from here; serialization appears in no public signature.
         jvmMain.dependencies {
             api(libs.kotlin.reflect)
+            api(libs.kotlin.logging)
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(libs.kotest.assertions.core)

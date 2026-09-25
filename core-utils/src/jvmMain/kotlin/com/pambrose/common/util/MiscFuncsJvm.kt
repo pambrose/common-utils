@@ -130,6 +130,10 @@ object MiscFuncs {
   /**
    * Waits until the specified TCP [port] can be bound, polling with a delay between attempts.
    *
+   * Availability is checked by binding the wildcard address. On macOS and other BSDs that bind can succeed while
+   * another process still listens on `127.0.0.1` at the same port, so a `true` there does not guarantee a loopback
+   * bind will succeed.
+   *
    * @param port the TCP port to wait for
    * @param maxAttempts the maximum number of attempts (default 50)
    * @param delayMs the delay in milliseconds between attempts (default 200)
@@ -143,11 +147,13 @@ object MiscFuncs {
   ): Boolean {
     // An invalid port can never be bound, so waiting for it would only report it as busy.
     require(port in 0..MAX_PORT) { "port must be in 0..$MAX_PORT but was $port" }
-    repeat(maxAttempts) {
+    repeat(maxAttempts) { attempt ->
       try {
         ServerSocket(port).use { return true }
       } catch (_: IOException) {
-        Thread.sleep(delayMs)
+        // No point sleeping once the last attempt has failed.
+        if (attempt < maxAttempts - 1)
+          Thread.sleep(delayMs)
       }
     }
     logger.warn { "Port $port was still in use after ${maxAttempts * delayMs}ms" }

@@ -1,26 +1,20 @@
 public final class com/pambrose/common/dsl/JettyDsl {
 	public static final field INSTANCE Lcom/pambrose/common/dsl/JettyDsl;
+	public final fun server (ILjava/lang/String;Lkotlin/jvm/functions/Function1;)Lorg/eclipse/jetty/server/Server;
 	public final fun server (ILkotlin/jvm/functions/Function1;)Lorg/eclipse/jetty/server/Server;
+	public static synthetic fun server$default (Lcom/pambrose/common/dsl/JettyDsl;ILjava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/eclipse/jetty/server/Server;
 	public static synthetic fun server$default (Lcom/pambrose/common/dsl/JettyDsl;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/eclipse/jetty/server/Server;
 	public final fun servletContextHandler (Lkotlin/jvm/functions/Function1;)Lorg/eclipse/jetty/ee11/servlet/ServletContextHandler;
 	public static synthetic fun servletContextHandler$default (Lcom/pambrose/common/dsl/JettyDsl;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/eclipse/jetty/ee11/servlet/ServletContextHandler;
 }
 
 public class com/pambrose/common/servlet/LambdaServlet : jakarta/servlet/http/HttpServlet {
-	public static final field Companion Lcom/pambrose/common/servlet/LambdaServlet$Companion;
 	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
 	public fun <init> (Lkotlin/jvm/functions/Function0;)V
 	protected final fun doGet (Ljakarta/servlet/http/HttpServletRequest;Ljakarta/servlet/http/HttpServletResponse;)V
 }
 
-public final class com/pambrose/common/servlet/LambdaServlet$Companion {
-}
-
 public final class com/pambrose/common/servlet/VersionServlet : com/pambrose/common/servlet/LambdaServlet {
-	public static final field Companion Lcom/pambrose/common/servlet/VersionServlet$Companion;
 	public fun <init> (Ljava/lang/String;)V
-}
-
-public final class com/pambrose/common/servlet/VersionServlet$Companion {
 }
 

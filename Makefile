@@ -71,11 +71,12 @@ abi-check: ## Check the public ABI against the committed <module>/api dumps (als
 abi-update: ## Rewrite the <module>/api dumps after an intended public API change
 	./gradlew updateKotlinAbi
 
-# cleanAllTests exists only in the KMP modules; cleanTest covers the JVM ones. With the build cache on,
-# a cleaned test task can still come back FROM-CACHE, so re-run coverage with --rerun-tasks.
+# cleanTest covers the JVM modules and cleanJvmTest the KMP ones (whose jvmTest results Kover reads);
+# cleanAllTests only removes the KMP aggregate test report. With the build cache on, a cleaned test task can
+# still come back FROM-CACHE, so re-run coverage with --rerun-tasks.
 coverage-clean: ## Clean Kover outputs and previous test results
-	./gradlew cleanTest cleanAllTests
-	rm -rf build/reports/kover build/kover
+	./gradlew cleanTest cleanJvmTest cleanAllTests
+	rm -rf build/reports/kover build/kover */build/kover
 
 refresh: ## Refresh dependencies and re-run dependencyUpdates
 	./gradlew --refresh-dependencies dependencyUpdates --no-configuration-cache
@@ -109,10 +110,14 @@ publish-maven-central: _require-version _check-gpg-env ## Publish and release to
 
 # Gradle's documented upgrade procedure: the first run rewrites
 # gradle-wrapper.properties using the *old* wrapper jar; the second run
-# regenerates the wrapper itself with the new version.
+# regenerates the wrapper itself with the new version. Both pass the
+# distribution's published SHA-256, so distributionSha256Sum is kept and the
+# wrapper verifies every download.
 upgrade-wrapper: _require-gradle-version ## Re-run the Gradle wrapper task at the pinned version
-	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
-	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin
+	@sum="$$(curl -fsSL https://services.gradle.org/distributions/gradle-$(GRADLE_VERSION)-bin.zip.sha256)" \
+		|| { echo "ERROR: Could not fetch the SHA-256 for gradle $(GRADLE_VERSION)" >&2; exit 1; }; \
+	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin --gradle-distribution-sha256-sum=$$sum && \
+	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin --gradle-distribution-sha256-sum=$$sum
 
 _check-gpg-env:
 	@if [ -z "$$GPG_SIGNING_KEY_ID" ]; then \

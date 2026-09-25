@@ -13,7 +13,6 @@ public final class com/pambrose/common/script/AbstractEngine$Companion {
 public abstract class com/pambrose/common/script/AbstractEnginePool : java/io/Closeable {
 	public fun <init> (I)V
 	public fun close ()V
-	protected final fun getChannel ()Lkotlinx/coroutines/channels/Channel;
 	public final fun getSize ()I
 	public final fun isEmpty ()Z
 	protected final fun populate (Lkotlin/jvm/functions/Function0;)V
@@ -31,8 +30,10 @@ public abstract class com/pambrose/common/script/AbstractExprEvaluator : com/pam
 
 public abstract class com/pambrose/common/script/AbstractExprEvaluatorPool : com/pambrose/common/script/AbstractEnginePool {
 	public fun <init> (I)V
+	public fun <init> (II)V
 	public final fun blockingEval (Ljava/lang/String;)Z
 	public final fun eval (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getResetEvery ()I
 	public synthetic fun reset (Lcom/pambrose/common/script/AbstractEngine;)V
 	protected fun reset (Lcom/pambrose/common/script/AbstractExprEvaluator;)V
 }

@@ -19,6 +19,7 @@ package com.pambrose.common.json
 import com.pambrose.common.json.JsonDefaults.json
 import com.pambrose.common.util.simpleClassName
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -49,9 +50,26 @@ val JsonElement.stringValue get() = nonNullContent
 /**
  * Returns the integer value of this [JsonElement]'s primitive content. Extension property on [JsonElement].
  *
- * @throws IllegalArgumentException if this element is JSON `null`, not a primitive, or not an integer
+ * The content, quoted or not, must be a JSON integer (`-?(0|[1-9][0-9]*)`), so `007`, `+5` and non-ASCII digits are
+ * rejected on every platform, as [isNumber] and [doubleValue] reject them.
+ *
+ * @throws IllegalArgumentException if this element is JSON `null`, not a primitive, or not an integer in range
  */
-val JsonElement.intValue get() = nonNullContent.toInt()
+val JsonElement.intValue: Int
+  get() = nonNullContent.let { it.toJsonIntOrNull() ?: throw NumberFormatException("JSON value \"$it\" is not an Int") }
+
+/**
+ * Returns the [Long] value of this [JsonElement]'s primitive content, for values such as IDs and millisecond
+ * timestamps that exceed [Int]. Extension property on [JsonElement].
+ *
+ * The content, quoted or not, must be a JSON integer (`-?(0|[1-9][0-9]*)`), as for [intValue].
+ *
+ * @throws IllegalArgumentException if this element is JSON `null`, not a primitive, or not an integer in range
+ */
+val JsonElement.longValue: Long
+  get() = nonNullContent.let {
+    it.toJsonLongOrNull() ?: throw NumberFormatException("JSON value \"$it\" is not a Long")
+  }
 
 /**
  * Returns the double value of this [JsonElement]'s primitive content. Extension property on [JsonElement].
@@ -88,6 +106,13 @@ private val JsonElement.primitiveContentOrNull: String?
 private val jsonNumber = Regex("""-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?|NaN|-?Infinity""")
 
 private fun String.toJsonDoubleOrNull(): Double? = if (jsonNumber.matches(this)) toDouble() else null
+
+// The integer part of the JSON number grammar. toIntOrNull alone also takes "007", "+5" and non-ASCII digits.
+private val jsonInteger = Regex("""-?(?:0|[1-9][0-9]*)""")
+
+private fun String.toJsonIntOrNull(): Int? = if (jsonInteger.matches(this)) toIntOrNull() else null
+
+private fun String.toJsonLongOrNull(): Long? = if (jsonInteger.matches(this)) toLongOrNull() else null
 
 // Json object values
 
@@ -186,7 +211,16 @@ fun JsonElement.intValue(vararg keys: String) = get(*keys).intValue
  * Navigates to the nested element at [keys] and returns its integer value, or `null` if it is missing, JSON `null`,
  * or not an integer. Extension function on [JsonElement].
  */
-fun JsonElement.intValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull?.toIntOrNull()
+fun JsonElement.intValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull?.toJsonIntOrNull()
+
+/** Navigates to the nested element at [keys] and returns its [Long] value. Extension function on [JsonElement]. */
+fun JsonElement.longValue(vararg keys: String) = get(*keys).longValue
+
+/**
+ * Navigates to the nested element at [keys] and returns its [Long] value, or `null` if it is missing, JSON `null`,
+ * or not an integer in range. Extension function on [JsonElement].
+ */
+fun JsonElement.longValueOrNull(vararg keys: String) = getOrNull(*keys)?.primitiveContentOrNull?.toJsonLongOrNull()
 
 /** Navigates to the nested element at [keys] and returns its double value. Extension function on [JsonElement]. */
 fun JsonElement.doubleValue(vararg keys: String) = get(*keys).doubleValue
@@ -303,28 +337,30 @@ private fun prettyPrint(indent: String) =
     prettyPrintIndent = indent
   }
 
-// Cache the default (two-space) formatter so the common path doesn't rebuild a Json on every call.
-private val defaultPrettyFormat by lazy { prettyPrint("  ") }
+// Cache the common formatters (two spaces, four spaces, a tab) so they are not rebuilt on every call.
+private val cachedPrettyFormats by lazy { listOf("  ", "    ", "\t").associateWith { prettyPrint(it) } }
 
 /**
  * Encodes this [JsonElement] as a pretty-printed JSON string.
  *
  * Extension function on [JsonElement].
  *
- * @param indent the indentation string to use (defaults to two spaces)
+ * @param indent the indentation string to use (defaults to two spaces); it may contain only spaces, tabs, `\r` and
+ *   `\n`, as kotlinx.serialization requires
  * @return the formatted JSON string
+ * @throws IllegalArgumentException if [indent] contains any other character
  */
 fun JsonElement.toFormattedString(indent: String = "  "): String =
-  if (indent == "  ") defaultPrettyFormat.encodeToString(this) else prettyPrint(indent).encodeToString(this)
+  (cachedPrettyFormats[indent] ?: prettyPrint(indent)).encodeToString(this)
 
 /**
  * Parses this [String] as JSON and re-encodes it. Extension function on [String].
  *
  * @param prettyPrint if `true` (the default), formats the output with indentation; otherwise outputs compact JSON
  * @return the re-encoded JSON string
- * @throws kotlinx.serialization.SerializationException if this string is not valid JSON
+ * @throws kotlinx.serialization.SerializationException if this string is not valid JSON, as for [parseJson]
  */
-fun String.reformatJson(prettyPrint: Boolean = true): String = toJsonElement().toJsonString(prettyPrint)
+fun String.reformatJson(prettyPrint: Boolean = true): String = parseJson().toJsonString(prettyPrint)
 
 /**
  * Parses this [String] as JSON and re-encodes it as a pretty-printed JSON string. Extension function on [String].
@@ -358,28 +394,68 @@ object JsonDefaults {
 /**
  * Converts this value to a [JsonElement] tree using kotlinx.serialization.
  *
+ * A [String] receiver is serialized as a JSON string, so `"42".toJsonElement()` inside generic code is the string
+ * `"42"`. To parse JSON text, use [parseJson].
+ *
  * @param T the type to serialize (must be `@Serializable`)
  * @return the [JsonElement] representation
  */
 inline fun <reified T> T.toJsonElement() = json.encodeToJsonElement(this)
 
 /**
- * Parses this [String] into a [JsonElement].
+ * Parses this [String] as JSON text into a [JsonElement].
  *
- * Extension function on [String].
+ * Extension function on [String]. The input must be valid JSON: kotlinx.serialization's tree parser accepts any
+ * unquoted token (`hello`, `007`, `+3`, `0x10`) as a literal, which would then be re-encoded differently on each
+ * platform, so every unquoted value other than `true`, `false`, `null` and a JSON number is rejected. `NaN`,
+ * `Infinity` and `-Infinity`, which kotlinx writes for non-finite doubles, are accepted.
  *
  * @param verbose if `true`, logs the full raw input string at WARN level on parse failure. Avoid this
  *   for sensitive payloads, since the input may contain PII or secrets.
  * @return the parsed [JsonElement]
- * @throws kotlinx.serialization.SerializationException if parsing fails
+ * @throws SerializationException if this string is not valid JSON
  */
-fun String.toJsonElement(verbose: Boolean = false) =
-  runCatching { json.parseToJsonElement(this) }
+fun String.parseJson(verbose: Boolean = false): JsonElement =
+  runCatching { json.parseToJsonElement(this).also { it.requireJsonLiterals() } }
     .onFailure {
       if (verbose)
         logger.warn { "Error parsing JSON: <<\n$this\n>>" }
     }
     .getOrThrow()
+
+/**
+ * Parses this [String] as JSON text into a [JsonElement]; renamed [parseJson].
+ *
+ * The name shadowed the generic [toJsonElement], so the same call parsed `"42"` into the number 42 on a [String]
+ * but serialized it as the string `"42"` in generic code.
+ */
+@Deprecated(
+  "Parses JSON text, unlike the generic toJsonElement, which serializes a String as a JSON string. Use parseJson.",
+  ReplaceWith("parseJson(verbose)"),
+)
+fun String.toJsonElement(verbose: Boolean = false) = parseJson(verbose)
+
+// Rejects the unquoted tokens kotlinx's tree parser lets through; JsonNull is a primitive too, and is valid.
+private fun JsonElement.requireJsonLiterals() {
+  when (this) {
+    is JsonObject -> {
+      values.forEach { it.requireJsonLiterals() }
+    }
+
+    is JsonArray -> {
+      forEach { it.requireJsonLiterals() }
+    }
+
+    JsonNull -> {
+      Unit
+    }
+
+    is JsonPrimitive -> {
+      if (!isString && content != "true" && content != "false" && !jsonNumber.matches(content))
+        throw SerializationException("Unexpected unquoted token '${content.take(20)}' in JSON input")
+    }
+  }
+}
 
 /** Converts this [JsonElement] (which must be a [JsonArray]) to a [List] of [JsonElement]. Extension function on [JsonElement]. */
 fun JsonElement.toJsonElementList() = jsonArray.toList()
@@ -412,10 +488,18 @@ private fun JsonElement.toAny(): Any? =
     is JsonArray -> map { it.toAny() }
   }
 
+// The message names the key and a few of the keys that are present, never the document's content: serializing it
+// costs time on every miss, and it may hold personal data that would end up in logs.
 internal fun JsonElement.element(key: String) =
   elementOrNull(key) ?: throw IllegalArgumentException(
-    """JsonElement key "$key" not found in ${this.toString().take(100)}...""",
+    jsonObject.keys.let { keys ->
+      val shown = keys.take(MAX_KEYS_SHOWN).joinToString(", ") { "\"$it\"" }
+      val more = if (keys.size > MAX_KEYS_SHOWN) ", ... (${keys.size} keys)" else ""
+      """JsonElement key "$key" not found; available keys: [$shown$more]"""
+    },
   )
+
+private const val MAX_KEYS_SHOWN = 10
 
 private fun JsonElement.elementOrNull(key: String) = jsonObject[key]
 

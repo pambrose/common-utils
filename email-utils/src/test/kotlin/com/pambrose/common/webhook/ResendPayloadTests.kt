@@ -22,8 +22,11 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
+import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Decodes the payloads Resend documents, verbatim, rather than the models' own output. Copied from
@@ -145,6 +148,19 @@ class ResendPayloadTests : StringSpec() {
 
     "decode throws SerializationException for a body that is not JSON" {
       shouldThrow<SerializationException> { ResendWebhookMsg.decode("not json") }
+    }
+
+    // Only email.* events are supported; the README's check on `type` lets an endpoint skip the others.
+    "an event without email_id and from fails to decode, and its type can be read first" {
+      val payload =
+        """
+        {"type": "contact.created", "created_at": "2026-11-22T23:41:12.126Z",
+         "data": {"id": "c1", "created_at": "2026-11-22T23:41:12.126Z", "email": "a@example.com"}}
+        """.trimIndent()
+
+      shouldThrow<MissingFieldException> { ResendWebhookMsg.decode(payload) }
+      ResendWebhookMsg.json.parseToJsonElement(payload).jsonObject["type"]?.jsonPrimitive?.content shouldBe
+        "contact.created"
     }
   }
 }

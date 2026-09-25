@@ -32,6 +32,7 @@ import io.ktor.server.request.ApplicationRequest
 import io.ktor.util.Attributes
 import io.mockk.every
 import io.mockk.mockk
+import jakarta.servlet.DispatcherType
 import jakarta.servlet.http.HttpUpgradeHandler
 
 class KtorServletRequestTests : StringSpec() {
@@ -100,15 +101,11 @@ class KtorServletRequestTests : StringSpec() {
       val request = KtorServletRequest(mockk())
       val response = KtorServletResponse()
       shouldThrow<UnsupportedOperationException> { request.authType }
-      shouldThrow<UnsupportedOperationException> { request.cookies }
-      shouldThrow<UnsupportedOperationException> { request.getDateHeader("If-Modified-Since") }
-      shouldThrow<UnsupportedOperationException> { request.getIntHeader("Content-Length") }
       shouldThrow<UnsupportedOperationException> { request.pathTranslated }
       shouldThrow<UnsupportedOperationException> { request.remoteUser }
       shouldThrow<UnsupportedOperationException> { request.isUserInRole("admin") }
       shouldThrow<UnsupportedOperationException> { request.userPrincipal }
       shouldThrow<UnsupportedOperationException> { request.requestedSessionId }
-      shouldThrow<UnsupportedOperationException> { request.requestURL }
       shouldThrow<UnsupportedOperationException> { request.getSession(true) }
       shouldThrow<UnsupportedOperationException> { request.session }
       shouldThrow<UnsupportedOperationException> { request.changeSessionId() }
@@ -122,10 +119,7 @@ class KtorServletRequestTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { request.getPart("file") }
       shouldThrow<UnsupportedOperationException> { request.upgrade(HttpUpgradeHandler::class.java) }
       shouldThrow<UnsupportedOperationException> { request.httpServletMapping }
-      shouldThrow<UnsupportedOperationException> { request.characterEncoding }
       shouldThrow<UnsupportedOperationException> { request.setCharacterEncoding("UTF-8") }
-      shouldThrow<UnsupportedOperationException> { request.contentLength }
-      shouldThrow<UnsupportedOperationException> { request.contentLengthLong }
       shouldThrow<UnsupportedOperationException> { request.inputStream }
       shouldThrow<UnsupportedOperationException> { request.localName }
       shouldThrow<UnsupportedOperationException> { request.localAddr }
@@ -136,17 +130,64 @@ class KtorServletRequestTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { request.isAsyncStarted }
       shouldThrow<UnsupportedOperationException> { request.isAsyncSupported }
       shouldThrow<UnsupportedOperationException> { request.asyncContext }
-      shouldThrow<UnsupportedOperationException> { request.dispatcherType }
       shouldThrow<UnsupportedOperationException> { request.remoteHost }
       shouldThrow<UnsupportedOperationException> { request.remotePort }
       shouldThrow<UnsupportedOperationException> { request.locale }
       shouldThrow<UnsupportedOperationException> { request.locales }
-      shouldThrow<UnsupportedOperationException> { request.isSecure }
       shouldThrow<UnsupportedOperationException> { request.getRequestDispatcher("/other") }
       shouldThrow<UnsupportedOperationException> { request.reader }
       shouldThrow<UnsupportedOperationException> { request.requestId }
       shouldThrow<UnsupportedOperationException> { request.protocolRequestId }
       shouldThrow<UnsupportedOperationException> { request.servletConnection }
+    }
+
+    "headers the servlet spec derives values from are parsed, with -1 or null when absent" {
+      val request = mockk<ApplicationRequest>()
+      every { request.headers } returns
+        headersOf(
+          HttpHeaders.ContentType to ["text/plain; charset=ISO-8859-1"],
+          HttpHeaders.ContentLength to ["12"],
+          "X-Int" to ["7"],
+          "X-Bad-Int" to ["seven"],
+          "X-Date" to ["Thu, 01 Jan 1970 00:00:01 GMT"],
+          "X-Bad-Date" to ["yesterday"],
+        )
+      val servletRequest = KtorServletRequest(request)
+      servletRequest.characterEncoding shouldBe "ISO-8859-1"
+      servletRequest.contentLength shouldBe 12
+      servletRequest.contentLengthLong shouldBe 12L
+      servletRequest.getIntHeader("X-Int") shouldBe 7
+      servletRequest.getIntHeader("X-Missing") shouldBe -1
+      shouldThrow<NumberFormatException> { servletRequest.getIntHeader("X-Bad-Int") }
+      servletRequest.getDateHeader("X-Date") shouldBe 1000L
+      servletRequest.getDateHeader("X-Missing") shouldBe -1L
+      shouldThrow<IllegalArgumentException> { servletRequest.getDateHeader("X-Bad-Date") }
+    }
+
+    "a request without Content-Type or Content-Length reports null and -1" {
+      val request = mockk<ApplicationRequest>()
+      every { request.headers } returns Headers.Empty
+      val servletRequest = KtorServletRequest(request)
+      servletRequest.characterEncoding shouldBe null
+      servletRequest.contentLength shouldBe -1
+      servletRequest.dispatcherType shouldBe DispatcherType.REQUEST
+    }
+
+    "an unparseable Content-Type has no charset, and an unusable Content-Length reports -1" {
+      listOf("12345678901", "twelve").forEach { length ->
+        val request = mockk<ApplicationRequest>()
+        every { request.headers } returns
+          headersOf(HttpHeaders.ContentType to ["not a content type"], HttpHeaders.ContentLength to [length])
+        val servletRequest = KtorServletRequest(request)
+        servletRequest.characterEncoding shouldBe null
+        servletRequest.contentLength shouldBe -1
+      }
+    }
+
+    "getRequestURL omits the default port and isSecure follows the scheme" {
+      val servletRequest = KtorServletRequest(connectedRequest(uri = "/api/items?id=42"))
+      servletRequest.requestURL.toString() shouldBe "https://example.com:8443/api/items"
+      servletRequest.isSecure shouldBe true
     }
 
     "getPathInfo is null because the servlet is mapped to its exact path" {

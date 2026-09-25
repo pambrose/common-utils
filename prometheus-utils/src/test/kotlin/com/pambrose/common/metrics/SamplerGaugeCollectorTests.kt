@@ -34,6 +34,7 @@ class SamplerGaugeCollectorTests : StringSpec() {
       val collector = SamplerGaugeCollector(
         name = "test_sampler_gauge_creation",
         help = "Test sampler gauge collector",
+        registry = CollectorRegistry(),
         data = { value },
       )
       collector shouldNotBe null
@@ -52,6 +53,7 @@ class SamplerGaugeCollectorTests : StringSpec() {
       val collector = SamplerGaugeCollector(
         name = "test_sampler_gauge_with_labels",
         help = "Test sampler gauge with labels",
+        registry = CollectorRegistry(),
         labelNames = ["region", "instance"],
         labelValues = ["us-east-1", "i-12345"],
         data = { 55.5 },
@@ -69,6 +71,7 @@ class SamplerGaugeCollectorTests : StringSpec() {
         SamplerGaugeCollector(
           name = "test_sampler_gauge_mismatch",
           help = "mismatched labels",
+          registry = CollectorRegistry(),
           labelNames = ["region", "instance"],
           labelValues = ["us-east-1"],
           data = { 1.0 },
@@ -82,6 +85,7 @@ class SamplerGaugeCollectorTests : StringSpec() {
       val collector = SamplerGaugeCollector(
         name = "test_sampler_gauge_dynamic",
         help = "Test dynamic sampler gauge",
+        registry = CollectorRegistry(),
         data = { (++counter).toDouble() },
       )
       // The data lambda is called on each collect(), so values should increment
@@ -97,6 +101,7 @@ class SamplerGaugeCollectorTests : StringSpec() {
       val collector = SamplerGaugeCollector(
         name = "test_sampler_gauge_throws",
         help = "throwing sampler",
+        registry = CollectorRegistry(),
         data = { throw RuntimeException("boom") },
       )
       // collect() must not propagate the sampler's exception (that would take down the whole scrape).
@@ -106,15 +111,45 @@ class SamplerGaugeCollectorTests : StringSpec() {
 
     "the sampler does not run when the collector is constructed and registered" {
       var sampled = 0
-      SamplerGaugeCollector(name = "test_sampler_gauge_lazy", help = "lazy sampler") {
-        sampled++
-        7.0
-      }
-      sampled shouldBe 0
+      val collector =
+        SamplerGaugeCollector(name = "test_sampler_gauge_lazy", help = "lazy sampler") {
+          sampled++
+          7.0
+        }
+      try {
+        sampled shouldBe 0
 
-      // It is still registered: scraping the default registry runs the sampler.
-      CollectorRegistry.defaultRegistry.getSampleValue("test_sampler_gauge_lazy") shouldBe 7.0
-      sampled shouldBe 1
+        // It is still registered: scraping the default registry runs the sampler.
+        CollectorRegistry.defaultRegistry.getSampleValue("test_sampler_gauge_lazy") shouldBe 7.0
+        sampled shouldBe 1
+      } finally {
+        // Leave the default registry as it was, so a re-run in the same JVM can register the name again.
+        CollectorRegistry.defaultRegistry.unregister(collector)
+      }
+    }
+
+    // The registry and the text format never check names, so an invalid one made Prometheus reject the whole scrape.
+    "invalid or repeated metric and label names are rejected at construction" {
+      listOf(
+        { SamplerGaugeCollector(name = "queue-depth", help = "h", registry = CollectorRegistry()) { 1.0 } },
+        { SamplerGaugeCollector("q", "h", ["__x"], ["x"], CollectorRegistry()) { 1.0 } },
+        { SamplerGaugeCollector("q", "h", ["a", "a"], ["x", "y"], CollectorRegistry()) { 1.0 } },
+      ).forEach { create -> shouldThrow<IllegalArgumentException> { create() } }
+    }
+
+    "the constructors without a registry register with the default one" {
+      val labelled = SamplerGaugeCollector("test_sampler_gauge_default_labelled", "h", ["a"], ["x"]) { 1.0 }
+      val unlabelled = SamplerGaugeCollector(name = "test_sampler_gauge_default_plain", help = "h", labelNames = []) {
+        2.0
+      }
+      try {
+        val registry = CollectorRegistry.defaultRegistry
+        registry.getSampleValue("test_sampler_gauge_default_labelled", arrayOf("a"), arrayOf("x")) shouldBe 1.0
+        registry.getSampleValue("test_sampler_gauge_default_plain") shouldBe 2.0
+      } finally {
+        CollectorRegistry.defaultRegistry.unregister(labelled)
+        CollectorRegistry.defaultRegistry.unregister(unlabelled)
+      }
     }
 
     "the collector can register with a given registry instead of the default one" {

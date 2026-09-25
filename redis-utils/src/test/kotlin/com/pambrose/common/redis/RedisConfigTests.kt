@@ -128,6 +128,14 @@ class RedisConfigTests : StringSpec() {
     }
 
     // The URL can carry a password, and so can the message of the URISyntaxException that rejects it.
+    // java.net.URI reports no host for redis_cache, a legal Docker Compose service name, so say why.
+    "a host that URI cannot parse gets its own message rather than 'no host'" {
+      shouldThrow<IllegalArgumentException> { RedisUtils.newRedisClient("redis://redis_cache:6379") }
+        .message shouldBe "Redis URL host could not be parsed; host names may contain only letters, digits, '-' and '.'"
+      shouldThrow<IllegalArgumentException> { RedisUtils.newRedisClient("localhost:6379") }
+        .message shouldBe "Redis URL has no host"
+    }
+
     "a malformed url's exception does not repeat the password" {
       val exception = shouldThrow<IllegalArgumentException> { withRedis("redis://alice:s3cret@bad host:6379") { } }
 

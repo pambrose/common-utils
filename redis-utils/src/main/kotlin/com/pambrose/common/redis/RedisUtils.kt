@@ -20,6 +20,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URI
 import java.net.URISyntaxException
 import java.time.Duration
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import redis.clients.jedis.ConnectionPoolConfig
 import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
@@ -65,14 +68,16 @@ object RedisUtils {
 
   private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
 
+  // The exception's message says why (refused, timed out, bad credentials, pool exhausted) and holds no secrets, so
+  // it is logged even without the stack trace.
   private fun logConnectionFailure(
     e: JedisException,
     printStackTrace: Boolean,
   ) {
     if (printStackTrace)
-      logger.error(e) { FAILED_TO_CONNECT_MSG }
+      logger.error(e) { "$FAILED_TO_CONNECT_MSG: ${e.message}" }
     else
-      logger.error { FAILED_TO_CONNECT_MSG }
+      logger.error { "$FAILED_TO_CONNECT_MSG: ${e::class.simpleName}: ${e.message}" }
   }
 
   private val defaultRedisUrl = System.getenv("REDIS_URL") ?: "redis://user:none@localhost:6379"
@@ -84,7 +89,7 @@ object RedisUtils {
    * @property user the username extracted from the URL's userinfo
    * @property password the password extracted from the URL's userinfo
    */
-  class RedisInfo(
+  internal class RedisInfo(
     val uri: URI,
     val user: String,
     val password: String,
@@ -108,7 +113,15 @@ object RedisUtils {
         throw IllegalArgumentException("Malformed Redis URL: ${e.reason} at index ${e.index}")
       }
     // Without a host, as in localhost:6379 (read as scheme "localhost"), Jedis would silently connect to loopback.
-    require(!uri.host.isNullOrBlank()) { "Redis URL has no host" }
+    // java.net.URI also reports no host for a name it cannot parse as one, such as redis_cache (an underscore is
+    // legal in a Docker Compose service name but not in a URI host), which gets its own message.
+    require(!uri.host.isNullOrBlank()) {
+      // The authority's host part: after any userinfo, before any port.
+      if (uri.rawAuthority.orEmpty().substringAfterLast('@').substringBeforeLast(':').isBlank())
+        "Redis URL has no host"
+      else
+        "Redis URL host could not be parsed; host names may contain only letters, digits, '-' and '.'"
+    }
     val userInfo = uri.userInfo?.split(":", limit = 2).orEmpty()
     return RedisInfo(uri, userInfo.getOrElse(0) { "" }, userInfo.getOrElse(1) { "" })
   }
@@ -211,11 +224,14 @@ object RedisUtils {
    * @param redisUrl the Redis connection URL (defaults to the `REDIS_URL` environment variable)
    * @param maxPoolSize maximum connections in the pool, or [UNLIMITED_POOL_SIZE] for no limit; defaults to the
    *   [REDIS_MAX_POOL_SIZE] property or 10
-   * @param maxIdleSize maximum idle connections; defaults to the [REDIS_MAX_IDLE_SIZE] property or 5
-   * @param minIdleSize minimum idle connections; defaults to the [REDIS_MIN_IDLE_SIZE] property or 1
+   * @param maxIdleSize maximum idle connections, or [UNLIMITED_POOL_SIZE] for no limit; defaults to the
+   *   [REDIS_MAX_IDLE_SIZE] property or 5
+   * @param minIdleSize minimum idle connections; defaults to the [REDIS_MIN_IDLE_SIZE] property or 1. A value above
+   *   [maxIdleSize] is lowered to it (commons-pool2 does so), and a warning is logged
    * @param maxWaitSecs seconds to wait when borrowing a connection; defaults to the [REDIS_MAX_WAIT_SECS] property or 1
    * @return a configured [RedisClient] with connection pooling
-   * @throws IllegalArgumentException if a pool setting is negative, if [maxPoolSize] is 0, which would
+   * @throws IllegalArgumentException if a pool setting is negative (other than [UNLIMITED_POOL_SIZE] for
+   *   [maxPoolSize] and [maxIdleSize]), if [maxPoolSize] is 0, which would
    *   create a pool that can never lend a connection, or if [redisUrl] is invalid (see [RedisUtils])
    */
   fun newRedisClient(
@@ -228,9 +244,13 @@ object RedisUtils {
     require(maxPoolSize > 0 || maxPoolSize == UNLIMITED_POOL_SIZE) {
       "Max pool size must be positive, or $UNLIMITED_POOL_SIZE for unlimited, but was $maxPoolSize"
     }
-    require(maxIdleSize >= 0) { "Max idle size cannot be a negative number" }
+    require(maxIdleSize >= 0 || maxIdleSize == UNLIMITED_POOL_SIZE) {
+      "Max idle size cannot be negative, other than $UNLIMITED_POOL_SIZE for unlimited, but was $maxIdleSize"
+    }
     require(minIdleSize >= 0) { "Min idle size cannot be a negative number" }
     require(maxWaitSecs >= 0) { "Max wait secs cannot be a negative number" }
+    if (maxIdleSize != UNLIMITED_POOL_SIZE && minIdleSize > maxIdleSize)
+      logger.warn { "Redis min idle size $minIdleSize exceeds max idle size $maxIdleSize; using $maxIdleSize" }
 
     logger.info { "Redis max pool size: $maxPoolSize" }
     logger.info { "Redis max idle size: $maxIdleSize" }
@@ -296,6 +316,9 @@ object RedisUtils {
    * Suspending variant of [withRedisPool]. Executes a suspending [block] with this [RedisClient],
    * passing `null` if the connection fails.
    *
+   * The connectivity ping runs on [Dispatchers.IO]. [block] runs in the caller's context, so Jedis calls made in
+   * it still block their thread; wrap them in `withContext(Dispatchers.IO)` when calling from a limited dispatcher.
+   *
    * Extension function on [RedisClient].
    *
    * @param T the return type of the block
@@ -306,11 +329,14 @@ object RedisUtils {
   suspend fun <T> RedisClient.withSuspendingRedisPool(
     printStackTrace: Boolean = false,
     block: suspend (RedisClient?) -> T,
-  ): T = block.invoke(if (pingSucceeds(printStackTrace)) this else null)
+  ): T = block.invoke(if (pingSucceedsOnIo(printStackTrace)) this else null)
 
   /**
    * Suspending variant of [withNonNullRedisPool]. Executes a suspending [block] with this [RedisClient],
    * returning `null` if the connection fails.
+   *
+   * The connectivity ping runs on [Dispatchers.IO]; [block] runs in the caller's context, as in
+   * [withSuspendingRedisPool].
    *
    * Extension function on [RedisClient].
    *
@@ -322,7 +348,7 @@ object RedisUtils {
   suspend fun <T> RedisClient.withSuspendingNonNullRedisPool(
     printStackTrace: Boolean = false,
     block: suspend (RedisClient) -> T,
-  ): T? = if (pingSucceeds(printStackTrace)) block.invoke(this) else null
+  ): T? = if (pingSucceedsOnIo(printStackTrace)) block.invoke(this) else null
 
   /**
    * Creates a short-lived [RedisClient] connection, executes [block], and closes the client.
@@ -371,7 +397,8 @@ object RedisUtils {
   /**
    * Suspending variant of [withRedis]. Creates a short-lived connection, executes a suspending [block], and closes it.
    *
-   * Passes `null` to [block] if the connection fails.
+   * Passes `null` to [block] if the connection fails. Connecting, pinging and closing run on [Dispatchers.IO];
+   * [block] runs in the caller's context, so Jedis calls made in it still block their thread.
    *
    * @param T the return type of the block
    * @param redisUrl the Redis connection URL
@@ -385,13 +412,14 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: suspend (RedisClient?) -> T,
   ): T {
-    val client = connectOrNull(redisUrl, printStackTrace) ?: return block.invoke(null)
-    return client.use { block.invoke(it) }
+    val client = connectOrNullOnIo(redisUrl, printStackTrace) ?: return block.invoke(null)
+    return client.useOnIo { block.invoke(it) }
   }
 
   /**
    * Suspending variant of [withNonNullRedis]. Creates a short-lived connection, executes a suspending [block],
-   * and closes it. Returns `null` if the connection fails.
+   * and closes it. Returns `null` if the connection fails. Connecting, pinging and closing run on
+   * [Dispatchers.IO]; [block] runs in the caller's context.
    *
    * @param T the return type of the block
    * @param redisUrl the Redis connection URL
@@ -405,8 +433,33 @@ object RedisUtils {
     printStackTrace: Boolean = false,
     block: suspend (RedisClient) -> T,
   ): T? {
-    val client = connectOrNull(redisUrl, printStackTrace) ?: return null
-    return client.use { block.invoke(it) }
+    val client = connectOrNullOnIo(redisUrl, printStackTrace) ?: return null
+    return client.useOnIo { block.invoke(it) }
+  }
+
+  // The suspending helpers connect, ping and close on Dispatchers.IO: each is a blocking Jedis call that can take the
+  // full 2 s connect or socket timeout when Redis is down, which would otherwise stall the caller's dispatcher thread.
+  @Suppress("InjectDispatcher")
+  private val ioDispatcher = Dispatchers.IO
+
+  private suspend fun RedisClient.pingSucceedsOnIo(printStackTrace: Boolean) =
+    withContext(ioDispatcher) { pingSucceeds(printStackTrace) }
+
+  private suspend fun connectOrNullOnIo(
+    redisUrl: String,
+    printStackTrace: Boolean,
+  ) = withContext(ioDispatcher) { connectOrNull(redisUrl, printStackTrace) }
+
+  // Like use(), but closes on the IO dispatcher, and under NonCancellable so a cancelled block still closes it.
+  private suspend fun <T> RedisClient.useOnIo(block: suspend (RedisClient) -> T): T {
+    val result = runCatching { block(this) }
+    val closeFailure = withContext(NonCancellable + ioDispatcher) { runCatching { close() }.exceptionOrNull() }
+    result.exceptionOrNull()?.let { failure ->
+      closeFailure?.let(failure::addSuppressed)
+      throw failure
+    }
+    closeFailure?.let { throw it }
+    return result.getOrThrow()
   }
 
   /**
@@ -414,6 +467,10 @@ object RedisUtils {
    *
    * Extension function on [UnifiedJedis]. Returns a [Sequence] that iterates through all matching keys
    * without loading them all into memory at once.
+   *
+   * This covers a standalone server ([RedisClient]). A cluster client (`RedisClusterClient`) sends SCAN to a
+   * single node: Jedis rejects a [pattern] without a `{hash-tag}` with [IllegalArgumentException], and with one it
+   * returns only the keys in that tag's slot. To scan every node of a cluster, use Jedis' own `scanIteration`.
    *
    * @param pattern the glob-style pattern to match keys against (e.g., `"user:*"`)
    * @param count a hint to Redis for how many keys to return per SCAN iteration

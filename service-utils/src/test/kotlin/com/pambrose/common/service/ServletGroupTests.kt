@@ -57,7 +57,7 @@ class ServletGroupTests : StringSpec() {
       group.addServlet("test", servlet)
 
       group.servletMap.size shouldBe 1
-      group.servletMap["test"] shouldBe servlet
+      group.servletMap["/test"] shouldBe servlet
     }
 
     "servlet group add multiple servlets" {
@@ -72,7 +72,7 @@ class ServletGroupTests : StringSpec() {
       group.addServlet("version", servlet3)
 
       group.servletMap.size shouldBe 3
-      group.servletMap.keys shouldContainExactly setOf("ping", "health", "version")
+      group.servletMap.keys shouldContainExactly setOf("/ping", "/health", "/version")
     }
 
     "servlet group empty path ignored" {
@@ -95,7 +95,19 @@ class ServletGroupTests : StringSpec() {
       group.addServlet("test", servlet2)
 
       group.servletMap.size shouldBe 1
-      group.servletMap["test"] shouldBe servlet2
+      group.servletMap["/test"] shouldBe servlet2
+    }
+
+    "a path with and without a leading slash is the same endpoint" {
+      val group = ServletGroup()
+      val servlet1 = testServlet()
+      val servlet2 = testServlet()
+
+      group.addServlet("ping", servlet1)
+      group.addServlet("/ping", servlet2)
+
+      group.servletMap.keys shouldContainExactly setOf("/ping")
+      group.servletMap["/ping"] shouldBe servlet2
     }
   }
 }

@@ -10,10 +10,15 @@ import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import java.net.Socket
 
 class HerokuHttpsRedirectTests : StringSpec() {
   // Installs the plugin and a route answering "Hello" on every path, and returns a client that does not
@@ -57,6 +62,37 @@ class HerokuHttpsRedirectTests : StringSpec() {
           status shouldBe HttpStatusCode.MovedPermanently
           headers[HttpHeaders.Location] shouldBe "https://myapp.example.com/hello?x=1"
         }
+      }
+    }
+
+    // Rebuilding the URL from the parsed parameters reordered and lower-cased them, which breaks signed URLs. Ktor's
+    // client normalizes a query itself, so the request is written to a raw socket.
+    "redirect keeps the raw query string: order, case and encoding" {
+      val server =
+        embeddedServer(CIO, port = 0, host = "127.0.0.1") {
+          install(HerokuHttpsRedirect)
+          routing { get("{...}") { call.respondText("Hello") } }
+        }.start(wait = false)
+      try {
+        val port = server.engine.resolvedConnectors().first().port
+        val response =
+          Socket("127.0.0.1", port).use { socket ->
+            socket.soTimeout = 10_000
+            socket.getOutputStream().apply {
+              write(
+                (
+                  "GET /hello?b=2&a=1&B=3&flag&sig=a%2Fb HTTP/1.1\r\nHost: myapp.example.com\r\n" +
+                    "X-Forwarded-Proto: http\r\nConnection: close\r\n\r\n"
+                ).toByteArray(),
+              )
+              flush()
+            }
+            socket.getInputStream().readBytes().toString(Charsets.ISO_8859_1)
+          }
+        response.lines().first { it.startsWith("Location:", ignoreCase = true) }.substringAfter(":").trim() shouldBe
+          "https://myapp.example.com/hello?b=2&a=1&B=3&flag&sig=a%2Fb"
+      } finally {
+        server.stop(0, 0)
       }
     }
 

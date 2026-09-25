@@ -11,7 +11,8 @@ Built on [java-scriptengine](https://github.com/eobermuhlner/java-scriptengine) 
 - **`JavaScript`**: compiles and evaluates Java source, with typed variable bindings
 - **`eval(expr, action, verbose)`**: evaluates a Java expression, optionally after a block of statements
 - **`evalScript(script, verbose)`**: evaluates a complete Java class, with variables assigned to its public fields
-- **`import(clazz)`**: adds an `import` declaration to generated source
+- **`import(clazz)`**: adds an `import` declaration to generated source, by canonical name so nested classes work
+  (`addImport(clazz)` is the same, for Java callers, since `import` is a Java keyword)
 - **`assignIsolation(isolation)`**: selects the classloader isolation used by the engine
 - **`JavaScriptPool`**: a fixed-size pool of pre-created `JavaScript` instances
 
@@ -168,8 +169,10 @@ JavaScript().use { script ->
 ```
 
 `Isolation.CallerClassLoader` is java-scriptengine's default, and the isolation a pooled instance is restored to when
-it is returned. `Isolation.IsolatedClassLoader` compiles each script into its own classloader, so a class can be
-redefined between evaluations.
+it is returned. Both levels compile each script into a class loader of its own. `Isolation.IsolatedClassLoader`
+differs in hiding the host application's classes from the script, so a variable whose class comes from the host (not
+the JDK) cannot be used under it: the script fails with a `ScriptException` caused by `NoClassDefFoundError`. Keep
+`CallerClassLoader` for those.
 
 ### Pooling
 
@@ -201,7 +204,7 @@ its instances, and later borrows throw `ClosedReceiveChannelException`.
 
 - `fun eval(expr: String, action: String = "", verbose: Boolean = false): Any?`
 - `fun evalScript(script: String, verbose: Boolean = false): Any?`
-- `fun <T> import(clazz: Class<T>)`
+- `fun <T> import(clazz: Class<T>)` / `fun <T> addImport(clazz: Class<T>)`
 - `fun assignIsolation(isolation: Isolation)`
 - `val varDecls: String` — the generated public field declarations
 - `val importDecls: String` — the generated import statements
@@ -252,7 +255,12 @@ dependencies {
 
 - Scripts are compiled in-process by the JDK's own Java compiler, so the host must run on a JDK, not a JRE.
 - Java has no null global context: `JavaScript` binds variables into the engine scope, never the global scope, so
-  `JavaScriptPool`'s `nullGlobalContext` parameter is ignored and kept only for symmetry with the other script pools.
+  `JavaScriptPool`'s `nullGlobalContext` parameter, and `resetForReuse`'s, are ignored and kept only for symmetry with
+  the other script pools. Calling `resetContext(true)` directly does remove the global scope, after which `evalScript`
+  fails.
+- `evalScript` keeps only the registered variables in the engine scope afterwards. java-scriptengine copies every
+  public field of the evaluated class back into the bindings, so a field that is not a variable would otherwise make
+  every later evaluation fail with `NoSuchFieldException`.
 - Variable names must be valid Java identifiers and must not be Java keywords; `add` rejects anything else, which also
   keeps a name from injecting code into the generated class.
 - Variables added after an evaluation are bound before the next one, so `add` and `eval` can be interleaved freely.

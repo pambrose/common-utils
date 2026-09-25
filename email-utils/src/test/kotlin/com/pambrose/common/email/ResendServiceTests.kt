@@ -37,6 +37,7 @@ import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.slot
 import io.mockk.unmockkAll
+import io.mockk.verify
 import org.slf4j.LoggerFactory
 
 // Runs block with a function that snapshots the log events emitted by the email package in the meantime.
@@ -96,6 +97,23 @@ class ResendServiceTests : StringSpec() {
       req.bcc shouldBe ["bcc@example.com"]
       req.subject shouldBe "Hello"
       req.html shouldBe "<h1>Hi</h1>"
+    }
+
+    // Resend.emails() builds a new OkHttp client each time, so one must be taken once and reused.
+    "the Resend emails service is created once and reused for every send" {
+      stubSend()
+
+      val service = ResendService("test-api-key")
+      repeat(3) {
+        service.sendEmail(
+          from = Email("from@example.com"),
+          to = [Email("to@example.com")],
+          subject = "Subj",
+          html = "<p>x</p>",
+        )
+      }
+
+      verify(exactly = 1) { anyConstructed<Resend>().emails() }
     }
 
     "sendEmail builds a valid request with empty (defaulted) cc and bcc" {

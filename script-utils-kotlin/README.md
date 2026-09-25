@@ -84,8 +84,11 @@ script.add("class", 5) // ScriptException: not a valid identifier
 
 ### Generated Declarations
 
-Each bound value is put in the engine bindings under a temporary name, and a `val` declaration casts it back to a
-type the script can name. When the value's own runtime class is not public — the list behind `listOf(1, 2)`, for
+Every bound value is stored in one `ScriptVariables` holder, the only engine binding, and a `val` declaration reads
+it back and casts it to a type the script can name. The Kotlin engine turns each binding into a script property typed
+by the value's runtime class, so binding values directly let a lambda or a JDK-internal class (such as
+`String.CASE_INSENSITIVE_ORDER`) break every later evaluation, and let a variable named `a_tmp` collide with another's
+binding. `bindings` and `__variables` are reserved and cannot be used as variable names. When the value's own runtime class is not public — the list behind `listOf(1, 2)`, for
 instance — the cast uses the nearest public class or interface, with fully-qualified names, so such values bind
 normally.
 
@@ -107,7 +110,7 @@ not what you expected:
 ```kotlin
 KotlinScript().use { script ->
   script.add("list", mutableListOf<Int?>(), typeOf<Int?>())
-  script.varDecls // val list = bindings["list_tmp"] as java.util.ArrayList<kotlin.Int?>
+  script.varDecls // val list = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["list"] as java.util.ArrayList<kotlin.Int?>
 }
 ```
 
@@ -118,8 +121,8 @@ KotlinScript().use { script ->
   script.add("ints", arrayOf(1, 2), typeOf<Int>())
   script.add("counts", intArrayOf(1, 2))
   script.varDecls
-  // val ints = bindings["ints_tmp"] as kotlin.Array<kotlin.Int>
-  // val counts = bindings["counts_tmp"] as kotlin.IntArray
+  // val ints = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["ints"] as kotlin.Array<kotlin.Int>
+  // val counts = (bindings["__variables"] as com.pambrose.common.script.ScriptVariables)["counts"] as kotlin.IntArray
 }
 ```
 
@@ -150,6 +153,12 @@ KotlinExprEvaluator().use { evaluator ->
 
 An evaluator keeps engine state across evaluations — the Kotlin engine's REPL history grows with every expression —
 so call `resetContext()` on a long-lived evaluator, or borrow from a pool, which resets for you.
+
+A `KotlinExprEvaluatorPool` resets an evaluator every `resetEvery` returns, 20 by default, rather than every time. A
+fresh REPL costs several times an evaluation: with one evaluator, resetting on every return took about 415 ms per
+pooled evaluation, against 97 ms when resetting every 20 returns. Between resets,
+anything an expression declares stays visible to the evaluator's next borrowers; pass `resetEvery = 1` for full
+isolation.
 
 ### Pooling
 
@@ -239,7 +248,8 @@ script.eval("System.currentTimeMillis() > 0") // true
 
 ### `KotlinExprEvaluatorPool`
 
-- `class KotlinExprEvaluatorPool(size: Int) : AbstractExprEvaluatorPool<KotlinExprEvaluator>` — `Closeable`
+- `class KotlinExprEvaluatorPool(size: Int, resetEvery: Int = 20) : AbstractExprEvaluatorPool<KotlinExprEvaluator>` —
+  `Closeable`
 - `suspend fun eval(expr: String): Boolean`
 - `fun blockingEval(expr: String): Boolean`
 - `val size: Int`, `val isEmpty: Boolean`, `close()`

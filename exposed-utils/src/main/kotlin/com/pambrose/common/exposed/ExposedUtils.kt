@@ -31,12 +31,16 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transactionManager
 
 /** Internal holder for the module-level logger. */
-object ExposedUtils {
+internal object ExposedUtils {
   internal val logger = KotlinLogging.logger {}
 }
 
 /**
- * An Exposed [SqlLogger] that logs SQL statements via a Kotlin [KLogger].
+ * An Exposed [SqlLogger] that logs SQL statements via a Kotlin [KLogger], at debug level.
+ *
+ * Each statement is logged with its bound arguments inlined, so the log carries whatever values were written:
+ * passwords, tokens or personal data included. Debug level, as with Exposed's own `Slf4jSqlDebugLogger`, keeps
+ * that out of production logs unless it is switched on deliberately.
  *
  * @property logger the [KLogger] to use for logging; defaults to the module-level logger
  */
@@ -47,7 +51,7 @@ class KotlinSqlLogger(
     context: StatementContext,
     transaction: Transaction,
   ) {
-    logger.info { "SQL: ${context.expandArgs(transaction)}" }
+    logger.debug { "SQL: ${context.expandArgs(transaction)}" }
   }
 }
 
@@ -83,6 +87,11 @@ fun ResultRow.toRowString() = fieldIndex.keys.map { this[it].toString() }.filter
 /**
  * Executes a read-only database transaction.
  *
+ * Called inside another transaction, this does not start a new one: with Exposed's default
+ * `useNestedTransactions = false` the block joins the outer transaction, and with nesting on it inherits the
+ * outer transaction's read-only flag and isolation level. Either way, [transactionIsolation] and read-only
+ * mode (where applicable) are not applied, and only an outermost call commits.
+ *
  * @param T the return type of the transaction
  * @param db the [Database] to use, or `null` for the default database
  * @param transactionIsolation the JDBC transaction isolation level
@@ -103,6 +112,11 @@ fun <T> readonlyTx(
 
 /**
  * Executes a database transaction and measures its execution time.
+ *
+ * Called inside another transaction, this does not start a new one: with Exposed's default
+ * `useNestedTransactions = false` the block joins the outer transaction, and with nesting on it inherits the
+ * outer transaction's read-only flag and isolation level. Either way, [transactionIsolation] and read-only
+ * mode (where applicable) are not applied, and only an outermost call commits.
  *
  * @param T the return type of the transaction
  * @param db the [Database] to use, or `null` for the default database
@@ -126,6 +140,11 @@ fun <T> timedTransaction(
 
 /**
  * Executes a read-only database transaction and measures its execution time.
+ *
+ * Called inside another transaction, this does not start a new one: with Exposed's default
+ * `useNestedTransactions = false` the block joins the outer transaction, and with nesting on it inherits the
+ * outer transaction's read-only flag and isolation level. Either way, [transactionIsolation] and read-only
+ * mode (where applicable) are not applied, and only an outermost call commits.
  *
  * @param T the return type of the transaction
  * @param db the [Database] to use, or `null` for the default database

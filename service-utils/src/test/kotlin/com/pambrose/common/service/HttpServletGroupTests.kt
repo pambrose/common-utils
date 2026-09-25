@@ -62,6 +62,18 @@ class HttpServletGroupTests : StringSpec() {
       group.servletMap["/version"] shouldBeSameInstanceAs replacement
     }
 
+    "a path with and without a leading slash is the same endpoint" {
+      val replacement = httpServlet()
+      val group =
+        HttpServletGroup().apply {
+          addServlet("ping", httpServlet())
+          addServlet("/ping", replacement)
+        }
+
+      group.servletMap.keys shouldBe setOf("/ping")
+      group.servletMap["/ping"] shouldBeSameInstanceAs replacement
+    }
+
     "addServlets registers every pair and skips blank paths" {
       val ping = httpServlet()
       val health = httpServlet()

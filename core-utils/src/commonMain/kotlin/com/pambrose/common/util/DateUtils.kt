@@ -87,9 +87,11 @@ object DateUtils {
     instantNow().toLocalDateTime(timeZone)
 
   /**
-   * Returns the last minute of this [LocalDate] in UTC, i.e. `23:59:00.001` of the same day.
+   * Returns `23:59:00.001` UTC on this [LocalDate]: one millisecond into the day's last minute.
    *
-   * Useful as an inclusive end-of-day boundary. Extension function on [LocalDate].
+   * This is **not** an inclusive end-of-day bound: it misses everything from 23:59:00.002 to 23:59:59.999. For a
+   * range query, compare against the start of the next day as an exclusive bound instead. Extension function on
+   * [LocalDate].
    *
    * @return the date at `23:59:00.001` UTC as a [LocalDateTime]
    */

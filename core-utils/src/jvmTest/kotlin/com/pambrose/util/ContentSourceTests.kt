@@ -140,6 +140,33 @@ class ContentSourceTests : StringSpec() {
       repo.file("https://example.com/file.txt").source shouldBe "https://example.com/file.txt"
     }
 
+    // Any "://" used to make a path a full URL, so a relative path with one in its query string threw.
+    "a repository path is a full URL only when it starts with a scheme" {
+      val repo = GitHubRepo(OwnerType.User, "u", "r")
+      repo.file("main/app.kt?next=https://x.com").source shouldBe
+        "https://raw.githubusercontent.com/u/r/main/app.kt?next=https://x.com"
+      repo.file("file:///etc/hosts").source shouldBe "file:///etc/hosts"
+    }
+
+    "repository files and Java callers can set UrlSource timeouts" {
+      val repo = GitHubRepo(OwnerType.User, "u", "r")
+      repo.file("main/app.kt", 1.seconds, 2.seconds).source shouldBe "https://raw.githubusercontent.com/u/r/main/app.kt"
+      GitHubFile(repo, "main", "src", "App.kt", connectTimeout = 1.seconds).source shouldBe
+        "https://raw.githubusercontent.com/u/r/main/src/App.kt"
+      GitHubFile(repo, "main", "src", "App.kt", readTimeout = 2.seconds).source shouldBe
+        "https://raw.githubusercontent.com/u/r/main/src/App.kt"
+      val gitLab = GitLabRepo(OwnerType.User, "u", "r")
+      GitLabFile(gitLab, "main", "src", "App.kt", connectTimeout = 1.seconds).source shouldBe
+        "https://gitlab.com/u/r/-/raw/main/src/App.kt"
+      GitLabFile(gitLab, "main", "src", "App.kt", readTimeout = 2.seconds).source shouldBe
+        "https://gitlab.com/u/r/-/raw/main/src/App.kt"
+      UrlSource("https://example.com", java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(2)).source shouldBe
+        "https://example.com"
+      shouldThrow<IllegalArgumentException> {
+        UrlSource("https://example.com", java.time.Duration.ofSeconds(-1), java.time.Duration.ofSeconds(2))
+      }
+    }
+
     "GitLabRepo builds sourcePrefix and a raw-content rawSourcePrefix" {
       val repo = GitLabRepo(OwnerType.User, "alice", "demo")
       repo.sourcePrefix shouldBe "https://gitlab.com/alice/demo"
