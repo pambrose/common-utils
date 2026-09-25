@@ -194,6 +194,9 @@ while it migrates.
   evaluation; `import` handles nested classes (and `addImport` is callable from Java); a `NoClassDefFoundError` from
   the script is reported as a `ScriptException`; and `resetForReuse(true)` keeps the global scope the engine needs.
 - script-utils pools keep the block's exception when resetting the instance also fails.
+- script-utils: `KotlinScript.varDecls`, `AbstractScript.params`, and `JavaScript`'s `varDecls`, `importDecls` and
+  `assignIsolation` are synchronized like `add` and `eval`, so using them while another thread adds a variable or an
+  import no longer risks a `ConcurrentModificationException`.
 - ktor-server-utils `Route.servlet` answers HEAD with GET's headers and no body. Ktor sent the body, so a pipelined
   response after a HEAD was read as part of it; this hit the `GenericKtorService` admin endpoints. TRACE and servlets
   that override `getLastModified` no longer fail with a 500.
@@ -227,6 +230,10 @@ while it migrates.
 - CI actions are pinned to commit SHAs, and every job has a timeout.
 - CI publishes to the local Maven repository, so a broken POM or javadoc jar shows up before release; the Linux
   job caches the Kotlin/Native toolchain, and the native caches have restore keys.
+- On pull requests the publish step skips rendering the javadoc jars' Dokka HTML, taking seconds instead of over a
+  minute. The KDocs workflow already runs Dokka over every module, and pushes to master build the jars in full.
+- The JVM modules opt in to `ExperimentalCoroutinesApi` and `ExperimentalSerializationApi` only where the jar that
+  declares the marker is on the compile classpath, so the compiler no longer warns about markers it cannot resolve.
 - The disabled watchOS/tvOS simulator test tasks no longer link their test binaries.
 - `make coverage-clean` also cleans the KMP modules' `jvmTest` results and every module's Kover data.
 - ktor-server-utils' POM marks `jakarta.servlet-api` optional, so Maven consumers no longer get it at runtime.
@@ -251,8 +258,14 @@ while it migrates.
   `simpleclient_dropwizard` are replaced by `prometheus-metrics-core`, `prometheus-metrics-instrumentation-jvm`,
   `prometheus-metrics-exporter-servlet-jakarta` and `prometheus-metrics-instrumentation-dropwizard`. See Breaking.
 - `kotlin-scripting-*` 2.4.10 → 2.4.20, matching the compiler and `kotlin-reflect`.
+- `resend` 4.25.0 → 4.26.0
 - Removed from the published dependencies: grpc-protobuf, grpc-services, ktor-server-call-logging,
   ktor-server-compression, and (from jetty-utils, dropwizard-utils and ktor-client-utils) core-utils. See Breaking.
+- Gradle wrapper 9.7.1 → 9.8.0
+- `gradlePlugins` 1.1.5 → 1.1.6 (build-only)
+- `versions` 0.63.1 → 0.64.0 (build-only)
+- `logback` 1.6.3 → 1.6.4 (tests only)
+- Bump project version to 5.0.0
 
 ## [4.1.0] - 2026-09-16
 
