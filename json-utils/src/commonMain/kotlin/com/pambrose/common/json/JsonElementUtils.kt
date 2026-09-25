@@ -446,9 +446,7 @@ private fun JsonElement.requireJsonLiterals() {
       forEach { it.requireJsonLiterals() }
     }
 
-    JsonNull -> {
-      Unit
-    }
+    JsonNull -> {}
 
     is JsonPrimitive -> {
       if (!isString && content != "true" && content != "false" && !jsonNumber.matches(content))
