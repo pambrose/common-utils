@@ -29,6 +29,24 @@ API facts the tasks rely on (checked in the 1.9.0 jars and the official migratio
 - A counter named either `x` or `x_total` is exposed as `x_total`.
 - JVM metric names changed to put units last, for example `jvm_memory_bytes_committed` becomes `jvm_memory_committed_bytes` and `jvm_info` becomes `jvm_runtime_info`. This is the change consumers' dashboards will see.
 
+## Decisions (2026-09-25)
+
+- **Release:** folds into the unreleased 5.0.0 already on `master` (`gradle.properties` is at 5.0.0 and `CHANGELOG.md`
+  has a 5.0.0 entry). Extend that entry; do not add a new version.
+- **`SamplerGaugeCollector`:** implements the 1.x `io.prometheus.metrics.model.registry.Collector` interface and
+  registers itself, delegating `collect()` to an internal, unregistered `GaugeWithCallback`. It stays a type a
+  consumer can pass to `registry.unregister(it)`. The hidden binary-compatibility constructor is dropped (major
+  release).
+- **`SystemMetrics`:** keeps the six flags and adds `enableBufferPoolExports`, `enableCompilationExports` and
+  `enableNativeMemoryExports`, all defaulting to `false`. The memory-pools flag also registers
+  `JvmMemoryPoolAllocationMetrics`.
+- **`MetricsService`:** gains an optional `registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry`.
+  `AbstractGenericService` keeps using the default registry for its Dropwizard exports; `MetricsConfig` is unchanged.
+- Verified in the 1.9.0 sources: 1.9.0 is the newest 1.x; duplicate names throw `IllegalArgumentException`;
+  `DropwizardExports(MetricRegistry)` is a public constructor; names ending in `_created` are accepted (collisions
+  are checked at registration). 1.x builders have no `namespace()` / `subsystem()`, a consumer-visible break for the
+  changelog.
+
 ## Global Constraints
 
 - Target versions: every `prometheus-metrics-*` artifact at the same version (**1.9.0**, or the newest 1.x at implementation time). One catalog version entry drives them all.

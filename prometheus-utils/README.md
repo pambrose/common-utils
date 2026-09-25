@@ -1,7 +1,10 @@
 # Prometheus Utils
 
-Helpers for the Prometheus Java client (simpleclient): a builder DSL for the four metric types, a
-sampling gauge collector, an instrumented `ThreadFactory`, and a one-call JVM metrics registration.
+Helpers for the Prometheus Java client 1.x (`io.prometheus:prometheus-metrics-*`): a builder DSL for the four
+metric types, a sampling gauge collector, an instrumented `ThreadFactory`, and a one-call JVM metrics registration.
+
+Before 5.0.0 this module was built on the 0.x client (`simpleclient`). See the
+[5.0.0 migration notes](../RELEASE_NOTES.md#migrating-from-4x-prometheus-java-client-1x) for what changed.
 
 ## Features
 
@@ -16,16 +19,20 @@ sampling gauge collector, an instrumented `ThreadFactory`, and a one-call JVM me
 
 ### JVM Metrics
 
-- **`SystemMetrics.initialize(...)`**: registers the hotspot JVM exporters you opt into
+- **`SystemMetrics.initialize(...)`**: registers the JVM and process metric sets you opt into
 
 ## Usage Examples
 
 ### Metrics DSL
 
-Each builder takes the corresponding Prometheus `Builder` as receiver, so you set `name`, `help`,
-`labelNames`, and so on exactly as with the Java client. The metric is registered for you, with
-`CollectorRegistry.defaultRegistry` unless you pass another registry, such as an isolated one in tests:
-`PrometheusDsl.counter(registry) { ... }`.
+Each builder takes the corresponding 1.x `Builder` (`io.prometheus.metrics.core.metrics.Counter.Builder` and so
+on) as receiver, so you set `name`, `help`, `labelNames`, and so on exactly as with the Java client. The metric is
+registered for you, with `PrometheusRegistry.defaultRegistry` unless you pass another registry, such as an isolated
+`PrometheusRegistry()` in tests: `PrometheusDsl.counter(registry) { ... }`.
+
+The 1.x builders have no `namespace()` or `subsystem()`, so put the full name in `name(...)`. A counter is exposed
+as `<name>_total` whether or not its name already ends in `_total`. Registering a name the registry already holds
+with the same label names throws `IllegalArgumentException`.
 
 ```kotlin
 import com.pambrose.common.dsl.PrometheusDsl
@@ -47,7 +54,7 @@ val requestDuration =
   PrometheusDsl.histogram {
     name("http_request_duration_seconds")
     help("HTTP request duration")
-    buckets(0.1, 0.5, 1.0, 2.5, 5.0)
+    classicUpperBounds(0.1, 0.5, 1.0, 2.5, 5.0)
   }
 
 val responseSize =
@@ -60,16 +67,11 @@ val responseSize =
 Use them through the normal client API:
 
 ```kotlin
-requestCounter.labels("GET", "/api/users", "200").inc()
+requestCounter.labelValues("GET", "/api/users", "200").inc()
 activeConnections.inc()
 activeConnections.dec()
 
-val timer = requestDuration.startTimer()
-try {
-  handleRequest()
-} finally {
-  timer.observeDuration()
-}
+requestDuration.startTimer().use { handleRequest() } // observes the duration when closed
 ```
 
 ### SamplerGaugeCollector
@@ -89,7 +91,8 @@ SamplerGaugeCollector(
 }
 
 // With labels: labelNames and labelValues must be the same length. The labels are constants on the collector's single
-// series; a registry accepts one collector per name, so a second "queue_depth" for another queue is rejected
+// series; a registry rejects a second collector with the same name and label names, so a second "queue_depth"
+// for another queue is rejected
 SamplerGaugeCollector(
   name = "queue_depth",
   help = "Pending items in the queue",
@@ -100,8 +103,13 @@ SamplerGaugeCollector(
 }
 ```
 
-Mismatched `labelNames` / `labelValues` sizes, an invalid metric or label name (`queue-depth`, `__x`), and a
-repeated label name throw `IllegalArgumentException`, rather than producing an exposition Prometheus rejects.
+Mismatched `labelNames` / `labelValues` sizes, an empty metric name, an invalid label name (`__x`), a repeated label
+name (`a.b` and `a_b` count as the same), and a name the registry already holds with the same label names all throw
+`IllegalArgumentException`, rather than producing an exposition Prometheus rejects. As in the 1.x client, any
+non-empty UTF-8 string is a valid metric name (`queue-depth` included); the exposition formats escape it.
+
+The collector is a 1.x `io.prometheus.metrics.model.registry.Collector`, so you remove it with
+`registry.unregister(collector)`.
 
 ### InstrumentedThreadFactory
 
@@ -128,12 +136,24 @@ val executor = Executors.newFixedThreadPool(4, factory)
 
 ### JVM Metrics
 
-Every exporter is **off by default** — opt into the ones you want. Calling `initialize` again is safe: an
-exporter registered by an earlier call is skipped, and one requested for the first time is registered. An
-exporter whose metrics are already registered elsewhere, for example by `DefaultExports.initialize()`, is
-skipped with a warning. Pass `registry` to use a registry other than the default one. Duplicate detection needs an
-auto-describing registry (the default one, or `CollectorRegistry(true)`): on a plain `CollectorRegistry()` a
-duplicate exporter is registered silently and its families appear twice.
+Every metric set is **off by default** — opt into the ones you want. Calling `initialize` again is safe: a set
+registered by an earlier call is skipped, and one requested for the first time is registered. Each set is registered
+all or nothing. A set whose metrics are already registered elsewhere, for example by the client's
+`JvmMetrics.builder().register()`, is skipped with a warning. The reverse order fails: calling
+`JvmMetrics.builder().register()` after `initialize` on the same registry throws part-way (client behaviour), so use
+one or the other. Pass `registry` to use a registry other than the default one.
+
+| Flag | Metric set | Example series |
+|---|---|---|
+| `enableStandardExports` | `ProcessMetrics` | `process_cpu_seconds_total`, `process_open_fds` |
+| `enableMemoryPoolsExports` | `JvmMemoryMetrics`, `JvmMemoryPoolAllocationMetrics` | `jvm_memory_used_bytes`, `jvm_memory_pool_used_bytes`, `jvm_memory_pool_allocated_bytes_total` |
+| `enableGarbageCollectorExports` | `JvmGarbageCollectorMetrics` | `jvm_gc_collection_seconds` |
+| `enableThreadExports` | `JvmThreadsMetrics` | `jvm_threads_current`, `jvm_threads_state` |
+| `enableClassLoadingExports` | `JvmClassLoadingMetrics` | `jvm_classes_currently_loaded` |
+| `enableVersionInfoExports` | `JvmRuntimeInfoMetric` | `jvm_runtime_info` |
+| `enableBufferPoolExports` | `JvmBufferPoolMetrics` | `jvm_buffer_pool_used_bytes` |
+| `enableCompilationExports` | `JvmCompilationMetrics` | `jvm_compilation_time_seconds_total` |
+| `enableNativeMemoryExports` | `JvmNativeMemoryMetrics` | only with `-XX:NativeMemoryTracking=summary` (or `detail`) |
 
 ```kotlin
 import com.pambrose.common.metrics.SystemMetrics
@@ -145,26 +165,29 @@ SystemMetrics.initialize(
   enableThreadExports = true,
   enableClassLoadingExports = true,
   enableVersionInfoExports = true,
+  enableBufferPoolExports = true,
+  enableCompilationExports = true,
 )
 ```
 
 ### Exposing Metrics
 
-Serving the metrics endpoint is the Prometheus client's job, not this module's. `HTTPServer` comes from
-`io.prometheus:simpleclient_httpserver`, which this module does not include, so add it at the same version
-as simpleclient:
+Serving the metrics endpoint is the Prometheus client's job, not this module's (service-utils' `MetricsService`
+does it with an embedded Jetty server). `HTTPServer` comes from `io.prometheus:prometheus-metrics-exporter-httpserver`,
+which this module does not include, so add it at the same version as `prometheus-metrics-core`:
 
 ```kotlin
-import io.prometheus.client.exporter.HTTPServer
+import io.prometheus.metrics.exporter.httpserver.HTTPServer
 
-val server = HTTPServer(8080)
+val server = HTTPServer.builder().port(8080).buildAndStart()
 ```
 
 ## API Reference
 
 ### `PrometheusDsl`
 
-Each takes `registry: CollectorRegistry = CollectorRegistry.defaultRegistry` as its first parameter.
+Each takes `registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry` as its first parameter. The types
+are the 1.x ones from `io.prometheus.metrics.core.metrics`.
 
 - `counter(registry, block: Counter.Builder.() -> Unit): Counter`
 - `gauge(registry, block: Gauge.Builder.() -> Unit): Gauge`
@@ -173,12 +196,12 @@ Each takes `registry: CollectorRegistry = CollectorRegistry.defaultRegistry` as 
 
 ### Collectors
 
-- `class SamplerGaugeCollector(name: String, help: String, labelNames: List<String> = emptyList(), labelValues: List<String> = emptyList(), registry: CollectorRegistry = CollectorRegistry.defaultRegistry, data: () -> Double) : Collector, Collector.Describable`
-- `class InstrumentedThreadFactory(delegate: ThreadFactory, name: String, help: String, registry: CollectorRegistry = CollectorRegistry.defaultRegistry) : ThreadFactory` — `newThread` returns `Thread?`
+- `class SamplerGaugeCollector(name: String, help: String, labelNames: List<String> = emptyList(), labelValues: List<String> = emptyList(), registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry, data: () -> Double) : Collector` — `collect()` returns a `GaugeSnapshot`
+- `class InstrumentedThreadFactory(delegate: ThreadFactory, name: String, help: String, registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry) : ThreadFactory` — `newThread` returns `Thread?`
 
 ### `SystemMetrics`
 
-- `initialize(enableStandardExports: Boolean = false, enableMemoryPoolsExports: Boolean = false, enableGarbageCollectorExports: Boolean = false, enableThreadExports: Boolean = false, enableClassLoadingExports: Boolean = false, enableVersionInfoExports: Boolean = false, registry: CollectorRegistry = CollectorRegistry.defaultRegistry)`
+- `initialize(enableStandardExports: Boolean = false, enableMemoryPoolsExports: Boolean = false, enableGarbageCollectorExports: Boolean = false, enableThreadExports: Boolean = false, enableClassLoadingExports: Boolean = false, enableVersionInfoExports: Boolean = false, enableBufferPoolExports: Boolean = false, enableCompilationExports: Boolean = false, enableNativeMemoryExports: Boolean = false, registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry)`
 
 ## Dependencies
 
@@ -186,8 +209,8 @@ This module depends on:
 
 - Kotlin Standard Library
 - kotlin-logging (internally)
-- Prometheus simpleclient
-- Prometheus simpleclient_hotspot
+- `io.prometheus:prometheus-metrics-core` (`api`), which brings `prometheus-metrics-model` (`PrometheusRegistry`)
+- `io.prometheus:prometheus-metrics-instrumentation-jvm` (`api`)
 
 ## Installation
 

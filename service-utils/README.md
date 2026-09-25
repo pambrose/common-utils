@@ -5,8 +5,8 @@ Prometheus metrics, JMX reporting, Dropwizard health checks, and Zipkin tracing 
 
 This is the most dependency-heavy module in the library. Because its public API exposes types from the other
 modules, most of them are `api` dependencies — subclassing a service puts core-utils, ktor-server-utils,
-guava-utils, jetty-utils, dropwizard-utils, zipkin-utils, and Dropwizard's `metrics-jmx` on your compile
-classpath. See [Dependencies](#dependencies).
+guava-utils, jetty-utils, dropwizard-utils, zipkin-utils, Dropwizard's `metrics-jmx` and the Prometheus Java client's
+`prometheus-metrics-model` on your compile classpath. See [Dependencies](#dependencies).
 
 ## Features
 
@@ -30,8 +30,8 @@ classpath. See [Dependencies](#dependencies).
 
 ### Metrics and Tracing
 
-- **`MetricsService`**: a `GenericIdleService` serving the Prometheus scrape endpoint from an embedded Jetty
-  server, with a Dropwizard `healthCheck` property
+- **`MetricsService`**: a `GenericIdleService` serving a Prometheus 1.x `PrometheusRegistry` from an embedded Jetty
+  server through the client's `PrometheusMetricsServlet`, with a Dropwizard `healthCheck` property
 - **`ZipkinReporterService`**: a `GenericIdleService` managing an `AsyncReporter` and `OkHttpSender`, with a
   `newTracing` factory for Brave `Tracing` instances
 
@@ -211,12 +211,20 @@ as `zipkinReporterService`, with the URL assembled as
 
 ```kotlin
 import com.pambrose.common.service.MetricsService
+import io.prometheus.metrics.model.registry.PrometheusRegistry
 
 val metrics = MetricsService(port = 9090, path = "metrics", host = "127.0.0.1")
 metrics.startSync()
 metrics.healthCheck.execute().isHealthy   // true while the Jetty server runs
 metrics.stopSync()
+
+// Serve a registry other than PrometheusRegistry.defaultRegistry
+val registry = PrometheusRegistry()
+val isolated = MetricsService(port = 9091, path = "metrics", registry = registry)
 ```
+
+A plain scrape gets the Prometheus text format (`Content-Type: text/plain; version=0.0.4`); a scrape sending
+`Accept: application/openmetrics-text; version=1.0.0` gets OpenMetrics.
 
 ## API Reference
 
@@ -259,7 +267,7 @@ metrics.stopSync()
 
 ### Metrics and Tracing Services
 
-- `class MetricsService(port: Int, path: String, host: String? = null, initBlock: MetricsService.() -> Unit = {}) : GenericIdleService` —
+- `class MetricsService(port: Int, path: String, host: String? = null, registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry, initBlock: MetricsService.() -> Unit = {}) : GenericIdleService` —
   `val healthCheck: HealthCheck`
 - `class ZipkinReporterService(url: String, defaultServiceName: String = "unknown", initBlock: ZipkinReporterService.() -> Unit = {}) : GenericIdleService` —
   `val defaultServiceName: String`, `fun newTracing(serviceName: String = defaultServiceName): Tracing`
@@ -282,10 +290,12 @@ constructor and function parameters — so they are `api` dependencies and land 
 - dropwizard-utils — `HealthCheckRegistry`, `MetricRegistry`, `HealthCheck`
 - zipkin-utils — Brave `Tracing`
 - Dropwizard `metrics-jmx` — the `JmxReporter` property
+- Prometheus `prometheus-metrics-model` 1.x — `PrometheusRegistry`, a `MetricsService` constructor parameter
 
 Also used, but as `implementation` details that consumers do not inherit:
 
-- prometheus-utils, Prometheus simpleclient servlet and Dropwizard bridge
+- prometheus-utils, and the Prometheus 1.x Jakarta servlet exporter (`prometheus-metrics-exporter-servlet-jakarta`)
+  and Dropwizard bridge (`prometheus-metrics-instrumentation-dropwizard`)
 - Dropwizard Jakarta metrics servlets
 - Ktor server CIO, call logging, and compression
 - Zipkin OkHttp sender
@@ -336,10 +346,19 @@ copy of the service list, so a service added afterwards is not managed, is absen
   exceptions. Ports and threads are not left behind.
 - **Shutdown completeness**: every shutdown step runs even when an earlier one fails, so one sub-service failing
   to stop cannot leave the others running. The first failure is rethrown with the rest suppressed.
-- **Prometheus exporter registration**: the Dropwizard-to-Prometheus bridge is registered with
-  `CollectorRegistry.defaultRegistry` in `startUp()` and unregistered on shutdown. Repeated start/stop cycles
-  therefore do not accumulate collectors, and a second instance in the same JVM does not add duplicate metric
-  families.
+- **Prometheus exporter registration**: the Dropwizard-to-Prometheus bridge (`DropwizardExports`) is registered with
+  `PrometheusRegistry.defaultRegistry` in `startUp()` and unregistered on shutdown. Repeated start/stop cycles
+  therefore do not accumulate collectors, and a stopped instance leaves nothing registered, so starting another one
+  afterwards adds no duplicate families. Two instances running at once whose Dropwizard registries share metric
+  names now collide at scrape time: `DropwizardExports.describe()` returns no family descriptors in both 0.16 and
+  1.9.0, so both instances register. 0.16 tolerated this — a scrape served duplicate families, and Prometheus's
+  parser drops the duplicate samples but keeps the scrape. 1.9.0 does not: `TextFormatUtil.mergeDuplicates` throws
+  `DuplicateLabelsException` from the `MetricSnapshot` constructor at write time, which `PrometheusScrapeHandler`
+  turns into an HTTP 500 — every scrape of the default registry fails and all metrics are lost while both instances
+  run. The same happens when a Dropwizard metric's exposed name equals a native 1.x metric of the same type, e.g. a
+  Dropwizard `Counter` named `x` alongside a `PrometheusDsl` counter also named `x`. A Dropwizard `Counter` is
+  exposed as a Prometheus counter named `<name>_total`; timers and histograms become summaries, meters `_total`
+  counters and gauges gauges.
 - **Shutdown hook**: registered at the end of a successful `startUp()` and removed during `shutDown()`. Removal
   failures — an `IllegalStateException` when the JVM is already shutting down, for instance — are swallowed
   rather than failing the shutdown.

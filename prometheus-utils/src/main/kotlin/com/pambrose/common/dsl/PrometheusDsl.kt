@@ -17,68 +17,80 @@
 
 package com.pambrose.common.dsl
 
-import io.prometheus.client.CollectorRegistry
-import io.prometheus.client.Counter
-import io.prometheus.client.Gauge
-import io.prometheus.client.Histogram
-import io.prometheus.client.Summary
+import io.prometheus.metrics.core.metrics.Counter
+import io.prometheus.metrics.core.metrics.Gauge
+import io.prometheus.metrics.core.metrics.Histogram
+import io.prometheus.metrics.core.metrics.Summary
+import io.prometheus.metrics.model.registry.PrometheusRegistry
 
 /**
  * Provides a Kotlin DSL for building and registering Prometheus metric collectors.
  *
- * Each factory function accepts a configuration lambda for the metric's builder and registers the metric
- * with the given [CollectorRegistry], which defaults to [CollectorRegistry.defaultRegistry].
+ * Each factory function builds the metric with `X.builder()`, applies the configuration lambda to that Prometheus
+ * Java client 1.x builder, and registers the metric with the given [PrometheusRegistry], which defaults to
+ * [PrometheusRegistry.defaultRegistry].
+ *
+ * The receivers are the 1.x builders from `io.prometheus.metrics.core.metrics`: label names are declared with
+ * `labelNames(...)` and a labelled child is reached with `labelValues(...)` on the returned metric. The builders have
+ * no `namespace()` or `subsystem()`, so put the full name in `name(...)`. A counter is exposed as `<name>_total`
+ * whether or not [name][Counter.Builder.name] already ends in `_total`.
+ *
+ * Registration fails with [IllegalArgumentException] when the registry already holds a metric whose exposed series
+ * names collide with the new one (for example the same name and label names, or a counter `x` and a gauge
+ * `x_total`).
  */
 object PrometheusDsl {
   /**
    * Creates, configures, and registers a Prometheus [Counter].
    *
    * @param registry the registry to register the counter with.
-   * @param block a lambda with [Counter.Builder] as receiver for configuring name, help, and labels.
+   * @param block a lambda with [Counter.Builder] as receiver for configuring name, help, and label names.
    * @return the registered [Counter] instance.
    */
   @JvmOverloads
   fun counter(
-    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
     block: Counter.Builder.() -> Unit,
-  ): Counter = Counter.build().apply(block).register(registry)
+  ): Counter = Counter.builder().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Summary].
    *
    * @param registry the registry to register the summary with.
-   * @param block a lambda with [Summary.Builder] as receiver for configuring name, help, quantiles, and labels.
+   * @param block a lambda with [Summary.Builder] as receiver for configuring name, help, quantiles
+   *   (`quantile(...)`), and label names.
    * @return the registered [Summary] instance.
    */
   @JvmOverloads
   fun summary(
-    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
     block: Summary.Builder.() -> Unit,
-  ): Summary = Summary.build().apply(block).register(registry)
+  ): Summary = Summary.builder().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Gauge].
    *
    * @param registry the registry to register the gauge with.
-   * @param block a lambda with [Gauge.Builder] as receiver for configuring name, help, and labels.
+   * @param block a lambda with [Gauge.Builder] as receiver for configuring name, help, and label names.
    * @return the registered [Gauge] instance.
    */
   @JvmOverloads
   fun gauge(
-    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
     block: Gauge.Builder.() -> Unit,
-  ): Gauge = Gauge.build().apply(block).register(registry)
+  ): Gauge = Gauge.builder().apply(block).register(registry)
 
   /**
    * Creates, configures, and registers a Prometheus [Histogram].
    *
    * @param registry the registry to register the histogram with.
-   * @param block a lambda with [Histogram.Builder] as receiver for configuring name, help, buckets, and labels.
+   * @param block a lambda with [Histogram.Builder] as receiver for configuring name, help, buckets
+   *   (`classicUpperBounds(...)`), and label names.
    * @return the registered [Histogram] instance.
    */
   @JvmOverloads
   fun histogram(
-    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
     block: Histogram.Builder.() -> Unit,
-  ): Histogram = Histogram.build().apply(block).register(registry)
+  ): Histogram = Histogram.builder().apply(block).register(registry)
 }

@@ -9,6 +9,10 @@ All notable changes to Common Utils are documented in this file.
 These change the published API or dependency lists, so under the versioning policy in CLAUDE.md they need a major
 release.
 
+- prometheus-utils and service-utils move from the Prometheus Java client 0.16.0 (`io.prometheus:simpleclient*`, the
+  last and unmaintained 0.x release) to 1.9.0 (`io.prometheus:prometheus-metrics-*`). The client's types appear in
+  both modules' public API and are exported as `api`, so imports, the registry type and builder calls change, and
+  several exposed metric names change. See [Migrating from 4.x: Prometheus Java client 1.x](#migrating-from-4x-prometheus-java-client-1x).
 - ktor-server-utils `KtorServletRequest` and `KtorServletResponse` are internal; mount servlets with `Route.servlet`.
 - service-utils `jmxReporter`, `metricsService`, `zipkinReporterService` and `servletService` have private setters.
 - script-utils-common `AbstractScript.valueMap` is a read-only `Map`, and `AbstractEnginePool.channel` is private.
@@ -21,6 +25,98 @@ release.
     exposed-utils depend on kotlin-logging instead of core-utils.
   - grpc-utils no longer ships grpc-protobuf and grpc-services.
   - service-utils no longer ships Ktor's call-logging and compression plugins.
+
+### Migrating from 4.x: Prometheus Java client 1.x
+
+Code changes:
+
+- Dependencies, all at 1.9.0. No `simpleclient` artifact remains on the classpath. If your own code uses the 0.x API,
+  keep `io.prometheus:simpleclient:0.16.0` declared yourself. That alone compiles, but those metrics are then no
+  longer served by `MetricsService` or any 1.x registry; to keep serving them, also take the incremental path
+  below.
+
+  | 0.16.0 | 1.9.0 | Brought in by |
+  |---|---|---|
+  | `io.prometheus:simpleclient` | `io.prometheus:prometheus-metrics-core` | prometheus-utils (`api`); service-utils exports only its `prometheus-metrics-model` (`api`) |
+  | `io.prometheus:simpleclient_hotspot` | `io.prometheus:prometheus-metrics-instrumentation-jvm` | prometheus-utils (`api`) |
+  | `io.prometheus:simpleclient_servlet_jakarta` | `io.prometheus:prometheus-metrics-exporter-servlet-jakarta` | service-utils (`implementation`) |
+  | `io.prometheus:simpleclient_dropwizard` | `io.prometheus:prometheus-metrics-instrumentation-dropwizard` | service-utils (`implementation`) |
+
+- Every `registry` parameter takes `io.prometheus.metrics.model.registry.PrometheusRegistry` (default
+  `PrometheusRegistry.defaultRegistry`) instead of `io.prometheus.client.CollectorRegistry`: `PrometheusDsl`,
+  `SamplerGaugeCollector`, `InstrumentedThreadFactory`, `SystemMetrics.initialize`, and the new one on
+  `MetricsService`.
+- `PrometheusDsl` blocks receive the 1.x builders (`io.prometheus.metrics.core.metrics.Counter.Builder` and so on)
+  and return the 1.x `Counter`, `Gauge`, `Histogram` and `Summary`:
+  - `labelNames(...)` is unchanged on the builders; a labelled child is `metric.labelValues(...)`, not
+    `metric.labels(...)`.
+  - Histogram `buckets(...)` is `classicUpperBounds(...)`; summary `quantile(q, err)` is unchanged.
+  - There is no `namespace()` or `subsystem()`; put the full name in `name(...)`.
+- `SamplerGaugeCollector` implements the 1.x `io.prometheus.metrics.model.registry.Collector` instead of
+  `io.prometheus.client.Collector` and `Collector.Describable`: `collect()` returns a `GaugeSnapshot`, `describe()`
+  is gone, and `getMetricFamilyDescriptor()` is new. It still registers itself when constructed and is still removed
+  with `registry.unregister(collector)`. The hidden `(name, help, labelNames, data)` constructor is removed.
+- `SystemMetrics.initialize` has three new flags, `enableBufferPoolExports`, `enableCompilationExports` and
+  `enableNativeMemoryExports`, all `false` by default, after the six existing ones and before `registry`. Kotlin
+  calls compile unchanged unless they pass `registry` positionally. From Java, the `@JvmOverloads` overload that
+  takes a registry now takes nine booleans before it, so a call passing six booleans and a registry needs three more
+  `false`s. `enableMemoryPoolsExports` now also registers `JvmMemoryPoolAllocationMetrics`. Each metric set is registered all or nothing.
+- service-utils `MetricsService` has a new `registry` parameter, between `host` and `initBlock`, that selects the
+  registry to serve. Trailing-lambda and named calls compile unchanged; a call passing `initBlock` as the fourth
+  positional argument must name it. The constructor has no `@JvmOverloads`, so Java callers now pass all five
+  arguments. The endpoint is served by the 1.x `PrometheusMetricsServlet` instead of
+  `MetricsServlet`: the Prometheus text format by default and OpenMetrics when the `Accept` header asks for it, with
+  the same `Content-Type` values as before for plain and OpenMetrics 1.0 scrapes. Unlike 0.16, it can also answer
+  protobuf (and OpenMetrics 2.0, when enabled) when the `Accept` header asks for one of those instead.
+- service-utils now exports `prometheus-metrics-model` as `api`, since `MetricsService`'s signature includes its
+  `PrometheusRegistry`.
+- `AbstractGenericService` registers the 1.x `DropwizardExports` with `PrometheusRegistry.defaultRegistry` while it
+  runs, as before.
+
+Exposed metrics (check dashboards, alerts and recording rules):
+
+- JVM metrics put the unit last (`enableMemoryPoolsExports`):
+  - `jvm_memory_bytes_{used,committed,max,init}` → `jvm_memory_{used,committed,max,init}_bytes`
+  - `jvm_memory_pool_bytes_{used,committed,max,init}` → `jvm_memory_pool_{used,committed,max,init}_bytes`
+  - `jvm_memory_pool_collection_*_bytes`, and the garbage collector, thread, class loading and process metrics, keep
+    their names.
+- `jvm_info` → `jvm_runtime_info` (OpenMetrics family `jvm` → `jvm_runtime`), with help text `JVM runtime info`.
+- The `_created` series of every counter, histogram and summary are no longer exposed, in either format. The
+  client's `io.prometheus.exporter.include_created_timestamps=true` property brings them back. The client reads it
+  once, at first use: set it as a system property, in `prometheus.properties`, or through the
+  `IO_PROMETHEUS_EXPORTER_INCLUDE_CREATED_TIMESTAMPS` environment variable.
+- A Dropwizard `Counter` bridged by `AbstractGenericService` is exposed as a counter named `<name>_total`, not a
+  gauge named `<name>`. Dropwizard timers, histograms, meters and gauges keep their shape; a meter's help text now
+  names the `_total` form.
+- New series, only when enabled: `jvm_buffer_pool_{used_bytes,capacity_bytes,used_buffers}`,
+  `jvm_compilation_time_seconds_total`, and the native memory metrics, which appear only when the JVM runs with
+  `-XX:NativeMemoryTracking=summary` (or `detail`). `enableMemoryPoolsExports` adds
+  `jvm_memory_pool_allocated_bytes_total{pool}`, updated after each GC.
+- Format details that matter only to code matching the text, not to Prometheus: OpenMetrics output has `# UNIT`
+  lines, label lists have no trailing comma, `_bucket` and `_count` values print as integers (`1`, not `1.0`), and
+  families are sorted by name.
+- Unchanged: `Content-Type` headers, label names, and the series of `PrometheusDsl` metrics,
+  `SamplerGaugeCollector` and `InstrumentedThreadFactory` (apart from `_created`).
+
+1.9.0 client behaviour to be aware of:
+
+- Any non-empty UTF-8 string is a valid metric name (`queue-depth`, `a.b`); the exposition formats escape it. Label
+  names starting with `__` are still rejected.
+- A registry accepts a second metric with the same name and a different set of label names when its type, help
+  and unit match. The same name with the same label names still throws `IllegalArgumentException`.
+- Calling the client's `JvmMetrics.builder().register()` after `SystemMetrics.initialize` on the same registry throws
+  part-way and may leave some of its metrics registered; a retry is a no-op, because `JvmMetrics` marks the registry
+  done before registering. The reverse order works: `SystemMetrics` skips the metric sets
+  already present with a warning.
+- Unlike 0.16, a name collision between two collectors on the same registry (two `AbstractGenericService` instances
+  sharing a Dropwizard metric name, or a Dropwizard metric matching a native metric of the same type) fails every
+  scrape of that registry with an HTTP 500, rather than serving duplicate or merged families.
+
+Incremental path: a consumer with its own 0.x instrumentation keeps `io.prometheus:simpleclient:0.16.0` declared
+(the bridge declares it only as `provided`), adds `io.prometheus:prometheus-metrics-simpleclient-bridge:1.9.0`, and
+calls `SimpleclientCollector.builder().register()`
+(or `.collectorRegistry(oldRegistry).register(newRegistry)`) to expose its 0.x collectors through the 1.x registry
+while it migrates.
 
 ### Changed
 
@@ -64,9 +160,9 @@ release.
   `://` appears anywhere in it.
 - guava-utils `GenericMonitor` logs a deprecation warning for a negative `maxWait`, which will stop meaning
   "wait forever" in a future major release.
-- prometheus-utils `SamplerGaugeCollector` rejects an invalid metric or label name and a repeated label name at
-  construction, rather than producing an exposition Prometheus rejects. The Java constructor
-  `(name, help, labelNames, data)`, which threw for any labels, is hidden from source.
+- prometheus-utils `SamplerGaugeCollector` rejects an empty metric name, an invalid label name and a repeated label
+  name (including `a.b` and `a_b`) at construction, rather than producing an exposition Prometheus rejects. The Java
+  constructor `(name, help, labelNames, data)`, which threw for any labels, is removed.
 - jetty-utils `LambdaServlet` (and so `VersionServlet`) no longer appends a platform line separator to the body.
 - recaptcha-utils: a verification after `RecaptchaService.close()` builds a new HTTP client instead of failing,
   so Ktor auto-reload and successive `testApplication`s keep verifying.
@@ -146,9 +242,14 @@ release.
   series names, the service-utils `Compression` example, the module descriptions in llms.txt, and the steps for
   adding a module.
 - The CHANGELOG backfills 2.6.3 and 2.6.4 and corrects the 2.7.1 date.
+- The prometheus-utils and service-utils READMEs, the root README and llms.txt describe the Prometheus Java client
+  1.x API.
 
 ### Dependency changes
 
+- Prometheus Java client 0.16.0 → 1.9.0: `simpleclient`, `simpleclient_hotspot`, `simpleclient_servlet_jakarta` and
+  `simpleclient_dropwizard` are replaced by `prometheus-metrics-core`, `prometheus-metrics-instrumentation-jvm`,
+  `prometheus-metrics-exporter-servlet-jakarta` and `prometheus-metrics-instrumentation-dropwizard`. See Breaking.
 - `kotlin-scripting-*` 2.4.10 → 2.4.20, matching the compiler and `kotlin-reflect`.
 - Removed from the published dependencies: grpc-protobuf, grpc-services, ktor-server-call-logging,
   ktor-server-compression, and (from jetty-utils, dropwizard-utils and ktor-client-utils) core-utils. See Breaking.

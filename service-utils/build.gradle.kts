@@ -10,6 +10,9 @@ dependencies {
     api(project(":dropwizard-utils"))
     api(project(":zipkin-utils"))
     api(libs.dropwizard.jmx)
+    // PrometheusRegistry, declared in prometheus-metrics-model, is a public parameter of MetricsService, so consumers
+    // need it on their compile classpath too.
+    api(libs.prometheus.metrics.model)
 
     implementation(project(":prometheus-utils"))
 
@@ -21,4 +24,6 @@ dependencies {
     testImplementation(libs.mockk)
     // ListAppender, to assert the level service failures are logged at.
     testImplementation(libs.logback.classic)
+    // OpenMetricsTextFormatWriter.CONTENT_TYPE, the Accept header of an OpenMetrics scrape.
+    testImplementation(libs.prometheus.metrics.exposition.textformats)
 }

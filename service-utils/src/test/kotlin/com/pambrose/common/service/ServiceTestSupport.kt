@@ -16,6 +16,7 @@
 
 package com.pambrose.common.service
 
+import com.pambrose.common.concurrent.GenericIdleService
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -36,9 +37,14 @@ internal const val LOOPBACK = "127.0.0.1"
 internal fun httpGet(
   port: Int,
   path: String,
+  headers: Map<String, String> = emptyMap(),
 ): HttpResponse<String> =
   HttpClient.newHttpClient().send(
-    HttpRequest.newBuilder(URI("http://$LOOPBACK:$port$path")).timeout(java.time.Duration.ofSeconds(10)).build(),
+    HttpRequest
+      .newBuilder(URI("http://$LOOPBACK:$port$path"))
+      .timeout(java.time.Duration.ofSeconds(10))
+      .apply { headers.forEach { (name, value) -> header(name, value) } }
+      .build(),
     HttpResponse.BodyHandlers.ofString(),
   )
 
@@ -58,4 +64,14 @@ internal fun shouldBeReleased(
 ) {
   port shouldBeGreaterThan 0
   ServerSocket().use { it.bind(InetSocketAddress(host?.let(InetAddress::getByName), port)) }
+}
+
+/** Starts the service, runs [block], and stops the service even when [block] fails. */
+internal inline fun GenericIdleService.whileRunning(block: () -> Unit) {
+  startSync()
+  try {
+    block()
+  } finally {
+    stopSync()
+  }
 }
