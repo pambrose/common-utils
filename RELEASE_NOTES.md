@@ -60,12 +60,12 @@ All at 1.9.0. No `simpleclient` artifact is left on your classpath. If your own 
 `MetricsService`'s endpoint and any other 1.x registry; to keep serving them, also bridge them as described under
 "Migrating incrementally".
 
-| 0.16.0 | 1.9.0 | Brought in by |
-|---|---|---|
-| `io.prometheus:simpleclient` | `io.prometheus:prometheus-metrics-core` | prometheus-utils (`api`); service-utils exports only its `prometheus-metrics-model` (`api`) |
-| `io.prometheus:simpleclient_hotspot` | `io.prometheus:prometheus-metrics-instrumentation-jvm` | prometheus-utils (`api`) |
-| `io.prometheus:simpleclient_servlet_jakarta` | `io.prometheus:prometheus-metrics-exporter-servlet-jakarta` | service-utils (`implementation`) |
-| `io.prometheus:simpleclient_dropwizard` | `io.prometheus:prometheus-metrics-instrumentation-dropwizard` | service-utils (`implementation`) |
+| 0.16.0                                       | 1.9.0                                                         | Brought in by                                                                               |
+|----------------------------------------------|---------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `io.prometheus:simpleclient`                 | `io.prometheus:prometheus-metrics-core`                       | prometheus-utils (`api`); service-utils exports only its `prometheus-metrics-model` (`api`) |
+| `io.prometheus:simpleclient_hotspot`         | `io.prometheus:prometheus-metrics-instrumentation-jvm`        | prometheus-utils (`api`)                                                                    |
+| `io.prometheus:simpleclient_servlet_jakarta` | `io.prometheus:prometheus-metrics-exporter-servlet-jakarta`   | service-utils (`implementation`)                                                            |
+| `io.prometheus:simpleclient_dropwizard`      | `io.prometheus:prometheus-metrics-instrumentation-dropwizard` | service-utils (`implementation`)                                                            |
 
 service-utils now exports `prometheus-metrics-model` as `api`, since `MetricsService` takes a `PrometheusRegistry`.
 
