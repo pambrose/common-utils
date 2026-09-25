@@ -34,8 +34,8 @@ import com.google.common.util.concurrent.MoreExecutors.directExecutor
 import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.prometheus.client.CollectorRegistry
-import io.prometheus.client.dropwizard.DropwizardExports
+import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports
+import io.prometheus.metrics.model.registry.PrometheusRegistry
 import java.io.Closeable
 import kotlin.time.TimeSource.Monotonic
 
@@ -303,11 +303,11 @@ abstract class AbstractGenericService<T> protected constructor(
   }
 
   private fun registerDropwizardExports() {
-    dropwizardExports = DropwizardExports(metricRegistry).also { CollectorRegistry.defaultRegistry.register(it) }
+    dropwizardExports = DropwizardExports(metricRegistry).also { PrometheusRegistry.defaultRegistry.register(it) }
   }
 
   private fun unregisterDropwizardExports() {
-    dropwizardExports?.let { CollectorRegistry.defaultRegistry.unregister(it) }
+    dropwizardExports?.let { PrometheusRegistry.defaultRegistry.unregister(it) }
     dropwizardExports = null
   }
 

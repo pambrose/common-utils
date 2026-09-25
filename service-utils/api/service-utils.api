@@ -132,8 +132,8 @@ public final class com/pambrose/common/service/MetricsConfig {
 
 public final class com/pambrose/common/service/MetricsService : com/pambrose/common/concurrent/GenericIdleService {
 	public static final field Companion Lcom/pambrose/common/service/MetricsService$Companion;
-	public fun <init> (ILjava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;Lio/prometheus/metrics/model/registry/PrometheusRegistry;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Lio/prometheus/metrics/model/registry/PrometheusRegistry;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (ILjava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public final fun getHealthCheck ()Lcom/codahale/metrics/health/HealthCheck;
 	public fun toString ()Ljava/lang/String;

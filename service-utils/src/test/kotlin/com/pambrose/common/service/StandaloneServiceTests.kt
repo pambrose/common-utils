@@ -30,16 +30,6 @@ import jakarta.servlet.http.HttpServlet
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.incrementAndFetch
 
-// Starts the service, runs block, and stops the service even when block fails.
-private inline fun GenericIdleService.whileRunning(block: () -> Unit) {
-  startSync()
-  try {
-    block()
-  } finally {
-    stopSync()
-  }
-}
-
 private val GenericIdleService.boundPort: Int
   get() =
     when (this) {

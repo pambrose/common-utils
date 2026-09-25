@@ -24,30 +24,38 @@ import com.pambrose.common.dsl.MetricsDsl.healthCheck
 import com.pambrose.common.util.ensureLeadingSlash
 import com.google.common.util.concurrent.MoreExecutors
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
+import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet
+import io.prometheus.metrics.model.registry.PrometheusRegistry
 import org.eclipse.jetty.ee11.servlet.ServletHolder
 
 /**
- * A Guava [GenericIdleService] that runs an embedded Jetty server to expose a Prometheus [MetricsServlet].
+ * A Guava [GenericIdleService] that runs an embedded Jetty server to expose a Prometheus [PrometheusMetricsServlet].
  *
  * The service starts a Jetty HTTP server on the specified port and serves the Prometheus metrics
  * endpoint at the given path. It also exposes a [healthCheck] property for integration with
  * Dropwizard health check registries.
  *
+ * The servlet negotiates the exposition format through the request's `Accept` header: a plain scrape (no `Accept`,
+ * or one that does not ask for OpenMetrics) gets the Prometheus text format (`Content-Type` starting
+ * `text/plain; version=0.0.4`), and a scrape sending `Accept: application/openmetrics-text; version=1.0.0` gets the
+ * OpenMetrics text format instead.
+ *
  * @param port The HTTP port for the metrics endpoint.
  * @param path The URL path for the Prometheus metrics servlet, with or without a leading slash.
  * @param host The interface to bind to, or `null` to bind every interface.
+ * @param registry The [PrometheusRegistry] to serve. Defaults to [PrometheusRegistry.defaultRegistry].
  * @param initBlock An optional initialization block invoked after the service listener is registered.
  */
 class MetricsService(
   private val port: Int,
   private val path: String,
   host: String? = null,
+  registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
   initBlock: (MetricsService.() -> Unit) = {},
 ) : GenericIdleService() {
   private val server =
     jettyServer(host, port) {
-      addServlet(ServletHolder(MetricsServlet()), path.ensureLeadingSlash())
+      addServlet(ServletHolder(PrometheusMetricsServlet(registry)), path.ensureLeadingSlash())
     }
 
   /** A Dropwizard [HealthCheck] that reports healthy when the embedded Jetty server is running. */
@@ -77,7 +85,7 @@ class MetricsService(
     port: Int,
     path: String,
     initBlock: MetricsService.() -> Unit,
-  ) : this(port, path, null, initBlock)
+  ) : this(port, path, null, PrometheusRegistry.defaultRegistry, initBlock)
 
   override fun startUp() {
     server.start()

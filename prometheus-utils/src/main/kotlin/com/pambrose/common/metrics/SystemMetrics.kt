@@ -18,49 +18,65 @@
 package com.pambrose.common.metrics
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.prometheus.client.Collector
-import io.prometheus.client.CollectorRegistry
-import io.prometheus.client.hotspot.ClassLoadingExports
-import io.prometheus.client.hotspot.GarbageCollectorExports
-import io.prometheus.client.hotspot.MemoryPoolsExports
-import io.prometheus.client.hotspot.StandardExports
-import io.prometheus.client.hotspot.ThreadExports
-import io.prometheus.client.hotspot.VersionInfoExports
+import io.prometheus.metrics.instrumentation.jvm.JvmBufferPoolMetrics
+import io.prometheus.metrics.instrumentation.jvm.JvmClassLoadingMetrics
+import io.prometheus.metrics.instrumentation.jvm.JvmCompilationMetrics
+import io.prometheus.metrics.instrumentation.jvm.JvmGarbageCollectorMetrics
+import io.prometheus.metrics.instrumentation.jvm.JvmMemoryMetrics
+import io.prometheus.metrics.instrumentation.jvm.JvmMemoryPoolAllocationMetrics
+import io.prometheus.metrics.instrumentation.jvm.JvmNativeMemoryMetrics
+import io.prometheus.metrics.instrumentation.jvm.JvmRuntimeInfoMetric
+import io.prometheus.metrics.instrumentation.jvm.JvmThreadsMetrics
+import io.prometheus.metrics.instrumentation.jvm.ProcessMetrics
+import io.prometheus.metrics.model.registry.PrometheusRegistry
 import java.util.WeakHashMap
 
 /**
- * Registers Prometheus JVM hotspot metric exporters.
+ * Registers the Prometheus Java client's JVM and process metrics (`prometheus-metrics-instrumentation-jvm`).
  *
- * Calling [initialize] multiple times is safe; each exporter is registered at most once per registry.
+ * Calling [initialize] multiple times is safe; each metric set is registered at most once per registry.
  */
 object SystemMetrics {
   private val logger = KotlinLogging.logger {}
 
-  // The exporters registered so far, per registry, so a repeat call registers only the newly requested ones.
-  private val registeredExporters = WeakHashMap<CollectorRegistry, MutableSet<String>>()
+  // The metric sets registered so far, per registry, so a repeat call registers only the newly requested ones.
+  private val registeredSets = WeakHashMap<PrometheusRegistry, MutableSet<String>>()
 
   /**
-   * Registers the selected Prometheus JVM hotspot metric exporters with [registry].
+   * Registers the selected JVM and process metric sets with [registry].
    *
-   * This method is synchronized and safe to call repeatedly: an exporter already registered by an earlier call is
-   * skipped, and one requested for the first time is registered. An exporter whose metrics another collector
-   * already provides, such as one registered by `DefaultExports.initialize()`, is skipped with a warning instead
-   * of failing the call. That detection relies on the registry knowing the exporter's metric names, which only an
-   * auto-describing registry does: the default registry and `CollectorRegistry(true)`. A registry built with
-   * `CollectorRegistry()` learns no names from the hotspot exporters, so there a duplicate is registered silently and
-   * its metric families appear twice. Registrations are tracked per registry, so an exporter later removed with
-   * [CollectorRegistry.clear] or [CollectorRegistry.unregister] is not registered again.
+   * This method is synchronized and safe to call repeatedly: a metric set already registered by an earlier call is
+   * skipped, and one requested for the first time is registered. Registrations are tracked per registry, so a metric
+   * set later removed with [PrometheusRegistry.clear] is not registered again.
    *
-   * @param enableStandardExports whether to register standard JMX metrics (process CPU, open file descriptors, etc.).
-   * @param enableMemoryPoolsExports whether to register memory pool JMX metrics.
-   * @param enableGarbageCollectorExports whether to register garbage collector JMX metrics.
-   * @param enableThreadExports whether to register thread JMX metrics.
-   * @param enableClassLoadingExports whether to register class loading JMX metrics.
-   * @param enableVersionInfoExports whether to register JVM version info metrics.
-   * @param registry the registry to register with. Defaults to [CollectorRegistry.defaultRegistry].
+   * Each metric set is registered all or nothing. The client's `register(registry)` for a set adds its metrics one
+   * at a time and returns no handle, so a name clash part-way through would leave the earlier metrics registered and
+   * impossible to remove. Each set therefore registers through a wrapper that passes every registration on to
+   * [registry] and remembers it; if one is rejected, those added before it are unregistered again.
+   *
+   * A metric set whose names another collector already provides, such as one registered by
+   * `JvmMetrics.builder().register()`, is skipped with a warning instead of failing the call, and is not tried again.
+   * Any other registration failure is logged and retried by the next call.
+   *
+   * @param enableStandardExports whether to register the process metrics (`ProcessMetrics`: CPU time, start time,
+   *   open and max file descriptors, and, on Linux, virtual and resident memory).
+   * @param enableMemoryPoolsExports whether to register the JVM memory metrics (`JvmMemoryMetrics`) and the per-pool
+   *   allocation counter (`JvmMemoryPoolAllocationMetrics`), each as its own all-or-nothing set.
+   * @param enableGarbageCollectorExports whether to register the garbage collector metrics
+   *   (`JvmGarbageCollectorMetrics`).
+   * @param enableThreadExports whether to register the thread metrics (`JvmThreadsMetrics`).
+   * @param enableClassLoadingExports whether to register the class loading metrics (`JvmClassLoadingMetrics`).
+   * @param enableVersionInfoExports whether to register the JVM runtime info metric (`JvmRuntimeInfoMetric`).
+   * @param enableBufferPoolExports whether to register the buffer pool metrics (`JvmBufferPoolMetrics`).
+   * @param enableCompilationExports whether to register the JIT compilation metrics (`JvmCompilationMetrics`).
+   * @param enableNativeMemoryExports whether to register the native memory metrics (`JvmNativeMemoryMetrics`). They
+   *   are only present when the JVM runs with `-XX:NativeMemoryTracking=summary` (or `detail`); otherwise the set
+   *   registers nothing.
+   * @param registry the registry to register with. Defaults to [PrometheusRegistry.defaultRegistry].
    */
   @Synchronized
   @JvmOverloads
+  @Suppress("LongParameterList")
   fun initialize(
     enableStandardExports: Boolean = false,
     enableMemoryPoolsExports: Boolean = false,
@@ -68,18 +84,21 @@ object SystemMetrics {
     enableThreadExports: Boolean = false,
     enableClassLoadingExports: Boolean = false,
     enableVersionInfoExports: Boolean = false,
-    registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
+    enableBufferPoolExports: Boolean = false,
+    enableCompilationExports: Boolean = false,
+    enableNativeMemoryExports: Boolean = false,
+    registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
   ) {
-    val registered = registeredExporters.getOrPut(registry) { mutableSetOf() }
+    val registered = registeredSets.getOrPut(registry) { mutableSetOf() }
 
     fun register(
       enabled: Boolean,
       description: String,
-      exporter: () -> Collector,
+      registerSet: (PrometheusRegistry) -> Unit,
     ) {
       if (enabled && description !in registered) {
         logger.info { "Enabling $description metrics" }
-        when (val failure = runCatching { exporter().register<Collector>(registry) }.exceptionOrNull()) {
+        when (val failure = runCatching { registry.registerAllOrNothing(registerSet) }.exceptionOrNull()) {
           null -> {
             registered += description
           }
@@ -98,11 +117,19 @@ object SystemMetrics {
       }
     }
 
-    register(enableStandardExports, "standard JMX") { StandardExports() }
-    register(enableMemoryPoolsExports, "memory pool JMX") { MemoryPoolsExports() }
-    register(enableGarbageCollectorExports, "garbage collector JMX") { GarbageCollectorExports() }
-    register(enableThreadExports, "thread JMX") { ThreadExports() }
-    register(enableClassLoadingExports, "class loading JMX") { ClassLoadingExports() }
-    register(enableVersionInfoExports, "version info") { VersionInfoExports() }
+    register(enableStandardExports, "process") { ProcessMetrics.builder().register(it) }
+    register(enableMemoryPoolsExports, "JVM memory") { JvmMemoryMetrics.builder().register(it) }
+    register(enableMemoryPoolsExports, "JVM memory pool allocation") {
+      JvmMemoryPoolAllocationMetrics.builder().register(it)
+    }
+    register(enableGarbageCollectorExports, "JVM garbage collector") {
+      JvmGarbageCollectorMetrics.builder().register(it)
+    }
+    register(enableThreadExports, "JVM thread") { JvmThreadsMetrics.builder().register(it) }
+    register(enableClassLoadingExports, "JVM class loading") { JvmClassLoadingMetrics.builder().register(it) }
+    register(enableVersionInfoExports, "JVM runtime info") { JvmRuntimeInfoMetric.builder().register(it) }
+    register(enableBufferPoolExports, "JVM buffer pool") { JvmBufferPoolMetrics.builder().register(it) }
+    register(enableCompilationExports, "JVM compilation") { JvmCompilationMetrics.builder().register(it) }
+    register(enableNativeMemoryExports, "JVM native memory") { JvmNativeMemoryMetrics.builder().register(it) }
   }
 }

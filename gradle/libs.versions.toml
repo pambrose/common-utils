@@ -48,7 +48,7 @@ python = "2.7.4"
 
 # Observability
 brave = "6.3.1"
-prometheus = "0.16.0"
+prometheus = "1.9.0"
 zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
 
@@ -118,10 +118,12 @@ kotlin-scripting = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", ve
 python-scripting = { module = "org.python:jython-standalone", version.ref = "python" }
 
 # Observability -- Prometheus
-prometheus-core = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
-prometheus-dropwizard = { module = "io.prometheus:simpleclient_dropwizard", version.ref = "prometheus" }
-prometheus-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
-prometheus-servlet = { module = "io.prometheus:simpleclient_servlet_jakarta", version.ref = "prometheus" }
+prometheus-metrics-core = { module = "io.prometheus:prometheus-metrics-core", version.ref = "prometheus" }
+prometheus-metrics-exporter-servlet-jakarta = { module = "io.prometheus:prometheus-metrics-exporter-servlet-jakarta", version.ref = "prometheus" }
+prometheus-metrics-exposition-textformats = { module = "io.prometheus:prometheus-metrics-exposition-textformats", version.ref = "prometheus" }
+prometheus-metrics-instrumentation-dropwizard = { module = "io.prometheus:prometheus-metrics-instrumentation-dropwizard", version.ref = "prometheus" }
+prometheus-metrics-instrumentation-jvm = { module = "io.prometheus:prometheus-metrics-instrumentation-jvm", version.ref = "prometheus" }
+prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus" }
 
 # Observability -- Zipkin
 brave = { module = "io.zipkin.brave:brave", version.ref = "brave" }
@@ -164,8 +166,8 @@ ktor-client-json = [
 
 # Observability
 prometheus-service = [
-  "prometheus-servlet",
-  "prometheus-dropwizard",
+  "prometheus-metrics-exporter-servlet-jakarta",
+  "prometheus-metrics-instrumentation-dropwizard",
 ]
 
 [plugins]

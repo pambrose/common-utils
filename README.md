@@ -111,7 +111,7 @@ JSON processing utilities with Kotlinx.serialization.
 
 #### [**prometheus-utils**](prometheus-utils/README.md)
 
-Prometheus metrics integration.
+Prometheus metrics integration, built on the Prometheus Java client 1.x (`prometheus-metrics-*`).
 
 - Metrics DSL for clean metric definitions
 - System metrics collection
@@ -193,7 +193,7 @@ Service lifecycle and configuration management.
 
 - Generic service base classes
 - Admin interface configuration
-- Metrics service integration
+- Metrics service serving a Prometheus registry (text format or OpenMetrics)
 - Admin and metrics servers that can bind to a single interface
 - Servlet service management
 - Zipkin reporting service
@@ -262,12 +262,12 @@ artifacts too):
 ## Technology Stack
 
 - **Languages**: Kotlin 2.4.20, Java
-- **Build System**: Gradle 9.7.1 with Kotlin DSL
+- **Build System**: Gradle 9.8.0 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava
 - **Web Frameworks**: Ktor, Jetty 12 (EE11)
-- **Metrics**: Dropwizard Metrics, Prometheus
+- **Metrics**: Dropwizard Metrics, Prometheus Java client 1.x
 - **Databases**: JetBrains Exposed
 - **Caching**: Redis (Jedis)
 - **Tracing**: Zipkin, Brave

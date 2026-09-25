@@ -40,6 +40,7 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.server.application.Application
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
@@ -51,7 +52,8 @@ import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import io.prometheus.client.CollectorRegistry
+import io.prometheus.metrics.model.registry.PrometheusRegistry
+import io.prometheus.metrics.model.snapshots.CounterSnapshot
 import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.lang.management.ManagementFactory
@@ -533,15 +535,26 @@ class GenericServiceTests : StringSpec() {
     }
 
     "the Dropwizard exporter is registered with Prometheus only while the service runs" {
+      // The value the default registry exports for the Dropwizard counter, or null while nothing exports it. A
+      // Dropwizard Counter is exported as a Prometheus counter (exposed as exporter_lifecycle_total), not a gauge.
+      fun exported(): Double? =
+        PrometheusRegistry.defaultRegistry
+          .scrape()
+          .firstOrNull { it.metadata.prometheusName == "exporter_lifecycle" }
+          ?.shouldBeInstanceOf<CounterSnapshot>()
+          ?.dataPoints
+          ?.single()
+          ?.value
+
       val service = TestJettyService(metrics = enabledMetrics())
       service.counter("exporter_lifecycle").inc(3)
-      CollectorRegistry.defaultRegistry.getSampleValue("exporter_lifecycle") shouldBe null
+      exported() shouldBe null
 
       service.startSync()
-      CollectorRegistry.defaultRegistry.getSampleValue("exporter_lifecycle") shouldBe 3.0
+      exported() shouldBe 3.0
 
       service.close()
-      CollectorRegistry.defaultRegistry.getSampleValue("exporter_lifecycle") shouldBe null
+      exported() shouldBe null
     }
 
     "the JMX reporter exposes the service's metrics only while it runs" {
