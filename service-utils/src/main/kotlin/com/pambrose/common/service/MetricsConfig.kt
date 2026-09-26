@@ -112,6 +112,7 @@ data class MetricsConfig(
     "Binary compatibility with the copy that predates the buffer pool, compilation and native memory flags",
     level = DeprecationLevel.HIDDEN,
   )
+  @Suppress("LongParameterList")
   fun copy(
     enabled: Boolean = this.enabled,
     port: Int = this.port,

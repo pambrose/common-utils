@@ -1,4 +1,4 @@
-@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction")
+@file:Suppress("UndocumentedPublicClass", "UndocumentedPublicFunction", "SpreadOperator")
 
 package com.pambrose.common.service
 
