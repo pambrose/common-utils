@@ -144,6 +144,9 @@ abstract class AbstractGenericService<T> protected constructor(
         enableThreadExports = metricsConfig.threadExportsEnabled,
         enableClassLoadingExports = metricsConfig.classLoadingExportsEnabled,
         enableVersionInfoExports = metricsConfig.versionInfoExportsEnabled,
+        enableBufferPoolExports = metricsConfig.bufferPoolExportsEnabled,
+        enableCompilationExports = metricsConfig.compilationExportsEnabled,
+        enableNativeMemoryExports = metricsConfig.nativeMemoryExportsEnabled,
       )
       jmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     } else {

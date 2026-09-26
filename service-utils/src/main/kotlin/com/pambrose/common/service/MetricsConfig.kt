@@ -33,6 +33,10 @@ package com.pambrose.common.service
  * @property versionInfoExportsEnabled Whether version info exports are enabled.
  * @property host The interface the metrics server binds to, such as `"127.0.0.1"` to accept only local
  *   connections. The default, `null`, binds every interface.
+ * @property bufferPoolExportsEnabled Whether buffer pool exports are enabled.
+ * @property compilationExportsEnabled Whether JIT compilation exports are enabled.
+ * @property nativeMemoryExportsEnabled Whether native memory exports are enabled. They are only present when the JVM
+ *   runs with `-XX:NativeMemoryTracking=summary` (or `detail`).
  */
 data class MetricsConfig(
   val enabled: Boolean,
@@ -45,6 +49,9 @@ data class MetricsConfig(
   val classLoadingExportsEnabled: Boolean,
   val versionInfoExportsEnabled: Boolean,
   val host: String? = null,
+  val bufferPoolExportsEnabled: Boolean = false,
+  val compilationExportsEnabled: Boolean = false,
+  val nativeMemoryExportsEnabled: Boolean = false,
 ) {
   @Deprecated("Binary compatibility with the constructor that predates host", level = DeprecationLevel.HIDDEN)
   constructor(
@@ -69,4 +76,65 @@ data class MetricsConfig(
     versionInfoExportsEnabled,
     null,
   )
+
+  @Deprecated(
+    "Binary compatibility with the constructor that predates the buffer pool, compilation and native memory flags",
+    level = DeprecationLevel.HIDDEN,
+  )
+  constructor(
+    enabled: Boolean,
+    port: Int,
+    path: String,
+    standardExportsEnabled: Boolean,
+    memoryPoolsExportsEnabled: Boolean,
+    garbageCollectorExportsEnabled: Boolean,
+    threadExportsEnabled: Boolean,
+    classLoadingExportsEnabled: Boolean,
+    versionInfoExportsEnabled: Boolean,
+    host: String? = null,
+  ) : this(
+    enabled,
+    port,
+    path,
+    standardExportsEnabled,
+    memoryPoolsExportsEnabled,
+    garbageCollectorExportsEnabled,
+    threadExportsEnabled,
+    classLoadingExportsEnabled,
+    versionInfoExportsEnabled,
+    host,
+    false,
+    false,
+    false,
+  )
+
+  @Deprecated(
+    "Binary compatibility with the copy that predates the buffer pool, compilation and native memory flags",
+    level = DeprecationLevel.HIDDEN,
+  )
+  @Suppress("LongParameterList")
+  fun copy(
+    enabled: Boolean = this.enabled,
+    port: Int = this.port,
+    path: String = this.path,
+    standardExportsEnabled: Boolean = this.standardExportsEnabled,
+    memoryPoolsExportsEnabled: Boolean = this.memoryPoolsExportsEnabled,
+    garbageCollectorExportsEnabled: Boolean = this.garbageCollectorExportsEnabled,
+    threadExportsEnabled: Boolean = this.threadExportsEnabled,
+    classLoadingExportsEnabled: Boolean = this.classLoadingExportsEnabled,
+    versionInfoExportsEnabled: Boolean = this.versionInfoExportsEnabled,
+    host: String? = this.host,
+  ): MetricsConfig =
+    copy(
+      enabled = enabled,
+      port = port,
+      path = path,
+      standardExportsEnabled = standardExportsEnabled,
+      memoryPoolsExportsEnabled = memoryPoolsExportsEnabled,
+      garbageCollectorExportsEnabled = garbageCollectorExportsEnabled,
+      threadExportsEnabled = threadExportsEnabled,
+      classLoadingExportsEnabled = classLoadingExportsEnabled,
+      versionInfoExportsEnabled = versionInfoExportsEnabled,
+      host = host,
+    )
 }

@@ -38,7 +38,8 @@ guava-utils, jetty-utils, dropwizard-utils, zipkin-utils, Dropwizard's `metrics-
 ### Configuration
 
 - **`AdminConfig`**, **`MetricsConfig`**, **`ZipkinConfig`**: data classes for the admin, Prometheus, and Zipkin
-  settings, each with an optional `host` to restrict the bind address
+  settings, each with an optional `host` to restrict the bind address. `MetricsConfig`'s nine `*ExportsEnabled` flags
+  select the metric sets passed to prometheus-utils' `SystemMetrics.initialize`
 
 ## Usage Examples
 
@@ -76,6 +77,9 @@ class MyService(configVals: MyConfig) :
       threadExportsEnabled = true,
       classLoadingExportsEnabled = true,
       versionInfoExportsEnabled = true,
+      bufferPoolExportsEnabled = true,    // these three default to false
+      compilationExportsEnabled = true,
+      nativeMemoryExportsEnabled = true,  // needs -XX:NativeMemoryTracking=summary (or detail)
     ),
     zipkinConfig = ZipkinConfig(
       enabled = true,
@@ -275,7 +279,7 @@ A plain scrape gets the Prometheus text format (`Content-Type: text/plain; versi
 ### Configuration
 
 - `data class AdminConfig(enabled: Boolean, port: Int, pingPath: String, versionPath: String, healthCheckPath: String, threadDumpPath: String, host: String? = null)`
-- `data class MetricsConfig(enabled: Boolean, port: Int, path: String, standardExportsEnabled: Boolean, memoryPoolsExportsEnabled: Boolean, garbageCollectorExportsEnabled: Boolean, threadExportsEnabled: Boolean, classLoadingExportsEnabled: Boolean, versionInfoExportsEnabled: Boolean, host: String? = null)`
+- `data class MetricsConfig(enabled: Boolean, port: Int, path: String, standardExportsEnabled: Boolean, memoryPoolsExportsEnabled: Boolean, garbageCollectorExportsEnabled: Boolean, threadExportsEnabled: Boolean, classLoadingExportsEnabled: Boolean, versionInfoExportsEnabled: Boolean, host: String? = null, bufferPoolExportsEnabled: Boolean = false, compilationExportsEnabled: Boolean = false, nativeMemoryExportsEnabled: Boolean = false)`
 - `data class ZipkinConfig(enabled: Boolean, hostname: String, port: Int, path: String, serviceName: String)`
 
 ## Dependencies
