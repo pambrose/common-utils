@@ -17,6 +17,10 @@ All notable changes to Common Utils are documented in this file.
 - Java code calling the `MetricsConfig` constructor or `copy` now passes all 13 arguments. The 10-argument forms
   stay in the ABI, hidden, for callers compiled against 5.0.0. Kotlin calls compile unchanged.
 
+### Dependency changes
+
+- `h2` 2.5.250 → 2.5.252 (tests only)
+
 ## [5.0.0] - 2026-09-25
 
 ### Breaking
