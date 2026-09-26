@@ -38,7 +38,8 @@ guava-utils, jetty-utils, dropwizard-utils, zipkin-utils, Dropwizard's `metrics-
 ### Configuration
 
 - **`AdminConfig`**, **`MetricsConfig`**, **`ZipkinConfig`**: data classes for the admin, Prometheus, and Zipkin
-  settings, each with an optional `host` to restrict the bind address
+  settings, each with an optional `host` to restrict the bind address. `MetricsConfig`'s nine `*ExportsEnabled` flags
+  select the metric sets passed to prometheus-utils' `SystemMetrics.initialize`
 
 ## Usage Examples
 
@@ -76,6 +77,9 @@ class MyService(configVals: MyConfig) :
       threadExportsEnabled = true,
       classLoadingExportsEnabled = true,
       versionInfoExportsEnabled = true,
+      bufferPoolExportsEnabled = true,    // these three default to false
+      compilationExportsEnabled = true,
+      nativeMemoryExportsEnabled = true,  // needs -XX:NativeMemoryTracking=summary (or detail)
     ),
     zipkinConfig = ZipkinConfig(
       enabled = true,

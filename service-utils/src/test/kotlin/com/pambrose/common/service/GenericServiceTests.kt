@@ -582,11 +582,16 @@ class GenericServiceTests : StringSpec() {
           disabledMetrics.copy(threadExportsEnabled = true),
           disabledMetrics.copy(classLoadingExportsEnabled = true),
           disabledMetrics.copy(versionInfoExportsEnabled = true),
+          disabledMetrics.copy(bufferPoolExportsEnabled = true),
+          disabledMetrics.copy(compilationExportsEnabled = true),
+          disabledMetrics.copy(nativeMemoryExportsEnabled = true),
         ]
       val flagsPassed: MutableList<List<Any?>> = []
       mockkObject(SystemMetrics)
       try {
-        every { SystemMetrics.initialize(any(), any(), any(), any(), any(), any(), any()) } answers {
+        every {
+          SystemMetrics.initialize(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } answers {
           flagsPassed += args.take(oneFlagEach.size)
         }
 

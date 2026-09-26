@@ -2,6 +2,21 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- service-utils `MetricsConfig` has three new flags, `bufferPoolExportsEnabled`, `compilationExportsEnabled` and
+  `nativeMemoryExportsEnabled`, all `false` by default and placed after `host`. `AbstractGenericService` passes them
+  to the matching `SystemMetrics.initialize` parameters added in 5.0.0, so a `GenericService` or `GenericKtorService`
+  can now export the buffer pool, JIT compilation and native memory metrics too. Native memory metrics appear only
+  when the JVM runs with `-XX:NativeMemoryTracking=summary` (or `detail`).
+
+### Changed
+
+- Java code calling the `MetricsConfig` constructor or `copy` now passes all 13 arguments. The 10-argument forms
+  stay in the ABI, hidden, for callers compiled against 5.0.0. Kotlin calls compile unchanged.
+
 ## [5.0.0] - 2026-09-25
 
 ### Breaking
