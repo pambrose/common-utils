@@ -279,7 +279,7 @@ A plain scrape gets the Prometheus text format (`Content-Type: text/plain; versi
 ### Configuration
 
 - `data class AdminConfig(enabled: Boolean, port: Int, pingPath: String, versionPath: String, healthCheckPath: String, threadDumpPath: String, host: String? = null)`
-- `data class MetricsConfig(enabled: Boolean, port: Int, path: String, standardExportsEnabled: Boolean, memoryPoolsExportsEnabled: Boolean, garbageCollectorExportsEnabled: Boolean, threadExportsEnabled: Boolean, classLoadingExportsEnabled: Boolean, versionInfoExportsEnabled: Boolean, host: String? = null)`
+- `data class MetricsConfig(enabled: Boolean, port: Int, path: String, standardExportsEnabled: Boolean, memoryPoolsExportsEnabled: Boolean, garbageCollectorExportsEnabled: Boolean, threadExportsEnabled: Boolean, classLoadingExportsEnabled: Boolean, versionInfoExportsEnabled: Boolean, host: String? = null, bufferPoolExportsEnabled: Boolean = false, compilationExportsEnabled: Boolean = false, nativeMemoryExportsEnabled: Boolean = false)`
 - `data class ZipkinConfig(enabled: Boolean, hostname: String, port: Int, path: String, serviceName: String)`
 
 ## Dependencies

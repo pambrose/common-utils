@@ -194,6 +194,7 @@ Service lifecycle and configuration management.
 - Generic service base classes
 - Admin interface configuration
 - Metrics service serving a Prometheus registry (text format or OpenMetrics)
+- Opt-in JVM and process metrics, including buffer pool, JIT compilation and native memory
 - Admin and metrics servers that can bind to a single interface
 - Servlet service management
 - Zipkin reporting service

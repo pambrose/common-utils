@@ -155,6 +155,9 @@ one or the other. Pass `registry` to use a registry other than the default one.
 | `enableCompilationExports` | `JvmCompilationMetrics` | `jvm_compilation_time_seconds_total` |
 | `enableNativeMemoryExports` | `JvmNativeMemoryMetrics` | only with `-XX:NativeMemoryTracking=summary` (or `detail`) |
 
+A service-utils service calls `initialize` for you, with each flag taken from the matching `*ExportsEnabled`
+property of its `MetricsConfig` (`enableBufferPoolExports` from `bufferPoolExportsEnabled`, and so on).
+
 ```kotlin
 import com.pambrose.common.metrics.SystemMetrics
 

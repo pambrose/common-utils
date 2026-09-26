@@ -293,5 +293,9 @@ All modules use: `com.pambrose.common.*`
   source-breaking changes, such as a return type becoming nullable or a narrower exception type, each listed
   under "Changed" in the CHANGELOG. A signature is not removed or changed in the ABI dump without a major
   release: keep the old one as a `@Deprecated(level = DeprecationLevel.HIDDEN)` overload, as
-  `GrpcDsl.server` and `SamplerGaugeCollector` do. A declaration that could never be called successfully
-  (for example one that always threw) may be dropped in a minor release, with a CHANGELOG note.
+  `GrpcDsl.server` does. A new property on a public data class changes both its constructor and its generated
+  `copy`, so keep a hidden overload of each (Kotlin allows an explicit `copy` with other parameters), give it the
+  old defaults so its `$default` bridge survives, and add the property last so `componentN` keeps its meaning;
+  `MetricsConfig` shows the pattern, and `MetricsConfigTests` calls the old signatures by reflection. A
+  declaration that could never be called successfully (for example one that always threw) may be dropped in a
+  minor release, with a CHANGELOG note.
