@@ -5,7 +5,7 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## v5.1.0 — Unreleased
+## v5.1.0 — 2026-09-27
 
 A minor, binary-compatible release. service-utils services can now turn on the buffer pool, JIT compilation and
 native memory metrics that 5.0.0 added to `SystemMetrics`.
@@ -26,6 +26,7 @@ native memory metrics that 5.0.0 added to `SystemMetrics`.
 
 ### Dependency bumps
 
+- `resend` 4.26.0 → 4.27.0 (email-utils exports it as `api`)
 - `h2` 2.5.250 → 2.5.252 (exposed-utils test scope only)
 
 **Full Changelog**: https://github.com/pambrose/common-utils/compare/5.0.0...5.1.0

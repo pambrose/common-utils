@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [5.1.0] - Unreleased
+## [5.1.0] - 2026-09-27
 
 ### Added
 
@@ -17,8 +17,16 @@ All notable changes to Common Utils are documented in this file.
 - Java code calling the `MetricsConfig` constructor or `copy` now passes all 13 arguments. The 10-argument forms
   stay in the ABI, hidden, for callers compiled against 5.0.0. Kotlin calls compile unchanged.
 
+### Documentation
+
+- The service-utils README example and API reference show the new `MetricsConfig` flags, the prometheus-utils
+  README maps each `SystemMetrics` flag to its `MetricsConfig` property, and the root README lists the new metrics.
+- CLAUDE.md describes how a public data class gains a property in a minor release (hidden overloads of the old
+  constructor and `copy`), in place of an outdated `SamplerGaugeCollector` example, and updates the coverage figures.
+
 ### Dependency changes
 
+- `resend` 4.26.0 → 4.27.0
 - `h2` 2.5.250 → 2.5.252 (tests only)
 - Bump project version to 5.1.0
 
