@@ -208,9 +208,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:5.0.0")
-  implementation("com.pambrose.common-utils:json-utils:5.0.0")
-  implementation("com.pambrose.common-utils:ktor-server-utils:5.0.0")
+  implementation("com.pambrose.common-utils:core-utils:5.1.0")
+  implementation("com.pambrose.common-utils:json-utils:5.1.0")
+  implementation("com.pambrose.common-utils:ktor-server-utils:5.1.0")
     // ... other modules
 }
 ```
@@ -220,7 +220,7 @@ declared without one:
 
 ```kotlin
 dependencies {
-  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.0.0"))
+  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.1.0"))
   implementation("com.pambrose.common-utils:core-utils")
   implementation("com.pambrose.common-utils:service-utils")
 }
@@ -237,7 +237,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>5.0.0</version>
+      <version>5.1.0</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
@@ -252,7 +252,7 @@ artifacts too):
         <dependency>
             <groupId>com.pambrose.common-utils</groupId>
             <artifactId>common-utils-bom</artifactId>
-            <version>5.0.0</version>
+            <version>5.1.0</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
