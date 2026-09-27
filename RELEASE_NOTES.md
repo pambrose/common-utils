@@ -5,6 +5,33 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v5.1.0 — Unreleased
+
+A minor, binary-compatible release. service-utils services can now turn on the buffer pool, JIT compilation and
+native memory metrics that 5.0.0 added to `SystemMetrics`.
+
+### Highlights
+
+- **service-utils `MetricsConfig` export flags**: `bufferPoolExportsEnabled`, `compilationExportsEnabled` and
+  `nativeMemoryExportsEnabled`, all `false` by default and placed after `host`, reach the matching
+  `SystemMetrics.initialize` parameters. A `GenericService` or `GenericKtorService` can therefore export
+  `jvm_buffer_pool_{used_bytes,capacity_bytes,used_buffers}`, `jvm_compilation_time_seconds_total` and the native
+  memory metrics. The native memory metrics appear only when the JVM runs with `-XX:NativeMemoryTracking=summary`
+  (or `detail`).
+
+### Behavior changes
+
+- Java code calling the `MetricsConfig` constructor or `copy` now passes all 13 arguments. The 10-argument forms
+  stay in the ABI, hidden, so code compiled against 5.0.0 keeps working. Kotlin calls compile unchanged.
+
+### Dependency bumps
+
+- `h2` 2.5.250 → 2.5.252 (exposed-utils test scope only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.0.0...5.1.0
+
+---
+
 ## v5.0.0 — 2026-09-25
 
 A major release. prometheus-utils and service-utils move to the Prometheus Java client 1.x, which changes their

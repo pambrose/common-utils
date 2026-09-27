@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.1.0] - Unreleased
 
 ### Added
 
@@ -20,6 +20,7 @@ All notable changes to Common Utils are documented in this file.
 ### Dependency changes
 
 - `h2` 2.5.250 → 2.5.252 (tests only)
+- Bump project version to 5.1.0
 
 ## [5.0.0] - 2026-09-25
 
