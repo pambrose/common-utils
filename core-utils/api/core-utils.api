@@ -112,7 +112,6 @@ public final class com/pambrose/common/util/DateUtils {
 	public final fun parseToLocalTime (Ljava/lang/String;)Lkotlinx/datetime/LocalTime;
 	public final fun toAdjustedString-VtjQ1oo (JLkotlin/time/DurationUnit;)Ljava/lang/String;
 	public static synthetic fun toAdjustedString-VtjQ1oo$default (Lcom/pambrose/common/util/DateUtils;JLkotlin/time/DurationUnit;ILjava/lang/Object;)Ljava/lang/String;
-	public final fun toCreated (Lkotlinx/datetime/LocalDateTime;)Ljava/lang/String;
 	public final fun toDashedYYYYMMDD (Lkotlinx/datetime/LocalDate;)Ljava/lang/String;
 	public final fun toFullDateString (Lkotlinx/datetime/LocalDateTime;)Ljava/lang/String;
 	public final fun toFullDateString (Lkotlinx/datetime/LocalDateTime;Lkotlinx/datetime/TimeZone;)Ljava/lang/String;

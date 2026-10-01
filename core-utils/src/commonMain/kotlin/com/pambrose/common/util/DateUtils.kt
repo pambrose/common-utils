@@ -229,15 +229,6 @@ object DateUtils {
     "${month.number.lpad(2)}/${day.lpad(2)}/${year.lpad(4)} ${hour.lpad(2)}:${minute.lpad(2)}"
 
   /**
-   * Wraps [toMMDDYYYYHHMM] in a `"(Created …)"` label, e.g. `"(Created 04/10/2026 14:30)"`.
-   *
-   * Extension function on [LocalDateTime].
-   *
-   * @return the parenthesized "created" string
-   */
-  fun LocalDateTime.toCreated(): String = "(Created ${toMMDDYYYYHHMM()})"
-
-  /**
    * The elapsed [Duration] from this instant until now, or [Duration.ZERO] if the receiver is null.
    *
    * Extension property on a nullable [Instant].

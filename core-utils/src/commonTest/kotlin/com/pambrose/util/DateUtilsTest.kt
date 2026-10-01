@@ -8,7 +8,6 @@ import com.pambrose.common.util.DateUtils.parseToLocalDate
 import com.pambrose.common.util.DateUtils.parseToLocalDateTime
 import com.pambrose.common.util.DateUtils.parseToLocalTime
 import com.pambrose.common.util.DateUtils.toAdjustedString
-import com.pambrose.common.util.DateUtils.toCreated
 import com.pambrose.common.util.DateUtils.toDashedYYYYMMDD
 import com.pambrose.common.util.DateUtils.toFullDateString
 import com.pambrose.common.util.DateUtils.toISO8601
@@ -167,11 +166,6 @@ class DateUtilsTest : StringSpec() {
 
     "toMMDDYYYYHHMM - zero-pads a single-digit hour" {
       LocalDateTime(2024, 5, 1, 9, 5).toMMDDYYYYHHMM() shouldBe "05/01/2024 09:05"
-    }
-
-    "toCreated - wraps formatted date in (Created ...)" {
-      val ldt = LocalDateTime(2024, 5, 1, 14, 7)
-      ldt.toCreated() shouldBe "(Created 05/01/2024 14:07)"
     }
 
     "Instant.age - returns ZERO for null" {

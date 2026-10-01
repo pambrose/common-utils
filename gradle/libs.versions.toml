@@ -8,7 +8,7 @@ detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
 gradlePlugins = "1.1.6"
 kotlinter = "5.7.0"
-kover = "0.9.9"
+kover = "0.9.11"
 mavenPublish = "0.37.0"
 pitestPlugin = "1.19.0"
 versions = "0.64.0"
@@ -25,7 +25,7 @@ kotlinxHtml = "0.12.0"
 serialization = "1.11.0"
 
 # Logging
-logback = "1.6.4"
+logback = "1.6.5"
 logging = "8.0.4"
 
 # Frameworks
@@ -56,7 +56,7 @@ zipkinReporter = "3.5.3"
 guava = "33.7.1-jre"
 
 # Other
-resend = "4.27.0"
+resend = "4.28.0"
 
 # Testing
 kotest = "6.2.5"
