@@ -70,7 +70,6 @@ final object com.pambrose.common.util/DateUtils { // com.pambrose.common.util/Da
     final fun (kotlinx.datetime/LocalDate).toMMDDYYYY(): kotlin/String // com.pambrose.common.util/DateUtils.toMMDDYYYY|toMMDDYYYY@kotlinx.datetime.LocalDate(){}[0]
     final fun (kotlinx.datetime/LocalDate).toUTCDateTime(): kotlinx.datetime/LocalDateTime // com.pambrose.common.util/DateUtils.toUTCDateTime|toUTCDateTime@kotlinx.datetime.LocalDate(){}[0]
     final fun (kotlinx.datetime/LocalDateTime).abbrevDayOfWeek(): kotlin/String // com.pambrose.common.util/DateUtils.abbrevDayOfWeek|abbrevDayOfWeek@kotlinx.datetime.LocalDateTime(){}[0]
-    final fun (kotlinx.datetime/LocalDateTime).toCreated(): kotlin/String // com.pambrose.common.util/DateUtils.toCreated|toCreated@kotlinx.datetime.LocalDateTime(){}[0]
     final fun (kotlinx.datetime/LocalDateTime).toFullDateString(): kotlin/String // com.pambrose.common.util/DateUtils.toFullDateString|toFullDateString@kotlinx.datetime.LocalDateTime(){}[0]
     final fun (kotlinx.datetime/LocalDateTime).toFullDateString(kotlinx.datetime/TimeZone): kotlin/String // com.pambrose.common.util/DateUtils.toFullDateString|toFullDateString@kotlinx.datetime.LocalDateTime(kotlinx.datetime.TimeZone){}[0]
     final fun (kotlinx.datetime/LocalDateTime).toISO8601(): kotlin/String // com.pambrose.common.util/DateUtils.toISO8601|toISO8601@kotlinx.datetime.LocalDateTime(){}[0]

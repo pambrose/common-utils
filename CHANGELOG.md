@@ -2,6 +2,21 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Breaking
+
+This removes a published signature, so under the versioning policy in CLAUDE.md it needs a major release.
+
+- core-utils `DateUtils.toCreated` is removed. It formatted a label specific to Canvas Cache and has moved back there;
+  callers can write `"(Created ${toMMDDYYYYHHMM()})"`.
+
+### Dependency changes
+
+- `resend` 4.27.0 → 4.28.0
+- `kover` 0.9.9 → 0.9.11
+- `logback` 1.6.4 → 1.6.5 (tests only)
+
 ## [5.1.0] - 2026-09-27
 
 ### Added
