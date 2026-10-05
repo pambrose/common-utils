@@ -53,7 +53,7 @@ zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
 
 # Services
-guava = "33.7.1-jre"
+guava = "33.7.2-jre"
 
 # Other
 resend = "4.28.0"
