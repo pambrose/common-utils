@@ -16,6 +16,9 @@ This removes a published signature, so under the versioning policy in CLAUDE.md 
 - `resend` 4.27.0 → 4.28.0
 - `kover` 0.9.9 → 0.9.11
 - `logback` 1.6.4 → 1.6.5 (tests only)
+- `guava` 33.7.1-jre → 33.7.2-jre, a security fix
+  ([GHSA-xxph-c9ww-hj94](https://github.com/google/guava/security/advisories/GHSA-xxph-c9ww-hj94)) that guava-utils
+  and service-utils pass on to consumers through their `api` dependencies
 
 ## [5.1.0] - 2026-09-27
 
