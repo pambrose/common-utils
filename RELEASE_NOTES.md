@@ -5,6 +5,46 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v5.1.1 — 2026-10-08
+
+A patch release: dependency updates, including a Guava security fix that guava-utils and service-utils pass on to
+consumers, and Kotlin 2.4.21. It also drops two core-utils functions: `DateUtils.toCreated`, a Canvas Cache-specific
+helper, so it is not binary compatible for code that called it, and the inline two-receiver `with(a, b)`.
+
+### Highlights
+
+- **Guava security fix**: `guava` 33.7.2-jre fixes
+  [GHSA-xxph-c9ww-hj94](https://github.com/google/guava/security/advisories/GHSA-xxph-c9ww-hj94). guava-utils and
+  service-utils export Guava as `api`, so consumers pick up the fix by upgrading.
+- **CI security audit**: a new `zizmor` workflow audits the GitHub Actions workflows and the Dependabot config on every
+  push and pull request, and `make zizmor` runs the same audit locally. Dependabot version updates now wait out a
+  7-day cooldown; security updates are not delayed.
+
+### Breaking
+
+- core-utils `DateUtils.toCreated` is removed. It formatted a label specific to Canvas Cache and has moved back there;
+  callers can write `"(Created ${toMMDDYYYYHHMM()})"`. Code compiled against 5.1.0 that calls it fails with
+  `NoSuchMethodError`.
+- core-utils' two-receiver `with(a, b) { ... }` is removed. It was `inline`, so compiled Kotlin callers keep working;
+  source that calls it can nest the standard library's `context(a) { context(b) { ... } }` instead.
+
+### Dependency bumps
+
+- `guava` 33.7.1-jre → 33.7.2-jre (security fix)
+- Kotlin 2.4.20 → 2.4.21 (compiler, `kotlin-reflect` and the `kotlin-scripting-*` artifacts)
+- `grpc` 1.84.0 → 1.84.1
+- `netty-tcnative-boringssl-static` 2.0.81.Final → 2.0.84.Final (ahead of grpc 1.84.1's 2.0.81.Final pin)
+- `jetty` 12.1.13 → 12.1.14
+- `jedis` 8.0.1 → 8.0.2
+- `resend` 4.27.0 → 4.28.0
+- `pambrose-gradle-plugins` 1.1.6 → 1.1.7, `kover` 0.9.9 → 0.9.11, `io.github.ben-manes.versions`
+  0.64.0 → 0.65.0, Gradle 9.8.0 → 9.8.1 (build only)
+- `logback` 1.6.4 → 1.6.5 (tests only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.1.0...5.1.1
+
+---
+
 ## v5.1.0 — 2026-09-27
 
 A minor, binary-compatible release. service-utils services can now turn on the buffer pool, JIT compilation and

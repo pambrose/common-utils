@@ -1,0 +1,35 @@
+name: zizmor
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Findings are reported as annotations and fail the job, rather than going to code scanning as SARIF, so the job
+# needs no security-events: write and behaves the same on Dependabot and fork pull requests. The online audits
+# read public repository data, which the read-only token allows.
+permissions:
+  contents: read
+
+concurrency:
+  group: zizmor-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Actions are pinned to a commit SHA, with the release in a trailing comment; Dependabot updates both.
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The action's default `version: latest` names a zizmor image pinned by digest in each action release, so
+      # Dependabot's bumps of this SHA are what move zizmor forward.
+      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          advanced-security: false
+          annotations: true

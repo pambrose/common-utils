@@ -2,23 +2,55 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.1.1] - 2026-10-08
 
 ### Breaking
 
-This removes a published signature, so under the versioning policy in CLAUDE.md it needs a major release.
+This patch release drops two published signatures, a one-off exception to the versioning policy in CLAUDE.md.
 
 - core-utils `DateUtils.toCreated` is removed. It formatted a label specific to Canvas Cache and has moved back there;
-  callers can write `"(Created ${toMMDDYYYYHHMM()})"`.
+  callers can write `"(Created ${toMMDDYYYYHHMM()})"`. Code compiled against 5.1.0 that calls it fails with
+  `NoSuchMethodError`.
+- core-utils' two-receiver `with(a, b) { ... }` (`ScopeFunctions.kt`) is removed, with its tests and its core-utils
+  README entry. It was `inline`, so Kotlin code already compiled against 5.1.0 carries its body and keeps working;
+  source that calls it can nest the standard library's `context(a) { context(b) { ... } }` instead.
+
+### Build & tooling
+
+- A new `zizmor` workflow audits the GitHub Actions workflows and the Dependabot config on every push and pull
+  request, and `make zizmor` runs the same audit locally.
+- Dependabot version updates now have a 7-day cooldown, as zizmor's `dependabot-cooldown` audit requires, so a
+  release is proposed only once it is a week old. Security updates are not delayed.
+
+### Documentation
+
+- llms.txt no longer says the `kotlin-scripting-*` artifacts are pinned to 2.4.10; they have followed the catalog's
+  Kotlin version since `KotlinScript` moved its variables into a single `ScriptVariables` holder.
+- README and llms.txt state Kotlin 2.4.21, README states Gradle 9.8.1, and README lists `make zizmor` among the
+  development commands and zizmor under Code Quality.
+- CLAUDE.md covers the `zizmor` workflow and `make zizmor`, the Dependabot cooldown, tcnative running ahead of grpc's
+  pin, and the 5.1.1 removals as a one-off exception to the versioning policy, and updates the coverage figures.
 
 ### Dependency changes
 
-- `resend` 4.27.0 → 4.28.0
-- `kover` 0.9.9 → 0.9.11
-- `logback` 1.6.4 → 1.6.5 (tests only)
 - `guava` 33.7.1-jre → 33.7.2-jre, a security fix
   ([GHSA-xxph-c9ww-hj94](https://github.com/google/guava/security/advisories/GHSA-xxph-c9ww-hj94)) that guava-utils
   and service-utils pass on to consumers through their `api` dependencies
+- Kotlin 2.4.20 → 2.4.21: the compiler (through `pambrose-gradle-plugins`), `kotlin-reflect`, which core-utils
+  exports as `api`, and the `kotlin-scripting-*` artifacts
+- `grpc` 1.84.0 → 1.84.1
+- `netty-tcnative-boringssl-static` 2.0.81.Final → 2.0.84.Final, ahead of the 2.0.81.Final that grpc 1.84.1 pins.
+  Its per-platform classifiers are unchanged, so grpc-utils' explicit list still matches.
+- `jetty` 12.1.13 → 12.1.14
+- `jedis` 8.0.1 → 8.0.2
+- `resend` 4.27.0 → 4.28.0
+- `pambrose-gradle-plugins` 1.1.6 → 1.1.7, which also moves the convention plugin's test-runtime logback to 1.6.5
+- `logback` 1.6.4 → 1.6.5 (tests only)
+- `kover` 0.9.9 → 0.9.11
+- `io.github.ben-manes.versions` 0.64.0 → 0.65.0
+- Gradle 9.8.0 → 9.8.1
+- `gradle/actions/setup-gradle` 6.3.0 → 6.4.0 (CI)
+- Bump project version to 5.1.1
 
 ## [5.1.0] - 2026-09-27
 

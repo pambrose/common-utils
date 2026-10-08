@@ -1,4 +1,4 @@
-.PHONY: default help clean stop build lint detekt detekt-baseline refresh tests tree depends versions kdocs \
+.PHONY: default help clean stop build lint detekt detekt-baseline zizmor refresh tests tree depends versions kdocs \
 	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-modules coverage-clean mutation abi-check abi-update \
 	publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper \
 	_check-gpg-env _require-version _require-gradle-version
@@ -36,6 +36,13 @@ detekt: ## Run Detekt static analysis
 
 detekt-baseline: ## Generate or update the Detekt baseline
 	./gradlew detektBaseline
+
+# The online audits (impostor commits, known-vulnerable actions, ref confusion) need a GitHub token: GH_TOKEN if set,
+# otherwise gh's. zizmor rejects an empty token, so without one it runs only its offline audits.
+zizmor: ## Audit the GitHub Actions workflows and Dependabot config with zizmor
+	@command -v zizmor >/dev/null 2>&1 || { echo "ERROR: zizmor is not installed (brew install zizmor)" >&2; exit 1; }
+	@token="$${GH_TOKEN:-$$(gh auth token 2>/dev/null)}"; \
+	if [ -n "$$token" ]; then GH_TOKEN="$$token" zizmor .; else zizmor .; fi
 
 coverage: coverage-html coverage-xml ## Generate Kover HTML and XML reports
 

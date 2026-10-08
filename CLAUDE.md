@@ -37,6 +37,9 @@ Run `make help` for a self-documenting list of every target.
 - `make mutation` - PIT mutation testing (`./gradlew pitest`) for the modules in the root script's
   `mutationModuleNames` (currently exposed-utils and guava-utils). On demand only, not part of `check`; guava-utils
   alone takes a couple of minutes. Reports: `<module>/build/reports/pitest/index.html`.
+- `make zizmor` - Audit `.github/` (workflows and `dependabot.yml`) with [zizmor](https://docs.zizmor.sh/), the
+  same check the `zizmor` workflow runs in CI. It takes `GH_TOKEN`, or else gh's token, for the online audits, and
+  runs only the offline ones without either.
 
 ### API compatibility
 
@@ -98,7 +101,8 @@ The catalog's `kotlin` version governs the `kotlin-scripting-*` artifacts, `kotl
 ids. It was held at 2.4.10 until `KotlinScript` stopped binding each variable as its own engine binding: the JSR-223
 engine turns every binding into a script property typed by the value's runtime class, and 2.4.20 cannot declare one
 for a generic Java class such as `ArrayList`. Variables now live in a single non-generic `ScriptVariables` holder,
-so `:script-utils-kotlin:test` passes on 2.4.20. Re-run that suite on every Kotlin bump all the same.
+so `:script-utils-kotlin:test` passes on 2.4.20 and later (most recently 2.4.21). Re-run that suite on every Kotlin
+bump all the same.
 
 It does **not** govern the compiler: `pambrose-gradle-plugins`
 pulls a `kotlin-gradle-plugin` of its own, which wins on the buildscript classpath, so the project can be
@@ -111,26 +115,34 @@ POM pairing the compiler's stdlib with an older reflect.
 Dependabot (`.github/dependabot.yml`) opens weekly version-update PRs for the Gradle ecosystem (catalog
 libraries and plugins, plus the Gradle wrapper) and for GitHub Actions. Kotlin updates get their own group, since
 they move the scripting artifacts, `kotlin-reflect` and the plugin ids together. One `ignore` rule:
-`io.netty:netty-tcnative-boringssl-static` gets no automatic PR at all, because it must match the version grpc-java
-pins for the grpc release in use (bump it by hand alongside grpc, and note the rule suppresses security-update PRs
+`io.netty:netty-tcnative-boringssl-static` gets no automatic PR at all, because it tracks the version grpc-java
+pins for the grpc release in use (see the tcnative note below; bump it by hand alongside grpc, and note the rule suppresses security-update PRs
 too, though alerts still fire). The `kotlinx-datetime` `-0.6.x-compat` suffix needs no ignore rule —
 Dependabot only proposes candidates carrying the same suffix. Nothing in this repo needs the compat line
 (exposed-utils uses `exposed-jodatime`, and core-utils' API uses `kotlin.time.Instant`), but core-utils exports
 kotlinx-datetime as `api`, so consumers inherit it: keep the compat artifacts so a consumer that also uses a
 library linked against the deprecated `kotlinx.datetime.Instant` (such as `exposed-kotlin-datetime`) keeps
 working. Dependabot updates the wrapper files but not the catalog's `gradle-wrapper` entry that
-`make upgrade-wrapper` reads, so that entry goes stale after a Dependabot wrapper bump.
+`make upgrade-wrapper` reads, so that entry goes stale after a Dependabot wrapper bump. Both ecosystems set a
+7-day `cooldown`, so a version update is proposed only once its release is a week old; security updates are not
+delayed. Keep it at 7 or more: zizmor's `dependabot-cooldown` audit fails CI below that.
 
 `gradle-wrapper.properties` carries a `distributionSha256Sum`, so the wrapper verifies every distribution it
 downloads; `make upgrade-wrapper` fetches the new release's published checksum and passes it to both wrapper runs,
 and a wrapper bump from any other route must update it too. `gradlew` and `gradlew.bat` are text in
 `.gitattributes` (not `binary`), so changes to them show up in diffs and PR reviews. The workflows pin every
 action to a commit SHA with the release in a trailing comment, and every job sets `timeout-minutes`.
+`zizmor.yml` audits the workflows and `dependabot.yml` on every push and pull request, and any finding at the
+default persona fails the job. Findings show as annotations rather than going to code scanning, so the job needs
+only `contents: read`. The zizmor version comes from the pinned action release, so it moves with Dependabot's bumps
+of that action. Run `make zizmor` before pushing a workflow change.
 
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
-POM lists, update that list to match.
+POM lists, update that list to match. As of 5.1.1 the catalog deliberately runs tcnative ahead of grpc's pin
+(2.0.84.Final against the 2.0.81.Final that grpc 1.84.1 names), so don't move it back to match; a later grpc
+bump is the time to bring the two together again.
 
 ### Experimental Kotlin Features
 
@@ -250,7 +262,7 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.1.0 the project sits at 99.4% line and 96.1% branch, and the weakest package
+`codecov.yml` point here). As of 5.1.1 the project sits at 99.4% line and 96.1% branch, and the weakest package
 by line coverage is `service` at 98.2%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
@@ -298,4 +310,6 @@ All modules use: `com.pambrose.common.*`
   old defaults so its `$default` bridge survives, and add the property last so `componentN` keeps its meaning;
   `MetricsConfig` shows the pattern, and `MetricsConfigTests` calls the old signatures by reflection. A
   declaration that could never be called successfully (for example one that always threw) may be dropped in a
-  minor release, with a CHANGELOG note.
+  minor release, with a CHANGELOG note. One deliberate exception: the 5.1.1 patch release dropped
+  `DateUtils.toCreated`, which only Canvas Cache used, and the inline two-receiver `with(a, b)`; it is not a precedent
+  for removing signatures outside a major release.

@@ -274,7 +274,7 @@ abstract class AbstractScript(
 
     // Enum and Record carry none of a value's own API, so declaring a value as one hides the interface that does:
     // the enum behind Comparator.naturalOrder() would become an Enum instead of a Comparator.
-    val UNHELPFUL_SUPERTYPES: Set<Class<*>> = setOf(Any::class.java, Enum::class.java, java.lang.Record::class.java)
+    val UNHELPFUL_SUPERTYPES: Set<Class<*>> = setOf(Any::class.java, Enum::class.java, Record::class.java)
 
     // The classes and interfaces generated code can name for a value of this class, nearest first.
     fun Class<*>.nameableSupertypes(): Sequence<Class<*>> =

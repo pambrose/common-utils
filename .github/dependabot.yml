@@ -33,6 +33,11 @@ updates:
       # Ignore rules also apply to security updates: a tcnative advisory still raises an alert but gets
       # no automatic PR.
       - dependency-name: "io.netty:netty-tcnative-boringssl-static"
+    # Version updates wait until a release is a week old, so a compromised or broken release has time to be caught and
+    # pulled before a PR proposes it (zizmor's dependabot-cooldown audit asks for at least 7 days). Security updates
+    # are not delayed.
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -48,3 +53,5 @@ updates:
         update-types:
           - minor
           - patch
+    cooldown:
+      default-days: 7

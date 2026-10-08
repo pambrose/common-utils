@@ -3,7 +3,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/pambrose/common-utils)](https://github.com/pambrose/common-utils/releases)
 [![Maven Central](https://img.shields.io/maven-central/v/com.pambrose.common-utils/core-utils)](https://central.sonatype.com/artifact/com.pambrose.common-utils/core-utils)
 [![Tests](https://github.com/pambrose/common-utils/actions/workflows/test.yml/badge.svg)](https://github.com/pambrose/common-utils/actions/workflows/test.yml)
-[![Kotlin version](https://img.shields.io/badge/kotlin-2.4.20-red?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin version](https://img.shields.io/badge/kotlin-2.4.21-red?logo=kotlin)](http://kotlinlang.org)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/5bb4750894844031a55375227acfff6f)](https://app.codacy.com/gh/pambrose/common-utils/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![codecov](https://codecov.io/gh/pambrose/common-utils/branch/master/graph/badge.svg)](https://codecov.io/gh/pambrose/common-utils)
@@ -208,9 +208,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:5.1.0")
-  implementation("com.pambrose.common-utils:json-utils:5.1.0")
-  implementation("com.pambrose.common-utils:ktor-server-utils:5.1.0")
+  implementation("com.pambrose.common-utils:core-utils:5.1.1")
+  implementation("com.pambrose.common-utils:json-utils:5.1.1")
+  implementation("com.pambrose.common-utils:ktor-server-utils:5.1.1")
     // ... other modules
 }
 ```
@@ -220,7 +220,7 @@ declared without one:
 
 ```kotlin
 dependencies {
-  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.1.0"))
+  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.1.1"))
   implementation("com.pambrose.common-utils:core-utils")
   implementation("com.pambrose.common-utils:service-utils")
 }
@@ -237,7 +237,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>5.1.0</version>
+      <version>5.1.1</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
@@ -252,7 +252,7 @@ artifacts too):
         <dependency>
             <groupId>com.pambrose.common-utils</groupId>
             <artifactId>common-utils-bom</artifactId>
-            <version>5.1.0</version>
+            <version>5.1.1</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -262,8 +262,8 @@ artifacts too):
 
 ## Technology Stack
 
-- **Languages**: Kotlin 2.4.20, Java
-- **Build System**: Gradle 9.8.0 with Kotlin DSL
+- **Languages**: Kotlin 2.4.21, Java
+- **Build System**: Gradle 9.8.1 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava
@@ -316,6 +316,9 @@ make mutation
 
 # Rewrite the committed public-API dumps after an intended API change
 make abi-update
+
+# Audit the GitHub Actions workflows and Dependabot config with zizmor (also run in CI)
+make zizmor
 ```
 
 ### Code Quality
@@ -328,6 +331,7 @@ This project maintains high code quality standards:
   `check`, and Codecov upload from CI
 - **Mutation testing**: PIT with the Kotest plugin, run on demand for selected modules
 - **API compatibility**: Kotlin ABI dumps committed under each module's `api/` directory and checked by `check`
+- **CI security**: zizmor audits the GitHub Actions workflows and Dependabot config on every push and pull request
 - **Platforms**: CI runs the multiplatform tests on Linux, macOS (macOS and iOS simulator) and Windows (mingwX64)
 - **Security**: Regular dependency updates and security reviews
 - **Documentation**: Comprehensive module documentation
