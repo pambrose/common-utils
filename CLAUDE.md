@@ -184,7 +184,10 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
 - `kotlin-js-store/` holds the Node/Yarn lockfiles for the JS and wasmJs toolchains; commit changes to it
   (run `./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock` when JS dependencies change).
 - Vulnerable transitive npm packages are pinned through the `yarnResolutions` map in the root build script,
-  which feeds `YarnRootExtension.resolution(...)`. Gotchas when changing it:
+  which feeds `YarnRootExtension.resolution(...)`. That map is the only fix for a Dependabot alert on
+  `kotlin-js-store/`: Dependabot raises the alert but its security-update job aborts with
+  "`/kotlin-js-store/wasm/package.json` not found", since those directories hold lockfiles only, so no fix PR
+  ever arrives. Gotchas when changing it:
   - The map is **not** a tracked input to `rootPackageJson`, so that task stays `UP-TO-DATE` and reuses a
     stale `build/js/package.json`. The upgrade tasks then re-resolve against the *old* resolutions and report
     `BUILD SUCCESSFUL` while changing nothing. Always `rm -f build/js/package.json build/wasm/package.json`

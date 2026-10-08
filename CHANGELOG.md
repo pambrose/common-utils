@@ -2,6 +2,20 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Build & tooling
+
+- Pin `brace-expansion` to 2.1.7 (from 2.1.4) through `yarnResolutions`, closing six Dependabot alerts on the JS and
+  wasm toolchain lockfiles: GHSA-6j4f-fj2g-mc7p and GHSA-qhr7-859c-m2p7 (high) and GHSA-q2hr-2g5m-vwhr (medium).
+  Dependabot cannot fix them itself, since `kotlin-js-store/` holds lockfiles but no `package.json`. Build-only, with
+  no effect on consumers.
+
+### Documentation
+
+- CLAUDE.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
+  Dependabot's own fix job fails there.
+
 ## [5.1.1] - 2026-10-08
 
 ### Breaking
