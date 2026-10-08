@@ -379,7 +379,7 @@ class GrpcDslTests : StringSpec() {
     "the pre-bindAddress server signature still links and delegates" {
       val oldDefault =
         GrpcDsl::class.java.getMethod(
-          "server\$default",
+          $$"server$default",
           GrpcDsl::class.java,
           Int::class.javaPrimitiveType,
           TlsContext::class.java,

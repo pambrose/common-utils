@@ -106,7 +106,7 @@ class MetricsConfigTests : StringSpec() {
         allNewFlags.copy(port = 1234)
 
       // Every mask bit but port's (bit 1) takes the receiver's value.
-      type.getMethod("copy\$default", type, *oldParams, Int::class.javaPrimitiveType, Any::class.java)
+      type.getMethod($$"copy$default", type, *oldParams, Int::class.javaPrimitiveType, Any::class.java)
         .invoke(
           null,
           allNewFlags,
