@@ -284,10 +284,6 @@ public final class com/pambrose/common/util/ReflectExtensionsKt {
 	public static final fun getTypeParameterCount (Ljava/lang/Object;)I
 }
 
-public final class com/pambrose/common/util/ScopeFunctionsKt {
-	public static final fun with (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
-}
-
 public final class com/pambrose/common/util/StringExtensionsKt {
 	public static final fun asBracketed (Ljava/lang/String;CC)Ljava/lang/String;
 	public static synthetic fun asBracketed$default (Ljava/lang/String;CCILjava/lang/Object;)Ljava/lang/String;

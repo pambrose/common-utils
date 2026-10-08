@@ -310,5 +310,6 @@ All modules use: `com.pambrose.common.*`
   old defaults so its `$default` bridge survives, and add the property last so `componentN` keeps its meaning;
   `MetricsConfig` shows the pattern, and `MetricsConfigTests` calls the old signatures by reflection. A
   declaration that could never be called successfully (for example one that always threw) may be dropped in a
-  minor release, with a CHANGELOG note. One deliberate exception: 5.1.1 dropped `DateUtils.toCreated` in a patch
-  release, because only Canvas Cache used it; it is not a precedent for removing signatures outside a major release.
+  minor release, with a CHANGELOG note. One deliberate exception: the 5.1.1 patch release dropped
+  `DateUtils.toCreated`, which only Canvas Cache used, and the inline two-receiver `with(a, b)`; it is not a precedent
+  for removing signatures outside a major release.

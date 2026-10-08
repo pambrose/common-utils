@@ -6,12 +6,14 @@ All notable changes to Common Utils are documented in this file.
 
 ### Breaking
 
-This patch release drops a published signature, an exception to the versioning policy in CLAUDE.md: `toCreated`
-existed only for Canvas Cache, which now carries its own copy. Code compiled against 5.1.0 that calls it fails with
-`NoSuchMethodError`.
+This patch release drops two published signatures, a one-off exception to the versioning policy in CLAUDE.md.
 
 - core-utils `DateUtils.toCreated` is removed. It formatted a label specific to Canvas Cache and has moved back there;
-  callers can write `"(Created ${toMMDDYYYYHHMM()})"`.
+  callers can write `"(Created ${toMMDDYYYYHHMM()})"`. Code compiled against 5.1.0 that calls it fails with
+  `NoSuchMethodError`.
+- core-utils' two-receiver `with(a, b) { ... }` (`ScopeFunctions.kt`) is removed, with its tests and its core-utils
+  README entry. It was `inline`, so Kotlin code already compiled against 5.1.0 carries its body and keeps working;
+  source that calls it can nest the standard library's `context(a) { context(b) { ... } }` instead.
 
 ### Build & tooling
 
@@ -27,7 +29,7 @@ existed only for Canvas Cache, which now carries its own copy. Code compiled aga
 - README and llms.txt state Kotlin 2.4.21, README states Gradle 9.8.1, and README lists `make zizmor` among the
   development commands and zizmor under Code Quality.
 - CLAUDE.md covers the `zizmor` workflow and `make zizmor`, the Dependabot cooldown, tcnative running ahead of grpc's
-  pin, and the `toCreated` removal as a one-off exception to the versioning policy, and updates the coverage figures.
+  pin, and the 5.1.1 removals as a one-off exception to the versioning policy, and updates the coverage figures.
 
 ### Dependency changes
 

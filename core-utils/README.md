@@ -18,7 +18,6 @@ available to JVM consumers unchanged.
 - **Dates**: parsing, formatting and age helpers built on `kotlinx-datetime`
 - **Atomics**: `Atomic<T>`, `AtomicDelegates`, `AtomicBoolean.criticalSection`
 - **Exceptions**: cancellation-aware `runCatching` variants
-- **Scope functions**: a two-receiver `with`
 
 ### jvmMain
 

@@ -8,8 +8,8 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 ## v5.1.1 — 2026-10-08
 
 A patch release: dependency updates, including a Guava security fix that guava-utils and service-utils pass on to
-consumers, and Kotlin 2.4.21. It also drops core-utils `DateUtils.toCreated`, a Canvas Cache-specific helper, so it
-is not binary compatible for code that called it.
+consumers, and Kotlin 2.4.21. It also drops two core-utils functions: `DateUtils.toCreated`, a Canvas Cache-specific
+helper, so it is not binary compatible for code that called it, and the inline two-receiver `with(a, b)`.
 
 ### Highlights
 
@@ -25,6 +25,8 @@ is not binary compatible for code that called it.
 - core-utils `DateUtils.toCreated` is removed. It formatted a label specific to Canvas Cache and has moved back there;
   callers can write `"(Created ${toMMDDYYYYHHMM()})"`. Code compiled against 5.1.0 that calls it fails with
   `NoSuchMethodError`.
+- core-utils' two-receiver `with(a, b) { ... }` is removed. It was `inline`, so compiled Kotlin callers keep working;
+  source that calls it can nest the standard library's `context(a) { context(b) { ... } }` instead.
 
 ### Dependency bumps
 
