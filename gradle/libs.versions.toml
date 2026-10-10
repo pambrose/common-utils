@@ -30,7 +30,7 @@ logging = "8.0.4"
 
 # Frameworks
 dropwizard = "4.2.40"
-grpc = "1.84.1"
+grpc = "1.84.2"
 jakartaServlet = "6.1.0"
 jetty = "12.1.14"
 ktor = "3.6.0"
@@ -38,7 +38,7 @@ ktor = "3.6.0"
 tcnative = "2.0.84.Final"
 
 # Data
-exposed = "1.5.0"
+exposed = "1.5.1"
 h2 = "2.5.252"
 redis = "8.0.2"
 

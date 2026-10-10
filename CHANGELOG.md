@@ -10,11 +10,28 @@ All notable changes to Common Utils are documented in this file.
   wasm toolchain lockfiles: GHSA-6j4f-fj2g-mc7p and GHSA-qhr7-859c-m2p7 (high) and GHSA-q2hr-2g5m-vwhr (medium).
   Dependabot cannot fix them itself, since `kotlin-js-store/` holds lockfiles but no `package.json`. Build-only, with
   no effect on consumers.
+- A new scheduled `Cleanup` workflow deletes workflow runs older than 90 days every Monday, keeping the 10 newest of
+  each workflow. GitHub expires the logs at 90 days but never deletes the run records. A manual run can be a dry run
+  that only lists what it would delete.
 
 ### Documentation
 
 - CLAUDE.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
   Dependabot's own fix job fails there.
+- CLAUDE.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone.
+
+### Dependency changes
+
+- `exposed` 1.5.0 → 1.5.1, a SQL injection fix that exposed-utils passes on to consumers through its `api`
+  dependencies ([EXPOSED-909, EXPOSED-1093](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#151)). The
+  string arguments of `locate()`, `concat()`, `groupConcat()`, `match()` and the JSON `extract()`, `exists()` and
+  `contains()` are bound as query parameters instead of being concatenated into the SQL. An argument the caller
+  escaped itself, for example by doubling its single quotes, now reaches the database with the escaping intact.
+  exposed-utils calls none of these functions itself.
+- `grpc` 1.84.1 → 1.84.2, which grpc-utils exports as `api`: two backported fixes. Unary and server-streaming calls
+  defer deserializing the request until the client half-closes, and a call cancelled first discards it unread; and
+  xDS certificate updates no longer risk a `ConcurrentModificationException`. grpc 1.84.2 still pins
+  `netty-tcnative-boringssl-static` 2.0.81.Final, so the catalog's 2.0.84.Final stays ahead of it.
 
 ## [5.1.1] - 2026-10-08
 

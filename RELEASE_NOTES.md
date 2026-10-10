@@ -5,6 +5,30 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## Unreleased
+
+Dependency updates since 5.1.1, including an Exposed SQL injection fix that exposed-utils passes on to consumers.
+
+### Highlights
+
+- **Exposed SQL injection fix**: `exposed` 1.5.1 binds the string arguments of `locate()`, `concat()`,
+  `groupConcat()`, `match()` and the JSON `extract()`, `exists()` and `contains()` as query parameters instead of
+  concatenating them into the SQL ([EXPOSED-909, EXPOSED-1093](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#151)).
+  exposed-utils exports Exposed as `api`, so consumers pick up the fix by upgrading.
+
+### Behavior changes
+
+- An argument to one of those Exposed functions that the caller escaped itself, for example by doubling its single
+  quotes, now reaches the database with the escaping intact. Pass such arguments unescaped.
+
+### Dependency bumps
+
+- `exposed` 1.5.0 → 1.5.1 (security fix)
+- `grpc` 1.84.1 → 1.84.2 (backported fixes for request deserialization timing and xDS certificate thread safety;
+  `netty-tcnative-boringssl-static` 2.0.84.Final stays ahead of its 2.0.81.Final pin)
+
+---
+
 ## v5.1.1 — 2026-10-08
 
 A patch release: dependency updates, including a Guava security fix that guava-utils and service-utils pass on to

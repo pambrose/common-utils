@@ -1,0 +1,71 @@
+name: Cleanup
+
+# Logs expire after the repository's 90-day retention, but GitHub never deletes the run records themselves.
+# Caches and artifacts need no job here: GitHub evicts caches unused for 7 days, and artifacts expire with the logs.
+# Scheduled runs start on an odd minute, since top-of-the-hour schedules are the ones GitHub delays or drops.
+on:
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: List the runs that would be deleted, without deleting them
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: cleanup
+  cancel-in-progress: false
+
+jobs:
+  prune-runs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Deleting a workflow run needs actions: write; nothing else is touched, so there is no checkout.
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      DRY_RUN: ${{ inputs.dry-run }}
+      # Matches the log retention, so a deleted run never takes logs that would otherwise still exist.
+      RETAIN_DAYS: 90
+      # Newest runs kept per workflow whatever their age, so a rarely-run workflow keeps some history.
+      KEEP_MINIMUM: 10
+
+    steps:
+      - name: Delete old workflow runs
+        run: |
+          cutoff=$(date -u -d "-${RETAIN_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
+          # The unfiltered runs endpoint has no 1,000-result cap, unlike its `created` search, so list every run and
+          # pick the old ones here. Dependabot's update runs group under their own workflow ids like any other.
+          gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100" \
+            --jq '.workflow_runs[] | {id, workflow_id, name, created_at, status}' |
+            jq -rs --arg cutoff "$cutoff" --argjson keep "$KEEP_MINIMUM" '
+              group_by(.workflow_id)[]
+              | sort_by(.created_at) | reverse | .[$keep:][]
+              | select(.status == "completed" and .created_at < $cutoff)
+              | [.id, .created_at, .name] | @tsv' > runs.tsv
+
+          echo "$(wc -l < runs.tsv) runs created before ${cutoff}, beyond the newest ${KEEP_MINIMUM} of each workflow"
+          if [ "$DRY_RUN" = "true" ]; then
+            cat runs.tsv
+            exit 0
+          fi
+
+          # A failed delete is reported and skipped, so one bad run cannot stall every later cleanup; the job still
+          # fails at the end. The pause keeps the deletes well under the REST secondary rate limit.
+          failed=0
+          while IFS=$'\t' read -r id created name; do
+            if ! gh api -X DELETE "repos/${GH_REPO}/actions/runs/${id}" --silent; then
+              echo "::warning::Could not delete run ${id} (${name}, ${created})"
+              failed=$((failed + 1))
+            fi
+            sleep 0.5
+          done < runs.tsv
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::${failed} runs could not be deleted"
+            exit 1
+          fi
