@@ -71,7 +71,7 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 - `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
   on the KMP modules' `-jvm` artifacts), published through the same POM setup; it skips all the Kotlin, lint,
   coverage and docs configuration
-- `configureVersions()` - pre-release filtering for the ben-manes `dependencyUpdates` task
+- `configureVersions()` - pre-release filtering and the compact report formatter for the ben-manes `dependencyUpdates` task
 - `configurePitest()` - applies `info.solidsoft.pitest` and the Kotest PIT plugin to the modules in
   `mutationModuleNames`. `targetTests` is widened to `com.pambrose.*` because some specs live outside
   `com.pambrose.common`
@@ -85,9 +85,9 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 
 The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts` (versions pinned in the catalog to match the convention plugin).
 
-Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0; earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates.
+Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0; earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates. Its `outputFormatter` makes `make versions` print, per module, only what is behind and what could not be checked; `make versions-all` passes `--output-formatter=plain` for the plugin's full report, up-to-date dependencies included. Only core-utils checks for a newer Gradle, since every module runs on the same one.
 
-The report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
+The full report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
 'testRuntimeOnly' configuration". No build script declares it: the pitest plugin, applied to the
 `mutationModuleNames` modules, adds it from a `withDependencies` hook at the JUnit Platform version already on the
 test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.5). It follows Kotest, so don't pin it

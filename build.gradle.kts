@@ -587,6 +587,9 @@ fun Project.configureVersions() {
 
     fun isNonStable(version: String): Boolean = preReleaseQualifier.containsMatchIn(version)
 
+    // Every module runs on the same Gradle, so only one module's report checks for a newer one.
+    val checksGradle = name == "core-utils"
+
     tasks.withType<DependencyUpdatesTask>().configureEach {
         notCompatibleWithConfigurationCache("the dependency updates plugin is not compatible with the configuration cache")
         // Reject a pre-release candidate only when the current version is stable. For
@@ -594,6 +597,25 @@ fun Project.configureVersions() {
         // alpha), newer pre-releases are still surfaced as available updates.
         rejectVersionIf {
             isNonStable(candidate.version) && !isNonStable(currentVersion)
+        }
+        checkForGradleUpdate = checksGradle
+
+        // Prints, under each module's task header, only what is behind and what could not be checked. The
+        // plugin's own report, which `make versions-all` asks for with --output-formatter=plain, first lists
+        // every dependency already up to date: over 1,100 lines across the modules, for a handful of updates.
+        outputFormatter {
+            val behind = outdated.dependencies.sortedBy { "${it.group}:${it.name}" }
+            if (behind.isEmpty()) println("All dependencies are up to date")
+            behind.forEach { d ->
+                val latest = with(d.available) { release ?: milestone ?: integration }
+                println(" - ${d.group}:${d.name} ${d.version} -> $latest")
+            }
+            unresolved.dependencies.sortedBy { "${it.group}:${it.name}" }.forEach {
+                println(" ? ${it.group}:${it.name}:${it.version} could not be checked")
+            }
+            if (gradle.current.isUpdateAvailable) {
+                println(" - Gradle ${gradle.running.version} -> ${gradle.current.version}")
+            }
         }
     }
 }

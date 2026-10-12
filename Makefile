@@ -1,4 +1,4 @@
-.PHONY: default help clean stop build lint detekt detekt-baseline zizmor refresh tests tree depends versions kdocs \
+.PHONY: default help clean stop build lint detekt detekt-baseline zizmor refresh tests tree depends versions versions-all kdocs \
 	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-modules coverage-clean mutation abi-check abi-update \
 	publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper \
 	_check-gpg-env _require-version _require-gradle-version
@@ -97,8 +97,15 @@ tree: ## Show dependency tree (quiet)
 depends: ## Show dependency tree (verbose)
 	./gradlew dependencies
 
-versions: ## Check for dependency updates
+# dependencyUpdates is marked incompatible with the configuration cache (configureVersions() in build.gradle.kts), so
+# a run with the cache on builds an entry only to discard it, and says so. --no-configuration-cache skips the cache for
+# this run instead. configureVersions() gives the task a formatter that lists only what is behind in each module;
+# versions-all names the plugin's own plain report, which also lists everything up to date.
+versions: ## List the dependencies with newer versions, and any that could not be checked, in each module
 	./gradlew dependencyUpdates --no-configuration-cache --no-parallel
+
+versions-all: ## The plugin's full dependency report for each module, up-to-date dependencies included
+	./gradlew dependencyUpdates --no-configuration-cache --no-parallel --output-formatter=plain
 
 kdocs: ## Generate Dokka HTML documentation
 	./gradlew :dokkaGenerate
