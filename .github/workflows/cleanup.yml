@@ -32,24 +32,32 @@ jobs:
       DRY_RUN: ${{ inputs.dry-run }}
       # Matches the log retention, so a deleted run never takes logs that would otherwise still exist.
       RETAIN_DAYS: 90
-      # Newest runs kept per workflow whatever their age, so a rarely-run workflow keeps some history.
+      # Newest runs kept per workflow whatever their age, so a rarely-run workflow keeps some history. A workflow whose
+      # file was removed gets none: no new run would ever push its last ones out, so they would be kept forever.
       KEEP_MINIMUM: 10
 
     steps:
       - name: Delete old workflow runs
         run: |
           cutoff=$(date -u -d "-${RETAIN_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
+          # The workflows still in the repository. A removed one reports the state "deleted" when asked for by id; the
+          # listing already leaves it out, and the filter makes sure. A failed listing stops the job here, before it
+          # could treat every workflow as removed.
+          gh api --paginate "repos/${GH_REPO}/actions/workflows?per_page=100" \
+            --jq '.workflows[] | select(.state != "deleted") | .id' > workflows.txt
           # The unfiltered runs endpoint has no 1,000-result cap, unlike its `created` search, so list every run and
           # pick the old ones here. Dependabot's update runs group under their own workflow ids like any other.
           gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100" \
             --jq '.workflow_runs[] | {id, workflow_id, name, created_at, status}' |
-            jq -rs --arg cutoff "$cutoff" --argjson keep "$KEEP_MINIMUM" '
+            jq -rs --arg cutoff "$cutoff" --argjson keep "$KEEP_MINIMUM" --slurpfile live workflows.txt '
               group_by(.workflow_id)[]
-              | sort_by(.created_at) | reverse | .[$keep:][]
+              | (if .[0].workflow_id | IN($live[]) then $keep else 0 end) as $kept
+              | sort_by(.created_at) | reverse | .[$kept:][]
               | select(.status == "completed" and .created_at < $cutoff)
               | [.id, .created_at, .name] | @tsv' > runs.tsv
 
-          echo "$(wc -l < runs.tsv) runs created before ${cutoff}, beyond the newest ${KEEP_MINIMUM} of each workflow"
+          echo "$(wc -l < runs.tsv) runs created before ${cutoff}, beyond the newest ${KEEP_MINIMUM} of each workflow" \
+            "that still exists"
           if [ "$DRY_RUN" = "true" ]; then
             cat runs.tsv
             exit 0

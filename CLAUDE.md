@@ -138,7 +138,8 @@ only `contents: read`. The zizmor version comes from the pinned action release, 
 of that action. Run `make zizmor` before pushing a workflow change.
 
 `cleanup.yml` runs every Monday at 07:23 UTC and deletes workflow runs older than 90 days, always keeping the 10
-newest of each workflow. GitHub expires a run's logs after the repository's 90-day retention (the maximum), but it
+newest of each workflow that still exists. A workflow whose file was removed keeps none, since no new run would ever
+push its last ones out; the job learns which workflows exist from the workflows listing. GitHub expires a run's logs after the repository's 90-day retention (the maximum), but it
 never deletes the run record, so the cutoff matches the retention: a deleted run never takes logs that would still
 exist. Caches and artifacts are left alone, because GitHub already evicts caches unused for 7 days and artifacts
 expire with the logs. Run it by hand from the Actions tab with `dry-run` checked to list the runs it would delete.
