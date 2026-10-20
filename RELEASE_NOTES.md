@@ -5,27 +5,44 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## Unreleased
+## v5.1.2 — 2026-10-20
 
-Dependency updates since 5.1.1, including an Exposed SQL injection fix that exposed-utils passes on to consumers.
+A patch release of dependency updates, including an Exposed SQL injection fix that exposed-utils passes on to
+consumers. There are no API changes.
 
 ### Highlights
 
 - **Exposed SQL injection fix**: `exposed` 1.5.1 binds the string arguments of `locate()`, `concat()`,
   `groupConcat()`, `match()` and the JSON `extract()`, `exists()` and `contains()` as query parameters instead of
   concatenating them into the SQL ([EXPOSED-909, EXPOSED-1093](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#151)).
-  exposed-utils exports Exposed as `api`, so consumers pick up the fix by upgrading.
+  exposed-utils exports Exposed as `api`, so consumers pick up the fix by upgrading. This release ships Exposed 1.6.0.
+- **Workflow-run cleanup**: a scheduled `Cleanup` workflow deletes workflow runs older than 90 days every Monday,
+  keeping the 10 newest of each workflow that still exists.
+- **Shorter dependency report**: `make versions` lists only the dependencies with newer versions;
+  `make versions-all` prints the full report.
+- **AGENTS.md**: CLAUDE.md is renamed to AGENTS.md.
 
 ### Behavior changes
 
 - An argument to one of those Exposed functions that the caller escaped itself, for example by doubling its single
   quotes, now reaches the database with the escaping intact. Pass such arguments unescaped.
+- With kotlinx.serialization 1.12.0, which json-utils and email-utils export as `api`, every exception thrown during
+  JSON deserialization reaches the caller as a `JsonException`, still a `SerializationException`, and deeply nested
+  input fails with a `JsonDecodingException` instead of a stack overflow.
 
 ### Dependency bumps
 
-- `exposed` 1.5.0 → 1.5.1 (security fix)
-- `grpc` 1.84.1 → 1.84.2 (backported fixes for request deserialization timing and xDS certificate thread safety;
-  `netty-tcnative-boringssl-static` 2.0.84.Final stays ahead of its 2.0.81.Final pin)
+- `exposed` 1.5.0 → 1.6.0 (1.5.1 is a security fix)
+- `grpc` 1.84.1 → 1.85.1 (deferred request deserialization, an xDS certificate thread-safety fix, and a fix for
+  GOAWAY frames with unrecognized error codes; Netty 4.2.17; `netty-tcnative-boringssl-static` 2.0.84.Final stays
+  ahead of its 2.0.81.Final pin)
+- `kotlinx-serialization-json` 1.11.0 → 1.12.0
+- `prometheus` 1.9.0 → 1.10.0
+- `kotest` 6.2.5 → 6.2.6 (tests only; the KMP modules)
+- `brace-expansion` 2.1.4 → 2.1.7 in the JS and wasm toolchains (build only; closes six Dependabot alerts)
+- Gradle 9.8.1 → 9.8.2 (build only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.1.1...5.1.2
 
 ---
 

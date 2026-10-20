@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.1.2] - 2026-10-20
 
 ### Build & tooling
 
@@ -11,27 +11,54 @@ All notable changes to Common Utils are documented in this file.
   Dependabot cannot fix them itself, since `kotlin-js-store/` holds lockfiles but no `package.json`. Build-only, with
   no effect on consumers.
 - A new scheduled `Cleanup` workflow deletes workflow runs older than 90 days every Monday, keeping the 10 newest of
-  each workflow. GitHub expires the logs at 90 days but never deletes the run records. A manual run can be a dry run
+  each workflow that still exists. A workflow whose file was removed keeps none, since no new run would ever push its
+  last ones out. GitHub expires the logs at 90 days but never deletes the run records. A manual run can be a dry run
   that only lists what it would delete.
+- `make versions` lists, for each module, only the dependencies with newer versions and any that could not be
+  checked, through a report formatter in `configureVersions()`. The new `make versions-all` prints the plugin's full
+  report, up-to-date dependencies included. Only core-utils checks for a newer Gradle, since every module runs on the
+  same one.
 
 ### Documentation
 
-- CLAUDE.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
+- CLAUDE.md is renamed to AGENTS.md, and the comments in the root build script and `codecov.yml` that point to it
+  follow.
+- AGENTS.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
   Dependabot's own fix job fails there.
-- CLAUDE.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone.
+- AGENTS.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone, and `make versions-all`.
+- AGENTS.md notes that the catalog's Kotest now runs ahead of the version the convention plugin gives the JVM
+  modules, updates the tcnative note for grpc 1.85.1, and dates the coverage figures to 5.1.2.
+- service-utils' README says the Prometheus duplicate-family failure it describes still holds in 1.10.0.
+- README states Gradle 9.8.2.
 
 ### Dependency changes
 
-- `exposed` 1.5.0 → 1.5.1, a SQL injection fix that exposed-utils passes on to consumers through its `api`
+- `exposed` 1.5.0 → 1.6.0. 1.5.1 is a SQL injection fix that exposed-utils passes on to consumers through its `api`
   dependencies ([EXPOSED-909, EXPOSED-1093](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#151)). The
   string arguments of `locate()`, `concat()`, `groupConcat()`, `match()` and the JSON `extract()`, `exists()` and
   `contains()` are bound as query parameters instead of being concatenated into the SQL. An argument the caller
   escaped itself, for example by doubling its single quotes, now reaches the database with the escaping intact.
-  exposed-utils calls none of these functions itself.
-- `grpc` 1.84.1 → 1.84.2, which grpc-utils exports as `api`: two backported fixes. Unary and server-streaming calls
-  defer deserializing the request until the client half-closes, and a call cancelled first discards it unread; and
-  xDS certificate updates no longer risk a `ConcurrentModificationException`. grpc 1.84.2 still pins
-  `netty-tcnative-boringssl-static` 2.0.81.Final, so the catalog's 2.0.84.Final stays ahead of it.
+  exposed-utils calls none of these functions itself. 1.6.0 lists no breaking changes; among its JDBC and core fixes,
+  batch inserts bind column defaults (EXPOSED-1088) and a DAO entity deleted before flush is no longer inserted
+  (EXPOSED-1092) ([1.6.0](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#160)). `exposed-jodatime`
+  moves joda-time to 2.14.4.
+- `grpc` 1.84.1 → 1.85.1, which grpc-utils exports as `api`. Unary and server-streaming calls defer deserializing the
+  request until the client half-closes, and a call cancelled first discards it unread; xDS certificate updates no
+  longer risk a `ConcurrentModificationException`; and a GOAWAY frame with an unrecognized HTTP/2 error code no
+  longer makes Netty clients throw a `NullPointerException` and leave RPCs hanging until their deadline. grpc-netty
+  moves to Netty 4.2.17. grpc 1.85.1 still pins `netty-tcnative-boringssl-static` 2.0.81.Final, so the catalog's
+  2.0.84.Final stays ahead of it.
+- `kotlinx-serialization-json` 1.11.0 → 1.12.0, which json-utils and email-utils export as `api`. Every exception
+  thrown during deserialization, including from custom serializers and `@Serializable` constructors, now reaches the
+  caller as a `JsonException`, still a `SerializationException`. JSON nesting depth is limited, so deeply nested input
+  fails with a `JsonDecodingException` instead of a stack overflow. Much of the Json and core API is now stable
+  ([1.12.0](https://github.com/Kotlin/kotlinx.serialization/releases/tag/v1.12.0)).
+- `prometheus` 1.9.0 → 1.10.0, which prometheus-utils and service-utils export as `api`: an option to keep metric
+  suffixes in OpenMetrics 2.0, and dependency updates.
+- `kotest` 6.2.5 → 6.2.6 (tests only). It moves the KMP modules and the Kotest Gradle plugin; the JVM modules keep the
+  6.2.5 runner that `pambrose-gradle-plugins` 1.1.7 adds.
+- Gradle 9.8.1 → 9.8.2
+- Bump project version to 5.1.2
 
 ## [5.1.1] - 2026-10-08
 

@@ -109,7 +109,7 @@ dokka {
 }
 
 // Coverage floors, enforced through `check` (and so through CI's `./gradlew build`). They sit a few points
-// below the current figures (kept in CLAUDE.md's Coverage section) so that ordinary drift does not trip them. `make build`
+// below the current figures (kept in AGENTS.md's Coverage section) so that ordinary drift does not trip them. `make build`
 // passes -x koverVerify, since that target is documented as building without tests.
 //
 // The project-wide rule alone has a lot of slack: every module except core-utils, service-utils,
@@ -149,7 +149,7 @@ kover {
 // DoS, js-yaml DoS). The toolchain requests them with pins/ranges that cannot reach the fixed
 // versions on their own — or, for brace-expansion and js-yaml, with a range that yarn will not
 // re-resolve while the lockfile already holds a satisfying-but-vulnerable entry. See the
-// "Kotlin Multiplatform Notes" section of CLAUDE.md for the procedure when changing these; the
+// "Kotlin Multiplatform Notes" section of AGENTS.md for the procedure when changing these; the
 // upgrade tasks silently no-op unless the generated package.json files are deleted first.
 val yarnResolutions = mapOf(
     "ws" to "8.21.0",

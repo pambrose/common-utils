@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents (such as Claude Code) when working with code in this repository.
 
 ## Project Overview
 
@@ -83,14 +83,14 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 - `com.pambrose.testing` - JUnit Platform, `kotest-runner-junit5` and `kotlin-test` as default `testImplementation`, logback-classic on test runtime
 - `com.pambrose.kotlinter` - Kotlinter lint/format tasks
 
-The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts` (versions pinned in the catalog to match the convention plugin).
+The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts`, at the catalog's versions. As of 5.1.2 the catalog's Kotest (6.2.6) runs ahead of the `kotest-runner-junit5` 6.2.5 that `pambrose-gradle-plugins` 1.1.7 adds to the JVM modules, so the KMP modules and the Kotest Gradle plugin test on 6.2.6 and the JVM modules on 6.2.5. The `mutationModuleNames` modules get a mix: the catalog's `kotest-extensions-pitest` pulls their engine, common and assertions-shared jars up to 6.2.6 under the 6.2.5 runner. A convention-plugin release that moves to 6.2.6 brings them back together; the plugin's `pambroseTesting { kotestVersion }` extension can also set it.
 
 Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0; earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates. Its `outputFormatter` makes `make versions` print, per module, only what is behind and what could not be checked; `make versions-all` passes `--output-formatter=plain` for the plugin's full report, up-to-date dependencies included. Only core-utils checks for a newer Gradle, since every module runs on the same one.
 
 The full report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
 'testRuntimeOnly' configuration". No build script declares it: the pitest plugin, applied to the
 `mutationModuleNames` modules, adds it from a `withDependencies` hook at the JUnit Platform version already on the
-test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.5). It follows Kotest, so don't pin it
+test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.5 and 6.2.6). It follows Kotest, so don't pin it
 separately; its 1.14.x/6.x candidates become relevant once Kotest moves.
 
 Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
@@ -148,8 +148,8 @@ Deleting a run also drops its check results from old commits and pull requests.
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
-POM lists, update that list to match. As of 5.1.1 the catalog deliberately runs tcnative ahead of grpc's pin
-(2.0.84.Final against the 2.0.81.Final that grpc 1.84.1 names), so don't move it back to match; a later grpc
+POM lists, update that list to match. As of 5.1.2 the catalog deliberately runs tcnative ahead of grpc's pin
+(2.0.84.Final against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc
 bump is the time to bring the two together again.
 
 ### Experimental Kotlin Features
@@ -273,7 +273,7 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.1.1 the project sits at 99.4% line and 96.1% branch, and the weakest package
+`codecov.yml` point here). As of 5.1.2 the project sits at 99.4% line and 96.1% branch, and the weakest package
 by line coverage is `service` at 98.2%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,

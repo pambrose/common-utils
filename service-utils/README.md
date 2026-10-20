@@ -355,8 +355,8 @@ copy of the service list, so a service added afterwards is not managed, is absen
   therefore do not accumulate collectors, and a stopped instance leaves nothing registered, so starting another one
   afterwards adds no duplicate families. Two instances running at once whose Dropwizard registries share metric
   names now collide at scrape time: `DropwizardExports.describe()` returns no family descriptors in both 0.16 and
-  1.9.0, so both instances register. 0.16 tolerated this — a scrape served duplicate families, and Prometheus's
-  parser drops the duplicate samples but keeps the scrape. 1.9.0 does not: `TextFormatUtil.mergeDuplicates` throws
+  1.10.0, so both instances register. 0.16 tolerated this — a scrape served duplicate families, and Prometheus's
+  parser drops the duplicate samples but keeps the scrape. 1.10.0 does not: `TextFormatUtil.mergeDuplicates` throws
   `DuplicateLabelsException` from the `MetricSnapshot` constructor at write time, which `PrometheusScrapeHandler`
   turns into an HTTP 500 — every scrape of the default registry fails and all metrics are lost while both instances
   run. The same happens when a Dropwizard metric's exposed name equals a native 1.x metric of the same type, e.g. a

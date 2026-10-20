@@ -1,6 +1,6 @@
 [versions]
 # Toolchain
-gradle-wrapper = "9.8.1"
+gradle-wrapper = "9.8.2"
 jvmTarget = "17"
 
 # Plugins
@@ -22,7 +22,7 @@ kotlin = "2.4.21"
 coroutines = "1.11.0"
 datetime = "0.8.0-0.6.x-compat"
 kotlinxHtml = "0.12.0"
-serialization = "1.11.0"
+serialization = "1.12.0"
 
 # Logging
 logback = "1.6.5"
@@ -30,7 +30,7 @@ logging = "8.0.4"
 
 # Frameworks
 dropwizard = "4.2.40"
-grpc = "1.84.2"
+grpc = "1.85.1"
 jakartaServlet = "6.1.0"
 jetty = "12.1.14"
 ktor = "3.6.0"
@@ -38,7 +38,7 @@ ktor = "3.6.0"
 tcnative = "2.0.84.Final"
 
 # Data
-exposed = "1.5.1"
+exposed = "1.6.0"
 h2 = "2.5.252"
 redis = "8.0.2"
 
@@ -48,7 +48,7 @@ python = "2.7.4"
 
 # Observability
 brave = "6.3.1"
-prometheus = "1.9.0"
+prometheus = "1.10.0"
 zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
 
@@ -59,7 +59,7 @@ guava = "33.7.2-jre"
 resend = "4.28.0"
 
 # Testing
-kotest = "6.2.5"
+kotest = "6.2.6"
 # KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
 ksp = "2.3.12"
 mockk = "1.14.11"
