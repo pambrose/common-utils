@@ -33,6 +33,12 @@ import kotlinx.serialization.json.buildJsonArray
 
 class BugFixVerificationTests : StringSpec() {
   init {
+    isEmptyTests()
+    nestedArrayToMapTests()
+    deeplyNestedArrayToMapTests()
+  }
+
+  private fun isEmptyTests() {
     // Bug #12: isEmpty() returned true for all primitives and crashed on arrays
     // Before fix: all JsonPrimitive values returned true; JsonArray threw exception
     // After fix: checks content.isEmpty() for primitives; handles arrays correctly
@@ -76,7 +82,9 @@ class BugFixVerificationTests : StringSpec() {
       JsonArray(emptyList()).isNotEmpty() shouldBe false
       JsonObject(emptyMap()).isNotEmpty() shouldBe false
     }
+  }
 
+  private fun nestedArrayToMapTests() {
     // Bug #13: toMap() crashed on nested arrays
     // Before fix: inner JsonArray hit "else -> it.toMap()" which only handles JsonObject
     // After fix: recursive toAny() helper handles all JsonElement types
@@ -128,7 +136,9 @@ class BugFixVerificationTests : StringSpec() {
       items[2] shouldBe "plain"
       items[3] shouldBe null
     }
+  }
 
+  private fun deeplyNestedArrayToMapTests() {
     "to map handles deeply nested arrays" {
       val json =
         JsonObject(

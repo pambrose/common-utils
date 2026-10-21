@@ -11,16 +11,20 @@ import kotlinx.serialization.json.Json
 
 class WebhookDataTests : StringSpec() {
   init {
+    constructionTests()
+    roundTripTests()
+    dataConstructionTests()
+    resendWebhookMsgTests()
+    optionalFieldRoundTripTests()
+    rawJsonDecodingTests()
+    decodingFailureTests()
+    encodingTests()
+  }
+
+  private fun constructionTests() {
     "bounce construction with required fields" {
       val bounce = Bounce(message = "550 User not found")
       bounce.message shouldBe "550 User not found"
-    }
-
-    "bounce JSON round-trip" {
-      val bounce = Bounce(message = "550 User not found")
-      val json = Json.encodeToString(bounce)
-      val decoded = Json.decodeFromString<Bounce>(json)
-      decoded shouldBe bounce
     }
 
     "click construction with required fields" {
@@ -48,6 +52,21 @@ class WebhookDataTests : StringSpec() {
       click.linkTags shouldBe "promo"
     }
 
+    "header construction" {
+      val header = Header(name = "X-Custom", value = "test-value")
+      header.name shouldBe "X-Custom"
+      header.value shouldBe "test-value"
+    }
+  }
+
+  private fun roundTripTests() {
+    "bounce JSON round-trip" {
+      val bounce = Bounce(message = "550 User not found")
+      val json = Json.encodeToString(bounce)
+      val decoded = Json.decodeFromString<Bounce>(json)
+      decoded shouldBe bounce
+    }
+
     "click JSON round-trip" {
       val click = Click(
         ipAddress = "192.168.1.1",
@@ -60,12 +79,6 @@ class WebhookDataTests : StringSpec() {
       decoded shouldBe click
     }
 
-    "header construction" {
-      val header = Header(name = "X-Custom", value = "test-value")
-      header.name shouldBe "X-Custom"
-      header.value shouldBe "test-value"
-    }
-
     "header JSON round-trip" {
       val header = Header(name = "Content-Type", value = "text/html")
       val json = Json.encodeToString(header)
@@ -73,6 +86,22 @@ class WebhookDataTests : StringSpec() {
       decoded shouldBe header
     }
 
+    "data JSON round-trip" {
+      val data = Data(
+        createdAt = "2026-01-01T00:00:00Z",
+        emailId = "email-789",
+        from = "sender@example.com",
+        subject = "Hello",
+        to = ["user@test.com"],
+        headers = [Header(name = "X-Test", value = "abc")],
+      )
+      val json = Json.encodeToString(data)
+      val decoded = Json.decodeFromString<Data>(json)
+      decoded shouldBe data
+    }
+  }
+
+  private fun dataConstructionTests() {
     "data construction with required fields only" {
       val data = Data(
         createdAt = "2026-01-01T00:00:00Z",
@@ -117,21 +146,9 @@ class WebhookDataTests : StringSpec() {
       data.bounce shouldBe bounce
       data.click shouldBe click
     }
+  }
 
-    "data JSON round-trip" {
-      val data = Data(
-        createdAt = "2026-01-01T00:00:00Z",
-        emailId = "email-789",
-        from = "sender@example.com",
-        subject = "Hello",
-        to = ["user@test.com"],
-        headers = [Header(name = "X-Test", value = "abc")],
-      )
-      val json = Json.encodeToString(data)
-      val decoded = Json.decodeFromString<Data>(json)
-      decoded shouldBe data
-    }
-
+  private fun resendWebhookMsgTests() {
     "resend webhook msg construction" {
       val data = Data(
         createdAt = "2026-01-01T00:00:00Z",
@@ -165,7 +182,9 @@ class WebhookDataTests : StringSpec() {
       val decoded = Json.decodeFromString<ResendWebhookMsg>(json)
       decoded shouldBe msg
     }
+  }
 
+  private fun optionalFieldRoundTripTests() {
     "list fields serialize correctly" {
       val data = Data(
         createdAt = "2026-02-01T00:00:00Z",
@@ -199,31 +218,6 @@ class WebhookDataTests : StringSpec() {
       decoded.linkTags shouldBe "campaign-42"
     }
 
-    "click decodes from raw JSON with all fields" {
-      val json =
-        """
-        {
-          "ipAddress": "1.2.3.4",
-          "link": "https://example.com/promo",
-          "linkTags": "tag-1",
-          "timestamp": "2026-05-01T00:00:00Z",
-          "userAgent": "curl/8.5"
-        }
-        """.trimIndent()
-      val click = Json.decodeFromString<Click>(json)
-      click.ipAddress shouldBe "1.2.3.4"
-      click.link shouldBe "https://example.com/promo"
-      click.linkTags shouldBe "tag-1"
-      click.timestamp shouldBe "2026-05-01T00:00:00Z"
-      click.userAgent shouldBe "curl/8.5"
-    }
-
-    "click decoding fails when required fields are missing" {
-      shouldThrow<SerializationException> {
-        Json.decodeFromString<Click>("""{"link":"https://example.com"}""")
-      }
-    }
-
     "data JSON round-trip with bounce and click present" {
       val data = Data(
         createdAt = "2026-06-01T00:00:00Z",
@@ -247,6 +241,27 @@ class WebhookDataTests : StringSpec() {
       decoded.bounce?.message shouldBe "mailbox unavailable"
       decoded.click?.link shouldBe "https://example.com/cta"
     }
+  }
+
+  private fun rawJsonDecodingTests() {
+    "click decodes from raw JSON with all fields" {
+      val json =
+        """
+        {
+          "ipAddress": "1.2.3.4",
+          "link": "https://example.com/promo",
+          "linkTags": "tag-1",
+          "timestamp": "2026-05-01T00:00:00Z",
+          "userAgent": "curl/8.5"
+        }
+        """.trimIndent()
+      val click = Json.decodeFromString<Click>(json)
+      click.ipAddress shouldBe "1.2.3.4"
+      click.link shouldBe "https://example.com/promo"
+      click.linkTags shouldBe "tag-1"
+      click.timestamp shouldBe "2026-05-01T00:00:00Z"
+      click.userAgent shouldBe "curl/8.5"
+    }
 
     "data decodes from raw JSON with only required fields" {
       val json = """{"created_at":"2026-01-01T00:00:00Z","email_id":"email-500","from":"a@b.com"}"""
@@ -260,6 +275,14 @@ class WebhookDataTests : StringSpec() {
       data.bounce shouldBe null
       data.click shouldBe null
     }
+  }
+
+  private fun decodingFailureTests() {
+    "click decoding fails when required fields are missing" {
+      shouldThrow<SerializationException> {
+        Json.decodeFromString<Click>("""{"link":"https://example.com"}""")
+      }
+    }
 
     "data decoding fails when a required field is missing" {
       shouldThrow<SerializationException> {
@@ -267,6 +290,20 @@ class WebhookDataTests : StringSpec() {
       }
     }
 
+    "bounce decoding fails when the message is missing" {
+      shouldThrow<SerializationException> {
+        Json.decodeFromString<Bounce>("""{"subType":"Suppressed","type":"Permanent"}""")
+      }
+    }
+
+    "header decoding fails when a required field is missing" {
+      shouldThrow<SerializationException> {
+        Json.decodeFromString<Header>("""{"name":"X-Custom"}""")
+      }
+    }
+  }
+
+  private fun encodingTests() {
     "data encodes with snake_case serial names" {
       val data = Data(
         createdAt = "2026-01-01T00:00:00Z",
@@ -316,18 +353,6 @@ class WebhookDataTests : StringSpec() {
       json.encodeToString(Data(createdAt = "c", emailId = "e", from = "f")) shouldBe
         """{"created_at":"c","email_id":"e","from":"f","subject":null,"to":null,"headers":null,""" +
         """"bounce":null,"click":null,"tags":null,"broadcast_id":null,"message_id":null,"template_id":null}"""
-    }
-
-    "bounce decoding fails when the message is missing" {
-      shouldThrow<SerializationException> {
-        Json.decodeFromString<Bounce>("""{"subType":"Suppressed","type":"Permanent"}""")
-      }
-    }
-
-    "header decoding fails when a required field is missing" {
-      shouldThrow<SerializationException> {
-        Json.decodeFromString<Header>("""{"name":"X-Custom"}""")
-      }
     }
   }
 }

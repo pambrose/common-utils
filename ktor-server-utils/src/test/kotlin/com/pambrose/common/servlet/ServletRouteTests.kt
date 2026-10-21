@@ -53,6 +53,16 @@ private const val LAST_MODIFIED = 1_700_000_000_000L
 
 class ServletRouteTests : StringSpec() {
   init {
+    methodDispatchTests()
+    servletApiTests()
+    requestPassthroughTests()
+    responsePassthroughTests()
+    responseHeaderTests()
+    lifecycleTests()
+    encodingTests()
+  }
+
+  private fun methodDispatchTests() {
     // HttpServlet.doHead runs doGet and leaves the container to drop the body. A body after a HEAD response is read
     // by the client as the start of the next response on the connection, so pipeline a GET after the HEAD.
     "HEAD sends GET's headers without a body, so a pipelined response is not corrupted" {
@@ -78,6 +88,29 @@ class ServletRouteTests : StringSpec() {
       }
     }
 
+    "POST method dispatch" {
+      testApplication {
+        routing {
+          servlet("/post", PostServlet())
+        }
+        client.post("/post").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "posted"
+        }
+      }
+    }
+
+    "POST to a servlet that only handles GET returns 405 instead of 500" {
+      testApplication {
+        routing {
+          servlet("/hello", HelloServlet())
+        }
+        client.post("/hello").status shouldBe HttpStatusCode.MethodNotAllowed
+      }
+    }
+  }
+
+  private fun servletApiTests() {
     "a servlet overriding getLastModified serves Last-Modified and honours If-Modified-Since" {
       testApplication {
         routing { servlet("/fresh", LastModifiedServlet()) }
@@ -118,7 +151,9 @@ class ServletRouteTests : StringSpec() {
           "dispatcher=REQUEST;context=true"
       }
     }
+  }
 
+  private fun requestPassthroughTests() {
     "basic GET returning text" {
       testApplication {
         routing {
@@ -127,19 +162,6 @@ class ServletRouteTests : StringSpec() {
         client.get("/hello").apply {
           status shouldBe HttpStatusCode.OK
           bodyAsText() shouldBe "Hello, World!"
-        }
-      }
-    }
-
-    "custom content type" {
-      testApplication {
-        routing {
-          servlet("/json", JsonServlet())
-        }
-        client.get("/json").apply {
-          status shouldBe HttpStatusCode.OK
-          contentType()?.withoutParameters() shouldBe ContentType.Application.Json
-          bodyAsText() shouldBe """{"status":"ok"}"""
         }
       }
     }
@@ -184,6 +206,21 @@ class ServletRouteTests : StringSpec() {
         }
       }
     }
+  }
+
+  private fun responsePassthroughTests() {
+    "custom content type" {
+      testApplication {
+        routing {
+          servlet("/json", JsonServlet())
+        }
+        client.get("/json").apply {
+          status shouldBe HttpStatusCode.OK
+          contentType()?.withoutParameters() shouldBe ContentType.Application.Json
+          bodyAsText() shouldBe """{"status":"ok"}"""
+        }
+      }
+    }
 
     "custom status codes" {
       testApplication {
@@ -193,19 +230,6 @@ class ServletRouteTests : StringSpec() {
         client.get("/not-found").apply {
           status shouldBe HttpStatusCode.NotFound
           bodyAsText() shouldBe "Not Found"
-        }
-      }
-    }
-
-    "response headers" {
-      testApplication {
-        routing {
-          servlet("/with-headers", ResponseHeaderServlet())
-        }
-        client.get("/with-headers").apply {
-          status shouldBe HttpStatusCode.OK
-          headers["X-Custom-Response"] shouldBe "header-value"
-          bodyAsText() shouldBe "ok"
         }
       }
     }
@@ -223,39 +247,6 @@ class ServletRouteTests : StringSpec() {
       }
     }
 
-    "POST method dispatch" {
-      testApplication {
-        routing {
-          servlet("/post", PostServlet())
-        }
-        client.post("/post").apply {
-          status shouldBe HttpStatusCode.OK
-          bodyAsText() shouldBe "posted"
-        }
-      }
-    }
-
-    "servlet is initialized through init(ServletConfig) with a usable ServletContext" {
-      testApplication {
-        routing {
-          servlet("/configured", ConfiguredServlet())
-        }
-        client.get("/configured").apply {
-          status shouldBe HttpStatusCode.OK
-          bodyAsText() shouldBe "name=${ConfiguredServlet::class.java.name};attr=null;param=null"
-        }
-      }
-    }
-
-    "POST to a servlet that only handles GET returns 405 instead of 500" {
-      testApplication {
-        routing {
-          servlet("/hello", HelloServlet())
-        }
-        client.post("/hello").status shouldBe HttpStatusCode.MethodNotAllowed
-      }
-    }
-
     "servlet sendRedirect produces a redirect with a Location header" {
       testApplication {
         routing {
@@ -267,57 +258,18 @@ class ServletRouteTests : StringSpec() {
         }
       }
     }
+  }
 
-    // listOf rather than a [...] literal: detekt's analyzer crashes on a collection literal holding lambdas.
-    val encodingSetups =
-      listOf<Pair<String, HttpServletResponse.() -> Unit>>(
-        "setContentType" to { contentType = "text/plain; charset=ISO-8859-1" },
-        "setCharacterEncoding" to {
-          contentType = "text/plain"
-          characterEncoding = "ISO-8859-1"
-        },
-        // As in a servlet container, a Content-Type header is the content type, whatever its casing.
-        "setHeader" to { setHeader("Content-Type", "text/plain; charset=ISO-8859-1") },
-        "addHeader" to { addHeader("content-type", "text/plain; charset=ISO-8859-1") },
-      )
-    encodingSetups.forEach { (method, setEncoding) ->
-      "servlet output honors the charset given through $method and labels the Content-Type with it" {
-        testApplication {
-          routing {
-            servlet("/latin1", Latin1Servlet(setEncoding))
-          }
-          client.get("/latin1").apply {
-            bodyAsBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
-            contentType()?.charset() shouldBe Charsets.ISO_8859_1
-          }
-        }
-      }
-    }
-
-    "a malformed servlet content type falls back to application/octet-stream instead of a 500" {
+  private fun responseHeaderTests() {
+    "response headers" {
       testApplication {
         routing {
-          servlet("/bogus", BogusContentTypeServlet())
+          servlet("/with-headers", ResponseHeaderServlet())
         }
-        client.get("/bogus").apply {
+        client.get("/with-headers").apply {
           status shouldBe HttpStatusCode.OK
-          contentType() shouldBe ContentType.Application.OctetStream
-          bodyAsText() shouldBe "x"
-        }
-      }
-    }
-
-    "a servlet that throws produces a 500 without its partial output or headers" {
-      testApplication {
-        // Respond with a 500, as a production engine does, rather than rethrowing into the test.
-        environment { config = MapApplicationConfig("ktor.test.throwOnException" to "false") }
-        routing {
-          servlet("/throws", ThrowingServlet())
-        }
-        client.get("/throws").apply {
-          status shouldBe HttpStatusCode.InternalServerError
-          bodyAsText() shouldNotContain "partial output"
-          headers["X-Partial"] shouldBe null
+          headers["X-Custom-Response"] shouldBe "header-value"
+          bodyAsText() shouldBe "ok"
         }
       }
     }
@@ -348,6 +300,35 @@ class ServletRouteTests : StringSpec() {
         }
       }
     }
+  }
+
+  private fun lifecycleTests() {
+    "servlet is initialized through init(ServletConfig) with a usable ServletContext" {
+      testApplication {
+        routing {
+          servlet("/configured", ConfiguredServlet())
+        }
+        client.get("/configured").apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldBe "name=${ConfiguredServlet::class.java.name};attr=null;param=null"
+        }
+      }
+    }
+
+    "a servlet that throws produces a 500 without its partial output or headers" {
+      testApplication {
+        // Respond with a 500, as a production engine does, rather than rethrowing into the test.
+        environment { config = MapApplicationConfig("ktor.test.throwOnException" to "false") }
+        routing {
+          servlet("/throws", ThrowingServlet())
+        }
+        client.get("/throws").apply {
+          status shouldBe HttpStatusCode.InternalServerError
+          bodyAsText() shouldNotContain "partial output"
+          headers["X-Partial"] shouldBe null
+        }
+      }
+    }
 
     "servlet is destroyed once, when its own application stops" {
       val destroyCount = AtomicInt(0)
@@ -367,6 +348,48 @@ class ServletRouteTests : StringSpec() {
         destroyCount.load() shouldBe 0
       }
       destroyCount.load() shouldBe 1
+    }
+  }
+
+  private fun encodingTests() {
+    // listOf rather than a [...] literal: detekt's analyzer crashes on a collection literal holding lambdas.
+    val encodingSetups =
+      listOf<Pair<String, HttpServletResponse.() -> Unit>>(
+        "setContentType" to { contentType = "text/plain; charset=ISO-8859-1" },
+        "setCharacterEncoding" to {
+          contentType = "text/plain"
+          characterEncoding = "ISO-8859-1"
+        },
+        // As in a servlet container, a Content-Type header is the content type, whatever its casing.
+        "setHeader" to { setHeader("Content-Type", "text/plain; charset=ISO-8859-1") },
+        "addHeader" to { addHeader("content-type", "text/plain; charset=ISO-8859-1") },
+      )
+
+    encodingSetups.forEach { (method, setEncoding) ->
+      "servlet output honors the charset given through $method and labels the Content-Type with it" {
+        testApplication {
+          routing {
+            servlet("/latin1", Latin1Servlet(setEncoding))
+          }
+          client.get("/latin1").apply {
+            bodyAsBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
+            contentType()?.charset() shouldBe Charsets.ISO_8859_1
+          }
+        }
+      }
+    }
+
+    "a malformed servlet content type falls back to application/octet-stream instead of a 500" {
+      testApplication {
+        routing {
+          servlet("/bogus", BogusContentTypeServlet())
+        }
+        client.get("/bogus").apply {
+          status shouldBe HttpStatusCode.OK
+          contentType() shouldBe ContentType.Application.OctetStream
+          bodyAsText() shouldBe "x"
+        }
+      }
     }
   }
 

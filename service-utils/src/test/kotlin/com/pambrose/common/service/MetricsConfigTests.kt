@@ -7,6 +7,12 @@ import io.kotest.matchers.shouldBe
 
 class MetricsConfigTests : StringSpec() {
   init {
+    defaultValueTests()
+    customValueTests()
+    legacySignatureTests()
+  }
+
+  private fun defaultValueTests() {
     "default-style values are correct" {
       val config = MetricsConfig(
         enabled = false,
@@ -35,7 +41,9 @@ class MetricsConfigTests : StringSpec() {
       config.compilationExportsEnabled shouldBe false
       config.nativeMemoryExportsEnabled shouldBe false
     }
+  }
 
+  private fun customValueTests() {
     "custom values are set correctly" {
       val config = MetricsConfig(
         enabled = true,
@@ -66,7 +74,9 @@ class MetricsConfigTests : StringSpec() {
       config.compilationExportsEnabled shouldBe true
       config.nativeMemoryExportsEnabled shouldBe true
     }
+  }
 
+  private fun legacySignatureTests() {
     // Callers compiled against 5.0.0 link against the constructor and copy that predate the buffer pool, compilation
     // and native memory flags, and against their $default bridges.
     "the pre-buffer-pool constructor and copy signatures still link and delegate" {

@@ -36,6 +36,14 @@ import kotlin.time.Duration.Companion.seconds
 
 class BugFixVerificationTests : StringSpec() {
   init {
+    hashTests()
+    atomicTests()
+    maskUrlTests()
+    linesBetweenTests()
+    versionAndDurationTests()
+  }
+
+  private fun hashTests() {
     // Bug #1: MD5/SHA-256 should produce standard hash values
     // Before fix: toByteArraySecure() used Java serialization, producing non-standard hashes
     // After fix: toByteArray(Charsets.UTF_8) produces standard UTF-8 byte hashes
@@ -60,7 +68,9 @@ class BugFixVerificationTests : StringSpec() {
       val hash3 = "hello".md5("different")
       (hash1 != hash3) shouldBe true
     }
+  }
 
+  private fun atomicTests() {
     // Bug #2: Atomic.value should be read-only; mutation only via setWithLock
     // Before fix: value was a public var, bypassing the Mutex
     // After fix: value is a read-only val; _value is @PublishedApi internal
@@ -95,7 +105,9 @@ class BugFixVerificationTests : StringSpec() {
     }
 
     // Bug #9 (criticalSection returning the block's result) is covered on every platform by AtomicUtilsTests.
+  }
 
+  private fun maskUrlTests() {
     // Bug #10: maskUrlCredentials should handle URLs with multiple @ signs
     // Before fix: split("@")[1] dropped everything after the second @
     // After fix: uses substringAfterLast("@") to correctly find the host
@@ -114,7 +126,9 @@ class BugFixVerificationTests : StringSpec() {
       val url = "https://host.com/path"
       url.maskUrlCredentials() shouldBe "https://host.com/path"
     }
+  }
 
+  private fun linesBetweenTests() {
     // Bug #11: linesBetween should return empty list when patterns are not found
     // Before fix: subList(0, -1) threw IllegalArgumentException
     // After fix: returns emptyList() when start or end pattern is missing
@@ -138,7 +152,9 @@ class BugFixVerificationTests : StringSpec() {
       val text = "aaa\nbbb\nccc\nddd"
       text.linesBetween(Regex("aaa"), Regex("ddd")) shouldBe ["bbb", "ccc"]
     }
+  }
 
+  private fun versionAndDurationTests() {
     // Bug #20: JSON key "build_time: " had a trailing colon and space
     // Before fix: put("build_time: ", ...) produced malformed key
     // After fix: put("build_time", ...) produces correct key

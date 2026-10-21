@@ -37,11 +37,15 @@ private const val NOT_A_KEY = "does not contain valid private key"
 // and fails in build() as SSLException. The tests hold for both the OpenSSL provider, which this build loads (see
 // OpenSslTests), and the JDK provider that Netty falls back to on a platform tcnative does not cover.
 class InvalidTlsMaterialTests : StringSpec() {
+  private fun pemFile(content: String): String = tempfile(suffix = ".pem").apply { writeText(content) }.absolutePath
+
   init {
-    fun pemFile(content: String): String = tempfile(suffix = ".pem").apply { writeText(content) }.absolutePath
+    swappedFileTests()
+    malformedPemTests()
+    unusableKeyAndChainTests()
+  }
 
-    val garbageCertificate = "-----BEGIN CERTIFICATE-----\nnot base64 at all!\n-----END CERTIFICATE-----\n"
-
+  private fun swappedFileTests() {
     "a server certificate and key given in each other's place are rejected by the builder" {
       val ex =
         shouldThrow<IllegalArgumentException> {
@@ -66,6 +70,10 @@ class InvalidTlsMaterialTests : StringSpec() {
       ex.message shouldContain NOT_CERTIFICATES
       ex.message shouldContain "client-key.pem"
     }
+  }
+
+  private fun malformedPemTests() {
+    val garbageCertificate = "-----BEGIN CERTIFICATE-----\nnot base64 at all!\n-----END CERTIFICATE-----\n"
 
     "a garbage certificate chain is rejected by the server builder" {
       val path = pemFile(garbageCertificate)
@@ -107,7 +115,9 @@ class InvalidTlsMaterialTests : StringSpec() {
       ex.message shouldContain NOT_A_KEY
       ex.message shouldContain path
     }
+  }
 
+  private fun unusableKeyAndChainTests() {
     // The API takes no key password, so an encrypted key can never be read. The error names the file, not the
     // missing password.
     "an encrypted private key is rejected with an error naming the file" {

@@ -26,6 +26,12 @@ import io.kotest.matchers.shouldBe
 
 class NumberExtensionTests : StringSpec() {
   init {
+    timesTests()
+    randomTests()
+    iterationEdgeCaseTests()
+  }
+
+  private fun timesTests() {
     "short test" {
       val cnt: Short = 1000.toShort()
       var runs: Short = 0
@@ -61,7 +67,9 @@ class NumberExtensionTests : StringSpec() {
       }
       cnt shouldBe runs
     }
+  }
 
+  private fun randomTests() {
     "int random test" {
       repeat(1_000) {
         val v = 10.random()
@@ -71,6 +79,16 @@ class NumberExtensionTests : StringSpec() {
       repeat(100) { 1.random() shouldBe 0 }
     }
 
+    "long random test" {
+      repeat(1_000) {
+        val v = 10L.random()
+        (v in 0L until 10L) shouldBe true
+      }
+      repeat(100) { 1L.random() shouldBe 0L }
+    }
+  }
+
+  private fun iterationEdgeCaseTests() {
     // Short.MAX_VALUE is where an off-by-one loop (<= instead of <) with a Short counter wraps to -32768 and never
     // ends. A test timeout cannot stop a loop that never suspends, so the block itself fails past the limit.
     // (The "Bug #22" counter change was not needed for this: with <, a Short counter stops at 32767.)
@@ -107,14 +125,6 @@ class NumberExtensionTests : StringSpec() {
       val indices: MutableList<Int> = []
       4 repeat { indices += it }
       indices shouldBe [0, 1, 2, 3]
-    }
-
-    "long random test" {
-      repeat(1_000) {
-        val v = 10L.random()
-        (v in 0L until 10L) shouldBe true
-      }
-      repeat(100) { 1L.random() shouldBe 0L }
     }
   }
 }

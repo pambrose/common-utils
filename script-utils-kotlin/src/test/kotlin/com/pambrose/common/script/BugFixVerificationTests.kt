@@ -28,6 +28,12 @@ import javax.script.ScriptException
 
 class BugFixVerificationTests : StringSpec() {
   init {
+    resetContextTests()
+    exprEvaluatorTests()
+    poolTests()
+  }
+
+  private fun resetContextTests() {
     // Bug #6: resetContext() did not clear valueMap/typeMap, leaking state between pool users
     // Before fix: resetContext only reset initialized flag and engine bindings
     // After fix: resetContext also clears valueMap and typeMap
@@ -66,7 +72,9 @@ class BugFixVerificationTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun exprEvaluatorTests() {
     // Bug #15: AbstractExprEvaluator.eval() unconditionally cast to Boolean
     // Before fix: engine.eval(expr) as Boolean threw ClassCastException for non-Boolean results
     // After fix: safe cast with IllegalArgumentException and meaningful error message
@@ -117,7 +125,9 @@ class BugFixVerificationTests : StringSpec() {
       evaluator.compute("1 + 2") shouldBe 3
       evaluator.compute("\"hello\"") shouldBe "hello"
     }
+  }
 
+  private fun poolTests() {
     // Bug #4: AbstractExprEvaluatorPool.eval()/blockingEval() were generic (<R> ... as R)
     // even though the underlying evaluator only ever returns Boolean.
     // Before fix: blockingEval<String>(expr) compiled but threw ClassCastException at the call site.

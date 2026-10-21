@@ -101,6 +101,12 @@ private fun streamSplit(request: String): StreamOutcome {
 
 class StreamObserverHelperTests : StringSpec() {
   init {
+    callbackTests()
+    eventSequenceTests()
+    dslContractTests()
+  }
+
+  private fun callbackTests() {
     "on next callback" {
       var receivedValue: String? = null
 
@@ -143,7 +149,9 @@ class StreamObserverHelperTests : StringSpec() {
       observer.onCompleted()
       completedCalled shouldBe true
     }
+  }
 
+  private fun eventSequenceTests() {
     "all callbacks" {
       val receivedValues: MutableList<String> = []
       var errorReceived: Throwable? = null
@@ -199,7 +207,9 @@ class StreamObserverHelperTests : StringSpec() {
       status.code shouldBe Status.Code.NOT_FOUND
       status.description shouldBe "no more parts"
     }
+  }
 
+  private fun dslContractTests() {
     // The DSL hands back a StreamObserver; the helper class is an implementation detail callers should not
     // have to name.
     "streamObserver is declared to return StreamObserver, not the helper type" {

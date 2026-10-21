@@ -33,9 +33,18 @@ import kotlinx.html.stream.createHTML
 import kotlinx.serialization.json.Json
 
 class RecaptchaTests : StringSpec() {
-  init {
-    val jsonParser = Json { ignoreUnknownKeys = true }
+  private val jsonParser = Json { ignoreUnknownKeys = true }
 
+  init {
+    widgetTests()
+    responseDecodingTests()
+    optionalFieldDecodingTests()
+    responseEncodingTests()
+    responseConstructionTests()
+    closeTests()
+  }
+
+  private fun widgetTests() {
     fun renderWidget(config: RecaptchaConfig): String =
       with(RecaptchaService) {
         createHTML().body { recaptchaWidget(config) }
@@ -78,7 +87,9 @@ class RecaptchaTests : StringSpec() {
 
       verify(exactly = 1) { config.recaptchaSiteKey }
     }
+  }
 
+  private fun responseDecodingTests() {
     "recaptcha response deserialization success" {
       val json = """
       {
@@ -119,7 +130,9 @@ class RecaptchaTests : StringSpec() {
       response.success shouldBe true
       response.errorCodes.shouldBeEmpty()
     }
+  }
 
+  private fun optionalFieldDecodingTests() {
     // Remaining field-presence combinations, so every optional property is decoded both with the
     // field present and absent (each combination drives different seen-bit branches in the
     // serialization-generated constructor).
@@ -161,7 +174,9 @@ class RecaptchaTests : StringSpec() {
       response.challengeTs shouldBe "2024-06-01T12:00:00Z"
       response.hostname shouldBe null
     }
+  }
 
+  private fun responseEncodingTests() {
     // Encoding was previously never exercised; cover the serializer's write path with defaults
     // omitted (encodeDefaults = false is the Json default) and with every field populated.
     "recaptcha response serialization omits defaulted fields and writes populated ones" {
@@ -183,7 +198,9 @@ class RecaptchaTests : StringSpec() {
 
       jsonParser.decodeFromString<RecaptchaService.RecaptchaResponse>(populatedJson) shouldBe populated
     }
+  }
 
+  private fun responseConstructionTests() {
     // The JSON tests above exercise only the serialization-generated constructor; these cover the
     // primary constructor directly, both fully specified and with each defaulted property.
     "recaptcha response direct construction with all properties" {
@@ -224,7 +241,9 @@ class RecaptchaTests : StringSpec() {
       changed.hashCode() shouldBe changed.copy().hashCode()
       original.toString() shouldContain "hostname=localhost"
     }
+  }
 
+  private fun closeTests() {
     // Bug #9: the singleton's HttpClient was never closed. close() now releases it; verify it runs
     // without throwing and is idempotent. A later verification builds a new client.
     "close releases the http client without throwing and is idempotent" {

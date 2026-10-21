@@ -19,10 +19,20 @@ All notable changes to Common Utils are documented in this file.
   report, up-to-date dependencies included. Only core-utils checks for a newer Gradle, since every module runs on the
   same one.
 
+### Tests
+
+- The 66 specs whose `init` block ran past 70 lines of code, which CodeScene reported as a Large Method, now have
+  an `init` that only calls `private fun <topic>Tests()` functions. Each function registers one group of related
+  tests and stays under detekt's 60-line `LongMethod` limit. The tests themselves are unchanged. Local declarations
+  that several groups use became private members, and tests that share mutable state keep their original order. In
+  `JsonIntegrationTest`, a JSON fixture and a `buildJsonObject` builder moved out of the two tests too large for any
+  group.
+
 ### Documentation
 
 - CLAUDE.md is renamed to AGENTS.md, and the comments in the root build script and `codecov.yml` that point to it
   follow.
+- AGENTS.md describes that spec layout, so new tests go into a group rather than back into `init`.
 - AGENTS.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
   Dependabot's own fix job fails there.
 - AGENTS.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone, and `make versions-all`.

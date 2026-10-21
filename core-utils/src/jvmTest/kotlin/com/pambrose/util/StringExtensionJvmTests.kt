@@ -35,6 +35,12 @@ import io.kotest.matchers.string.shouldMatch
 // The common string helpers are covered on every platform by StringExtensionTests.
 class StringExtensionJvmTests : StringSpec() {
   init {
+    encodingTests()
+    hashTests()
+    saltTests()
+  }
+
+  private fun encodingTests() {
     "encode decode test" {
       val original = "hello world"
       val encoded = original.encode()
@@ -46,6 +52,14 @@ class StringExtensionJvmTests : StringSpec() {
       encodedSpecial.decode() shouldBe specialChars
     }
 
+    "byte array as text test" {
+      ByteArray(0).asText shouldBe ""
+      // Negative bytes must render as unsigned two-digit lowercase hex
+      byteArrayOf(0x00, 0x0f, 0x10, 0x7f, -0x80, -0x01).asText shouldBe "000f107f80ff"
+    }
+  }
+
+  private fun hashTests() {
     "md5 test" {
       val hash1 = "hello".md5()
       val hash2 = "hello".md5()
@@ -82,6 +96,16 @@ class StringExtensionJvmTests : StringSpec() {
       "hello".sha256() shouldBe "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
     }
 
+    "md5 of keys test" {
+      // Keys are stringified, joined with the default "|" separator, and MD5 hashed
+      md5Of("a", 1, true) shouldBe "a|1|true".md5()
+      md5Of("hello") shouldBe "5d41402abc4b2a76b9719d911017c592"
+      md5Of("a", "b", separator = "-") shouldBe "a-b".md5()
+      md5Of("a", "b") shouldNotBe md5Of("a", "c")
+    }
+  }
+
+  private fun saltTests() {
     "md5 with byte array salt test" {
       // An empty byte array salt is a no-op, so the result matches the unsalted hash
       "hello".md5(ByteArray(0)) shouldBe "5d41402abc4b2a76b9719d911017c592"
@@ -112,12 +136,6 @@ class StringExtensionJvmTests : StringSpec() {
       "hello".sha256(salt) shouldHaveLength 64
     }
 
-    "byte array as text test" {
-      ByteArray(0).asText shouldBe ""
-      // Negative bytes must render as unsigned two-digit lowercase hex
-      byteArrayOf(0x00, 0x0f, 0x10, 0x7f, -0x80, -0x01).asText shouldBe "000f107f80ff"
-    }
-
     "new byte array salt test" {
       newByteArraySalt().size shouldBe 16 // Default length
       newByteArraySalt(32).size shouldBe 32
@@ -131,14 +149,6 @@ class StringExtensionJvmTests : StringSpec() {
       newStringSalt() shouldMatch Regex("[a-zA-Z0-9]+")
       // Two independently generated salts should differ
       newStringSalt() shouldNotBe newStringSalt()
-    }
-
-    "md5 of keys test" {
-      // Keys are stringified, joined with the default "|" separator, and MD5 hashed
-      md5Of("a", 1, true) shouldBe "a|1|true".md5()
-      md5Of("hello") shouldBe "5d41402abc4b2a76b9719d911017c592"
-      md5Of("a", "b", separator = "-") shouldBe "a-b".md5()
-      md5Of("a", "b") shouldNotBe md5Of("a", "c")
     }
   }
 }

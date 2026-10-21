@@ -236,6 +236,11 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
 
 ### Testing Notes
 
+- A spec's `init` only calls `private fun <topic>Tests()` functions, each registering one group of related tests
+  and staying under detekt's 60-line `LongMethod` limit. CodeScene counts a whole `init` as one method and reports
+  it as a Large Method once it passes about 70 lines of code. Add a test to the group it belongs with, and start a
+  new group when that one would pass the limit. Kotest runs a `StringSpec`'s tests in registration order, so tests
+  that share mutable state keep their original order across groups.
 - All tests are hermetic: no network, no external services. gRPC tests use the in-process transport and
   committed self-signed PEM fixtures (`grpc-utils/src/test/resources/tls/`); Exposed tests use in-memory H2;
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.

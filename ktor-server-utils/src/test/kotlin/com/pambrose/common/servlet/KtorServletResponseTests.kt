@@ -14,6 +14,17 @@ import java.util.Locale
 
 class KtorServletResponseTests : StringSpec() {
   init {
+    statusTests()
+    contentTypeTests()
+    headerTests()
+    outputTests()
+    headerValueTests()
+    encodingTests()
+    bufferTests()
+    redirectTests()
+  }
+
+  private fun statusTests() {
     "setting and getting status code" {
       val response = KtorServletResponse()
       response.status shouldBe HttpServletResponse.SC_OK
@@ -25,6 +36,26 @@ class KtorServletResponseTests : StringSpec() {
       response.status shouldBe HttpServletResponse.SC_INTERNAL_SERVER_ERROR
     }
 
+    "sendError sets the status, discards buffered output, writes the message, and commits" {
+      val response = KtorServletResponse()
+      response.writer.print("partial output")
+      response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "not allowed")
+      response.status shouldBe HttpServletResponse.SC_METHOD_NOT_ALLOWED
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "not allowed"
+      response.contentType shouldBe "text/plain; charset=UTF-8"
+      response.isCommitted shouldBe true
+    }
+
+    "sendError without a message leaves an empty body" {
+      val response = KtorServletResponse()
+      response.writer.print("partial output")
+      response.sendError(HttpServletResponse.SC_NOT_FOUND)
+      response.status shouldBe HttpServletResponse.SC_NOT_FOUND
+      response.getBodyBytes().size shouldBe 0
+    }
+  }
+
+  private fun contentTypeTests() {
     "setting and getting content type" {
       val response = KtorServletResponse()
       response.contentType shouldBe null
@@ -36,6 +67,37 @@ class KtorServletResponseTests : StringSpec() {
       response.contentType shouldBe "application/json"
     }
 
+    "a malformed content type is kept verbatim and leaves the character encoding alone" {
+      val response = KtorServletResponse()
+      response.characterEncoding = "ISO-8859-1"
+      response.setContentType("bogus")
+      response.characterEncoding shouldBe "ISO-8859-1"
+      // The charset cannot be added to a value that does not parse, so the value is reported as given.
+      response.contentType shouldBe "bogus"
+      response.writer
+      response.contentType shouldBe "bogus"
+    }
+
+    "a Content-Type header, in any casing, is the content type rather than a separate header" {
+      val response = KtorServletResponse()
+      response.containsHeader("Content-Type") shouldBe false
+      response.getHeader("Content-Type") shouldBe null
+
+      response.setHeader("content-type", "text/html; charset=ISO-8859-1")
+      response.contentType shouldBe "text/html; charset=ISO-8859-1"
+      response.characterEncoding shouldBe "ISO-8859-1"
+      response.containsHeader("Content-Type") shouldBe true
+      response.getHeader("CONTENT-TYPE") shouldBe "text/html; charset=ISO-8859-1"
+      response.getHeaders("Content-Type").toList() shouldBe ["text/html; charset=ISO-8859-1"]
+      response.headerNames.toList() shouldBe emptyList()
+
+      response.addHeader("Content-Type", "application/json")
+      response.getHeaders("Content-Type").toList() shouldBe ["application/json; charset=ISO-8859-1"]
+      response.headerNames.toList() shouldBe emptyList()
+    }
+  }
+
+  private fun headerTests() {
     "adding and getting headers" {
       val response = KtorServletResponse()
       response.containsHeader("X-Custom") shouldBe false
@@ -86,7 +148,9 @@ class KtorServletResponseTests : StringSpec() {
       response.getHeaders("SET-COOKIE").toList() shouldBe ["a", "b"]
       response.headerNames.toSet() shouldBe setOf("Set-Cookie")
     }
+  }
 
+  private fun outputTests() {
     "writer output captures content" {
       val response = KtorServletResponse()
       val writer = response.writer
@@ -96,20 +160,6 @@ class KtorServletResponseTests : StringSpec() {
 
       val body = response.getBodyBytes().toString(Charsets.UTF_8)
       body shouldBe "Hello, World!"
-    }
-
-    "missing headers return null and an empty collection" {
-      val response = KtorServletResponse()
-      response.getHeader("X-Missing") shouldBe null
-      response.getHeaders("X-Missing").toList() shouldBe emptyList()
-    }
-
-    "character encoding defaults to UTF-8 and reflects updates" {
-      val response = KtorServletResponse()
-      response.characterEncoding shouldBe "UTF-8"
-
-      response.characterEncoding = "ISO-8859-1"
-      response.characterEncoding shouldBe "ISO-8859-1"
     }
 
     "getWriter returns the same writer on repeated calls" {
@@ -142,16 +192,13 @@ class KtorServletResponseTests : StringSpec() {
       response.writer
       shouldThrow<IllegalStateException> { response.outputStream }
     }
+  }
 
-    "unsupported response methods throw UnsupportedOperationException" {
+  private fun headerValueTests() {
+    "missing headers return null and an empty collection" {
       val response = KtorServletResponse()
-      shouldThrow<UnsupportedOperationException> { response.addCookie(Cookie("name", "value")) }
-      shouldThrow<UnsupportedOperationException> { response.encodeURL("/url") }
-      shouldThrow<UnsupportedOperationException> { response.encodeRedirectURL("/url") }
-      shouldThrow<UnsupportedOperationException> { response.setBufferSize(1024) }
-      shouldThrow<UnsupportedOperationException> { response.bufferSize }
-      shouldThrow<UnsupportedOperationException> { response.setLocale(Locale.US) }
-      shouldThrow<UnsupportedOperationException> { response.locale }
+      response.getHeader("X-Missing") shouldBe null
+      response.getHeaders("X-Missing").toList() shouldBe emptyList()
     }
 
     "null header values remove or skip the header, and a null content type or encoding clears it" {
@@ -180,108 +227,15 @@ class KtorServletResponseTests : StringSpec() {
       response.getHeaders("X-When") shouldBe listOf("Thu, 01 Jan 1970 00:00:01 GMT", "Thu, 01 Jan 1970 00:00:02 GMT")
       response.containsHeader("Content-Length") shouldBe false
     }
+  }
 
-    "reset clears status, headers and body; flushBuffer commits, after which resetBuffer fails" {
+  private fun encodingTests() {
+    "character encoding defaults to UTF-8 and reflects updates" {
       val response = KtorServletResponse()
-      response.status = 404
-      response.setHeader("X-A", "1")
-      response.contentType = "text/plain"
-      response.writer.print("partial")
-      response.reset()
-      response.status shouldBe HttpServletResponse.SC_OK
-      response.containsHeader("X-A") shouldBe false
-      response.getBodyBytes().size shouldBe 0
-      response.writer.print("kept")
-      response.flushBuffer()
-      response.isCommitted shouldBe true
-      shouldThrow<IllegalStateException> { response.resetBuffer() }
-      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "kept"
-    }
+      response.characterEncoding shouldBe "UTF-8"
 
-    "reset before the writer is used forgets the character encoding, and flushBuffer commits without a writer" {
-      val response = KtorServletResponse()
-      val default = response.characterEncoding
       response.characterEncoding = "ISO-8859-1"
-      response.reset()
-      response.characterEncoding shouldBe default
-      response.flushBuffer()
-      response.isCommitted shouldBe true
-    }
-
-    "sendError sets the status, discards buffered output, writes the message, and commits" {
-      val response = KtorServletResponse()
-      response.writer.print("partial output")
-      response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "not allowed")
-      response.status shouldBe HttpServletResponse.SC_METHOD_NOT_ALLOWED
-      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "not allowed"
-      response.contentType shouldBe "text/plain; charset=UTF-8"
-      response.isCommitted shouldBe true
-    }
-
-    "sendError without a message leaves an empty body" {
-      val response = KtorServletResponse()
-      response.writer.print("partial output")
-      response.sendError(HttpServletResponse.SC_NOT_FOUND)
-      response.status shouldBe HttpServletResponse.SC_NOT_FOUND
-      response.getBodyBytes().size shouldBe 0
-    }
-
-    "sendRedirect sets a redirect status and Location header and commits" {
-      val response = KtorServletResponse()
-      response.sendRedirect("/elsewhere")
-      response.status shouldBe HttpServletResponse.SC_FOUND
-      response.getHeader("Location") shouldBe "/elsewhere"
-      response.isCommitted shouldBe true
-
-      val permanent = KtorServletResponse()
-      permanent.sendRedirect("/moved", HttpServletResponse.SC_MOVED_PERMANENTLY, true)
-      permanent.status shouldBe HttpServletResponse.SC_MOVED_PERMANENTLY
-      permanent.getHeader("Location") shouldBe "/moved"
-    }
-
-    "sendRedirect discards a buffered body by default" {
-      val response = KtorServletResponse()
-      response.writer.print("partial output")
-      response.sendRedirect("/elsewhere")
-      response.getBodyBytes().size shouldBe 0
-    }
-
-    "sendRedirect with clearBuffer false keeps the buffered body" {
-      val response = KtorServletResponse()
-      response.writer.print("see other")
-      response.sendRedirect("/elsewhere", HttpServletResponse.SC_SEE_OTHER, false)
-      response.status shouldBe HttpServletResponse.SC_SEE_OTHER
-      response.getHeader("Location") shouldBe "/elsewhere"
-      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "see other"
-    }
-
-    "a malformed content type is kept verbatim and leaves the character encoding alone" {
-      val response = KtorServletResponse()
-      response.characterEncoding = "ISO-8859-1"
-      response.setContentType("bogus")
       response.characterEncoding shouldBe "ISO-8859-1"
-      // The charset cannot be added to a value that does not parse, so the value is reported as given.
-      response.contentType shouldBe "bogus"
-      response.writer
-      response.contentType shouldBe "bogus"
-    }
-
-    "a Content-Type header, in any casing, is the content type rather than a separate header" {
-      val response = KtorServletResponse()
-      response.containsHeader("Content-Type") shouldBe false
-      response.getHeader("Content-Type") shouldBe null
-
-      response.setHeader("content-type", "text/html; charset=ISO-8859-1")
-      response.contentType shouldBe "text/html; charset=ISO-8859-1"
-      response.characterEncoding shouldBe "ISO-8859-1"
-      response.containsHeader("Content-Type") shouldBe true
-      response.getHeader("CONTENT-TYPE") shouldBe "text/html; charset=ISO-8859-1"
-      response.getHeaders("Content-Type").toList() shouldBe ["text/html; charset=ISO-8859-1"]
-      response.headerNames.toList() shouldBe emptyList()
-
-      response.addHeader("Content-Type", "application/json")
-      response.getHeaders("Content-Type").toList() shouldBe ["application/json; charset=ISO-8859-1"]
-      response.headerNames.toList() shouldBe emptyList()
     }
 
     "setContentType with a charset parameter sets the character encoding the writer uses" {
@@ -314,6 +268,77 @@ class KtorServletResponseTests : StringSpec() {
       response.characterEncoding shouldBe "ISO-8859-1"
       response.contentType shouldBe "text/html; charset=ISO-8859-1"
       response.getBodyBytes() shouldBe "caf\u00e9".toByteArray(Charsets.ISO_8859_1)
+    }
+  }
+
+  private fun bufferTests() {
+    "unsupported response methods throw UnsupportedOperationException" {
+      val response = KtorServletResponse()
+      shouldThrow<UnsupportedOperationException> { response.addCookie(Cookie("name", "value")) }
+      shouldThrow<UnsupportedOperationException> { response.encodeURL("/url") }
+      shouldThrow<UnsupportedOperationException> { response.encodeRedirectURL("/url") }
+      shouldThrow<UnsupportedOperationException> { response.setBufferSize(1024) }
+      shouldThrow<UnsupportedOperationException> { response.bufferSize }
+      shouldThrow<UnsupportedOperationException> { response.setLocale(Locale.US) }
+      shouldThrow<UnsupportedOperationException> { response.locale }
+    }
+
+    "reset clears status, headers and body; flushBuffer commits, after which resetBuffer fails" {
+      val response = KtorServletResponse()
+      response.status = 404
+      response.setHeader("X-A", "1")
+      response.contentType = "text/plain"
+      response.writer.print("partial")
+      response.reset()
+      response.status shouldBe HttpServletResponse.SC_OK
+      response.containsHeader("X-A") shouldBe false
+      response.getBodyBytes().size shouldBe 0
+      response.writer.print("kept")
+      response.flushBuffer()
+      response.isCommitted shouldBe true
+      shouldThrow<IllegalStateException> { response.resetBuffer() }
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "kept"
+    }
+
+    "reset before the writer is used forgets the character encoding, and flushBuffer commits without a writer" {
+      val response = KtorServletResponse()
+      val default = response.characterEncoding
+      response.characterEncoding = "ISO-8859-1"
+      response.reset()
+      response.characterEncoding shouldBe default
+      response.flushBuffer()
+      response.isCommitted shouldBe true
+    }
+  }
+
+  private fun redirectTests() {
+    "sendRedirect sets a redirect status and Location header and commits" {
+      val response = KtorServletResponse()
+      response.sendRedirect("/elsewhere")
+      response.status shouldBe HttpServletResponse.SC_FOUND
+      response.getHeader("Location") shouldBe "/elsewhere"
+      response.isCommitted shouldBe true
+
+      val permanent = KtorServletResponse()
+      permanent.sendRedirect("/moved", HttpServletResponse.SC_MOVED_PERMANENTLY, true)
+      permanent.status shouldBe HttpServletResponse.SC_MOVED_PERMANENTLY
+      permanent.getHeader("Location") shouldBe "/moved"
+    }
+
+    "sendRedirect discards a buffered body by default" {
+      val response = KtorServletResponse()
+      response.writer.print("partial output")
+      response.sendRedirect("/elsewhere")
+      response.getBodyBytes().size shouldBe 0
+    }
+
+    "sendRedirect with clearBuffer false keeps the buffered body" {
+      val response = KtorServletResponse()
+      response.writer.print("see other")
+      response.sendRedirect("/elsewhere", HttpServletResponse.SC_SEE_OTHER, false)
+      response.status shouldBe HttpServletResponse.SC_SEE_OTHER
+      response.getHeader("Location") shouldBe "/elsewhere"
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "see other"
     }
   }
 }

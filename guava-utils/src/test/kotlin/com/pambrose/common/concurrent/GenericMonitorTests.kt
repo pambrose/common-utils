@@ -65,6 +65,17 @@ private fun <T> waitOnDaemonThread(
 
 class GenericMonitorTests : StringSpec() {
   init {
+    blockingWaitTests()
+    timedWaitTests()
+    maxWaitTests()
+    retryLimitTests()
+    waitWithInterruptionTests()
+    interruptTests()
+    retryBlockTests()
+    throwingGuardTests()
+  }
+
+  private fun blockingWaitTests() {
     "waitUntilTrue returns when condition becomes true" {
       val monitor = BooleanMonitor(false)
       val (waiter, done) = inDaemonThread { monitor.waitUntilTrue() }
@@ -85,6 +96,42 @@ class GenericMonitorTests : StringSpec() {
       done.getGuarded()
     }
 
+    "waitUntil without timeout returns immediately when condition already matches" {
+      val monitorTrue = BooleanMonitor(true)
+      monitorTrue.waitUntil(true)
+      monitorTrue.get() shouldBe true
+
+      val monitorFalse = BooleanMonitor(false)
+      monitorFalse.waitUntil(false)
+      monitorFalse.get() shouldBe false
+    }
+
+    // The wait lasts an hour unless set wakes it, so returning within the hang guard shows set woke it.
+    "a thread blocked in a timed wait is woken by set long before the timeout" {
+      val monitor = BooleanMonitor(false)
+      val (waiter, outcome) = inDaemonThread { monitor.waitUntilTrue(1.hours) }
+
+      waiter.awaitParked()
+      monitor.set(true)
+
+      outcome.getGuarded() shouldBe true
+    }
+
+    "state changed through mutate wakes waiting threads" {
+      val monitor = CountingMonitor(target = 3)
+      val (waiter, done) = inDaemonThread { monitor.waitUntilTrue() }
+
+      waiter.awaitParked()
+      monitor.increment()
+      monitor.increment()
+      done.isDone shouldBe false
+      monitor.increment()
+
+      done.getGuarded()
+    }
+  }
+
+  private fun timedWaitTests() {
     "waitUntilTrue with timeout returns true when condition met" {
       val monitor = BooleanMonitor(false)
 
@@ -124,7 +171,9 @@ class GenericMonitorTests : StringSpec() {
       val monitorFalse = BooleanMonitor(false)
       monitorFalse.waitUntil(false, 50.milliseconds) shouldBe true
     }
+  }
 
+  private fun maxWaitTests() {
     "waitUntilTrue with timeout and block returns false on maxWait exceeded" {
       val monitor = BooleanMonitor(false)
       val result =
@@ -136,6 +185,49 @@ class GenericMonitorTests : StringSpec() {
       result shouldBe false
     }
 
+    "waitUntilTrueWithInterruption with maxWait returns false when exceeded" {
+      val monitor = BooleanMonitor(false)
+      val result =
+        monitor.waitUntilTrueWithInterruption(
+          timeout = 50.milliseconds,
+          maxWait = 100.milliseconds,
+          block = null,
+        )
+      result shouldBe false
+    }
+
+    "waitUntilFalse with maxWait returns false when exceeded" {
+      val monitor = BooleanMonitor(true)
+      val result =
+        monitor.waitUntilFalse(
+          timeout = 50.milliseconds,
+          maxWait = 100.milliseconds,
+          block = null,
+        )
+      result shouldBe false
+    }
+
+    // Each attempt would wait an hour, so the wait returns within the hang guard only if maxWait cuts it short.
+    "retrying waits stop at maxWait even when each attempt is longer" {
+      val waits: List<Pair<Boolean, BooleanMonitor.() -> Boolean>> =
+        [
+          false to { waitUntilTrue(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
+          false to { waitUntilTrueWithInterruption(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
+          true to { waitUntilFalse(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
+        ]
+
+      for ((initValue, waitFor) in waits) {
+        val monitor = BooleanMonitor(initValue)
+        val mark = TimeSource.Monotonic.markNow()
+        val (_, outcome) = inDaemonThread { monitor.waitFor() }
+
+        outcome.getGuarded() shouldBe false
+        (mark.elapsedNow() >= 200.milliseconds) shouldBe true
+      }
+    }
+  }
+
+  private fun retryLimitTests() {
     "waitUntilTrue with timeout and block calls block on timeout" {
       val monitor = BooleanMonitor(false)
       var blockCalled = false
@@ -150,6 +242,51 @@ class GenericMonitorTests : StringSpec() {
       result shouldBe false
     }
 
+    "waitUntilTrueWithInterruption with block stops when block returns false" {
+      val monitor = BooleanMonitor(false)
+
+      val result =
+        monitor.waitUntilTrueWithInterruption(50.milliseconds) {
+          false // stop waiting
+        }
+
+      result shouldBe false
+    }
+
+    "waitUntilFalse with block stops when block returns false" {
+      val monitor = BooleanMonitor(true)
+
+      val result =
+        monitor.waitUntilFalse(50.milliseconds) {
+          false // stop waiting
+        }
+
+      result shouldBe false
+    }
+
+    "a zero maxWait checks once instead of waiting without limit" {
+      val monitor = BooleanMonitor(false)
+      var retries = 0
+      monitor.waitUntilTrue(timeout = 20.milliseconds, maxWait = Duration.ZERO) { ++retries < 3 } shouldBe false
+      retries shouldBe 0
+    }
+
+    "a negative maxWait still waits without an overall limit" {
+      val monitor = BooleanMonitor(false)
+      var retries = 0
+      monitor.waitUntilTrue(timeout = 10.milliseconds, maxWait = (-1).seconds) { ++retries < 3 } shouldBe false
+      retries shouldBe 3
+    }
+
+    "a sub-millisecond retry timeout is rejected instead of spinning" {
+      val monitor = BooleanMonitor(false)
+      shouldThrow<IllegalArgumentException> {
+        monitor.waitUntilTrue(timeout = 500.microseconds, maxWait = 50.milliseconds, block = null)
+      }
+    }
+  }
+
+  private fun waitWithInterruptionTests() {
     "waitUntilTrueWithInterruption returns when condition is true" {
       val monitor = BooleanMonitor(false)
       val done = CountDownLatch(1)
@@ -184,6 +321,18 @@ class GenericMonitorTests : StringSpec() {
       t.join(5000)
     }
 
+    "waitUntilTrueWithInterruption with timeout returns true when condition met" {
+      val monitor = BooleanMonitor(true)
+      monitor.waitUntilTrueWithInterruption(500.milliseconds) shouldBe true
+    }
+
+    "waitUntilTrueWithInterruption with timeout returns false when not met" {
+      val monitor = BooleanMonitor(false)
+      monitor.waitUntilTrueWithInterruption(50.milliseconds) shouldBe false
+    }
+  }
+
+  private fun interruptTests() {
     // The thread is interrupted before it waits, so an interruptible wait would throw at once. An uninterruptible
     // one blocks anyway, returns only once the condition holds, and then restores the interrupt.
     "the uninterruptible waits ignore an interrupt and restore it on return" {
@@ -236,17 +385,9 @@ class GenericMonitorTests : StringSpec() {
         monitor.isOccupied shouldBe false
       }
     }
+  }
 
-    "waitUntilTrueWithInterruption with timeout returns true when condition met" {
-      val monitor = BooleanMonitor(true)
-      monitor.waitUntilTrueWithInterruption(500.milliseconds) shouldBe true
-    }
-
-    "waitUntilTrueWithInterruption with timeout returns false when not met" {
-      val monitor = BooleanMonitor(false)
-      monitor.waitUntilTrueWithInterruption(50.milliseconds) shouldBe false
-    }
-
+  private fun retryBlockTests() {
     "waitUntilTrue with block returns true when block makes condition true" {
       val monitor = BooleanMonitor(false)
       var calls = 0
@@ -277,28 +418,6 @@ class GenericMonitorTests : StringSpec() {
       calls shouldBe 1
     }
 
-    "waitUntilTrueWithInterruption with block stops when block returns false" {
-      val monitor = BooleanMonitor(false)
-
-      val result =
-        monitor.waitUntilTrueWithInterruption(50.milliseconds) {
-          false // stop waiting
-        }
-
-      result shouldBe false
-    }
-
-    "waitUntilTrueWithInterruption with maxWait returns false when exceeded" {
-      val monitor = BooleanMonitor(false)
-      val result =
-        monitor.waitUntilTrueWithInterruption(
-          timeout = 50.milliseconds,
-          maxWait = 100.milliseconds,
-          block = null,
-        )
-      result shouldBe false
-    }
-
     "waitUntilFalse with block returns true when block makes condition false" {
       val monitor = BooleanMonitor(true)
       var calls = 0
@@ -313,39 +432,9 @@ class GenericMonitorTests : StringSpec() {
       result shouldBe true
       calls shouldBe 1
     }
+  }
 
-    "waitUntilFalse with block stops when block returns false" {
-      val monitor = BooleanMonitor(true)
-
-      val result =
-        monitor.waitUntilFalse(50.milliseconds) {
-          false // stop waiting
-        }
-
-      result shouldBe false
-    }
-
-    "waitUntilFalse with maxWait returns false when exceeded" {
-      val monitor = BooleanMonitor(true)
-      val result =
-        monitor.waitUntilFalse(
-          timeout = 50.milliseconds,
-          maxWait = 100.milliseconds,
-          block = null,
-        )
-      result shouldBe false
-    }
-
-    "waitUntil without timeout returns immediately when condition already matches" {
-      val monitorTrue = BooleanMonitor(true)
-      monitorTrue.waitUntil(true)
-      monitorTrue.get() shouldBe true
-
-      val monitorFalse = BooleanMonitor(false)
-      monitorFalse.waitUntil(false)
-      monitorFalse.get() shouldBe false
-    }
-
+  private fun throwingGuardTests() {
     "a guard that throws surfaces its own exception from the untimed waits" {
       val monitor = ThrowingMonitor()
       shouldThrow<IllegalStateException> { monitor.waitUntilTrue() }.message shouldBe "guard failed"
@@ -385,70 +474,6 @@ class GenericMonitorTests : StringSpec() {
         monitor.isHeldByCurrentThread shouldBe true
       }
       monitor.isHeldByCurrentThread shouldBe false
-    }
-
-    // Each attempt would wait an hour, so the wait returns within the hang guard only if maxWait cuts it short.
-    "retrying waits stop at maxWait even when each attempt is longer" {
-      val waits: List<Pair<Boolean, BooleanMonitor.() -> Boolean>> =
-        [
-          false to { waitUntilTrue(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
-          false to { waitUntilTrueWithInterruption(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
-          true to { waitUntilFalse(timeout = 1.hours, maxWait = 200.milliseconds, block = null) },
-        ]
-
-      for ((initValue, waitFor) in waits) {
-        val monitor = BooleanMonitor(initValue)
-        val mark = TimeSource.Monotonic.markNow()
-        val (_, outcome) = inDaemonThread { monitor.waitFor() }
-
-        outcome.getGuarded() shouldBe false
-        (mark.elapsedNow() >= 200.milliseconds) shouldBe true
-      }
-    }
-
-    "a zero maxWait checks once instead of waiting without limit" {
-      val monitor = BooleanMonitor(false)
-      var retries = 0
-      monitor.waitUntilTrue(timeout = 20.milliseconds, maxWait = Duration.ZERO) { ++retries < 3 } shouldBe false
-      retries shouldBe 0
-    }
-
-    "a negative maxWait still waits without an overall limit" {
-      val monitor = BooleanMonitor(false)
-      var retries = 0
-      monitor.waitUntilTrue(timeout = 10.milliseconds, maxWait = (-1).seconds) { ++retries < 3 } shouldBe false
-      retries shouldBe 3
-    }
-
-    "a sub-millisecond retry timeout is rejected instead of spinning" {
-      val monitor = BooleanMonitor(false)
-      shouldThrow<IllegalArgumentException> {
-        monitor.waitUntilTrue(timeout = 500.microseconds, maxWait = 50.milliseconds, block = null)
-      }
-    }
-
-    // The wait lasts an hour unless set wakes it, so returning within the hang guard shows set woke it.
-    "a thread blocked in a timed wait is woken by set long before the timeout" {
-      val monitor = BooleanMonitor(false)
-      val (waiter, outcome) = inDaemonThread { monitor.waitUntilTrue(1.hours) }
-
-      waiter.awaitParked()
-      monitor.set(true)
-
-      outcome.getGuarded() shouldBe true
-    }
-
-    "state changed through mutate wakes waiting threads" {
-      val monitor = CountingMonitor(target = 3)
-      val (waiter, done) = inDaemonThread { monitor.waitUntilTrue() }
-
-      waiter.awaitParked()
-      monitor.increment()
-      monitor.increment()
-      done.isDone shouldBe false
-      monitor.increment()
-
-      done.getGuarded()
     }
   }
 }
