@@ -16,6 +16,11 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class VerboseCountDownLatchTests : StringSpec() {
   init {
+    basicLatchTests()
+    verboseAwaitTests()
+  }
+
+  private fun basicLatchTests() {
     "countDown decrements count" {
       val latch = VerboseCountDownLatch(3)
       latch.count shouldBe 3
@@ -66,7 +71,9 @@ class VerboseCountDownLatchTests : StringSpec() {
       latch.countDown()
       latch.isFinished shouldBe true
     }
+  }
 
+  private fun verboseAwaitTests() {
     "await with a string message returns without logging when already counted down" {
       val latch = VerboseCountDownLatch(1)
       latch.countDown()

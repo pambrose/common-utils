@@ -37,6 +37,14 @@ import jakarta.servlet.http.HttpUpgradeHandler
 
 class KtorServletRequestTests : StringSpec() {
   init {
+    headerTests()
+    uriAndConnectionTests()
+    parameterAndAttributeTests()
+    unsupportedTests()
+    derivedHeaderTests()
+  }
+
+  private fun headerTests() {
     "getContentType returns null when no Content-Type header is present" {
       val request = mockk<ApplicationRequest>()
       every { request.headers } returns Headers.Empty
@@ -55,6 +63,17 @@ class KtorServletRequestTests : StringSpec() {
       KtorServletRequest(request).contentType shouldBe "text/html; charset=UTF-8"
     }
 
+    "getHeaders returns all values for a header and an empty enumeration when absent" {
+      val request = mockk<ApplicationRequest>()
+      every { request.headers } returns headersOf("Accept" to ["text/html", "application/json"])
+      val servletRequest = KtorServletRequest(request)
+      servletRequest.getHeaders("Accept").toList() shouldBe ["text/html", "application/json"]
+      servletRequest.getHeaders("X-Missing").toList() shouldBe emptyList()
+      servletRequest.headerNames.toList() shouldBe ["Accept"]
+    }
+  }
+
+  private fun uriAndConnectionTests() {
     "getRequestURI and getServletPath return the path without the query string" {
       val servletRequest = KtorServletRequest(connectedRequest(uri = "/api/items?id=42"))
       servletRequest.requestURI shouldBe "/api/items"
@@ -80,6 +99,18 @@ class KtorServletRequestTests : StringSpec() {
       servletRequest.remoteAddr shouldBe "10.0.0.7"
     }
 
+    "getRequestURL omits the default port and isSecure follows the scheme" {
+      val servletRequest = KtorServletRequest(connectedRequest(uri = "/api/items?id=42"))
+      servletRequest.requestURL.toString() shouldBe "https://example.com:8443/api/items"
+      servletRequest.isSecure shouldBe true
+    }
+
+    "getPathInfo is null because the servlet is mapped to its exact path" {
+      KtorServletRequest(mockk()).pathInfo shouldBe null
+    }
+  }
+
+  private fun parameterAndAttributeTests() {
     "getParameterValues returns null for a missing parameter" {
       val request = mockk<ApplicationRequest>()
       every { request.queryParameters } returns parametersOf("id", ["42"])
@@ -88,15 +119,21 @@ class KtorServletRequestTests : StringSpec() {
       servletRequest.getParameterValues("missing") shouldBe null
     }
 
-    "getHeaders returns all values for a header and an empty enumeration when absent" {
-      val request = mockk<ApplicationRequest>()
-      every { request.headers } returns headersOf("Accept" to ["text/html", "application/json"])
-      val servletRequest = KtorServletRequest(request)
-      servletRequest.getHeaders("Accept").toList() shouldBe ["text/html", "application/json"]
-      servletRequest.getHeaders("X-Missing").toList() shouldBe emptyList()
-      servletRequest.headerNames.toList() shouldBe ["Accept"]
+    "request attributes can be set, read, listed, and removed" {
+      val request = KtorServletRequest(mockk())
+      request.getAttribute("missing") shouldBe null
+      request.setAttribute("key", "value")
+      request.getAttribute("key") shouldBe "value"
+      request.attributeNames.toList() shouldBe ["key"]
+      request.setAttribute("key", null)
+      request.getAttribute("key") shouldBe null
+      request.setAttribute("other", 1)
+      request.removeAttribute("other")
+      request.attributeNames.toList() shouldBe emptyList()
     }
+  }
 
+  private fun unsupportedTests() {
     "unsupported request methods throw UnsupportedOperationException" {
       val request = KtorServletRequest(mockk())
       val response = KtorServletResponse()
@@ -140,7 +177,9 @@ class KtorServletRequestTests : StringSpec() {
       shouldThrow<UnsupportedOperationException> { request.protocolRequestId }
       shouldThrow<UnsupportedOperationException> { request.servletConnection }
     }
+  }
 
+  private fun derivedHeaderTests() {
     "headers the servlet spec derives values from are parsed, with -1 or null when absent" {
       val request = mockk<ApplicationRequest>()
       every { request.headers } returns
@@ -182,29 +221,6 @@ class KtorServletRequestTests : StringSpec() {
         servletRequest.characterEncoding shouldBe null
         servletRequest.contentLength shouldBe -1
       }
-    }
-
-    "getRequestURL omits the default port and isSecure follows the scheme" {
-      val servletRequest = KtorServletRequest(connectedRequest(uri = "/api/items?id=42"))
-      servletRequest.requestURL.toString() shouldBe "https://example.com:8443/api/items"
-      servletRequest.isSecure shouldBe true
-    }
-
-    "getPathInfo is null because the servlet is mapped to its exact path" {
-      KtorServletRequest(mockk()).pathInfo shouldBe null
-    }
-
-    "request attributes can be set, read, listed, and removed" {
-      val request = KtorServletRequest(mockk())
-      request.getAttribute("missing") shouldBe null
-      request.setAttribute("key", "value")
-      request.getAttribute("key") shouldBe "value"
-      request.attributeNames.toList() shouldBe ["key"]
-      request.setAttribute("key", null)
-      request.getAttribute("key") shouldBe null
-      request.setAttribute("other", 1)
-      request.removeAttribute("other")
-      request.attributeNames.toList() shouldBe emptyList()
     }
   }
 

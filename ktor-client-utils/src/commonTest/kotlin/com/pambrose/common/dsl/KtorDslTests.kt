@@ -21,6 +21,12 @@ import kotlinx.coroutines.withTimeout
 
 class KtorDslTests : StringSpec() {
   init {
+    providedClientTests()
+    getTests()
+    createdClientTests()
+  }
+
+  private fun providedClientTests() {
     "withHttpClient uses provided client when non-null and leaves it open" {
       val mockEngine =
         MockEngine { request ->
@@ -71,7 +77,9 @@ class KtorDslTests : StringSpec() {
         fromParameter shouldBe (HttpStatusCode.InternalServerError to "boom")
       }
     }
+  }
 
+  private fun getTests() {
     "get performs a GET request" {
       val mockEngine =
         MockEngine { request ->
@@ -117,7 +125,9 @@ class KtorDslTests : StringSpec() {
       request.headers["X-Test-Header"] shouldBe "present"
       request.url.toString() shouldBe "$URL?q=kotlin"
     }
+  }
 
+  private fun createdClientTests() {
     // The tests below let the helpers create their own client, so they need a default engine: CIO on the JVM and
     // native (a test dependency), and ktor-client-core's bundled Js engine on js and wasmJs.
 

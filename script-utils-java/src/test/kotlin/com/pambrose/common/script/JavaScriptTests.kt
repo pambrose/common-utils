@@ -46,6 +46,20 @@ private fun Any.isolation() = javaClass.getDeclaredField("isolation").apply { is
 
 class JavaScriptTests : StringSpec() {
   init {
+    builtInTypeTests()
+    objectTests()
+    typeParameterTests()
+    collectionTests()
+    evaluationTests()
+    poolTests()
+    variableTests()
+    declaredTypeTests()
+    specialClassTests()
+    evalScriptTests()
+    importTests()
+  }
+
+  private fun builtInTypeTests() {
     "built in types" {
       val boolVal = true
       val intVal = 0
@@ -83,7 +97,9 @@ class JavaScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun objectTests() {
     "user object" {
       val aux = IncClass()
 
@@ -108,7 +124,9 @@ class JavaScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun typeParameterTests() {
     "object with types" {
       val list: MutableList<Int> = [1]
       val map = mutableMapOf("k1" to 1)
@@ -145,6 +163,31 @@ class JavaScriptTests : StringSpec() {
       }
     }
 
+    "unnecessary params" {
+      val value = 5
+
+      JavaScript().use { script ->
+        shouldThrow<ScriptException> { script.add("value", value, typeOf<Int?>()) }
+      }
+    }
+
+    "unmatched params" {
+      val list: MutableList<Int> = [1]
+
+      JavaScript().use { script ->
+        shouldThrow<ScriptException> { script.add("list", list, typeOf<Int?>(), typeOf<Int>()) }
+      }
+    }
+
+    "missing collection type" {
+      val list: MutableList<Int> = [1]
+      JavaScript().use { script ->
+        shouldThrow<ScriptException> { script.add("list", list) }
+      }
+    }
+  }
+
+  private fun collectionTests() {
     "object with KType" {
       val list: MutableList<Int> = [1]
 
@@ -192,30 +235,9 @@ class JavaScriptTests : StringSpec() {
         }
       }
     }
+  }
 
-    "unnecessary params" {
-      val value = 5
-
-      JavaScript().use { script ->
-        shouldThrow<ScriptException> { script.add("value", value, typeOf<Int?>()) }
-      }
-    }
-
-    "unmatched params" {
-      val list: MutableList<Int> = [1]
-
-      JavaScript().use { script ->
-        shouldThrow<ScriptException> { script.add("list", list, typeOf<Int?>(), typeOf<Int>()) }
-      }
-    }
-
-    "missing collection type" {
-      val list: MutableList<Int> = [1]
-      JavaScript().use { script ->
-        shouldThrow<ScriptException> { script.add("list", list) }
-      }
-    }
-
+  private fun evaluationTests() {
     "invalid syntax" {
       JavaScript().use { script ->
         shouldThrow<ScriptException> { script.eval("junk") }
@@ -254,6 +276,20 @@ class JavaScriptTests : StringSpec() {
       }
     }
 
+    "verbose evaluation logs the generated source and returns the same result" {
+      JavaScript().use {
+        it.apply {
+          add("x", 20)
+          eval("x + 1", verbose = true) shouldBe 21
+          eval("x + 2", "x = x * 2;", verbose = true) shouldBe 42
+          val script = "public class Main { public int x; public Object getValue() { return x; } }"
+          evalScript(script, verbose = true) shouldBe 40
+        }
+      }
+    }
+  }
+
+  private fun poolTests() {
     // Bug #5 (Java): JavaScriptPool's nullGlobalContext is ignored because Java binds variables
     // into the engine scope, never the global scope. The global context must stay non-null on both
     // the initial population and after recycling, even when the pool is created with true.
@@ -265,6 +301,47 @@ class JavaScriptTests : StringSpec() {
       }
     }
 
+    "a pooled instance does not keep the previous borrower's variables" {
+      withTimeout(60_000.milliseconds) {
+        JavaScriptPool(1).use { pool ->
+          pool.eval {
+            add("x", 99)
+            eval("x")
+          } shouldBe 99
+          pool.eval {
+            varDecls shouldBe ""
+            shouldThrow<ScriptException> { eval("x") }
+          }
+        }
+      }
+    }
+
+    "a pooled instance does not keep the previous borrower's imports or isolation" {
+      withTimeout(60_000.milliseconds) {
+        val pool = JavaScriptPool(1)
+        pool.eval {
+          import(ArrayList::class.java)
+          assignIsolation(Isolation.IsolatedClassLoader)
+        }
+        pool.eval {
+          importDecls shouldBe ""
+          engine.isolation() shouldBe Isolation.CallerClassLoader
+        }
+      }
+    }
+
+    "resetForReuse keeps the global scope the Java engine needs, whatever it is passed" {
+      JavaScript().use {
+        it.apply {
+          resetForReuse(nullGlobalContext = true)
+          add("x", 1)
+          evalScript("public class Main { public int x; public Object getValue() { return x; } }") shouldBe 1
+        }
+      }
+    }
+  }
+
+  private fun variableTests() {
     "a variable added after an evaluation is bound for the next one" {
       JavaScript().use {
         it.apply {
@@ -287,6 +364,16 @@ class JavaScriptTests : StringSpec() {
       }
     }
 
+    "variable names must be valid Java identifiers" {
+      JavaScript().use { script ->
+        ["my-var", "new", "x; int injected"].forEach { name ->
+          shouldThrow<ScriptException> { script.add(name, 5) }
+        }
+      }
+    }
+  }
+
+  private fun declaredTypeTests() {
     // ArrayPrimitive: an Array<Int> is the case under test.
     @Suppress("ArrayPrimitive")
     "arrays can be bound, including arrays of generic and primitive elements" {
@@ -324,50 +411,6 @@ class JavaScriptTests : StringSpec() {
       }
     }
 
-    "a non-generic subclass of a generic class is declared as itself" {
-      JavaScript().use {
-        it.apply {
-          add("props", Properties().apply { setProperty("k", "v") })
-          eval("""props.getProperty("k")""") shouldBe "v"
-        }
-      }
-    }
-
-    "evalScript assigns each variable to its field and prepends the imports" {
-      JavaScript().use {
-        it.apply {
-          add("count", 41)
-          add("names", mutableListOf("a", "b"), typeOf<String>())
-          import(ArrayList::class.java)
-          evalScript(
-            """
-            public class Main {
-              public int count;
-              public ArrayList<String> names;
-
-              public Object getValue() {
-                return count + names.size();
-              }
-            }
-            """.trimIndent(),
-          ) shouldBe 43
-          importDecls shouldBe "import java.util.ArrayList;"
-        }
-      }
-    }
-
-    "verbose evaluation logs the generated source and returns the same result" {
-      JavaScript().use {
-        it.apply {
-          add("x", 20)
-          eval("x + 1", verbose = true) shouldBe 21
-          eval("x + 2", "x = x * 2;", verbose = true) shouldBe 42
-          val script = "public class Main { public int x; public Object getValue() { return x; } }"
-          evalScript(script, verbose = true) shouldBe 40
-        }
-      }
-    }
-
     "Char, Any, and nested generic type arguments compile" {
       JavaScript().use {
         it.apply {
@@ -388,58 +431,14 @@ class JavaScriptTests : StringSpec() {
         }
       }
     }
+  }
 
-    "a binding that does not fit the script's field is reported as a ScriptException" {
+  private fun specialClassTests() {
+    "a non-generic subclass of a generic class is declared as itself" {
       JavaScript().use {
         it.apply {
-          add("count", "not a number")
-          shouldThrow<ScriptException> {
-            evalScript("public class Main { public int count; public Object getValue() { return count; } }")
-          }
-        }
-      }
-    }
-
-    "a pooled instance does not keep the previous borrower's variables" {
-      withTimeout(60_000.milliseconds) {
-        JavaScriptPool(1).use { pool ->
-          pool.eval {
-            add("x", 99)
-            eval("x")
-          } shouldBe 99
-          pool.eval {
-            varDecls shouldBe ""
-            shouldThrow<ScriptException> { eval("x") }
-          }
-        }
-      }
-    }
-
-    "a pooled instance does not keep the previous borrower's imports or isolation" {
-      withTimeout(60_000.milliseconds) {
-        val pool = JavaScriptPool(1)
-        pool.eval {
-          import(ArrayList::class.java)
-          assignIsolation(Isolation.IsolatedClassLoader)
-        }
-        pool.eval {
-          importDecls shouldBe ""
-          engine.isolation() shouldBe Isolation.CallerClassLoader
-        }
-      }
-    }
-
-    // java-scriptengine copies every public field back into the bindings and, on each later run, sets a field for every
-    // binding, so an extra field used to break every evaluation after the one that declared it.
-    "evalScript leaves only the registered variables bound, so a later evaluation still works" {
-      JavaScript().use {
-        it.apply {
-          add("count", 41)
-          evalScript(
-            "public class Main { public int count; public int extra = 1; public Object getValue() { return count + 1; } }",
-          ) shouldBe 42
-          eval("count") shouldBe 41
-          evalScript("public class Main { public int count; public Object getValue() { return count; } }") shouldBe 41
+          add("props", Properties().apply { setProperty("k", "v") })
+          eval("""props.getProperty("k")""") shouldBe "v"
         }
       }
     }
@@ -466,7 +465,60 @@ class JavaScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun evalScriptTests() {
+    "evalScript assigns each variable to its field and prepends the imports" {
+      JavaScript().use {
+        it.apply {
+          add("count", 41)
+          add("names", mutableListOf("a", "b"), typeOf<String>())
+          import(ArrayList::class.java)
+          evalScript(
+            """
+            public class Main {
+              public int count;
+              public ArrayList<String> names;
+
+              public Object getValue() {
+                return count + names.size();
+              }
+            }
+            """.trimIndent(),
+          ) shouldBe 43
+          importDecls shouldBe "import java.util.ArrayList;"
+        }
+      }
+    }
+
+    "a binding that does not fit the script's field is reported as a ScriptException" {
+      JavaScript().use {
+        it.apply {
+          add("count", "not a number")
+          shouldThrow<ScriptException> {
+            evalScript("public class Main { public int count; public Object getValue() { return count; } }")
+          }
+        }
+      }
+    }
+
+    // java-scriptengine copies every public field back into the bindings and, on each later run, sets a field for every
+    // binding, so an extra field used to break every evaluation after the one that declared it.
+    "evalScript leaves only the registered variables bound, so a later evaluation still works" {
+      JavaScript().use {
+        it.apply {
+          add("count", 41)
+          evalScript(
+            "public class Main { public int count; public int extra = 1; public Object getValue() { return count + 1; } }",
+          ) shouldBe 42
+          eval("count") shouldBe 41
+          evalScript("public class Main { public int count; public Object getValue() { return count; } }") shouldBe 41
+        }
+      }
+    }
+  }
+
+  private fun importTests() {
     "a nested class is imported by its canonical name" {
       JavaScript().use {
         it.apply {
@@ -492,24 +544,6 @@ class JavaScriptTests : StringSpec() {
           add("aux", IncClass(5))
           assignIsolation(Isolation.IsolatedClassLoader)
           shouldThrow<ScriptException> { eval("aux.getI()") }.cause shouldNotBe null
-        }
-      }
-    }
-
-    "resetForReuse keeps the global scope the Java engine needs, whatever it is passed" {
-      JavaScript().use {
-        it.apply {
-          resetForReuse(nullGlobalContext = true)
-          add("x", 1)
-          evalScript("public class Main { public int x; public Object getValue() { return x; } }") shouldBe 1
-        }
-      }
-    }
-
-    "variable names must be valid Java identifiers" {
-      JavaScript().use { script ->
-        ["my-var", "new", "x; int injected"].forEach { name ->
-          shouldThrow<ScriptException> { script.add(name, 5) }
         }
       }
     }

@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents (such as Claude Code) when working with code in this repository.
 
 ## Project Overview
 
@@ -65,16 +65,21 @@ Run `make help` for a self-documenting list of every target.
 The root `build.gradle.kts` applies a shared set of plugins to every subproject and defines several inline configuration functions, including:
 
 - `configureKotlinJvm()` - JVM 17 target, experimental opt-ins (kotlin/jvm modules)
+- `configureTestingVersions()` - sets the Kotest and logback versions that `com.pambrose.testing` adds to the JVM
+  modules to the catalog's (kotlin/jvm modules)
 - `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
 - `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
   on the KMP modules' `-jvm` artifacts), published through the same POM setup; it skips all the Kotlin, lint,
   coverage and docs configuration
-- `configureVersions()` - pre-release filtering and the compact report formatter for the ben-manes `dependencyUpdates` task
+- `configureVersions()` - pre-release filtering and the compact report formatter for the ben-manes `dependencyUpdates`
+  task, which only the root project applies
 - `configurePitest()` - applies `info.solidsoft.pitest` and the Kotest PIT plugin to the modules in
-  `mutationModuleNames`. `targetTests` is widened to `com.pambrose.*` because some specs live outside
-  `com.pambrose.common`
+  `mutationModuleNames`, and sets the PIT engine to the catalog's `pitest` version, since the plugin's own default
+  lags. `targetTests` is widened to `com.pambrose.*` because some specs live outside `com.pambrose.common`. The
+  catalog's `pitest-command-line` library is there only so Dependabot tracks that version: the plugin adds the
+  dependency itself
 
 The `kmpModuleNames` set in the root build script decides which modules build with `kotlin("multiplatform")`; everything else gets `kotlin("jvm")`.
 
@@ -83,17 +88,38 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 - `com.pambrose.testing` - JUnit Platform, `kotest-runner-junit5` and `kotlin-test` as default `testImplementation`, logback-classic on test runtime
 - `com.pambrose.kotlinter` - Kotlinter lint/format tasks
 
-The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts` (versions pinned in the catalog to match the convention plugin).
+The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root
+script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts`, at the
+catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.5 and 1.6.5 in 1.1.7),
+which lag the catalog whenever the catalog moves first, so `configureTestingVersions()` sets the `kotestVersion` and
+`logbackVersion` of its `pambroseTesting` extension to the catalog's. Every module, the `mutationModuleNames` ones
+included, and the Kotest Gradle plugin therefore test on the catalog's Kotest; bump it in the catalog alone.
 
-Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0; earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates. Its `outputFormatter` makes `make versions` print, per module, only what is behind and what could not be checked; `make versions-all` passes `--output-formatter=plain` for the plugin's full report, up-to-date dependencies included. Only core-utils checks for a newer Gradle, since every module runs on the same one.
+Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0;
+earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its
+`isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies
+intentionally tracked on a pre-release line still surface updates. It recognizes a qualifier after a `.` or `-`
+(`-alpha.6`, `.Beta1`) and a Python-style one with no delimiter (Jython's `2.7.5b1`). Only the root project applies
+the plugin, so `dependencyUpdates` runs once, there, and merges every module's dependencies (gathered by a
+`partialDependencyUpdates` task in each) into one report. That report also covers the plugins in the root `plugins`
+block, which sit on the root buildscript classpath, where a module's own task never looks. Keep the plugin off the
+modules: applied there, each module would print a report of its own, and none of them would list a plugin. The foojay
+resolver in `settings.gradle.kts` is still not checked: only the plugin's settings form covers settings plugins, and a
+settings `plugins` block cannot read the version catalog, so look for a newer foojay by hand. The `outputFormatter` in
+`configureVersions()` makes `make versions` print only what is behind and what could not be checked, naming the
+declaring projects when their versions differ; `make versions-all` passes `--output-formatter=plain` for the plugin's
+full report, up-to-date dependencies included.
 
 The full report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
 'testRuntimeOnly' configuration". No build script declares it: the pitest plugin, applied to the
 `mutationModuleNames` modules, adds it from a `withDependencies` hook at the JUnit Platform version already on the
-test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.5). It follows Kotest, so don't pin it
+test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.6). It follows Kotest, so don't pin it
 separately; its 1.14.x/6.x candidates become relevant once Kotest moves.
 
-Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
+Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` (auto-detected if present).
+There is no baseline, since the code has no findings to suppress: fix a new finding or `@Suppress` it. A shared
+baseline file cannot work in this build, because every module's `detektBaseline*` tasks would write the same
+path, so there is no `make detekt-baseline` either.
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 
@@ -148,8 +174,8 @@ Deleting a run also drops its check results from old commits and pull requests.
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
-POM lists, update that list to match. As of 5.1.1 the catalog deliberately runs tcnative ahead of grpc's pin
-(2.0.84.Final against the 2.0.81.Final that grpc 1.84.1 names), so don't move it back to match; a later grpc
+POM lists, update that list to match. As of 5.1.2 the catalog deliberately runs tcnative ahead of grpc's pin
+(2.0.84.Final against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc
 bump is the time to bring the two together again.
 
 ### Experimental Kotlin Features
@@ -236,6 +262,11 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
 
 ### Testing Notes
 
+- A spec's `init` only calls `private fun <topic>Tests()` functions, each registering one group of related tests
+  and staying under detekt's 60-line `LongMethod` limit. CodeScene counts a whole `init` as one method and reports
+  it as a Large Method once it passes about 70 lines of code. Add a test to the group it belongs with, and start a
+  new group when that one would pass the limit. Kotest runs a `StringSpec`'s tests in registration order, so tests
+  that share mutable state keep their original order across groups.
 - All tests are hermetic: no network, no external services. gRPC tests use the in-process transport and
   committed self-signed PEM fixtures (`grpc-utils/src/test/resources/tls/`); Exposed tests use in-memory H2;
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
@@ -273,7 +304,7 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.1.1 the project sits at 99.4% line and 96.1% branch, and the weakest package
+`codecov.yml` point here). As of 5.1.2 the project sits at 99.4% line and 96.1% branch, and the weakest package
 by line coverage is `service` at 98.2%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,

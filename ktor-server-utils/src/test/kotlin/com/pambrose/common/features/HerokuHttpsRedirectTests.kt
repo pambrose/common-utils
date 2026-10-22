@@ -34,6 +34,12 @@ class HerokuHttpsRedirectTests : StringSpec() {
   }
 
   init {
+    forwardedProtoTests()
+    configurationTests()
+    excludeTests()
+  }
+
+  private fun forwardedProtoTests() {
     "no redirect when x-forwarded-proto is https" {
       testApplication {
         helloApp().get("/hello") {
@@ -77,7 +83,9 @@ class HerokuHttpsRedirectTests : StringSpec() {
       response.lines().first { it.startsWith("Location:", ignoreCase = true) }.substringAfter(":").trim() shouldBe
         "https://myapp.example.com/hello?b=2&a=1&B=3&flag&sig=a%2Fb"
     }
+  }
 
+  private fun configurationTests() {
     "redirect uses a configured host, and a temporary redirect when permanentRedirect is false" {
       testApplication {
         val client =
@@ -105,7 +113,9 @@ class HerokuHttpsRedirectTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun excludeTests() {
     "a path matching none of the configured excludes is still redirected" {
       testApplication {
         val client =

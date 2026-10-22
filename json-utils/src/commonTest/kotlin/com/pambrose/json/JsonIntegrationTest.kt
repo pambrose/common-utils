@@ -94,48 +94,102 @@ data class PrivacySettings(
 )
 
 class JsonIntegrationTest : StringSpec() {
+  private val sampleUser = User(
+    id = 12345L,
+    username = "johndoe",
+    email = "john.doe@example.com",
+    profile = UserProfile(
+      firstName = "John",
+      lastName = "Doe",
+      bio = "Software developer passionate about Kotlin",
+      avatar = "https://example.com/avatar/johndoe.jpg",
+      socialLinks = mapOf(
+        "github" to "https://github.com/johndoe",
+        "twitter" to "https://twitter.com/johndoe",
+        "linkedin" to "https://linkedin.com/in/johndoe",
+      ),
+    ),
+    permissions = ["read", "write", "admin"],
+    settings = UserSettings(
+      theme = "dark",
+      notifications = NotificationSettings(
+        email = true,
+        push = false,
+        sms = true,
+      ),
+      privacy = PrivacySettings(
+        profileVisible = false,
+        showEmail = true,
+        allowMessages = false,
+      ),
+    ),
+  )
+
+  private val successResponse = ApiResponse(
+    success = true,
+    data = sampleUser,
+    metadata = mapOf(
+      "version" to "1.0",
+      "requestId" to "req-123",
+      "server" to "api-01",
+    ),
+  )
+
+  // Simulate response from external API
+  private val externalApiResponse = """
+        {
+            "status": "success",
+            "code": 200,
+            "data": {
+                "users": [
+                    {
+                        "id": 1,
+                        "name": "Alice Johnson",
+                        "email": "alice@example.com",
+                        "role": "admin",
+                        "lastLogin": "2023-12-01T10:30:00Z",
+                        "preferences": {
+                            "language": "en",
+                            "timezone": "UTC",
+                            "dateFormat": "ISO"
+                        }
+                    },
+                    {
+                        "id": 2,
+                        "name": "Bob Smith",
+                        "email": "bob@example.com",
+                        "role": "user",
+                        "lastLogin": "2023-12-02T14:15:00Z",
+                        "preferences": {
+                            "language": "fr",
+                            "timezone": "Europe/Paris",
+                            "dateFormat": "European"
+                        }
+                    }
+                ],
+                "pagination": {
+                    "page": 1,
+                    "pageSize": 10,
+                    "total": 2,
+                    "hasNext": false
+                }
+            },
+            "requestId": "api-req-789",
+            "timestamp": 1701429600,
+            "timestampMillis": 1701429600000
+        }
+    """.trimIndent()
+
   init {
-    val sampleUser = User(
-      id = 12345L,
-      username = "johndoe",
-      email = "john.doe@example.com",
-      profile = UserProfile(
-        firstName = "John",
-        lastName = "Doe",
-        bio = "Software developer passionate about Kotlin",
-        avatar = "https://example.com/avatar/johndoe.jpg",
-        socialLinks = mapOf(
-          "github" to "https://github.com/johndoe",
-          "twitter" to "https://twitter.com/johndoe",
-          "linkedin" to "https://linkedin.com/in/johndoe",
-        ),
-      ),
-      permissions = ["read", "write", "admin"],
-      settings = UserSettings(
-        theme = "dark",
-        notifications = NotificationSettings(
-          email = true,
-          push = false,
-          sms = true,
-        ),
-        privacy = PrivacySettings(
-          profileVisible = false,
-          showEmail = true,
-          allowMessages = false,
-        ),
-      ),
-    )
+    apiResponseTests()
+    errorHandlingTests()
+    realWorldParsingTests()
+    transformationTests()
+    bulkProcessingTests()
+    largeStructureTests()
+  }
 
-    val successResponse = ApiResponse(
-      success = true,
-      data = sampleUser,
-      metadata = mapOf(
-        "version" to "1.0",
-        "requestId" to "req-123",
-        "server" to "api-01",
-      ),
-    )
-
+  private fun apiResponseTests() {
     "complete API response serialization and parsing" {
       // Serialize to JSON
       val json = successResponse.toJsonString(prettyPrint = true)
@@ -188,7 +242,9 @@ class JsonIntegrationTest : StringSpec() {
       jsonElement.booleanValue("data.settings.privacy.showEmail") shouldBe true
       jsonElement.booleanValue("data.settings.privacy.allowMessages") shouldBe false
     }
+  }
 
+  private fun errorHandlingTests() {
     "error response handling" {
       val errorResponse = ApiResponse<User>(
         success = false,
@@ -205,52 +261,44 @@ class JsonIntegrationTest : StringSpec() {
       jsonElement.stringValue("metadata.requestId") shouldBe "req-456"
     }
 
-    "real-world JSON parsing from external API" {
-      // Simulate response from external API
-      val externalApiResponse = """
+    "error scenarios and edge cases" {
+      // Test with missing optional fields
+      val minimalJson = """
             {
-                "status": "success",
-                "code": 200,
+                "success": true,
                 "data": {
-                    "users": [
-                        {
-                            "id": 1,
-                            "name": "Alice Johnson",
-                            "email": "alice@example.com",
-                            "role": "admin",
-                            "lastLogin": "2023-12-01T10:30:00Z",
-                            "preferences": {
-                                "language": "en",
-                                "timezone": "UTC",
-                                "dateFormat": "ISO"
-                            }
-                        },
-                        {
-                            "id": 2,
-                            "name": "Bob Smith",
-                            "email": "bob@example.com",
-                            "role": "user",
-                            "lastLogin": "2023-12-02T14:15:00Z",
-                            "preferences": {
-                                "language": "fr",
-                                "timezone": "Europe/Paris",
-                                "dateFormat": "European"
-                            }
-                        }
-                    ],
-                    "pagination": {
-                        "page": 1,
-                        "pageSize": 10,
-                        "total": 2,
-                        "hasNext": false
+                    "id": 999,
+                    "username": "minimal",
+                    "email": "minimal@example.com",
+                    "profile": {
+                        "firstName": "Min",
+                        "lastName": "Mal"
                     }
-                },
-                "requestId": "api-req-789",
-                "timestamp": 1701429600,
-                "timestampMillis": 1701429600000
+                }
             }
         """.trimIndent()
 
+      val jsonElement = minimalJson.parseJson()
+
+      // Required fields should be present
+      jsonElement.booleanValue("success") shouldBe true
+      jsonElement.intValue("data.id") shouldBe 999
+      jsonElement.stringValue("data.username") shouldBe "minimal"
+
+      // Optional fields should be null or missing
+      jsonElement.stringValueOrNull("data.profile.bio") shouldBe null
+      jsonElement.stringValueOrNull("data.profile.avatar") shouldBe null
+
+      // Arrays might be missing, should handle gracefully
+      jsonElement.jsonElementListOrNull("data.permissions") shouldBe null
+
+      // Nested objects might be missing
+      jsonElement.jsonObjectValueOrNull("data.settings") shouldBe null
+    }
+  }
+
+  private fun realWorldParsingTests() {
+    "real-world JSON parsing from external API" {
       val jsonElement = externalApiResponse.parseJson()
 
       // Test response metadata
@@ -293,7 +341,9 @@ class JsonIntegrationTest : StringSpec() {
       jsonElement.intValue("data.pagination.total") shouldBe 2
       jsonElement.booleanValue("data.pagination.hasNext") shouldBe false
     }
+  }
 
+  private fun transformationTests() {
     "JSON transformation and manipulation" {
       val json = sampleUser.toJsonElement()
 
@@ -326,6 +376,33 @@ class JsonIntegrationTest : StringSpec() {
       userSummary.booleanValue("notificationsEnabled") shouldBe true
     }
 
+    "format round-trip consistency" {
+      val originalData = successResponse
+
+      // Test different format round trips
+      val prettyJson = originalData.toJsonString(prettyPrint = true)
+      val compactJson = originalData.toJsonString(prettyPrint = false)
+
+      val prettyParsed = prettyJson.parseJson()
+      val compactParsed = compactJson.parseJson()
+
+      // Data should be identical regardless of formatting
+      compactParsed.booleanValue("success") shouldBe prettyParsed.booleanValue("success")
+      compactParsed.stringValue("data.username") shouldBe prettyParsed.stringValue("data.username")
+      compactParsed.stringValue("data.profile.firstName") shouldBe prettyParsed.stringValue("data.profile.firstName")
+      compactParsed.intValue("data.id") shouldBe prettyParsed.intValue("data.id")
+
+      // Test array consistency
+      val prettyPermissions = prettyParsed.jsonElementList("data.permissions")
+      val compactPermissions = compactParsed.jsonElementList("data.permissions")
+      compactPermissions.size shouldBe prettyPermissions.size
+      prettyPermissions.indices.forEach { i ->
+        compactPermissions[i].stringValue shouldBe prettyPermissions[i].stringValue
+      }
+    }
+  }
+
+  private fun bulkProcessingTests() {
     "bulk data processing" {
       // Simulate processing a batch of users
       val users = [
@@ -376,113 +453,11 @@ class JsonIntegrationTest : StringSpec() {
         }
       }
     }
+  }
 
-    "error scenarios and edge cases" {
-      // Test with missing optional fields
-      val minimalJson = """
-            {
-                "success": true,
-                "data": {
-                    "id": 999,
-                    "username": "minimal",
-                    "email": "minimal@example.com",
-                    "profile": {
-                        "firstName": "Min",
-                        "lastName": "Mal"
-                    }
-                }
-            }
-        """.trimIndent()
-
-      val jsonElement = minimalJson.parseJson()
-
-      // Required fields should be present
-      jsonElement.booleanValue("success") shouldBe true
-      jsonElement.intValue("data.id") shouldBe 999
-      jsonElement.stringValue("data.username") shouldBe "minimal"
-
-      // Optional fields should be null or missing
-      jsonElement.stringValueOrNull("data.profile.bio") shouldBe null
-      jsonElement.stringValueOrNull("data.profile.avatar") shouldBe null
-
-      // Arrays might be missing, should handle gracefully
-      jsonElement.jsonElementListOrNull("data.permissions") shouldBe null
-
-      // Nested objects might be missing
-      jsonElement.jsonObjectValueOrNull("data.settings") shouldBe null
-    }
-
-    "format round-trip consistency" {
-      val originalData = successResponse
-
-      // Test different format round trips
-      val prettyJson = originalData.toJsonString(prettyPrint = true)
-      val compactJson = originalData.toJsonString(prettyPrint = false)
-
-      val prettyParsed = prettyJson.parseJson()
-      val compactParsed = compactJson.parseJson()
-
-      // Data should be identical regardless of formatting
-      compactParsed.booleanValue("success") shouldBe prettyParsed.booleanValue("success")
-      compactParsed.stringValue("data.username") shouldBe prettyParsed.stringValue("data.username")
-      compactParsed.stringValue("data.profile.firstName") shouldBe prettyParsed.stringValue("data.profile.firstName")
-      compactParsed.intValue("data.id") shouldBe prettyParsed.intValue("data.id")
-
-      // Test array consistency
-      val prettyPermissions = prettyParsed.jsonElementList("data.permissions")
-      val compactPermissions = compactParsed.jsonElementList("data.permissions")
-      compactPermissions.size shouldBe prettyPermissions.size
-      prettyPermissions.indices.forEach { i ->
-        compactPermissions[i].stringValue shouldBe prettyPermissions[i].stringValue
-      }
-    }
-
+  private fun largeStructureTests() {
     "navigating a large nested structure" {
-      val complexStructure = buildJsonObject {
-        put(
-          "meta",
-          buildJsonObject {
-            put("version", "2.0")
-            put("generated", Clock.System.now().toEpochMilliseconds())
-            put(
-              "config",
-              buildJsonObject {
-                repeat(20) { i ->
-                  put("setting$i", "value$i")
-                }
-              },
-            )
-          },
-        )
-        put(
-          "users",
-          buildJsonArray {
-            repeat(50) { i ->
-              add(
-                buildJsonObject {
-                  put("id", i)
-                  put("name", "User $i")
-                  put(
-                    "data",
-                    buildJsonObject {
-                      put("score", i * 10.5)
-                      put("active", i % 2 == 0)
-                      put(
-                        "tags",
-                        buildJsonArray {
-                          repeat(5) { j ->
-                            add("tag$j")
-                          }
-                        },
-                      )
-                    },
-                  )
-                },
-              )
-            }
-          },
-        )
-      }
+      val complexStructure = largeNestedStructure()
 
       complexStructure.stringValue("meta.version") shouldBe "2.0"
       complexStructure.stringValue("meta.config.setting10") shouldBe "value10"
@@ -500,4 +475,51 @@ class JsonIntegrationTest : StringSpec() {
       tags[2].stringValue shouldBe "tag2"
     }
   }
+
+  private fun largeNestedStructure() =
+    buildJsonObject {
+      put(
+        "meta",
+        buildJsonObject {
+          put("version", "2.0")
+          put("generated", Clock.System.now().toEpochMilliseconds())
+          put(
+            "config",
+            buildJsonObject {
+              repeat(20) { i ->
+                put("setting$i", "value$i")
+              }
+            },
+          )
+        },
+      )
+      put(
+        "users",
+        buildJsonArray {
+          repeat(50) { i ->
+            add(
+              buildJsonObject {
+                put("id", i)
+                put("name", "User $i")
+                put(
+                  "data",
+                  buildJsonObject {
+                    put("score", i * 10.5)
+                    put("active", i % 2 == 0)
+                    put(
+                      "tags",
+                      buildJsonArray {
+                        repeat(5) { j ->
+                          add("tag$j")
+                        }
+                      },
+                    )
+                  },
+                )
+              },
+            )
+          }
+        },
+      )
+    }
 }

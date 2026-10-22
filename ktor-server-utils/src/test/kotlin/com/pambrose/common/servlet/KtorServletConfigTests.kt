@@ -30,6 +30,11 @@ import java.util.EventListener
 
 class KtorServletConfigTests : StringSpec() {
   init {
+    contextStateTests()
+    contextCapabilityTests()
+  }
+
+  private fun contextStateTests() {
     "config exposes its name and context and has no init parameters" {
       val context = KtorServletContext()
       val config = KtorServletConfig("my-servlet", context)
@@ -64,7 +69,9 @@ class KtorServletConfigTests : StringSpec() {
         context.log("failure", IllegalStateException("boom"))
       }
     }
+  }
 
+  private fun contextCapabilityTests() {
     "context reports Servlet 6.1 and no init parameters, resources, or dispatchers" {
       val context = KtorServletContext()
       context.contextPath shouldBe ""

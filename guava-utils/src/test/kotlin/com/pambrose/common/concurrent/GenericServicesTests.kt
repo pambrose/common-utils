@@ -103,6 +103,12 @@ private class SlowStoppingExecutionThreadService : GenericExecutionThreadService
 
 class GenericServicesTests : StringSpec() {
   init {
+    syncFailureTests()
+    serviceListenerTests()
+    startStopTests()
+  }
+
+  private fun syncFailureTests() {
     "startSync throws IllegalStateException carrying the cause when startUp fails" {
       fun startFails(
         service: Service,
@@ -145,6 +151,15 @@ class GenericServicesTests : StringSpec() {
       service.state() shouldBe Service.State.FAILED
     }
 
+    "startSync throws TimeoutException when the service does not start in time" {
+      val service = SlowIdleService(startupDelay = 500.milliseconds)
+      shouldThrow<TimeoutException> { service.startSync(timeout = 50.milliseconds) }
+      service.awaitRunning()
+      service.stopSync(timeout = 5.seconds)
+    }
+  }
+
+  private fun serviceListenerTests() {
     "genericServiceListener logs a failure at error level with its cause" {
       val logger = mockk<KLogger>(relaxed = true)
       val service = FailingIdleService()
@@ -161,6 +176,20 @@ class GenericServicesTests : StringSpec() {
       verify(exactly = 1) { logger.info(any<() -> Any?>()) }
     }
 
+    "genericServiceListener logs each lifecycle transition once it is added" {
+      val logger = mockk<KLogger>(relaxed = true)
+      val service = BlockingService()
+      service.addListener(service.genericServiceListener(logger), MoreExecutors.directExecutor())
+
+      service.startSync()
+      service.stopSync()
+
+      // starting, running, stopping, and terminated
+      verify(exactly = 4, timeout = 5_000) { logger.info(any<() -> Any?>()) }
+    }
+  }
+
+  private fun startStopTests() {
     // The Kotlin Duration overloads compile under mangled names (startSync-LRDsOJo), which Java cannot call, so the
     // java.time.Duration overloads are what Java callers use; they must declare the checked TimeoutException.
     "Java callers get startSync and stopSync overloads that declare TimeoutException" {
@@ -186,31 +215,12 @@ class GenericServicesTests : StringSpec() {
       idle.state() shouldBe Service.State.TERMINATED
     }
 
-    "startSync throws TimeoutException when the service does not start in time" {
-      val service = SlowIdleService(startupDelay = 500.milliseconds)
-      shouldThrow<TimeoutException> { service.startSync(timeout = 50.milliseconds) }
-      service.awaitRunning()
-      service.stopSync(timeout = 5.seconds)
-    }
-
     "startSync and stopSync bring a service up and down" {
       val service = BlockingService()
       service.startSync()
       service.isRunning shouldBe true
       service.stopSync()
       service.state() shouldBe Service.State.TERMINATED
-    }
-
-    "genericServiceListener logs each lifecycle transition once it is added" {
-      val logger = mockk<KLogger>(relaxed = true)
-      val service = BlockingService()
-      service.addListener(service.genericServiceListener(logger), MoreExecutors.directExecutor())
-
-      service.startSync()
-      service.stopSync()
-
-      // starting, running, stopping, and terminated
-      verify(exactly = 4, timeout = 5_000) { logger.info(any<() -> Any?>()) }
     }
   }
 }

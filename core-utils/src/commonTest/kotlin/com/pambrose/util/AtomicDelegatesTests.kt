@@ -30,6 +30,13 @@ import kotlinx.coroutines.withContext
 
 class AtomicDelegatesTests : StringSpec() {
   init {
+    atomicPrimitiveTests()
+    nonNullableReferenceTests()
+    singleSetReferenceTests()
+    singleSetEdgeCaseTests()
+  }
+
+  private fun atomicPrimitiveTests() {
     "atomic boolean test" {
       var flag by AtomicDelegates.atomicBoolean(false)
       flag shouldBe false
@@ -61,6 +68,19 @@ class AtomicDelegatesTests : StringSpec() {
       count shouldBe Long.MAX_VALUE
     }
 
+    "atomic integer and long delegates start at zero by default" {
+      var hits by AtomicDelegates.atomicInteger()
+      var bytes by AtomicDelegates.atomicLong()
+      hits shouldBe 0
+      bytes shouldBe 0L
+      hits++
+      bytes += 10
+      hits shouldBe 1
+      bytes shouldBe 10L
+    }
+  }
+
+  private fun nonNullableReferenceTests() {
     "non nullable reference test" {
       var value: String by AtomicDelegates.nonNullableReference()
 
@@ -85,7 +105,9 @@ class AtomicDelegatesTests : StringSpec() {
       value = "updated"
       value shouldBe "updated"
     }
+  }
 
+  private fun singleSetReferenceTests() {
     "single set reference test" {
       var value: String? by AtomicDelegates.singleSetReference()
       value shouldBe null
@@ -116,20 +138,6 @@ class AtomicDelegatesTests : StringSpec() {
       value shouldBe "updated"
     }
 
-    "single set reference compares values by equality, not identity" {
-      // On the JVM, 1000 is outside the boxed Integer cache, so these are two distinct instances.
-      var boxed: Int? by AtomicDelegates.singleSetReference(initValue = 1000, compareValue = 1000)
-      boxed = 5
-      boxed shouldBe 5
-
-      // Equal strings built at runtime are distinct instances too.
-      val init = buildString { append("init") }
-      val sameText = buildString { append("init") }
-      var built: String? by AtomicDelegates.singleSetReference(initValue = init, compareValue = sameText)
-      built = "updated"
-      built shouldBe "updated"
-    }
-
     "single set reference defaults compareValue to initValue" {
       var value: String? by AtomicDelegates.singleSetReference(initValue = "initial")
       value = "updated"
@@ -147,22 +155,27 @@ class AtomicDelegatesTests : StringSpec() {
       }
       value shouldBe null
     }
+  }
+
+  private fun singleSetEdgeCaseTests() {
+    "single set reference compares values by equality, not identity" {
+      // On the JVM, 1000 is outside the boxed Integer cache, so these are two distinct instances.
+      var boxed: Int? by AtomicDelegates.singleSetReference(initValue = 1000, compareValue = 1000)
+      boxed = 5
+      boxed shouldBe 5
+
+      // Equal strings built at runtime are distinct instances too.
+      val init = buildString { append("init") }
+      val sameText = buildString { append("init") }
+      var built: String? by AtomicDelegates.singleSetReference(initValue = init, compareValue = sameText)
+      built = "updated"
+      built shouldBe "updated"
+    }
 
     "single set reference rejects an initValue that differs from compareValue" {
       shouldThrow<IllegalArgumentException> {
         AtomicDelegates.singleSetReference(initValue = "a", compareValue = "b")
       }
-    }
-
-    "atomic integer and long delegates start at zero by default" {
-      var hits by AtomicDelegates.atomicInteger()
-      var bytes by AtomicDelegates.atomicLong()
-      hits shouldBe 0
-      bytes shouldBe 0L
-      hits++
-      bytes += 10
-      hits shouldBe 1
-      bytes shouldBe 10L
     }
 
     // The writers start together on the multi-threaded dispatcher. A race test cannot prove there is no race

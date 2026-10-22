@@ -52,17 +52,24 @@ data class ComplexData(
 )
 
 class JsonContentUtilsTest : StringSpec() {
-  init {
-    val simpleData = SimpleData("test", 42, true)
-    val complexData = ComplexData(
-      id = "complex-1",
-      metadata = mapOf("version" to "1.0", "type" to "test"),
-      items = [
-        SimpleData("item1", 10),
-        SimpleData("item2", 20, false),
-      ],
-    )
+  private val simpleData = SimpleData("test", 42, true)
+  private val complexData = ComplexData(
+    id = "complex-1",
+    metadata = mapOf("version" to "1.0", "type" to "test"),
+    items = [
+      SimpleData("item1", 10),
+      SimpleData("item2", 20, false),
+    ],
+  )
 
+  init {
+    formatConfigurationTests()
+    formattingTests()
+    conversionTests()
+    complexDataTests()
+  }
+
+  private fun formatConfigurationTests() {
     "JsonContentUtils formats are properly configured" {
       // Test pretty format
       val prettyJson = JsonContentUtils.prettyFormat
@@ -85,82 +92,6 @@ class JsonContentUtilsTest : StringSpec() {
       strictJson.configuration.isLenient shouldBe false
       strictJson.configuration.ignoreUnknownKeys shouldBe false
       strictJson.configuration.encodeDefaults shouldBe true
-    }
-
-    "to json string with pretty printing" {
-      val prettyJsonString = simpleData.toJsonString(prettyPrint = true)
-      val rawJsonString = simpleData.toJsonString(prettyPrint = false)
-
-      // Pretty printed should contain newlines and indentation
-      prettyJsonString.contains('\n') shouldBe true
-      prettyJsonString.contains("  ") shouldBe true // default indent
-
-      // Raw should be compact
-      rawJsonString.contains('\n') shouldBe false
-
-      // Both should contain the same data
-      val prettyParsed = prettyJsonString.parseJson()
-      val rawParsed = rawJsonString.parseJson()
-
-      rawParsed.stringValue("name") shouldBe prettyParsed.stringValue("name")
-      rawParsed.intValue("value") shouldBe prettyParsed.intValue("value")
-      rawParsed.booleanValue("active") shouldBe prettyParsed.booleanValue("active")
-    }
-
-    "to json element conversion" {
-      val jsonElement = simpleData.toJsonElement()
-
-      jsonElement.stringValue("name") shouldBe "test"
-      jsonElement.intValue("value") shouldBe 42
-      jsonElement.booleanValue("active") shouldBe true
-    }
-
-    "string to json element parsing" {
-      val jsonString = """{"name": "parsed", "value": 100, "active": false}"""
-      val jsonElement = jsonString.parseJson()
-
-      jsonElement.stringValue("name") shouldBe "parsed"
-      jsonElement.intValue("value") shouldBe 100
-      jsonElement.booleanValue("active") shouldBe false
-    }
-
-    "to formatted string with custom indent" {
-      val jsonElement = simpleData.toJsonElement()
-
-      val defaultFormatted = jsonElement.toFormattedString()
-      val customFormatted = jsonElement.toFormattedString("    ") // 4 spaces
-
-      // Both should be formatted but with different indentation
-      defaultFormatted.contains("  ") shouldBe true // 2 spaces
-      customFormatted.contains("    ") shouldBe true // 4 spaces
-
-      // Should not contain each other's indentation in this simple case
-      defaultFormatted.contains("    ") shouldBe false // shouldn't have 4 spaces
-    }
-
-    "complex data serialization and parsing" {
-      // Test serialization
-      val jsonString = complexData.toJsonString(prettyPrint = true)
-      val jsonElement = jsonString.parseJson()
-
-      // Test basic fields
-      jsonElement.stringValue("id") shouldBe "complex-1"
-
-      // Test metadata map
-      jsonElement.stringValue("metadata.version") shouldBe "1.0"
-      jsonElement.stringValue("metadata.type") shouldBe "test"
-
-      // Test items array
-      val items = jsonElement.jsonElementList("items")
-      items.size shouldBe 2
-
-      items[0].stringValue("name") shouldBe "item1"
-      items[0].intValue("value") shouldBe 10
-      items[0].booleanValue("active") shouldBe true
-
-      items[1].stringValue("name") shouldBe "item2"
-      items[1].intValue("value") shouldBe 20
-      items[1].booleanValue("active") shouldBe false
     }
 
     "lenient format accepts input that the strict format rejects" {
@@ -196,16 +127,84 @@ class JsonContentUtilsTest : StringSpec() {
       customJson.configuration.prettyPrint shouldBe true
       customJson.configuration.prettyPrintIndent shouldBe "  "
     }
+  }
 
-    "round trip serialization" {
-      // Original -> JSON String -> JsonElement -> Map -> back to JsonElement
-      val originalJsonString = complexData.toJsonString()
-      val jsonElement = originalJsonString.parseJson()
-      val map = jsonElement.toMap()
+  private fun formattingTests() {
+    "to json string with pretty printing" {
+      val prettyJsonString = simpleData.toJsonString(prettyPrint = true)
+      val rawJsonString = simpleData.toJsonString(prettyPrint = false)
 
-      // Verify the round trip preserved core data
-      map["id"] shouldBe complexData.id
-      jsonElement.stringValue("id") shouldBe complexData.id
+      // Pretty printed should contain newlines and indentation
+      prettyJsonString.contains('\n') shouldBe true
+      prettyJsonString.contains("  ") shouldBe true // default indent
+
+      // Raw should be compact
+      rawJsonString.contains('\n') shouldBe false
+
+      // Both should contain the same data
+      val prettyParsed = prettyJsonString.parseJson()
+      val rawParsed = rawJsonString.parseJson()
+
+      rawParsed.stringValue("name") shouldBe prettyParsed.stringValue("name")
+      rawParsed.intValue("value") shouldBe prettyParsed.intValue("value")
+      rawParsed.booleanValue("active") shouldBe prettyParsed.booleanValue("active")
+    }
+
+    "to formatted string with custom indent" {
+      val jsonElement = simpleData.toJsonElement()
+
+      val defaultFormatted = jsonElement.toFormattedString()
+      val customFormatted = jsonElement.toFormattedString("    ") // 4 spaces
+
+      // Both should be formatted but with different indentation
+      defaultFormatted.contains("  ") shouldBe true // 2 spaces
+      customFormatted.contains("    ") shouldBe true // 4 spaces
+
+      // Should not contain each other's indentation in this simple case
+      defaultFormatted.contains("    ") shouldBe false // shouldn't have 4 spaces
+    }
+
+    "format consistency across utils" {
+      // Ensure different formatting methods produce consistent results
+      val data = simpleData
+
+      val viaToJsonString = data.toJsonString(prettyPrint = true)
+      val viaPrettyFormat = JsonContentUtils.prettyFormat.encodeToString(data)
+      val viaToFormattedString = data.toJsonElement().toFormattedString()
+
+      // All should be pretty printed
+      viaToJsonString.contains('\n') shouldBe true
+      viaPrettyFormat.contains('\n') shouldBe true
+      viaToFormattedString.contains('\n') shouldBe true
+
+      // Parse all and verify they contain the same data
+      val parsed1 = viaToJsonString.parseJson()
+      val parsed2 = viaPrettyFormat.parseJson()
+      val parsed3 = viaToFormattedString.parseJson()
+
+      parsed2.stringValue("name") shouldBe parsed1.stringValue("name")
+      parsed3.stringValue("name") shouldBe parsed2.stringValue("name")
+      parsed2.intValue("value") shouldBe parsed1.intValue("value")
+      parsed3.intValue("value") shouldBe parsed2.intValue("value")
+    }
+  }
+
+  private fun conversionTests() {
+    "to json element conversion" {
+      val jsonElement = simpleData.toJsonElement()
+
+      jsonElement.stringValue("name") shouldBe "test"
+      jsonElement.intValue("value") shouldBe 42
+      jsonElement.booleanValue("active") shouldBe true
+    }
+
+    "string to json element parsing" {
+      val jsonString = """{"name": "parsed", "value": 100, "active": false}"""
+      val jsonElement = jsonString.parseJson()
+
+      jsonElement.stringValue("name") shouldBe "parsed"
+      jsonElement.intValue("value") shouldBe 100
+      jsonElement.booleanValue("active") shouldBe false
     }
 
     "error handling with malformed JSON" {
@@ -238,6 +237,44 @@ class JsonContentUtilsTest : StringSpec() {
       element.stringValueOrNull("value") shouldBe null
       shouldThrow<IllegalArgumentException> { element.stringValue("value") }
     }
+  }
+
+  private fun complexDataTests() {
+    "complex data serialization and parsing" {
+      // Test serialization
+      val jsonString = complexData.toJsonString(prettyPrint = true)
+      val jsonElement = jsonString.parseJson()
+
+      // Test basic fields
+      jsonElement.stringValue("id") shouldBe "complex-1"
+
+      // Test metadata map
+      jsonElement.stringValue("metadata.version") shouldBe "1.0"
+      jsonElement.stringValue("metadata.type") shouldBe "test"
+
+      // Test items array
+      val items = jsonElement.jsonElementList("items")
+      items.size shouldBe 2
+
+      items[0].stringValue("name") shouldBe "item1"
+      items[0].intValue("value") shouldBe 10
+      items[0].booleanValue("active") shouldBe true
+
+      items[1].stringValue("name") shouldBe "item2"
+      items[1].intValue("value") shouldBe 20
+      items[1].booleanValue("active") shouldBe false
+    }
+
+    "round trip serialization" {
+      // Original -> JSON String -> JsonElement -> Map -> back to JsonElement
+      val originalJsonString = complexData.toJsonString()
+      val jsonElement = originalJsonString.parseJson()
+      val map = jsonElement.toMap()
+
+      // Verify the round trip preserved core data
+      map["id"] shouldBe complexData.id
+      jsonElement.stringValue("id") shouldBe complexData.id
+    }
 
     "large data structures" {
       // Create a larger structure to test performance
@@ -258,30 +295,6 @@ class JsonContentUtilsTest : StringSpec() {
       items[49].stringValue("name") shouldBe "item50" // 0-indexed
       items[49].intValue("value") shouldBe 50
       items[49].booleanValue("active") shouldBe true // 50 % 2 == 0
-    }
-
-    "format consistency across utils" {
-      // Ensure different formatting methods produce consistent results
-      val data = simpleData
-
-      val viaToJsonString = data.toJsonString(prettyPrint = true)
-      val viaPrettyFormat = JsonContentUtils.prettyFormat.encodeToString(data)
-      val viaToFormattedString = data.toJsonElement().toFormattedString()
-
-      // All should be pretty printed
-      viaToJsonString.contains('\n') shouldBe true
-      viaPrettyFormat.contains('\n') shouldBe true
-      viaToFormattedString.contains('\n') shouldBe true
-
-      // Parse all and verify they contain the same data
-      val parsed1 = viaToJsonString.parseJson()
-      val parsed2 = viaPrettyFormat.parseJson()
-      val parsed3 = viaToFormattedString.parseJson()
-
-      parsed2.stringValue("name") shouldBe parsed1.stringValue("name")
-      parsed3.stringValue("name") shouldBe parsed2.stringValue("name")
-      parsed2.intValue("value") shouldBe parsed1.intValue("value")
-      parsed3.intValue("value") shouldBe parsed2.intValue("value")
     }
   }
 }

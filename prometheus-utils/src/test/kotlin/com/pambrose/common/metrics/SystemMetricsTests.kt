@@ -88,6 +88,13 @@ class SystemMetricsTests : StringSpec() {
     )
 
   init {
+    flagTests()
+    repeatCallTests()
+    failureRetryTests()
+    takenNameTests()
+  }
+
+  private fun flagTests() {
     "initialize registers the requested exporters with the default registry" {
       SystemMetrics.initialize(
         enableStandardExports = true,
@@ -130,6 +137,15 @@ class SystemMetricsTests : StringSpec() {
       registry.metricNames() shouldContain "jvm_memory_pool_allocated_bytes"
     }
 
+    "initialize with no exports enabled registers nothing" {
+      val registry = PrometheusRegistry()
+      SystemMetrics.initialize(registry = registry)
+
+      registry.scrape().size() shouldBe 0
+    }
+  }
+
+  private fun repeatCallTests() {
     // Native memory metrics exist only when the JVM runs with -XX:NativeMemoryTracking, which the tests do not use.
     "the native memory flag registers nothing without native memory tracking" {
       val registry = spyk(PrometheusRegistry())
@@ -153,6 +169,28 @@ class SystemMetricsTests : StringSpec() {
       shouldRegisterNothing(registry) { SystemMetrics.initialize(enableThreadExports = true, registry = registry) }
     }
 
+    "an exporter removed with clear is not registered again" {
+      val registry = PrometheusRegistry()
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+      registry.clear()
+
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+
+      registry.sampleValue("jvm_threads_current") shouldBe null
+    }
+
+    "a later call registers exporters that were not requested before" {
+      val registry = PrometheusRegistry()
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+      registry.sampleValue("jvm_classes_currently_loaded") shouldBe null
+
+      SystemMetrics.initialize(enableThreadExports = true, enableClassLoadingExports = true, registry = registry)
+
+      registry.sampleValue("jvm_classes_currently_loaded").shouldNotBeNull()
+    }
+  }
+
+  private fun failureRetryTests() {
     "an exporter that fails to register for another reason is retried by the next call" {
       val registry = spyk(PrometheusRegistry())
       every { registry.register(any<Collector>()) } throws IllegalStateException("simulated failure") andThenAnswer
@@ -183,27 +221,9 @@ class SystemMetricsTests : StringSpec() {
       SystemMetrics.initialize(enableClassLoadingExports = true, registry = registry)
       seriesNames(registry.prometheusText()) shouldContainAll expectedSeries.getValue("classLoading")
     }
+  }
 
-    "an exporter removed with clear is not registered again" {
-      val registry = PrometheusRegistry()
-      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
-      registry.clear()
-
-      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
-
-      registry.sampleValue("jvm_threads_current") shouldBe null
-    }
-
-    "a later call registers exporters that were not requested before" {
-      val registry = PrometheusRegistry()
-      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
-      registry.sampleValue("jvm_classes_currently_loaded") shouldBe null
-
-      SystemMetrics.initialize(enableThreadExports = true, enableClassLoadingExports = true, registry = registry)
-
-      registry.sampleValue("jvm_classes_currently_loaded").shouldNotBeNull()
-    }
-
+  private fun takenNameTests() {
     // jvm_threads_peak is the third of the thread metrics the client registers, so without the all-or-nothing
     // handling jvm_threads_current and jvm_threads_daemon would be left behind.
     "an exporter whose names are already taken is skipped whole without blocking the others" {
@@ -231,13 +251,6 @@ class SystemMetricsTests : StringSpec() {
       SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = registry)
 
       seriesNames(registry.prometheusText()) shouldContainAll expectedSeries.getValue("memory")
-    }
-
-    "initialize with no exports enabled registers nothing" {
-      val registry = PrometheusRegistry()
-      SystemMetrics.initialize(registry = registry)
-
-      registry.scrape().size() shouldBe 0
     }
   }
 }

@@ -64,6 +64,14 @@ private class ManagerEvents {
 
 class GuavaDslTests : StringSpec() {
   init {
+    serviceManagerTests()
+    toStringElementsTests()
+    listenerCreationTests()
+    listenerCallbackTests()
+    emptyListenerTests()
+  }
+
+  private fun serviceManagerTests() {
     "serviceManager applies its block to the manager, whose listener hears healthy and then stopped" {
       val services: List<Service> = [idleService(), idleService()]
       val events = ManagerEvents()
@@ -106,7 +114,9 @@ class GuavaDslTests : StringSpec() {
       events.stoppedCalls.await(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe true
       events.healthyCalls.count shouldBe 1L
     }
+  }
 
+  private fun toStringElementsTests() {
     "to string elements simple" {
       val testObj = object {
         override fun toString() =
@@ -140,7 +150,9 @@ class GuavaDslTests : StringSpec() {
       val result = testObj.toString()
       result shouldContain "{}"
     }
+  }
 
+  private fun listenerCreationTests() {
     "service listener creation" {
       var startingCalled = false
       var runningCalled = false
@@ -175,6 +187,28 @@ class GuavaDslTests : StringSpec() {
       stoppedCalled shouldBe true
     }
 
+    "setting a callback again replaces it instead of throwing" {
+      val calls: MutableList<String> = []
+
+      val listener =
+        GuavaDsl.serviceListener {
+          running { calls += "first running" }
+          running { calls += "second running" }
+        }
+      listener.running()
+
+      val managerListener =
+        GuavaDsl.serviceManagerListener {
+          healthy { calls += "first healthy" }
+          healthy { calls += "second healthy" }
+        }
+      managerListener.healthy()
+
+      calls shouldBe ["second running", "second healthy"]
+    }
+  }
+
+  private fun listenerCallbackTests() {
     "service listener invokes all lifecycle callbacks with their arguments" {
       var startingCalled = false
       var runningCalled = false
@@ -212,6 +246,20 @@ class GuavaDslTests : StringSpec() {
       failedCause shouldBe cause
     }
 
+    "service manager listener invokes failure callback with the failed service" {
+      val service = mockk<Service>()
+      var failedService: Service? = null
+
+      val listener = GuavaDsl.serviceManagerListener {
+        failure { failedService = it }
+      }
+
+      listener.failure(service)
+      failedService shouldBe service
+    }
+  }
+
+  private fun emptyListenerTests() {
     "service listener without callbacks ignores lifecycle events" {
       val listener = GuavaDsl.serviceListener {}
 
@@ -224,18 +272,6 @@ class GuavaDslTests : StringSpec() {
       }
     }
 
-    "service manager listener invokes failure callback with the failed service" {
-      val service = mockk<Service>()
-      var failedService: Service? = null
-
-      val listener = GuavaDsl.serviceManagerListener {
-        failure { failedService = it }
-      }
-
-      listener.failure(service)
-      failedService shouldBe service
-    }
-
     "service manager listener without callbacks ignores lifecycle events" {
       val listener = GuavaDsl.serviceManagerListener {}
 
@@ -244,26 +280,6 @@ class GuavaDslTests : StringSpec() {
         listener.stopped()
         listener.failure(mockk<Service>())
       }
-    }
-
-    "setting a callback again replaces it instead of throwing" {
-      val calls: MutableList<String> = []
-
-      val listener =
-        GuavaDsl.serviceListener {
-          running { calls += "first running" }
-          running { calls += "second running" }
-        }
-      listener.running()
-
-      val managerListener =
-        GuavaDsl.serviceManagerListener {
-          healthy { calls += "first healthy" }
-          healthy { calls += "second healthy" }
-        }
-      managerListener.healthy()
-
-      calls shouldBe ["second running", "second healthy"]
     }
   }
 }

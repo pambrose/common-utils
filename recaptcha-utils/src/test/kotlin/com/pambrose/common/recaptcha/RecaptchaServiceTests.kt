@@ -56,6 +56,13 @@ private class Reply(
  */
 class RecaptchaServiceTests : StringSpec() {
   init {
+    configurationGateTests()
+    missingTokenTests()
+    verificationTests()
+    replyTests()
+  }
+
+  private fun configurationGateTests() {
     "validateRecaptcha passes through without network when reCAPTCHA is not configured" {
       testApplication {
         routing {
@@ -81,6 +88,24 @@ class RecaptchaServiceTests : StringSpec() {
       }
     }
 
+    fun renderHead(config: RecaptchaConfig): String =
+      with(RecaptchaService) {
+        createHTML().head { loadRecaptchaScript(config) }
+      }
+
+    "loadRecaptchaScript emits the api.js script when fully configured" {
+      renderHead(recaptchaConfig(enabled = true, siteKey = "site", secretKey = "secret")) shouldContain
+        "https://www.google.com/recaptcha/api.js"
+    }
+
+    "loadRecaptchaScript emits nothing when disabled or a key is missing" {
+      renderHead(recaptchaConfig(enabled = false, siteKey = "site", secretKey = "secret")) shouldNotContain "api.js"
+      renderHead(recaptchaConfig(enabled = true, siteKey = null, secretKey = "secret")) shouldNotContain "api.js"
+      renderHead(recaptchaConfig(enabled = true, siteKey = "site", secretKey = null)) shouldNotContain "api.js"
+    }
+  }
+
+  private fun missingTokenTests() {
     "validateRecaptcha responds 400 when configured and the token is missing" {
       testApplication {
         routing {
@@ -129,23 +154,9 @@ class RecaptchaServiceTests : StringSpec() {
         }
       }
     }
+  }
 
-    fun renderHead(config: RecaptchaConfig): String =
-      with(RecaptchaService) {
-        createHTML().head { loadRecaptchaScript(config) }
-      }
-
-    "loadRecaptchaScript emits the api.js script when fully configured" {
-      renderHead(recaptchaConfig(enabled = true, siteKey = "site", secretKey = "secret")) shouldContain
-        "https://www.google.com/recaptcha/api.js"
-    }
-
-    "loadRecaptchaScript emits nothing when disabled or a key is missing" {
-      renderHead(recaptchaConfig(enabled = false, siteKey = "site", secretKey = "secret")) shouldNotContain "api.js"
-      renderHead(recaptchaConfig(enabled = true, siteKey = null, secretKey = "secret")) shouldNotContain "api.js"
-      renderHead(recaptchaConfig(enabled = true, siteKey = "site", secretKey = null)) shouldNotContain "api.js"
-    }
-
+  private fun verificationTests() {
     "validateRecaptcha passes when the verification response reports success" {
       val engine = successEngine()
 
@@ -172,6 +183,20 @@ class RecaptchaServiceTests : StringSpec() {
       body shouldContain "reCAPTCHA verification failed"
     }
 
+    // A verification that fails for an ordinary reason, such as an I/O error reaching Google, drives
+    // verifyRecaptcha through its catch branch and validateRecaptcha through the 400 response. Cancellation
+    // is deliberately not exercised here: it propagates instead (see RecaptchaVerificationTests).
+    "validateRecaptcha responds 400 when configured and verification errors out" {
+      val engine = MockEngine { throw IllegalStateException("connection reset") }
+
+      val (status, body) = postToken(engine)
+
+      status shouldBe HttpStatusCode.BadRequest
+      body shouldContain "reCAPTCHA verification failed"
+    }
+  }
+
+  private fun replyTests() {
     // The check must fail closed: a reply that is not a well-formed 2xx success is a failed verification, even
     // when its body would parse as one. Each case sends exactly one request, so the 400 comes from the reply.
     [
@@ -211,18 +236,6 @@ class RecaptchaServiceTests : StringSpec() {
         status shouldBe HttpStatusCode.OK
         body shouldBe "passed"
       }
-    }
-
-    // A verification that fails for an ordinary reason, such as an I/O error reaching Google, drives
-    // verifyRecaptcha through its catch branch and validateRecaptcha through the 400 response. Cancellation
-    // is deliberately not exercised here: it propagates instead (see RecaptchaVerificationTests).
-    "validateRecaptcha responds 400 when configured and verification errors out" {
-      val engine = MockEngine { throw IllegalStateException("connection reset") }
-
-      val (status, body) = postToken(engine)
-
-      status shouldBe HttpStatusCode.BadRequest
-      body shouldContain "reCAPTCHA verification failed"
     }
   }
 }

@@ -62,6 +62,12 @@ private inline fun <T> capturingRecaptchaLogs(block: (logs: () -> List<ILoggingE
  */
 class RecaptchaVerificationTests : StringSpec() {
   init {
+    verificationRequestTests()
+    serviceStateTests()
+    unconfiguredTests()
+  }
+
+  private fun verificationRequestTests() {
     // Cancellation (a disconnected client, or shutdown) must not be swallowed and turned into "not a human".
     "a cancelled verification propagates instead of returning false" {
       val engine = MockEngine { throw CancellationException("client disconnected") }
@@ -115,7 +121,9 @@ class RecaptchaVerificationTests : StringSpec() {
       (engine.requestHistory.single().body as FormDataContent).formData["secret"] shouldBe "secret"
       verify(exactly = 1) { config.recaptchaSecretKey }
     }
+  }
 
+  private fun serviceStateTests() {
     // close() is documented for ApplicationStopped, which also fires on Ktor auto-reload and between
     // testApplications. A closed client used to fail every later verification; now a new one is built.
     "after close, the next verification builds a new client and still contacts Google" {
@@ -169,7 +177,9 @@ class RecaptchaVerificationTests : StringSpec() {
       warnings.size shouldBe 1
       warnings.single().formattedMessage shouldContain "reCAPTCHA"
     }
+  }
 
+  private fun unconfiguredTests() {
     "a fully unconfigured reCAPTCHA passes without warning" {
       val events =
         capturingRecaptchaLogs { logs ->

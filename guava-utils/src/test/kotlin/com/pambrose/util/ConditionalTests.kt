@@ -37,6 +37,13 @@ import kotlin.time.Duration.Companion.seconds
 
 class ConditionalTests : StringSpec() {
   init {
+    booleanListenerTests()
+    valueListenerTests()
+    currentValueTests()
+    wakeupTests()
+  }
+
+  private fun booleanListenerTests() {
     "simple bools" {
       val results: MutableList<Int> = []
       val mutex = Mutex()
@@ -93,7 +100,9 @@ class ConditionalTests : StringSpec() {
 
       results shouldContainExactlyInAnyOrder expected
     }
+  }
 
+  private fun valueListenerTests() {
     "multi int listeners" {
       val mutex = Mutex()
       val jobs: MutableList<Job> = []
@@ -143,24 +152,11 @@ class ConditionalTests : StringSpec() {
 
       results shouldContainExactlyInAnyOrder expected
     }
+  }
 
+  private fun currentValueTests() {
     "wait until false returns immediately when already false" {
       ConditionalBoolean(false).waitUntilFalse() shouldBe true
-    }
-
-    "wait until false resumes when value becomes false" {
-      val bool = ConditionalBoolean(true)
-      var result: Boolean? = null
-
-      val job = launch {
-        result = bool.waitUntilFalse(5.seconds)
-      }
-
-      yield()
-      bool.set(false)
-      job.join()
-
-      result shouldBe true
     }
 
     "get returns the current value" {
@@ -183,6 +179,27 @@ class ConditionalTests : StringSpec() {
       ConditionalValue("ready").waitUntil(1.nanoseconds) { it == "ready" } shouldBe true
     }
 
+    "the demo main functions are not shipped with ConditionalValue" {
+      runCatching { Class.forName("com.pambrose.common.concurrent.ConditionalValueKt") }.isFailure shouldBe true
+    }
+  }
+
+  private fun wakeupTests() {
+    "wait until false resumes when value becomes false" {
+      val bool = ConditionalBoolean(true)
+      var result: Boolean? = null
+
+      val job = launch {
+        result = bool.waitUntilFalse(5.seconds)
+      }
+
+      yield()
+      bool.set(false)
+      job.join()
+
+      result shouldBe true
+    }
+
     "setting the same mutable list again after changing it wakes a waiter" {
       val list: MutableList<Int> = [1]
       val cv = ConditionalValue<List<Int>>(list)
@@ -195,10 +212,6 @@ class ConditionalTests : StringSpec() {
       job.join()
 
       result shouldBe true
-    }
-
-    "the demo main functions are not shipped with ConditionalValue" {
-      runCatching { Class.forName("com.pambrose.common.concurrent.ConditionalValueKt") }.isFailure shouldBe true
     }
 
     "set can be called from code that is not suspending" {

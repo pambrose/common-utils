@@ -58,25 +58,30 @@ private inline fun <T> capturingEmailLogs(block: (logs: () -> List<ILoggingEvent
  * and is not injectable), so no real API key or network is involved.
  */
 class ResendServiceTests : StringSpec() {
+  // Stubs the SDK so that send() captures its request and returns a response with the given id.
+  private fun stubSend(
+    responseId: String = "id-1",
+    captured: CapturingSlot<CreateEmailOptions>? = null,
+  ): Emails {
+    mockkConstructor(Resend::class)
+    val emails = mockk<Emails>()
+    every { anyConstructed<Resend>().emails() } returns emails
+    if (captured != null)
+      every { emails.send(capture(captured)) } returns CreateEmailResponse(responseId)
+    else
+      every { emails.send(any()) } returns CreateEmailResponse(responseId)
+    return emails
+  }
+
   init {
     // Tear down the constructor mock so it cannot leak into other specs.
     afterTest { unmockkAll() }
 
-    // Stubs the SDK so that send() captures its request and returns a response with the given id.
-    fun stubSend(
-      responseId: String = "id-1",
-      captured: CapturingSlot<CreateEmailOptions>? = null,
-    ): Emails {
-      mockkConstructor(Resend::class)
-      val emails = mockk<Emails>()
-      every { anyConstructed<Resend>().emails() } returns emails
-      if (captured != null)
-        every { emails.send(capture(captured)) } returns CreateEmailResponse(responseId)
-      else
-        every { emails.send(any()) } returns CreateEmailResponse(responseId)
-      return emails
-    }
+    sendRequestTests()
+    loggingTests()
+  }
 
+  private fun sendRequestTests() {
     "sendEmail maps from/to/cc/bcc/subject/html onto the Resend request as .value strings" {
       val captured = slot<CreateEmailOptions>()
       stubSend(responseId = "id-123", captured = captured)
@@ -133,7 +138,9 @@ class ResendServiceTests : StringSpec() {
       req.cc shouldBe emptyList()
       req.bcc shouldBe emptyList()
     }
+  }
 
+  private fun loggingTests() {
     // Recipient addresses are personal data, so routine logs carry counts and the message id instead.
     "a successful send logs counts and the response id, never recipient addresses" {
       stubSend(responseId = "id-123")

@@ -47,6 +47,13 @@ import kotlin.time.Duration.Companion.seconds
  */
 class AbstractEnginePoolTests : StringSpec() {
   init {
+    constructionTests()
+    resetTests()
+    closeTests()
+    borrowTests()
+  }
+
+  private fun constructionTests() {
     "a pool rejects a size that is not positive" {
       shouldThrow<IllegalArgumentException> { FakeEvaluatorPool(size = 0) }.message shouldBe
         "Pool size must be positive, but was 0"
@@ -70,7 +77,9 @@ class AbstractEnginePoolTests : StringSpec() {
       created.map { it.closed } shouldBe [true, true]
       e.suppressed.map { it.message } shouldBe ["cannot close evaluator 0", "cannot close evaluator 1"]
     }
+  }
 
+  private fun resetTests() {
     // A fresh Kotlin REPL costs several times an evaluation, so resetting on every return made pools slower than a lone
     // evaluator. The context is replaced on reset, so its identity shows when resets happen.
     "an evaluator's context is reset every resetEvery returns" {
@@ -101,7 +110,9 @@ class AbstractEnginePoolTests : StringSpec() {
       shouldThrow<IllegalArgumentException> { FakeEvaluatorPool(size = 1, resetEvery = 0) }.message shouldBe
         "resetEvery must be positive, but was 0"
     }
+  }
 
+  private fun closeTests() {
     "closing a pool closes its instances and fails later borrows" {
       withTimeout(TIMEOUT) {
         val pool = FakeEvaluatorPool(size = 2)
@@ -150,7 +161,9 @@ class AbstractEnginePoolTests : StringSpec() {
         pool.created.single().closed shouldBe true
       }
     }
+  }
 
+  private fun borrowTests() {
     "an instance whose reset throws is still returned to the pool" {
       withTimeout(TIMEOUT) {
         val pool = FakeEvaluatorPool(size = 1)

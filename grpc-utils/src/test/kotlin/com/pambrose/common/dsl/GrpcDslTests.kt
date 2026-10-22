@@ -104,6 +104,16 @@ private val serverTlsContext by lazy {
 
 class GrpcDslTests : StringSpec() {
   init {
+    attributesAndRoundTripTests()
+    nettyChannelTests()
+    retryTests()
+    channelOptionTests()
+    tlsContextTests()
+    nettyServerTests()
+    validationAndCompatibilityTests()
+  }
+
+  private fun attributesAndRoundTripTests() {
     "attributes builds Attributes from the DSL block" {
       val key = Attributes.Key.create<String>("test-key")
       val attributes =
@@ -147,7 +157,9 @@ class GrpcDslTests : StringSpec() {
         server.shutdownNow()
       }
     }
+  }
 
+  private fun nettyChannelTests() {
     "channel builds a plaintext Netty channel for host and port" {
       val channel =
         GrpcDsl.channel(
@@ -185,7 +197,9 @@ class GrpcDslTests : StringSpec() {
         channel.shutdownNow()
       }
     }
+  }
 
+  private fun retryTests() {
     // grpc-java turns retry on by default, so only an explicit disableRetry() switches it off.
     "enableRetry = false disables retry rather than leaving grpc's default on" {
       val builder = mockk<NettyChannelBuilder>(relaxed = true)
@@ -241,7 +255,9 @@ class GrpcDslTests : StringSpec() {
         verify(exactly = 0) { builder.disableRetry() }
       }
     }
+  }
 
+  private fun channelOptionTests() {
     "the in-process transport applies the retry and authority options too" {
       val builder = mockk<InProcessChannelBuilder>(relaxed = true)
       withStubbedBuilder(
@@ -262,6 +278,32 @@ class GrpcDslTests : StringSpec() {
       }
     }
 
+    "maxRetryAttempts = -1 keeps grpc's own limit, while 0 is passed through" {
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15557, enableRetry = true, maxRetryAttempts = -1) {}
+        verify(exactly = 0) { builder.maxRetryAttempts(any()) }
+      }
+
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15558, enableRetry = true, maxRetryAttempts = 0) {}
+        verify(exactly = 1) { builder.maxRetryAttempts(0) }
+      }
+    }
+
+    "a blank overrideAuthority is ignored, and a padded one is trimmed" {
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15559, overrideAuthority = "   ") {}
+        verify(exactly = 0) { builder.overrideAuthority(any()) }
+      }
+
+      withStubbedNettyChannelBuilder { builder ->
+        GrpcDsl.channel(hostName = "localhost", port = 15560, overrideAuthority = "  override.example.com ") {}
+        verify(exactly = 1) { builder.overrideAuthority("override.example.com") }
+      }
+    }
+  }
+
+  private fun tlsContextTests() {
     "a TLS context gives the Netty channel that context instead of plaintext" {
       withStubbedNettyChannelBuilder { builder ->
         GrpcDsl.channel(hostName = "localhost", port = 15555, tlsContext = clientTlsContext) {}
@@ -291,31 +333,9 @@ class GrpcDslTests : StringSpec() {
         verify(exactly = 0) { builder.sslContext(any()) }
       }
     }
+  }
 
-    "maxRetryAttempts = -1 keeps grpc's own limit, while 0 is passed through" {
-      withStubbedNettyChannelBuilder { builder ->
-        GrpcDsl.channel(hostName = "localhost", port = 15557, enableRetry = true, maxRetryAttempts = -1) {}
-        verify(exactly = 0) { builder.maxRetryAttempts(any()) }
-      }
-
-      withStubbedNettyChannelBuilder { builder ->
-        GrpcDsl.channel(hostName = "localhost", port = 15558, enableRetry = true, maxRetryAttempts = 0) {}
-        verify(exactly = 1) { builder.maxRetryAttempts(0) }
-      }
-    }
-
-    "a blank overrideAuthority is ignored, and a padded one is trimmed" {
-      withStubbedNettyChannelBuilder { builder ->
-        GrpcDsl.channel(hostName = "localhost", port = 15559, overrideAuthority = "   ") {}
-        verify(exactly = 0) { builder.overrideAuthority(any()) }
-      }
-
-      withStubbedNettyChannelBuilder { builder ->
-        GrpcDsl.channel(hostName = "localhost", port = 15560, overrideAuthority = "  override.example.com ") {}
-        verify(exactly = 1) { builder.overrideAuthority("override.example.com") }
-      }
-    }
-
+  private fun nettyServerTests() {
     "server builds a plaintext Netty server without starting it" {
       var blockCalled = false
       val server =
@@ -361,7 +381,9 @@ class GrpcDslTests : StringSpec() {
         address.port shouldNotBe 0
       }
     }
+  }
 
+  private fun validationAndCompatibilityTests() {
     // The defaults (port -1, hostName "") used to fail deep inside Netty with "port out of range".
     "the Netty transport rejects an unset port or host with a message naming the fix" {
       shouldThrow<IllegalArgumentException> { GrpcDsl.server {} }.message shouldContain "inProcessServerName"

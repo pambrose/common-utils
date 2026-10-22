@@ -1,4 +1,4 @@
-.PHONY: default help clean stop build lint detekt detekt-baseline zizmor refresh tests tree depends versions versions-all kdocs \
+.PHONY: default help clean stop build lint detekt zizmor refresh tests tree depends versions versions-all kdocs \
 	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-modules coverage-clean mutation abi-check abi-update \
 	publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper \
 	_check-gpg-env _require-version _require-gradle-version
@@ -33,9 +33,6 @@ lint: ## Run Kotlinter and Detekt
 
 detekt: ## Run Detekt static analysis
 	./gradlew detekt
-
-detekt-baseline: ## Generate or update the Detekt baseline
-	./gradlew detektBaseline
 
 # The online audits (impostor commits, known-vulnerable actions, ref confusion) need a GitHub token: GH_TOKEN if set,
 # otherwise gh's. zizmor rejects an empty token, so without one it runs only its offline audits.
@@ -99,13 +96,14 @@ depends: ## Show dependency tree (verbose)
 
 # dependencyUpdates is marked incompatible with the configuration cache (configureVersions() in build.gradle.kts), so
 # a run with the cache on builds an entry only to discard it, and says so. --no-configuration-cache skips the cache for
-# this run instead. configureVersions() gives the task a formatter that lists only what is behind in each module;
-# versions-all names the plugin's own plain report, which also lists everything up to date.
-versions: ## List the dependencies with newer versions, and any that could not be checked, in each module
-	./gradlew dependencyUpdates --no-configuration-cache --no-parallel
+# this run instead. The root project's task merges every module's dependencies and the root build script's plugins
+# into one report. configureVersions() gives it a formatter that lists only what is behind; versions-all names the
+# plugin's own plain report, which also lists everything up to date.
+versions: ## List the dependencies and plugins with newer versions, and any that could not be checked
+	./gradlew dependencyUpdates --no-configuration-cache
 
-versions-all: ## The plugin's full dependency report for each module, up-to-date dependencies included
-	./gradlew dependencyUpdates --no-configuration-cache --no-parallel --output-formatter=plain
+versions-all: ## The plugin's full dependency report, up-to-date dependencies and plugins included
+	./gradlew dependencyUpdates --no-configuration-cache --output-formatter=plain
 
 kdocs: ## Generate Dokka HTML documentation
 	./gradlew :dokkaGenerate

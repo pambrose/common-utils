@@ -58,6 +58,13 @@ private fun Any.toMessage(): String = if (this is Function0<*>) this().toString(
 
 class BooleanMonitorTests : StringSpec() {
   init {
+    valueTests()
+    timedWaitTests()
+    logActionTests()
+    javaBridgeTests()
+  }
+
+  private fun valueTests() {
     "boolean monitor initial value true" {
       val monitor = BooleanMonitor(true)
       monitor.get() shouldBe true
@@ -86,7 +93,9 @@ class BooleanMonitorTests : StringSpec() {
       monitor.set(false)
       monitor.toString() shouldContain "value=false"
     }
+  }
 
+  private fun timedWaitTests() {
     "boolean monitor wait until true timeout" {
       val monitor = BooleanMonitor(false)
       val result = monitor.waitUntilTrue(50.milliseconds)
@@ -110,7 +119,9 @@ class BooleanMonitorTests : StringSpec() {
       val result = monitor.waitUntilFalse(50.milliseconds)
       result shouldBe true
     }
+  }
 
+  private fun logActionTests() {
     "each log-action factory logs its message at its own level when the action runs" {
       val actions: List<MonitorAction> =
         [
@@ -156,7 +167,9 @@ class BooleanMonitorTests : StringSpec() {
       }
       evaluated shouldBe false
     }
+  }
 
+  private fun javaBridgeTests() {
     // Java callers reach the factories through the @JvmStatic bridges on BooleanMonitor itself, which Kotlin
     // code never calls. The ABI dump pins that the bridges exist; this checks that they work.
     "BooleanMonitor log-action factories are static methods for Java callers" {

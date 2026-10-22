@@ -35,6 +35,13 @@ import kotlin.time.TimeSource
 
 class ConcurrentExtensionsTests : StringSpec() {
   init {
+    countDownTests()
+    semaphoreTests()
+    latchAwaitTests()
+    threadWithLatchTests()
+  }
+
+  private fun countDownTests() {
     "count down latch is finished" {
       val latch = CountDownLatch(2)
       latch.isFinished shouldBe false
@@ -70,6 +77,20 @@ class ConcurrentExtensionsTests : StringSpec() {
       latch.isFinished shouldBe true
     }
 
+    "thread with latch counts down even when the block throws" {
+      val latch = CountDownLatch(1)
+      val uncaught = CompletableFuture<Throwable>()
+
+      val t = thread(latch, start = false) { error("boom") }
+      t.setUncaughtExceptionHandler { _, e -> uncaught.complete(e) }
+      t.start()
+
+      latch.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
+      uncaught.getGuarded().message shouldBe "boom"
+    }
+  }
+
+  private fun semaphoreTests() {
     "semaphore with lock" {
       val semaphore = Semaphore(1)
       var blockExecuted = false
@@ -96,6 +117,24 @@ class ConcurrentExtensionsTests : StringSpec() {
       semaphore.availablePermits() shouldBe 1
     }
 
+    // An interrupted acquire throws before the permit is taken, so withLock must not release one it never held.
+    "semaphore with lock leaves the permits alone when the acquire is interrupted" {
+      val semaphore = Semaphore(1)
+      val blockRan = AtomicBoolean(false)
+
+      val (_, outcome) =
+        inDaemonThread {
+          Thread.currentThread().interrupt()
+          runCatching { semaphore.withLock { blockRan.store(true) } }
+        }
+
+      outcome.getGuarded().exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
+      blockRan.load() shouldBe false
+      semaphore.availablePermits() shouldBe 1
+    }
+  }
+
+  private fun latchAwaitTests() {
     "count down latch await with duration returns true when reached" {
       val latch = CountDownLatch(1)
       latch.countDown()
@@ -110,6 +149,15 @@ class ConcurrentExtensionsTests : StringSpec() {
       latch.isFinished shouldBe false
     }
 
+    "count down latch await with a sub-millisecond duration waits for it instead of returning at once" {
+      val latch = CountDownLatch(1)
+      val mark = TimeSource.Monotonic.markNow()
+      latch.await(800.microseconds) shouldBe false
+      (mark.elapsedNow() >= 800.microseconds) shouldBe true
+    }
+  }
+
+  private fun threadWithLatchTests() {
     "thread with latch" {
       val latch = CountDownLatch(1)
       var threadExecuted = false
@@ -159,41 +207,6 @@ class ConcurrentExtensionsTests : StringSpec() {
 
       t.start()
       latch.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
-    }
-
-    "thread with latch counts down even when the block throws" {
-      val latch = CountDownLatch(1)
-      val uncaught = CompletableFuture<Throwable>()
-
-      val t = thread(latch, start = false) { error("boom") }
-      t.setUncaughtExceptionHandler { _, e -> uncaught.complete(e) }
-      t.start()
-
-      latch.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
-      uncaught.getGuarded().message shouldBe "boom"
-    }
-
-    // An interrupted acquire throws before the permit is taken, so withLock must not release one it never held.
-    "semaphore with lock leaves the permits alone when the acquire is interrupted" {
-      val semaphore = Semaphore(1)
-      val blockRan = AtomicBoolean(false)
-
-      val (_, outcome) =
-        inDaemonThread {
-          Thread.currentThread().interrupt()
-          runCatching { semaphore.withLock { blockRan.store(true) } }
-        }
-
-      outcome.getGuarded().exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
-      blockRan.load() shouldBe false
-      semaphore.availablePermits() shouldBe 1
-    }
-
-    "count down latch await with a sub-millisecond duration waits for it instead of returning at once" {
-      val latch = CountDownLatch(1)
-      val mark = TimeSource.Monotonic.markNow()
-      latch.await(800.microseconds) shouldBe false
-      (mark.elapsedNow() >= 800.microseconds) shouldBe true
     }
   }
 }

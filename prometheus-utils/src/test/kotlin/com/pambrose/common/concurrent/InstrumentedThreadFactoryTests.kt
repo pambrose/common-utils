@@ -22,6 +22,14 @@ import kotlin.concurrent.atomics.AtomicReference
 
 class InstrumentedThreadFactoryTests : StringSpec() {
   init {
+    creationTests()
+    terminationTests()
+    invariantTests()
+    delegateTests()
+    registrationTests()
+  }
+
+  private fun creationTests() {
     "newThread creates a non-null thread" {
       val registry = PrometheusRegistry()
       val factory = InstrumentedThreadFactory(
@@ -48,6 +56,36 @@ class InstrumentedThreadFactoryTests : StringSpec() {
       registry.sampleValue("itf_created_count_threads_created_total") shouldBe 3.0
     }
 
+    // Pins the series names the KDoc documents, as the servlet exporter's default writers produce them.
+    "the metrics are exposed as <name>_threads_created_total, _running and _terminated_total" {
+      val registry = PrometheusRegistry()
+      InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_exposed", "Test", registry)
+        .newThread {}
+        .shouldNotBeNull()
+        .apply {
+          start()
+          join()
+        }
+      val expected =
+        setOf(
+          "itf_exposed_threads_created_total",
+          "itf_exposed_threads_running",
+          "itf_exposed_threads_terminated_total",
+        )
+
+      // Prometheus text format: the counters' families are named with _total, and no _created series is written.
+      val text = registry.prometheusText()
+      seriesNames(text) shouldBe expected
+      text shouldContain "# TYPE itf_exposed_threads_created_total counter"
+
+      // OpenMetrics: the same series, but the counter families are named without _total.
+      val openMetrics = registry.openMetricsText()
+      seriesNames(openMetrics) shouldBe expected
+      openMetrics shouldContain "# TYPE itf_exposed_threads_created counter"
+    }
+  }
+
+  private fun terminationTests() {
     "tracks running and terminated counts after thread execution" {
       val registry = PrometheusRegistry()
       val factory = InstrumentedThreadFactory(
@@ -77,6 +115,27 @@ class InstrumentedThreadFactoryTests : StringSpec() {
       registry.sampleValue("itf_running_terminated_threads_terminated_total") shouldBe 1.0
     }
 
+    "a runnable that throws still counts its thread as terminated and no longer running" {
+      val registry = PrometheusRegistry()
+      val uncaught = AtomicReference<Throwable?>(null)
+      val delegate =
+        ThreadFactory { runnable ->
+          Thread(runnable).apply { setUncaughtExceptionHandler { _, e -> uncaught.store(e) } }
+        }
+      val factory = InstrumentedThreadFactory(delegate, "itf_throwing", "Test", registry)
+
+      val thread = factory.newThread { throw IllegalStateException("simulated task failure") }.shouldNotBeNull()
+      thread.start()
+      thread.join()
+
+      uncaught.load().shouldBeInstanceOf<IllegalStateException>().message shouldBe "simulated task failure"
+      registry.sampleValue("itf_throwing_threads_created_total") shouldBe 1.0
+      registry.sampleValue("itf_throwing_threads_running") shouldBe 0.0
+      registry.sampleValue("itf_throwing_threads_terminated_total") shouldBe 1.0
+    }
+  }
+
+  private fun invariantTests() {
     // Bug #10: the finally block decremented running before incrementing terminated, so a scrape could see a
     // finished thread as neither running nor terminated. terminated.inc() now runs first, and once every created
     // thread has finished, created == running + terminated.
@@ -123,7 +182,9 @@ class InstrumentedThreadFactoryTests : StringSpec() {
       terminated shouldBe 5.0
       (running + terminated) shouldBe created
     }
+  }
 
+  private fun delegateTests() {
     "daemon flag is propagated from delegate factory" {
       val registry = PrometheusRegistry()
       val daemonFactory = ThreadFactory { r ->
@@ -170,7 +231,9 @@ class InstrumentedThreadFactoryTests : StringSpec() {
       factory.newThread {} shouldBe null
       registry.sampleValue("itf_rejected_threads_created_total") shouldBe 0.0
     }
+  }
 
+  private fun registrationTests() {
     "factories with the same name can coexist in separate registries" {
       val first = PrometheusRegistry()
       val second = PrometheusRegistry()
@@ -219,53 +282,6 @@ class InstrumentedThreadFactoryTests : StringSpec() {
         InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_partial", "Test", registry).newThread {}
         registry.sampleValue("itf_partial_threads_created_total") shouldBe 1.0
       }
-    }
-
-    // Pins the series names the KDoc documents, as the servlet exporter's default writers produce them.
-    "the metrics are exposed as <name>_threads_created_total, _running and _terminated_total" {
-      val registry = PrometheusRegistry()
-      InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_exposed", "Test", registry)
-        .newThread {}
-        .shouldNotBeNull()
-        .apply {
-          start()
-          join()
-        }
-      val expected =
-        setOf(
-          "itf_exposed_threads_created_total",
-          "itf_exposed_threads_running",
-          "itf_exposed_threads_terminated_total",
-        )
-
-      // Prometheus text format: the counters' families are named with _total, and no _created series is written.
-      val text = registry.prometheusText()
-      seriesNames(text) shouldBe expected
-      text shouldContain "# TYPE itf_exposed_threads_created_total counter"
-
-      // OpenMetrics: the same series, but the counter families are named without _total.
-      val openMetrics = registry.openMetricsText()
-      seriesNames(openMetrics) shouldBe expected
-      openMetrics shouldContain "# TYPE itf_exposed_threads_created counter"
-    }
-
-    "a runnable that throws still counts its thread as terminated and no longer running" {
-      val registry = PrometheusRegistry()
-      val uncaught = AtomicReference<Throwable?>(null)
-      val delegate =
-        ThreadFactory { runnable ->
-          Thread(runnable).apply { setUncaughtExceptionHandler { _, e -> uncaught.store(e) } }
-        }
-      val factory = InstrumentedThreadFactory(delegate, "itf_throwing", "Test", registry)
-
-      val thread = factory.newThread { throw IllegalStateException("simulated task failure") }.shouldNotBeNull()
-      thread.start()
-      thread.join()
-
-      uncaught.load().shouldBeInstanceOf<IllegalStateException>().message shouldBe "simulated task failure"
-      registry.sampleValue("itf_throwing_threads_created_total") shouldBe 1.0
-      registry.sampleValue("itf_throwing_threads_running") shouldBe 0.0
-      registry.sampleValue("itf_throwing_threads_terminated_total") shouldBe 1.0
     }
   }
 }

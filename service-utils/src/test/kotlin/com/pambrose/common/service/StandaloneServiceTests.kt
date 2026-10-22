@@ -44,6 +44,11 @@ private val GenericIdleService.boundPort: Int
 // bind to LOOPBACK.
 class StandaloneServiceTests : StringSpec() {
   init {
+    servingTests()
+    bindingTests()
+  }
+
+  private fun servingTests() {
     "a MetricsService serves metrics and its health check follows the server across start and stop" {
       val service = MetricsService(0, "metrics", LOOPBACK)
       service.toString() shouldBe "MetricsService{port=0, path=/metrics}"
@@ -90,7 +95,9 @@ class StandaloneServiceTests : StringSpec() {
         httpGet(service.boundPort, "/missing").statusCode() shouldBe 404
       }
     }
+  }
 
+  private fun bindingTests() {
     // Ktor initializes the servlets and registers its shutdown hook before binding, so a failed bind must stop the
     // server: stopping is what destroys the servlets and removes the hook.
     "a KtorServletService that fails to bind destroys its servlets" {

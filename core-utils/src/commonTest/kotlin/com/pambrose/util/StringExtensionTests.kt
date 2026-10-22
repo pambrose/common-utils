@@ -64,6 +64,21 @@ import io.kotest.matchers.string.shouldNotMatch
 
 class StringExtensionTests : StringSpec() {
   init {
+    numberTests()
+    floatingPointTests()
+    quoteTests()
+    singleToDoubleQuotedTests()
+    affixTests()
+    pathTests()
+    lineTests()
+    bracketTests()
+    trimTests()
+    patternTests()
+    maxLengthTests()
+    maskingTests()
+  }
+
+  private fun numberTests() {
     "Int length is exact at every power-of-ten boundary" {
       0.length shouldBe 1
       var power = 1
@@ -77,6 +92,82 @@ class StringExtensionTests : StringSpec() {
       Int.MIN_VALUE.length shouldBe 10
     }
 
+    "Long length is exact at every power-of-ten boundary" {
+      var power = 1L
+      for (digits in 1..18) {
+        power *= 10
+        (power - 1).length shouldBe digits
+        power.length shouldBe digits + 1
+        (-(power - 1)).length shouldBe digits
+      }
+      Long.MAX_VALUE.length shouldBe 19
+      Long.MIN_VALUE.length shouldBe 19
+    }
+
+    "is int test" {
+      "".isInt() shouldBe false
+      "a".isInt() shouldBe false
+      "4".isInt() shouldBe true
+      "4.0".isInt() shouldBe false
+
+      "".isNotInt() shouldBe true
+      "a".isNotInt() shouldBe true
+      "4".isNotInt() shouldBe false
+      "4.0".isNotInt() shouldBe true
+    }
+  }
+
+  private fun floatingPointTests() {
+    "is float test" {
+      "".isFloat() shouldBe false
+      "a".isFloat() shouldBe false
+      "4.0".isFloat() shouldBe true
+      "4".isFloat() shouldBe true
+
+      "".isNotFloat() shouldBe true
+      "a".isNotFloat() shouldBe true
+      "4.0".isNotFloat() shouldBe false
+      "4".isNotFloat() shouldBe false
+    }
+
+    "is double test" {
+      "".isDouble() shouldBe false
+      "a".isDouble() shouldBe false
+      "4.0".isDouble() shouldBe true
+      "4".isDouble() shouldBe true
+
+      "".isNotDouble() shouldBe true
+      "a".isNotDouble() shouldBe true
+      "4.0".isNotDouble() shouldBe false
+      "4".isNotDouble() shouldBe false
+    }
+
+    // Parsing is the platform's own. The JVM and Kotlin/Native also accept a trailing f/d and hexadecimal
+    // floating-point literals, JS accepts hexadecimal integers, and wasmJs accepts neither.
+    "isFloat and isDouble follow the platform's number parsing" {
+      val suffixAndHexFloat = testPlatform == TestPlatform.JVM || testPlatform == TestPlatform.NATIVE
+      val hexInteger = testPlatform == TestPlatform.JS
+      for (isNumber in [String::isFloat, String::isDouble]) {
+        isNumber("4f") shouldBe suffixAndHexFloat
+        isNumber("4d") shouldBe suffixAndHexFloat
+        isNumber("0x1p3") shouldBe suffixAndHexFloat
+        isNumber("0x10") shouldBe hexInteger
+      }
+    }
+
+    "isFloat and isDouble agree across platforms on signs, exponents, padding, NaN and Infinity" {
+      for (s in [" 4 ", "+4", "-4", ".5", "5.", "1e3", "NaN", "Infinity", "-Infinity"]) {
+        s.isFloat() shouldBe true
+        s.isDouble() shouldBe true
+      }
+      for (s in ["1_000", "4.0.0", "e3", "--4"]) {
+        s.isFloat() shouldBe false
+        s.isDouble() shouldBe false
+      }
+    }
+  }
+
+  private fun quoteTests() {
     "quote tests" {
       "".isSingleQuoted() shouldBe false
       "".isDoubleQuoted() shouldBe false
@@ -109,42 +200,29 @@ class StringExtensionTests : StringSpec() {
       "''".isNotQuoted() shouldBe false
     }
 
-    "is int test" {
-      "".isInt() shouldBe false
-      "a".isInt() shouldBe false
-      "4".isInt() shouldBe true
-      "4.0".isInt() shouldBe false
+    "not quoted variant test" {
+      "'test'".isNotSingleQuoted() shouldBe false
+      "  'test'  ".isNotSingleQuoted() shouldBe false
+      "\"test\"".isNotSingleQuoted() shouldBe true
+      "test".isNotSingleQuoted() shouldBe true
+      "".isNotSingleQuoted() shouldBe true
 
-      "".isNotInt() shouldBe true
-      "a".isNotInt() shouldBe true
-      "4".isNotInt() shouldBe false
-      "4.0".isNotInt() shouldBe true
+      "\"test\"".isNotDoubleQuoted() shouldBe false
+      "  \"test\"  ".isNotDoubleQuoted() shouldBe false
+      "'test'".isNotDoubleQuoted() shouldBe true
+      "test".isNotDoubleQuoted() shouldBe true
+      "".isNotDoubleQuoted() shouldBe true
     }
 
-    "is float test" {
-      "".isFloat() shouldBe false
-      "a".isFloat() shouldBe false
-      "4.0".isFloat() shouldBe true
-      "4".isFloat() shouldBe true
-
-      "".isNotFloat() shouldBe true
-      "a".isNotFloat() shouldBe true
-      "4.0".isNotFloat() shouldBe false
-      "4".isNotFloat() shouldBe false
+    "to quoted test" {
+      "test".toSingleQuoted() shouldBe "'test'"
+      "".toSingleQuoted() shouldBe "''"
+      "test".toDoubleQuoted() shouldBe "\"test\""
+      "".toDoubleQuoted() shouldBe "\"\""
     }
+  }
 
-    "is double test" {
-      "".isDouble() shouldBe false
-      "a".isDouble() shouldBe false
-      "4.0".isDouble() shouldBe true
-      "4".isDouble() shouldBe true
-
-      "".isNotDouble() shouldBe true
-      "a".isNotDouble() shouldBe true
-      "4.0".isNotDouble() shouldBe false
-      "4".isNotDouble() shouldBe false
-    }
-
+  private fun singleToDoubleQuotedTests() {
     "convert test" {
       "".singleToDoubleQuoted() shouldBe ""
       "'".singleToDoubleQuoted() shouldBe "'"
@@ -168,6 +246,24 @@ class StringExtensionTests : StringSpec() {
       """'a\'""".singleToDoubleQuoted() shouldBe """"a\\""""
       """'a\"b'""".singleToDoubleQuoted() shouldBe """"a\\\"b""""
     }
+  }
+
+  private fun affixTests() {
+    "ensure prefix test" {
+      "path".ensurePrefix("/") shouldBe "/path"
+      "/path".ensurePrefix("/") shouldBe "/path"
+      "path".ensurePrefix("pa") shouldBe "path"
+      "".ensurePrefix("/") shouldBe "/"
+
+      "path".ensureLeadingSlash() shouldBe "/path"
+      "/path".ensureLeadingSlash() shouldBe "/path"
+    }
+
+    "ensure suffix test" {
+      "file".ensureSuffix(".txt") shouldBe "file.txt"
+      "file.txt".ensureSuffix(".txt") shouldBe "file.txt"
+      "".ensureSuffix("/") shouldBe "/"
+    }
 
     "plural test" {
       "car".pluralize(0) shouldBe "cars"
@@ -177,7 +273,9 @@ class StringExtensionTests : StringSpec() {
       "ski".pluralize(1, "es") shouldBe "ski"
       "ski".pluralize(2, "es") shouldBe "skies"
     }
+  }
 
+  private fun pathTests() {
     "test paths" {
       ["a", "b", "c"].join() shouldBe "a/b/c"
       ["a", "b", "c"].toPath() shouldBe "/a/b/c/"
@@ -196,6 +294,32 @@ class StringExtensionTests : StringSpec() {
       ["/a/", "/b/", "/c"].join() shouldBe "/a/b/c"
     }
 
+    // An element that is only separators, or has several, used to leave a doubled separator behind.
+    "join, toPath and pathOf never produce doubled separators" {
+      pathOf("a", "/", "b") shouldBe "a/b"
+      ["a", "//b"].join() shouldBe "a/b"
+      ["a//", "b"].join() shouldBe "a/b"
+      ["a", "//", "b"].toPath() shouldBe "/a/b/"
+      ["x", "y/"].join() shouldBe "x/y/"
+    }
+
+    "join and toPath strip a whole multi-character separator and skip empty elements" {
+      ["a", "::b"].join("::") shouldBe "a::b"
+      ["a::", "::b"].join("::") shouldBe "a::b"
+      ["a", "", "b"].join() shouldBe "a/b"
+      ["", "a", "", "b"].toRootPath() shouldBe "/a/b"
+      ["a", "", "b"].toPath() shouldBe "/a/b/"
+    }
+
+    "path of test" {
+      pathOf("a", "b", "c") shouldBe "a/b/c"
+      pathOf("a", "", "c") shouldBe "a/c" // Empty elements filtered
+      pathOf("") shouldBe ""
+      pathOf("single") shouldBe "single"
+    }
+  }
+
+  private fun lineTests() {
     "test line indexes" {
       val s =
         """
@@ -241,6 +365,18 @@ class StringExtensionTests : StringSpec() {
       s.linesBetween(Regex("ccc"), Regex("aaa")) shouldBe []
     }
 
+    "with line numbers test" {
+      "line1\nline2\nline3".withLineNumbers() shouldBe "1 : line1\n2 : line2\n3 : line3"
+
+      // Numbers are left-aligned and padded to the width of the largest line number.
+      val numbered = (1..10).joinToString("\n") { "l$it" }.withLineNumbers().lines()
+      numbered.first() shouldBe "1  : l1"
+      numbered.last() shouldBe "10 : l10"
+      "a\nb".withLineNumbers(separator = '|') shouldBe "1 | a\n2 | b"
+    }
+  }
+
+  private fun bracketTests() {
     "bracket test" {
       "  [fddsf]  ".isBracketed() shouldBe true
       "[fddsf]".isBracketed() shouldBe true
@@ -256,42 +392,6 @@ class StringExtensionTests : StringSpec() {
       "".isBracketed('{', '}') shouldBe false
     }
 
-    "trim ends test" {
-      "  [fddsf]  ".trimEnds() shouldBe "fddsf"
-      "  [fddsf]  ".trimEnds(2) shouldBe "dds"
-    }
-
-    "not quoted variant test" {
-      "'test'".isNotSingleQuoted() shouldBe false
-      "  'test'  ".isNotSingleQuoted() shouldBe false
-      "\"test\"".isNotSingleQuoted() shouldBe true
-      "test".isNotSingleQuoted() shouldBe true
-      "".isNotSingleQuoted() shouldBe true
-
-      "\"test\"".isNotDoubleQuoted() shouldBe false
-      "  \"test\"  ".isNotDoubleQuoted() shouldBe false
-      "'test'".isNotDoubleQuoted() shouldBe true
-      "test".isNotDoubleQuoted() shouldBe true
-      "".isNotDoubleQuoted() shouldBe true
-    }
-
-    "to quoted test" {
-      "test".toSingleQuoted() shouldBe "'test'"
-      "".toSingleQuoted() shouldBe "''"
-      "test".toDoubleQuoted() shouldBe "\"test\""
-      "".toDoubleQuoted() shouldBe "\"\""
-    }
-
-    "ensure prefix test" {
-      "path".ensurePrefix("/") shouldBe "/path"
-      "/path".ensurePrefix("/") shouldBe "/path"
-      "path".ensurePrefix("pa") shouldBe "path"
-      "".ensurePrefix("/") shouldBe "/"
-
-      "path".ensureLeadingSlash() shouldBe "/path"
-      "/path".ensureLeadingSlash() shouldBe "/path"
-    }
-
     "is not bracketed test" {
       "[fddsf]".isNotBracketed() shouldBe false
       "  [fddsf]  ".isNotBracketed() shouldBe false
@@ -303,6 +403,37 @@ class StringExtensionTests : StringSpec() {
       "[fddsf]".isNotBracketed('{', '}') shouldBe true
     }
 
+    "substring between test" {
+      "hello [world] test".substringBetween("[", "]") shouldBe "world"
+      "<tag>content</tag>".substringBetween("<tag>", "</tag>") shouldBe "content"
+      "no markers here".substringBetween("[", "]") shouldBe "no markers here"
+    }
+  }
+
+  private fun trimTests() {
+    "trim ends test" {
+      "  [fddsf]  ".trimEnds() shouldBe "fddsf"
+      "  [fddsf]  ".trimEnds(2) shouldBe "dds"
+    }
+
+    // JS's native substring swaps or clamps indices that the other platforms reject, so without explicit checks
+    // these returned a wrong result on JS and threw on the JVM.
+    "trimEnds rejects a length that does not fit the trimmed string" {
+      "  ab  ".trimEnds() shouldBe ""
+      shouldThrow<IllegalArgumentException> { "a".trimEnds() }
+      shouldThrow<IllegalArgumentException> { " [x] ".trimEnds(2) }
+      shouldThrow<IllegalArgumentException> { "abc".trimEnds(-1) }
+    }
+
+    "null if blank test" {
+      "".nullIfBlank() shouldBe null
+      "   ".nullIfBlank() shouldBe null
+      "hello".nullIfBlank() shouldBe "hello"
+      " hello ".nullIfBlank() shouldBe " hello "
+    }
+  }
+
+  private fun patternTests() {
     "pattern match test" {
       "*st*".toPattern shouldBe "^.*st.*$"
       "?.*".toPattern shouldBe "^.\\..*$"
@@ -328,67 +459,14 @@ class StringExtensionTests : StringSpec() {
       $$"a$b^c{1}|d\\e" shouldMatch $$"a$b^c{1}|d\\e".asRegex()
       "a__SINGLE__DOT__b".toPattern shouldBe "^a__SINGLE__DOT__b$"
     }
+  }
 
-    "Long length is exact at every power-of-ten boundary" {
-      var power = 1L
-      for (digits in 1..18) {
-        power *= 10
-        (power - 1).length shouldBe digits
-        power.length shouldBe digits + 1
-        (-(power - 1)).length shouldBe digits
-      }
-      Long.MAX_VALUE.length shouldBe 19
-      Long.MIN_VALUE.length shouldBe 19
-    }
-
-    // An element that is only separators, or has several, used to leave a doubled separator behind.
-    "join, toPath and pathOf never produce doubled separators" {
-      pathOf("a", "/", "b") shouldBe "a/b"
-      ["a", "//b"].join() shouldBe "a/b"
-      ["a//", "b"].join() shouldBe "a/b"
-      ["a", "//", "b"].toPath() shouldBe "/a/b/"
-      ["x", "y/"].join() shouldBe "x/y/"
-    }
-
-    "join and toPath strip a whole multi-character separator and skip empty elements" {
-      ["a", "::b"].join("::") shouldBe "a::b"
-      ["a::", "::b"].join("::") shouldBe "a::b"
-      ["a", "", "b"].join() shouldBe "a/b"
-      ["", "a", "", "b"].toRootPath() shouldBe "/a/b"
-      ["a", "", "b"].toPath() shouldBe "/a/b/"
-    }
-
-    // Parsing is the platform's own. The JVM and Kotlin/Native also accept a trailing f/d and hexadecimal
-    // floating-point literals, JS accepts hexadecimal integers, and wasmJs accepts neither.
-    "isFloat and isDouble follow the platform's number parsing" {
-      val suffixAndHexFloat = testPlatform == TestPlatform.JVM || testPlatform == TestPlatform.NATIVE
-      val hexInteger = testPlatform == TestPlatform.JS
-      for (isNumber in [String::isFloat, String::isDouble]) {
-        isNumber("4f") shouldBe suffixAndHexFloat
-        isNumber("4d") shouldBe suffixAndHexFloat
-        isNumber("0x1p3") shouldBe suffixAndHexFloat
-        isNumber("0x10") shouldBe hexInteger
-      }
-    }
-
-    "isFloat and isDouble agree across platforms on signs, exponents, padding, NaN and Infinity" {
-      for (s in [" 4 ", "+4", "-4", ".5", "5.", "1e3", "NaN", "Infinity", "-Infinity"]) {
-        s.isFloat() shouldBe true
-        s.isDouble() shouldBe true
-      }
-      for (s in ["1_000", "4.0.0", "e3", "--4"]) {
-        s.isFloat() shouldBe false
-        s.isDouble() shouldBe false
-      }
-    }
-
-    // JS's native substring swaps or clamps indices that the other platforms reject, so without explicit checks
-    // these returned a wrong result on JS and threw on the JVM.
-    "trimEnds rejects a length that does not fit the trimmed string" {
-      "  ab  ".trimEnds() shouldBe ""
-      shouldThrow<IllegalArgumentException> { "a".trimEnds() }
-      shouldThrow<IllegalArgumentException> { " [x] ".trimEnds(2) }
-      shouldThrow<IllegalArgumentException> { "abc".trimEnds(-1) }
+  private fun maxLengthTests() {
+    "max length test" {
+      "hello world".maxLength(5) shouldBe "hello"
+      "hello".maxLength(10) shouldBe "hello"
+      "hello".maxLength(5) shouldBe "hello"
+      "".maxLength(5) shouldBe ""
     }
 
     // An emoji outside the Basic Multilingual Plane is a surrogate pair; cutting or masking half of it leaves an
@@ -399,50 +477,28 @@ class StringExtensionTests : StringSpec() {
       "\uD83D\uDE00".maxLength(1) shouldBe ""
     }
 
-    "obfuscate masks or keeps a surrogate pair as a whole" {
-      "\uD83D\uDE00x".obfuscate() shouldBe "*x"
-      "x\uD83D\uDE00y".obfuscate() shouldBe "*\uD83D\uDE00*"
-    }
-
     "maxLength rejects a negative length" {
       "abc".maxLength(0) shouldBe ""
       shouldThrow<IllegalArgumentException> { "abc".maxLength(-1) }
     }
+  }
 
-    "null if blank test" {
-      "".nullIfBlank() shouldBe null
-      "   ".nullIfBlank() shouldBe null
-      "hello".nullIfBlank() shouldBe "hello"
-      " hello ".nullIfBlank() shouldBe " hello "
+  private fun maskingTests() {
+    "obfuscate test" {
+      // obfuscate replaces characters at positions where index % freq == 0
+      "hello".obfuscate() shouldBe "*e*l*" // freq=2: positions 0,2,4 replaced
+      "hello".obfuscate(3) shouldBe "*el*o" // freq=3: positions 0,3 replaced
+      "ab".obfuscate() shouldBe "*b"
+      "".obfuscate() shouldBe ""
+      "abc".obfuscate(1) shouldBe "***" // freq=1: every position replaced
+      // freq must be positive; a non-positive freq previously threw ArithmeticException (i % 0).
+      shouldThrow<IllegalArgumentException> { "abc".obfuscate(0) }
+      shouldThrow<IllegalArgumentException> { "abc".obfuscate(-1) }
     }
 
-    "ensure suffix test" {
-      "file".ensureSuffix(".txt") shouldBe "file.txt"
-      "file.txt".ensureSuffix(".txt") shouldBe "file.txt"
-      "".ensureSuffix("/") shouldBe "/"
-    }
-
-    "substring between test" {
-      "hello [world] test".substringBetween("[", "]") shouldBe "world"
-      "<tag>content</tag>".substringBetween("<tag>", "</tag>") shouldBe "content"
-      "no markers here".substringBetween("[", "]") shouldBe "no markers here"
-    }
-
-    "with line numbers test" {
-      "line1\nline2\nline3".withLineNumbers() shouldBe "1 : line1\n2 : line2\n3 : line3"
-
-      // Numbers are left-aligned and padded to the width of the largest line number.
-      val numbered = (1..10).joinToString("\n") { "l$it" }.withLineNumbers().lines()
-      numbered.first() shouldBe "1  : l1"
-      numbered.last() shouldBe "10 : l10"
-      "a\nb".withLineNumbers(separator = '|') shouldBe "1 | a\n2 | b"
-    }
-
-    "path of test" {
-      pathOf("a", "b", "c") shouldBe "a/b/c"
-      pathOf("a", "", "c") shouldBe "a/c" // Empty elements filtered
-      pathOf("") shouldBe ""
-      pathOf("single") shouldBe "single"
+    "obfuscate masks or keeps a surrogate pair as a whole" {
+      "\uD83D\uDE00x".obfuscate() shouldBe "*x"
+      "x\uD83D\uDE00y".obfuscate() shouldBe "*\uD83D\uDE00*"
     }
 
     "mask url credentials test" {
@@ -464,25 +520,6 @@ class StringExtensionTests : StringSpec() {
       "from https://a:b@h1 to https://c:d@h2".maskUrlCredentials() shouldBe
         "from https://*****:*****@h1 to https://*****:*****@h2"
       "see scheme:// then https://c:d@h2/x".maskUrlCredentials() shouldBe "see scheme:// then https://*****:*****@h2/x"
-    }
-
-    "obfuscate test" {
-      // obfuscate replaces characters at positions where index % freq == 0
-      "hello".obfuscate() shouldBe "*e*l*" // freq=2: positions 0,2,4 replaced
-      "hello".obfuscate(3) shouldBe "*el*o" // freq=3: positions 0,3 replaced
-      "ab".obfuscate() shouldBe "*b"
-      "".obfuscate() shouldBe ""
-      "abc".obfuscate(1) shouldBe "***" // freq=1: every position replaced
-      // freq must be positive; a non-positive freq previously threw ArithmeticException (i % 0).
-      shouldThrow<IllegalArgumentException> { "abc".obfuscate(0) }
-      shouldThrow<IllegalArgumentException> { "abc".obfuscate(-1) }
-    }
-
-    "max length test" {
-      "hello world".maxLength(5) shouldBe "hello"
-      "hello".maxLength(10) shouldBe "hello"
-      "hello".maxLength(5) shouldBe "hello"
-      "".maxLength(5) shouldBe ""
     }
   }
 }

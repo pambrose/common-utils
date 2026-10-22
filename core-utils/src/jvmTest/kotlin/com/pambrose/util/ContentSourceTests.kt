@@ -44,6 +44,14 @@ import kotlin.time.Duration.Companion.seconds
 
 class ContentSourceTests : StringSpec() {
   init {
+    repoTests()
+    localSourceTests()
+    urlSourceTests()
+    repoFileTests()
+    gitFileTests()
+  }
+
+  private fun repoTests() {
     "OwnerType.isUser and isOrganization" {
       OwnerType.User.isUser() shouldBe true
       OwnerType.User.isOrganization() shouldBe false
@@ -51,6 +59,42 @@ class ContentSourceTests : StringSpec() {
       OwnerType.Organization.isOrganization() shouldBe true
     }
 
+    "GitHubRepo builds sourcePrefix from owner and repo" {
+      val repo = GitHubRepo(OwnerType.Organization, "anthropic", "claude")
+      repo.scheme shouldBe "https://"
+      repo.domainName shouldBe "github.com"
+      repo.ownerName shouldBe "anthropic"
+      repo.repoName shouldBe "claude"
+      repo.sourcePrefix shouldBe "https://github.com/anthropic/claude"
+      repo.rawSourcePrefix shouldBe "https://raw.githubusercontent.com/anthropic/claude"
+      repo.remote shouldBe true
+      repo.toString() shouldContain "anthropic"
+    }
+
+    "GitLabRepo builds sourcePrefix and a raw-content rawSourcePrefix" {
+      val repo = GitLabRepo(OwnerType.User, "alice", "demo")
+      repo.sourcePrefix shouldBe "https://gitlab.com/alice/demo"
+      // GitLab serves raw file content under /-/raw/; /-/blob/ is the HTML viewer page.
+      repo.rawSourcePrefix shouldBe "https://gitlab.com/alice/demo/-/raw"
+      repo.remote shouldBe true
+      repo.toString() shouldContain "alice"
+    }
+
+    "GitHubRepo.rawSourcePrefix only rewrites the host, not a repository name containing github.com" {
+      GitHubRepo(OwnerType.User, "bob", "bob.github.com").rawSourcePrefix shouldBe
+        "https://raw.githubusercontent.com/bob/bob.github.com"
+    }
+
+    "GitHubRepo on a GitHub Enterprise domain serves raw content from the /raw/ path" {
+      val repo = GitHubRepo(OwnerType.Organization, "team", "app", domainName = "github.corp.net")
+      repo.rawSourcePrefix shouldBe "https://github.corp.net/raw/team/app"
+      GitHubFile(repo, branchName = "main", srcPath = "src", fileName = "App.kt").source shouldBe
+        "https://github.corp.net/raw/team/app/main/src/App.kt"
+      repo.file("main/src/App.kt").source shouldBe "https://github.corp.net/raw/team/app/main/src/App.kt"
+    }
+  }
+
+  private fun localSourceTests() {
     "FileSystemSource exposes pathPrefix as sourcePrefix and is local" {
       val fs = FileSystemSource("/tmp/data")
       fs.pathPrefix shouldBe "/tmp/data"
@@ -90,7 +134,9 @@ class ContentSourceTests : StringSpec() {
       src.content shouldBe "hello on disk"
       src.remote shouldBe false
     }
+  }
 
+  private fun urlSourceTests() {
     "UrlSource reports its url and remote=true" {
       val url = "https://example.com/file.txt"
       val src = UrlSource(url)
@@ -107,18 +153,46 @@ class ContentSourceTests : StringSpec() {
       src.remote shouldBe true
     }
 
-    "GitHubRepo builds sourcePrefix from owner and repo" {
-      val repo = GitHubRepo(OwnerType.Organization, "anthropic", "claude")
-      repo.scheme shouldBe "https://"
-      repo.domainName shouldBe "github.com"
-      repo.ownerName shouldBe "anthropic"
-      repo.repoName shouldBe "claude"
-      repo.sourcePrefix shouldBe "https://github.com/anthropic/claude"
-      repo.rawSourcePrefix shouldBe "https://raw.githubusercontent.com/anthropic/claude"
-      repo.remote shouldBe true
-      repo.toString() shouldContain "anthropic"
+    "UrlSource times out instead of blocking forever on an unresponsive server" {
+      // The OS completes the TCP handshake from the listen backlog, but nothing ever reads the request or replies.
+      ServerSocket(0).use { server ->
+        shouldThrow<SocketTimeoutException> {
+          UrlSource("http://127.0.0.1:${server.localPort}/slow", readTimeout = 200.milliseconds).content
+        }
+      }
     }
 
+    // URLConnection takes an Int of milliseconds: Duration.INFINITE converted to -1, and anything past
+    // Int.MAX_VALUE ms (about 24.8 days) wrapped around, both of which URLConnection rejects.
+    "UrlSource accepts an infinite or very long timeout" {
+      val url = tempFileUrl("long timeouts")
+      UrlSource(url, connectTimeout = Duration.INFINITE, readTimeout = Duration.INFINITE).content shouldBe
+        "long timeouts"
+      UrlSource(url, connectTimeout = 30.days, readTimeout = 365.days).content shouldBe "long timeouts"
+    }
+
+    "UrlSource rejects a negative timeout when it is created" {
+      shouldThrow<IllegalArgumentException> { UrlSource("file:/tmp/x", connectTimeout = (-1).seconds) }
+      shouldThrow<IllegalArgumentException> { UrlSource("file:/tmp/x", readTimeout = (-1).milliseconds) }
+    }
+
+    // A sub-millisecond timeout truncated to 0, which URLConnection treats as no timeout at all.
+    "UrlSource rounds a sub-millisecond timeout up instead of disabling it" {
+      ServerSocket(0).use { server ->
+        // Closing the listener after a while resets the pending connection, so a read that ignores the
+        // timeout fails with a different exception instead of hanging the test.
+        thread(isDaemon = true) {
+          Thread.sleep(3_000)
+          server.close()
+        }
+        shouldThrow<SocketTimeoutException> {
+          UrlSource("http://127.0.0.1:${server.localPort}/slow", readTimeout = 100.microseconds).content
+        }
+      }
+    }
+  }
+
+  private fun repoFileTests() {
     "GitHubRepo.file resolves a relative path against rawSourcePrefix" {
       val repo = GitHubRepo(OwnerType.User, "pambrose", "common-utils")
       val source = repo.file("master/README.md")
@@ -166,16 +240,9 @@ class ContentSourceTests : StringSpec() {
         UrlSource("https://example.com", java.time.Duration.ofSeconds(-1), java.time.Duration.ofSeconds(2))
       }
     }
+  }
 
-    "GitLabRepo builds sourcePrefix and a raw-content rawSourcePrefix" {
-      val repo = GitLabRepo(OwnerType.User, "alice", "demo")
-      repo.sourcePrefix shouldBe "https://gitlab.com/alice/demo"
-      // GitLab serves raw file content under /-/raw/; /-/blob/ is the HTML viewer page.
-      repo.rawSourcePrefix shouldBe "https://gitlab.com/alice/demo/-/raw"
-      repo.remote shouldBe true
-      repo.toString() shouldContain "alice"
-    }
-
+  private fun gitFileTests() {
     "GitHubFile builds raw.githubusercontent URL" {
       val repo = GitHubRepo(OwnerType.User, "pambrose", "common-utils")
       val file = GitHubFile(repo, branchName = "master", srcPath = "core-utils/README", fileName = "README.md")
@@ -211,57 +278,6 @@ class ContentSourceTests : StringSpec() {
       val repo = GitHubRepo(OwnerType.User, "pambrose", "common-utils")
       GitHubFile(repo, branchName = "master", srcPath = "", fileName = "README.md").source shouldBe
         "https://raw.githubusercontent.com/pambrose/common-utils/master/README.md"
-    }
-
-    "GitHubRepo.rawSourcePrefix only rewrites the host, not a repository name containing github.com" {
-      GitHubRepo(OwnerType.User, "bob", "bob.github.com").rawSourcePrefix shouldBe
-        "https://raw.githubusercontent.com/bob/bob.github.com"
-    }
-
-    "GitHubRepo on a GitHub Enterprise domain serves raw content from the /raw/ path" {
-      val repo = GitHubRepo(OwnerType.Organization, "team", "app", domainName = "github.corp.net")
-      repo.rawSourcePrefix shouldBe "https://github.corp.net/raw/team/app"
-      GitHubFile(repo, branchName = "main", srcPath = "src", fileName = "App.kt").source shouldBe
-        "https://github.corp.net/raw/team/app/main/src/App.kt"
-      repo.file("main/src/App.kt").source shouldBe "https://github.corp.net/raw/team/app/main/src/App.kt"
-    }
-
-    "UrlSource times out instead of blocking forever on an unresponsive server" {
-      // The OS completes the TCP handshake from the listen backlog, but nothing ever reads the request or replies.
-      ServerSocket(0).use { server ->
-        shouldThrow<SocketTimeoutException> {
-          UrlSource("http://127.0.0.1:${server.localPort}/slow", readTimeout = 200.milliseconds).content
-        }
-      }
-    }
-
-    // URLConnection takes an Int of milliseconds: Duration.INFINITE converted to -1, and anything past
-    // Int.MAX_VALUE ms (about 24.8 days) wrapped around, both of which URLConnection rejects.
-    "UrlSource accepts an infinite or very long timeout" {
-      val url = tempFileUrl("long timeouts")
-      UrlSource(url, connectTimeout = Duration.INFINITE, readTimeout = Duration.INFINITE).content shouldBe
-        "long timeouts"
-      UrlSource(url, connectTimeout = 30.days, readTimeout = 365.days).content shouldBe "long timeouts"
-    }
-
-    "UrlSource rejects a negative timeout when it is created" {
-      shouldThrow<IllegalArgumentException> { UrlSource("file:/tmp/x", connectTimeout = (-1).seconds) }
-      shouldThrow<IllegalArgumentException> { UrlSource("file:/tmp/x", readTimeout = (-1).milliseconds) }
-    }
-
-    // A sub-millisecond timeout truncated to 0, which URLConnection treats as no timeout at all.
-    "UrlSource rounds a sub-millisecond timeout up instead of disabling it" {
-      ServerSocket(0).use { server ->
-        // Closing the listener after a while resets the pending connection, so a read that ignores the
-        // timeout fails with a different exception instead of hanging the test.
-        thread(isDaemon = true) {
-          Thread.sleep(3_000)
-          server.close()
-        }
-        shouldThrow<SocketTimeoutException> {
-          UrlSource("http://127.0.0.1:${server.localPort}/slow", readTimeout = 100.microseconds).content
-        }
-      }
     }
   }
 }

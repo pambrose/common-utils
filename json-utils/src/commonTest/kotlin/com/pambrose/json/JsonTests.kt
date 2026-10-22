@@ -79,21 +79,26 @@ class BasicObject2(
 }
 
 class JsonTests : StringSpec() {
-  init {
-    val obj = BasicObject2(
-      DEFAULT_BOOLEAN,
-      DEFAULT_STRING,
-      DEFAULT_INT,
-      DEFAULT_DOUBLE,
-      BasicObject1(DEFAULT_BOOLEAN, DEFAULT_STRING, DEFAULT_INT, DEFAULT_DOUBLE),
-      DEFAULT_BOOLEAN_LIST,
-      DEFAULT_STRING_LIST,
-      DEFAULT_INT_LIST,
-      DEFAULT_DOUBLE_LIST,
-    )
-    val json1: JsonElement = obj.toJsonString(true).parseJson()
-    val json2: JsonElement = obj.toJsonElement()
+  private val obj = BasicObject2(
+    DEFAULT_BOOLEAN,
+    DEFAULT_STRING,
+    DEFAULT_INT,
+    DEFAULT_DOUBLE,
+    BasicObject1(DEFAULT_BOOLEAN, DEFAULT_STRING, DEFAULT_INT, DEFAULT_DOUBLE),
+    DEFAULT_BOOLEAN_LIST,
+    DEFAULT_STRING_LIST,
+    DEFAULT_INT_LIST,
+    DEFAULT_DOUBLE_LIST,
+  )
+  private val json1: JsonElement = obj.toJsonString(true).parseJson()
+  private val json2: JsonElement = obj.toJsonElement()
 
+  init {
+    primitiveTests()
+    compositeTypeTests()
+  }
+
+  private fun primitiveTests() {
     "Check for keys" {
       json1.containsKeys("boolVal") shouldBe true
       json1.containsKeys("missing") shouldBe false
@@ -141,7 +146,9 @@ class JsonTests : StringSpec() {
       map2["intVal"].toString().toInt() shouldBe DEFAULT_INT
       map2["doubleVal"].toString().toDouble() shouldBe DEFAULT_DOUBLE
     }
+  }
 
+  private fun compositeTypeTests() {
     "Object types" {
       [json1, json2].forEach { json ->
         val objVal = json.jsonObjectValue("objectVal")

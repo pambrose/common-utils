@@ -35,6 +35,13 @@ private suspend fun Deferred<Boolean>.awaitGuarded() = withTimeout(HANG_GUARD_SE
 
 class BugFixVerificationTests : StringSpec() {
   init {
+    lambdaLoggingTests()
+    booleanWaiterTests()
+    isZippedTests()
+    defaultTimeoutTests()
+  }
+
+  private fun lambdaLoggingTests() {
     // Bug #5: Lambda-based logging methods logged the lambda object, not its result
     // Before fix: logger.debug { msg } logged the lambda's toString()
     // After fix: logger.debug { msg() } invokes the lambda to get the message
@@ -78,7 +85,9 @@ class BugFixVerificationTests : StringSpec() {
       action()
       invoked shouldBe true
     }
+  }
 
+  private fun booleanWaiterTests() {
     // Bug #16: Race condition in GenericValueWaiter/BooleanWaiter
     // The waiter now registers a per-call (predicate, continuation) under a lock and resumes each
     // waiter independently, so concurrent waiters are no longer lost. (See GenericValueWaiterTests
@@ -116,7 +125,9 @@ class BugFixVerificationTests : StringSpec() {
       val result = waiter.waitUntilTrue(1.seconds)
       result shouldBe true
     }
+  }
 
+  private fun isZippedTests() {
     // Bug #18: isZipped() crashed on byte arrays with fewer than 2 elements
     // Before fix: accessed this[0] and this[1] without size check
     // After fix: checks size >= 2 before accessing elements
@@ -137,7 +148,9 @@ class BugFixVerificationTests : StringSpec() {
       // GZIP magic bytes: 0x1f 0x8b
       byteArrayOf(0x1f, 0x8b.toByte()).isZipped() shouldBe true
     }
+  }
 
+  private fun defaultTimeoutTests() {
     // Bug #24: Long.MAX_VALUE.days overflows; should use Duration.INFINITE
     // Before fix: Long.MAX_VALUE.days as default timeout overflowed on conversion
     // After fix: Duration.INFINITE is used, which withTimeoutOrNull handles correctly

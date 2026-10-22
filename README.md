@@ -5,6 +5,7 @@
 [![Tests](https://github.com/pambrose/common-utils/actions/workflows/test.yml/badge.svg)](https://github.com/pambrose/common-utils/actions/workflows/test.yml)
 [![Kotlin version](https://img.shields.io/badge/kotlin-2.4.21-red?logo=kotlin)](http://kotlinlang.org)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
+[![CodeScene Average Code Health](https://codescene.io/projects/7520/status-badges/average-code-health)](https://codescene.io/projects/7520)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/5bb4750894844031a55375227acfff6f)](https://app.codacy.com/gh/pambrose/common-utils/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![codecov](https://codecov.io/gh/pambrose/common-utils/branch/master/graph/badge.svg)](https://codecov.io/gh/pambrose/common-utils)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
@@ -208,9 +209,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:5.1.1")
-  implementation("com.pambrose.common-utils:json-utils:5.1.1")
-  implementation("com.pambrose.common-utils:ktor-server-utils:5.1.1")
+  implementation("com.pambrose.common-utils:core-utils:5.1.2")
+  implementation("com.pambrose.common-utils:json-utils:5.1.2")
+  implementation("com.pambrose.common-utils:ktor-server-utils:5.1.2")
     // ... other modules
 }
 ```
@@ -220,7 +221,7 @@ declared without one:
 
 ```kotlin
 dependencies {
-  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.1.1"))
+  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.1.2"))
   implementation("com.pambrose.common-utils:core-utils")
   implementation("com.pambrose.common-utils:service-utils")
 }
@@ -237,7 +238,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>5.1.1</version>
+      <version>5.1.2</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
@@ -252,7 +253,7 @@ artifacts too):
         <dependency>
             <groupId>com.pambrose.common-utils</groupId>
             <artifactId>common-utils-bom</artifactId>
-            <version>5.1.1</version>
+            <version>5.1.2</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -263,7 +264,7 @@ artifacts too):
 ## Technology Stack
 
 - **Languages**: Kotlin 2.4.21, Java
-- **Build System**: Gradle 9.8.1 with Kotlin DSL
+- **Build System**: Gradle 9.8.2 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava

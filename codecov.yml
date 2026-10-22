@@ -4,7 +4,7 @@ coverage:
       default:
         target: auto
         threshold: 1%
-    # The project's line coverage (see CLAUDE.md's Coverage section) is well above this; a PR's new code should
+    # The project's line coverage (see AGENTS.md's Coverage section) is well above this; a PR's new code should
     # come close to it.
     patch:
       default:

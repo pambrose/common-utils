@@ -74,6 +74,13 @@ class ExposedUtilsTests : StringSpec() {
       TransactionManager.closeAndUnregister(db)
     }
 
+    resultRowTests()
+    toRowStringTests()
+    transactionBehaviorTests()
+    statementResultTests()
+  }
+
+  private fun resultRowTests() {
     "result row get by index returns values in select order" {
       readonlyTx(db = db) {
         val row =
@@ -106,7 +113,9 @@ class ExposedUtilsTests : StringSpec() {
         exception.message shouldBe "No value at index 99"
       }
     }
+  }
 
+  private fun toRowStringTests() {
     "toRowString joins column values with dashes" {
       readonlyTx(db = db) {
         val row =
@@ -142,7 +151,9 @@ class ExposedUtilsTests : StringSpec() {
         rollback()
       }
     }
+  }
 
+  private fun transactionBehaviorTests() {
     // H2 ignores Connection.setReadOnly, so a write would still succeed; what can be checked is the read-only flag
     // each helper gives the transaction, which Exposed passes on to the driver.
     "readonlyTx and timedReadOnlyTx run read-only transactions, and timedTransaction does not" {
@@ -188,7 +199,9 @@ class ExposedUtilsTests : StringSpec() {
       exception.message shouldBe "simulated failure"
       readonlyTx(db = db) { ExposedUtilsTestTable.selectAll().count() } shouldBe 1L
     }
+  }
 
+  private fun statementResultTests() {
     "readonlyTx with default database returns the statement result" {
       val count = readonlyTx { ExposedUtilsTestTable.selectAll().count() }
       count shouldBe 1L

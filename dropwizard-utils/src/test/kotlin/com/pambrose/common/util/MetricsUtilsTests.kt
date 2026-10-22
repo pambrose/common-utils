@@ -27,6 +27,11 @@ import java.lang.reflect.Modifier
 
 class MetricsUtilsTests : StringSpec() {
   init {
+    thresholdTests()
+    factoryTests()
+  }
+
+  private fun thresholdTests() {
     "backlog health check healthy" {
       val healthCheck = MetricsUtils.newBacklogHealthCheck(backlogSize = 5, size = 10)
       val result = healthCheck.execute()
@@ -75,7 +80,9 @@ class MetricsUtilsTests : StringSpec() {
       MetricsUtils.newMapHealthCheck(mapOf("a" to 1, "b" to 2), size = 2).execute().message shouldBe
         "Large size: 2 (threshold: 2)"
     }
+  }
 
+  private fun factoryTests() {
     "the factories are static methods, so Java callers need no INSTANCE" {
       val factories =
         MetricsUtils::class.java.declaredMethods

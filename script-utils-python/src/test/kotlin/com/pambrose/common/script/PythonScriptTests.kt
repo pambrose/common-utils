@@ -46,6 +46,16 @@ class Exitable {
 
 class PythonScriptTests : StringSpec() {
   init {
+    builtInTypeTests()
+    objectTests()
+    collectionTests()
+    evaluationTests()
+    terminationGuardTests()
+    exitNameTests()
+    variableTests()
+  }
+
+  private fun builtInTypeTests() {
     "built in types" {
       val boolVal = true
       val intVal = 0
@@ -84,6 +94,16 @@ class PythonScriptTests : StringSpec() {
       }
     }
 
+    "list compare" {
+      PythonScript().use {
+        it.apply {
+          eval("[True] == [True]") shouldBe true
+        }
+      }
+    }
+  }
+
+  private fun objectTests() {
     "user object" {
       val aux = IncClass()
 
@@ -134,15 +154,9 @@ class PythonScriptTests : StringSpec() {
         }
       }
     }
+  }
 
-    "list compare" {
-      PythonScript().use {
-        it.apply {
-          eval("[True] == [True]") shouldBe true
-        }
-      }
-    }
-
+  private fun collectionTests() {
     "object with type" {
       val list: MutableList<Int> = [1]
 
@@ -186,13 +200,59 @@ class PythonScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun evaluationTests() {
     "invalid syntax" {
       PythonScript().use { script ->
         shouldThrow<ScriptException> { script.eval("junk") }
       }
     }
 
+    "expr evaluator keeps working after failed expressions" {
+      PythonExprEvaluator().use { evaluator ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { evaluator.eval("$i == [wrong]") }
+          evaluator.eval("$i == $i") shouldBe true
+          evaluator.eval("$i == ${i + 1}") shouldBe false
+        }
+      }
+    }
+
+    "pool expr evaluator keeps working after failed expressions" {
+      PythonExprEvaluatorPool(2).use { pool ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { pool.blockingEval("$i == [wrong]") }
+          pool.blockingEval("$i == $i") shouldBe true
+          pool.blockingEval("$i == ${i + 1}") shouldBe false
+        }
+      }
+    }
+
+    "expr evaluator names the type of a result that is not a Boolean" {
+      PythonExprEvaluator().use { evaluator ->
+        evaluator.compute("1 + 2") shouldBe 3
+        shouldThrow<IllegalArgumentException> { evaluator.eval("1 + 2") }.message shouldBe
+          "Expression did not evaluate to Boolean, got Integer"
+        shouldThrow<IllegalArgumentException> { evaluator.eval("'s'") }.message shouldBe
+          "Expression did not evaluate to Boolean, got String"
+        shouldThrow<IllegalArgumentException> { evaluator.eval("None") }.message shouldBe
+          "Expression did not evaluate to Boolean, got null"
+      }
+    }
+
+    "the Python evaluator rejects literal termination calls" {
+      PythonExprEvaluator().use { evaluator ->
+        // The lambdas are never called, so an unguarded evaluator returns True instead of exiting.
+        shouldThrow<ScriptException> { evaluator.eval("(lambda: System.exit(0)) is not None") }.message shouldContain
+          JVM_EXIT_MESSAGE
+        shouldThrow<ScriptException> { evaluator.eval("(lambda: sys.exit(0)) is not None") }.message shouldBe
+          "Illegal call to sys.exit()"
+      }
+    }
+  }
+
+  private fun terminationGuardTests() {
     "Python exit calls are rejected before evaluation" {
       // Each call sits in a function that is never called, so without the guard the definition would just succeed.
       // Run, the calls would raise SystemExit, which the engine also reports as a ScriptException, so only the
@@ -223,6 +283,35 @@ class PythonScriptTests : StringSpec() {
       }
     }
 
+    "JVM termination through java.lang is rejected" {
+      PythonScript().use {
+        it.apply {
+          // Each call is inside a function that is never called, so an unguarded script returns instead of
+          // terminating the test JVM.
+          shouldThrow<ScriptException> {
+            eval(
+              """
+              def shutdown():
+                from java.lang import System
+                System.exit(0)
+              """.trimIndent(),
+            )
+          }.message shouldContain JVM_EXIT_MESSAGE
+          shouldThrow<ScriptException> {
+            eval(
+              """
+              def stop():
+                from java.lang import Runtime
+                Runtime.getRuntime().halt(0)
+              """.trimIndent(),
+            )
+          }.message shouldContain JVM_EXIT_MESSAGE
+        }
+      }
+    }
+  }
+
+  private fun exitNameTests() {
     "exit guards do not match identifiers containing exit/quit substrings" {
       PythonScript().use {
         it.apply {
@@ -262,65 +351,6 @@ class PythonScriptTests : StringSpec() {
       widget.calls shouldBe 2
     }
 
-    "expr evaluator keeps working after failed expressions" {
-      PythonExprEvaluator().use { evaluator ->
-        repeat(ITERATIONS) { i ->
-          shouldThrow<ScriptException> { evaluator.eval("$i == [wrong]") }
-          evaluator.eval("$i == $i") shouldBe true
-          evaluator.eval("$i == ${i + 1}") shouldBe false
-        }
-      }
-    }
-
-    "pool expr evaluator keeps working after failed expressions" {
-      PythonExprEvaluatorPool(2).use { pool ->
-        repeat(ITERATIONS) { i ->
-          shouldThrow<ScriptException> { pool.blockingEval("$i == [wrong]") }
-          pool.blockingEval("$i == $i") shouldBe true
-          pool.blockingEval("$i == ${i + 1}") shouldBe false
-        }
-      }
-    }
-
-    "expr evaluator names the type of a result that is not a Boolean" {
-      PythonExprEvaluator().use { evaluator ->
-        evaluator.compute("1 + 2") shouldBe 3
-        shouldThrow<IllegalArgumentException> { evaluator.eval("1 + 2") }.message shouldBe
-          "Expression did not evaluate to Boolean, got Integer"
-        shouldThrow<IllegalArgumentException> { evaluator.eval("'s'") }.message shouldBe
-          "Expression did not evaluate to Boolean, got String"
-        shouldThrow<IllegalArgumentException> { evaluator.eval("None") }.message shouldBe
-          "Expression did not evaluate to Boolean, got null"
-      }
-    }
-
-    "JVM termination through java.lang is rejected" {
-      PythonScript().use {
-        it.apply {
-          // Each call is inside a function that is never called, so an unguarded script returns instead of
-          // terminating the test JVM.
-          shouldThrow<ScriptException> {
-            eval(
-              """
-              def shutdown():
-                from java.lang import System
-                System.exit(0)
-              """.trimIndent(),
-            )
-          }.message shouldContain JVM_EXIT_MESSAGE
-          shouldThrow<ScriptException> {
-            eval(
-              """
-              def stop():
-                from java.lang import Runtime
-                Runtime.getRuntime().halt(0)
-              """.trimIndent(),
-            )
-          }.message shouldContain JVM_EXIT_MESSAGE
-        }
-      }
-    }
-
     "methods named exit or quit can be defined" {
       PythonScript().use {
         it.apply {
@@ -339,7 +369,9 @@ class PythonScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun variableTests() {
     "a variable added after an evaluation is bound for the next one" {
       PythonScript().use {
         it.apply {
@@ -367,16 +399,6 @@ class PythonScriptTests : StringSpec() {
         ["my-var", "print", "x = 1"].forEach { name ->
           shouldThrow<ScriptException> { script.add(name, 5) }
         }
-      }
-    }
-
-    "the Python evaluator rejects literal termination calls" {
-      PythonExprEvaluator().use { evaluator ->
-        // The lambdas are never called, so an unguarded evaluator returns True instead of exiting.
-        shouldThrow<ScriptException> { evaluator.eval("(lambda: System.exit(0)) is not None") }.message shouldContain
-          JVM_EXIT_MESSAGE
-        shouldThrow<ScriptException> { evaluator.eval("(lambda: sys.exit(0)) is not None") }.message shouldBe
-          "Illegal call to sys.exit()"
       }
     }
   }

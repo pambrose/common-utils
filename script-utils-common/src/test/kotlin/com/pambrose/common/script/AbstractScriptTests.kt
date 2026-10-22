@@ -68,6 +68,12 @@ private class PrivateOuter {
 
 class AbstractScriptTests : StringSpec() {
   init {
+    accessibleClassTests()
+    bindingTests()
+    resetTests()
+  }
+
+  private fun accessibleClassTests() {
     "accessibleClass returns the value's own class when it is public" {
       FakeScript().use { script ->
         val regex = Regex("a+")
@@ -123,7 +129,9 @@ class AbstractScriptTests : StringSpec() {
         script.accessibleClassOf("primitives", primitives) shouldBe IntArray::class
       }
     }
+  }
 
+  private fun bindingTests() {
     "the default reserves no names and binds each variable in the engine scope" {
       FakeScript().use { script ->
         script.reserved("class") shouldBe false
@@ -171,7 +179,9 @@ class AbstractScriptTests : StringSpec() {
         script.fakeEngine.evaluated shouldBe []
       }
     }
+  }
 
+  private fun resetTests() {
     "resetContext drops the variables and gives the engine a fresh context" {
       FakeScript().use { script ->
         script.add("x", 1)

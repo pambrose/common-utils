@@ -48,6 +48,18 @@ internal class InternalPair<A, B>(
 
 class KotlinScriptTests : StringSpec() {
   init {
+    builtInTypeTests()
+    objectTests()
+    collectionTests()
+    declaredTypeTests()
+    specialClassTests()
+    rebindingTests()
+    invalidVariableTests()
+    evaluationTests()
+    evaluatorTests()
+  }
+
+  private fun builtInTypeTests() {
     "built in types" {
       val boolVal = true
       val intVal = 0
@@ -106,7 +118,9 @@ class KotlinScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun objectTests() {
     "user object" {
       val aux = IncClass()
 
@@ -161,7 +175,9 @@ class KotlinScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun collectionTests() {
     "object with KType" {
       val list: MutableList<Int> = [1]
 
@@ -212,114 +228,9 @@ class KotlinScriptTests : StringSpec() {
         }
       }
     }
+  }
 
-    "list compare" {
-      KotlinScript().use {
-        it.apply {
-          eval("listOf(1,2,3) == listOf(1, 2, 3)") shouldBe true
-          eval("listOf(1,2) == listOf(1, 2, 3)") shouldBe false
-
-          eval("listOf(true,true) == listOf(true, true)") shouldBe true
-          eval("listOf(true,false) == listOf(true, true)") shouldBe false
-
-          eval("""listOf("aaa","bbb") == listOf("aaa", "bbb")""") shouldBe true
-          eval("""listOf("aaa","bbb") == listOf("aaa", "aaa")""") shouldBe false
-        }
-      }
-    }
-
-    "inner class" {
-      class InnerTest
-
-      val inner = InnerTest()
-
-      KotlinScript().use { script ->
-        shouldThrow<ScriptException> { script.add("inner", inner) }
-      }
-    }
-
-    "unnecessary params" {
-      val value = 5
-
-      KotlinScript().use { script ->
-        shouldThrow<ScriptException> { script.add("value", value, typeOf<Int?>()) }
-      }
-    }
-
-    "unmatched params" {
-      val list: MutableList<Int> = [1]
-
-      KotlinScript().use { script ->
-        shouldThrow<ScriptException> {
-          script.add(name = "list", list, typeOf<Int?>(), typeOf<Int>())
-        }
-      }
-    }
-
-    "missing collection type" {
-      val list: MutableList<Int> = [1]
-
-      KotlinScript().use { script ->
-        shouldThrow<ScriptException> { script.add("list", list) }
-      }
-    }
-
-    "invalid syntax" {
-      KotlinScript().use { script ->
-        shouldThrow<ScriptException> { script.eval("junk") }
-      }
-    }
-
-    "JVM termination calls are rejected before evaluation" {
-      // Each call sits in a lambda that is never invoked, so without the guard the script would return the lambda,
-      // failing the test instead of terminating the test JVM. The guard's own message tells its rejection apart from
-      // a compile error, such as the unresolved reference a bare exitProcess would otherwise be.
-      KotlinScript().use { script ->
-        listOf(
-          "{ System.exit(1) }",
-          "{ java.lang.System.exit(1) }",
-          "{ exitProcess(0) }",
-          "{ kotlin.system.exitProcess(0) }",
-          "{ Runtime.getRuntime().exit(0) }",
-          "{ Runtime.getRuntime().halt(0) }",
-        ).forEach { code ->
-          shouldThrow<ScriptException> { script.eval(code) }.message shouldContain JVM_EXIT_MESSAGE
-        }
-      }
-    }
-
-    "expr evaluator keeps working after failed expressions" {
-      KotlinExprEvaluator().use { evaluator ->
-        repeat(ITERATIONS) { i ->
-          shouldThrow<ScriptException> { evaluator.eval("$i == [wrong]") }
-          evaluator.eval("$i == $i") shouldBe true
-          evaluator.eval("$i == ${i + 1}") shouldBe false
-        }
-      }
-    }
-
-    "compute evaluator" {
-      KotlinExprEvaluator().use { evaluator ->
-        repeat(ITERATIONS) { i ->
-          evaluator.compute("$i * $i") shouldBe i * i
-        }
-      }
-    }
-
-    "pool expr evaluator keeps working after failed expressions" {
-      KotlinExprEvaluatorPool(2).use { pool ->
-        repeat(ITERATIONS) { i ->
-          shouldThrow<ScriptException> { pool.blockingEval("$i == [wrong]") }
-          pool.blockingEval("$i == $i") shouldBe true
-          pool.blockingEval("$i == ${i + 1}") shouldBe false
-        }
-      }
-    }
-
-    "java.lang.System stays usable in scripts" {
-      KotlinScript().use { it.eval("System.currentTimeMillis() > 0") shouldBe true }
-    }
-
+  private fun declaredTypeTests() {
     "values whose runtime class is private, internal, or outside kotlin can be bound" {
       KotlinScript().use {
         it.apply {
@@ -332,28 +243,6 @@ class KotlinScriptTests : StringSpec() {
           eval("fixed.size") shouldBe 2
           eval("""nested.getValue("k").sum()""") shouldBe 3
           eval("empty.size") shouldBe 0
-        }
-      }
-    }
-
-    "a variable added after an evaluation is bound for the next one" {
-      KotlinScript().use {
-        it.apply {
-          add("a", 1)
-          eval("a") shouldBe 1
-          add("b", 2)
-          eval("a + b") shouldBe 3
-        }
-      }
-    }
-
-    "a variable added again is redeclared with its new value and type" {
-      KotlinScript().use {
-        it.apply {
-          add("x", 1)
-          eval("x") shouldBe 1
-          add("x", "s")
-          eval("x.length") shouldBe 1
         }
       }
     }
@@ -392,7 +281,9 @@ class KotlinScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun specialClassTests() {
     "a non-generic subclass of a generic class is cast to itself" {
       KotlinScript().use {
         it.apply {
@@ -400,39 +291,6 @@ class KotlinScriptTests : StringSpec() {
           varDecls shouldBe
             """val props = $HOLDER["props"] as java.util.Properties"""
           eval("""props.getProperty("k")""") shouldBe "v"
-        }
-      }
-    }
-
-    // Each value used to get its own "<name>_tmp" engine binding, which the engine also exposes as a script property.
-    // A user variable could then collide with one, and values of some classes broke every later evaluation.
-    "a variable named like another's former temporary binding keeps its own value" {
-      KotlinScript().use {
-        it.apply {
-          add("a_tmp", 1)
-          add("a", "s")
-          eval("a_tmp") shouldBe 1
-          eval("a") shouldBe "s"
-        }
-      }
-    }
-
-    "binding a lambda or a JDK-internal class leaves later evaluations working" {
-      KotlinScript().use {
-        it.apply {
-          val increment: (Int) -> Int = { x -> x + 1 }
-          add("increment", increment)
-          add("order", String.CASE_INSENSITIVE_ORDER)
-          eval("1 + 1") shouldBe 2
-          eval("order === order") shouldBe true
-        }
-      }
-    }
-
-    "the names the generated declarations read from are reserved" {
-      KotlinScript().use { script ->
-        listOf("bindings", "__variables").forEach { name ->
-          shouldThrow<ScriptException> { script.add(name, 1) }.message.orEmpty() shouldContain "not a valid identifier"
         }
       }
     }
@@ -458,6 +316,93 @@ class KotlinScriptTests : StringSpec() {
       }
     }
 
+    "binding a lambda or a JDK-internal class leaves later evaluations working" {
+      KotlinScript().use {
+        it.apply {
+          val increment: (Int) -> Int = { x -> x + 1 }
+          add("increment", increment)
+          add("order", String.CASE_INSENSITIVE_ORDER)
+          eval("1 + 1") shouldBe 2
+          eval("order === order") shouldBe true
+        }
+      }
+    }
+  }
+
+  private fun rebindingTests() {
+    "a variable added after an evaluation is bound for the next one" {
+      KotlinScript().use {
+        it.apply {
+          add("a", 1)
+          eval("a") shouldBe 1
+          add("b", 2)
+          eval("a + b") shouldBe 3
+        }
+      }
+    }
+
+    "a variable added again is redeclared with its new value and type" {
+      KotlinScript().use {
+        it.apply {
+          add("x", 1)
+          eval("x") shouldBe 1
+          add("x", "s")
+          eval("x.length") shouldBe 1
+        }
+      }
+    }
+
+    // Each value used to get its own "<name>_tmp" engine binding, which the engine also exposes as a script property.
+    // A user variable could then collide with one, and values of some classes broke every later evaluation.
+    "a variable named like another's former temporary binding keeps its own value" {
+      KotlinScript().use {
+        it.apply {
+          add("a_tmp", 1)
+          add("a", "s")
+          eval("a_tmp") shouldBe 1
+          eval("a") shouldBe "s"
+        }
+      }
+    }
+  }
+
+  private fun invalidVariableTests() {
+    "inner class" {
+      class InnerTest
+
+      val inner = InnerTest()
+
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.add("inner", inner) }
+      }
+    }
+
+    "unnecessary params" {
+      val value = 5
+
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.add("value", value, typeOf<Int?>()) }
+      }
+    }
+
+    "unmatched params" {
+      val list: MutableList<Int> = [1]
+
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> {
+          script.add(name = "list", list, typeOf<Int?>(), typeOf<Int>())
+        }
+      }
+    }
+
+    "missing collection type" {
+      val list: MutableList<Int> = [1]
+
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.add("list", list) }
+      }
+    }
+
     "variable names must be valid identifiers" {
       KotlinScript().use { script ->
         ["my-var", "class", "x = 1; val injected", ""].forEach { name ->
@@ -466,9 +411,92 @@ class KotlinScriptTests : StringSpec() {
       }
     }
 
+    "the names the generated declarations read from are reserved" {
+      KotlinScript().use { script ->
+        listOf("bindings", "__variables").forEach { name ->
+          shouldThrow<ScriptException> { script.add(name, 1) }.message.orEmpty() shouldContain "not a valid identifier"
+        }
+      }
+    }
+  }
+
+  private fun evaluationTests() {
+    "list compare" {
+      KotlinScript().use {
+        it.apply {
+          eval("listOf(1,2,3) == listOf(1, 2, 3)") shouldBe true
+          eval("listOf(1,2) == listOf(1, 2, 3)") shouldBe false
+
+          eval("listOf(true,true) == listOf(true, true)") shouldBe true
+          eval("listOf(true,false) == listOf(true, true)") shouldBe false
+
+          eval("""listOf("aaa","bbb") == listOf("aaa", "bbb")""") shouldBe true
+          eval("""listOf("aaa","bbb") == listOf("aaa", "aaa")""") shouldBe false
+        }
+      }
+    }
+
+    "invalid syntax" {
+      KotlinScript().use { script ->
+        shouldThrow<ScriptException> { script.eval("junk") }
+      }
+    }
+
+    "JVM termination calls are rejected before evaluation" {
+      // Each call sits in a lambda that is never invoked, so without the guard the script would return the lambda,
+      // failing the test instead of terminating the test JVM. The guard's own message tells its rejection apart from
+      // a compile error, such as the unresolved reference a bare exitProcess would otherwise be.
+      KotlinScript().use { script ->
+        listOf(
+          "{ System.exit(1) }",
+          "{ java.lang.System.exit(1) }",
+          "{ exitProcess(0) }",
+          "{ kotlin.system.exitProcess(0) }",
+          "{ Runtime.getRuntime().exit(0) }",
+          "{ Runtime.getRuntime().halt(0) }",
+        ).forEach { code ->
+          shouldThrow<ScriptException> { script.eval(code) }.message shouldContain JVM_EXIT_MESSAGE
+        }
+      }
+    }
+
+    "java.lang.System stays usable in scripts" {
+      KotlinScript().use { it.eval("System.currentTimeMillis() > 0") shouldBe true }
+    }
+
     "the public engine property is deprecated" {
       // Kotlin keeps a property's annotations on the property, not its getter, so read them with Kotlin reflection.
       AbstractEngine::class.members.single { it.name == "engine" }.annotations.any { it is Deprecated } shouldBe true
+    }
+  }
+
+  private fun evaluatorTests() {
+    "expr evaluator keeps working after failed expressions" {
+      KotlinExprEvaluator().use { evaluator ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { evaluator.eval("$i == [wrong]") }
+          evaluator.eval("$i == $i") shouldBe true
+          evaluator.eval("$i == ${i + 1}") shouldBe false
+        }
+      }
+    }
+
+    "compute evaluator" {
+      KotlinExprEvaluator().use { evaluator ->
+        repeat(ITERATIONS) { i ->
+          evaluator.compute("$i * $i") shouldBe i * i
+        }
+      }
+    }
+
+    "pool expr evaluator keeps working after failed expressions" {
+      KotlinExprEvaluatorPool(2).use { pool ->
+        repeat(ITERATIONS) { i ->
+          shouldThrow<ScriptException> { pool.blockingEval("$i == [wrong]") }
+          pool.blockingEval("$i == $i") shouldBe true
+          pool.blockingEval("$i == ${i + 1}") shouldBe false
+        }
+      }
     }
   }
 

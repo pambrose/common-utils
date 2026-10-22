@@ -57,6 +57,15 @@ private suspend fun <T> withDetachedScope(block: suspend (CoroutineScope) -> T):
 // delay is needed to let it get there.
 class GenericValueWaiterTests : StringSpec() {
   init {
+    timeoutTests()
+    throwingPredicateTests()
+    concurrentWaiterTests()
+    predicateEvaluationTests()
+    valueTests()
+    cancellationTests()
+  }
+
+  private fun timeoutTests() {
     // Under a dispatcher that runs launch inline, the timeout job used to be launched before the waiter was
     // registered: a zero or negative delay fired, found nothing to remove, and the waiter then waited forever.
     "a zero or negative timeout returns false at once, even under a dispatcher that runs work inline" {
@@ -87,7 +96,9 @@ class GenericValueWaiterTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun throwingPredicateTests() {
     "a throwing predicate fails only its own waiter, not the others" {
       val waiter = IntWaiter(0)
 
@@ -105,6 +116,24 @@ class GenericValueWaiterTests : StringSpec() {
       }
     }
 
+    "a throwing predicate with a finite timeout still fails its waiter promptly" {
+      val waiter = IntWaiter(0)
+
+      withDetachedScope { scope ->
+        val bad =
+          scope.async(start = UNDISPATCHED) {
+            waiter.awaitValue(1.hours) { if (waiter.current == 1) error("kaboom") else false }
+          }
+
+        waiter.checkCondition(1)
+
+        // The armed timeout job was cancelled, so the waiter failed without waiting out the hour.
+        shouldThrow<IllegalStateException> { withTimeout(hangGuard) { bad.await() } }.message shouldBe "kaboom"
+      }
+    }
+  }
+
+  private fun concurrentWaiterTests() {
     "multiple coroutines waiting on the same condition are all resumed" {
       val waiter = BooleanWaiter(false)
 
@@ -149,7 +178,9 @@ class GenericValueWaiterTests : StringSpec() {
       waiter.setValue(false)
       result.await() shouldBe true
     }
+  }
 
+  private fun predicateEvaluationTests() {
     // Updates that leave the predicate false must keep the waiter registered, not resume or drop it. The waiter runs
     // unconfined, so a wrong resume would complete it inside checkCondition, before isActive is read. Its finite
     // timeout means a satisfied waiter also has a timeout job to cancel.
@@ -203,7 +234,9 @@ class GenericValueWaiterTests : StringSpec() {
       }
       timeoutQueued.load() shouldBe true
     }
+  }
 
+  private fun valueTests() {
     "BooleanWaiter waitUntilTrue times out if value never matches" {
       val waiter = BooleanWaiter(false)
 
@@ -244,6 +277,15 @@ class GenericValueWaiterTests : StringSpec() {
       BooleanWaiter(false).waitUntilFalse() shouldBe true
     }
 
+    "subclasses can read the monitored value but not assign it without notifying waiters" {
+      val type = GenericValueWaiter::class.java
+      type.declaredMethods.none { it.name == "setCurrValue" && !Modifier.isPrivate(it.modifiers) } shouldBe true
+      Modifier.isVolatile(type.getDeclaredField("currValue").modifiers) shouldBe true
+      type.declaredFields.none { it.name == "initValue" } shouldBe true
+    }
+  }
+
+  private fun cancellationTests() {
     "a cancelled waiter is deregistered and later updates remain safe" {
       val waiter = BooleanWaiter(false)
 
@@ -270,29 +312,6 @@ class GenericValueWaiterTests : StringSpec() {
 
       waiter.setValue(true)
       waiter.waitUntilTrue(1.seconds) shouldBe true
-    }
-
-    "a throwing predicate with a finite timeout still fails its waiter promptly" {
-      val waiter = IntWaiter(0)
-
-      withDetachedScope { scope ->
-        val bad =
-          scope.async(start = UNDISPATCHED) {
-            waiter.awaitValue(1.hours) { if (waiter.current == 1) error("kaboom") else false }
-          }
-
-        waiter.checkCondition(1)
-
-        // The armed timeout job was cancelled, so the waiter failed without waiting out the hour.
-        shouldThrow<IllegalStateException> { withTimeout(hangGuard) { bad.await() } }.message shouldBe "kaboom"
-      }
-    }
-
-    "subclasses can read the monitored value but not assign it without notifying waiters" {
-      val type = GenericValueWaiter::class.java
-      type.declaredMethods.none { it.name == "setCurrValue" && !Modifier.isPrivate(it.modifiers) } shouldBe true
-      Modifier.isVolatile(type.getDeclaredField("currValue").modifiers) shouldBe true
-      type.declaredFields.none { it.name == "initValue" } shouldBe true
     }
   }
 }

@@ -33,9 +33,8 @@ import kotlinx.serialization.json.jsonPrimitive
  * https://resend.com/docs/webhooks/emails/bounced and .../clicked, checked 2026-09-15.
  */
 class ResendPayloadTests : StringSpec() {
-  init {
-    val bouncedPayload =
-      """
+  private val bouncedPayload =
+    """
       {
         "type": "email.bounced",
         "created_at": "2026-11-22T23:41:12.126Z",
@@ -60,6 +59,12 @@ class ResendPayloadTests : StringSpec() {
       }
       """.trimIndent()
 
+  init {
+    documentedPayloadTests()
+    decodeTests()
+  }
+
+  private fun documentedPayloadTests() {
     val clickedPayload =
       """
       {
@@ -116,7 +121,9 @@ class ResendPayloadTests : StringSpec() {
       msg.data.click?.link shouldBe "https://resend.com"
       msg.data.broadcastId shouldBe "8b146471-e88e-4322-86af-016cd36fd216"
     }
+  }
 
+  private fun decodeTests() {
     "decode accepts a payload carrying fields the models do not declare" {
       val payload =
         """
