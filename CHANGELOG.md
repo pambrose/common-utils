@@ -14,10 +14,22 @@ All notable changes to Common Utils are documented in this file.
   each workflow that still exists. A workflow whose file was removed keeps none, since no new run would ever push its
   last ones out. GitHub expires the logs at 90 days but never deletes the run records. A manual run can be a dry run
   that only lists what it would delete.
-- `make versions` lists, for each module, only the dependencies with newer versions and any that could not be
-  checked, through a report formatter in `configureVersions()`. The new `make versions-all` prints the plugin's full
-  report, up-to-date dependencies included. Only core-utils checks for a newer Gradle, since every module runs on the
-  same one.
+- `make versions` prints one report for the whole build, listing only the dependencies and plugins with newer
+  versions and any that could not be checked, through a report formatter in `configureVersions()`. The new
+  `make versions-all` prints the plugin's full report, up-to-date entries included. The versions plugin is now applied
+  to the root project alone, which merges every module's dependencies and also checks the plugins in the root
+  `plugins` block. Each module used to run its own report, and none of them looked at the root buildscript, so plugins
+  that share no version with a library (KSP, maven-publish, the convention plugins, kotlinter, the PIT plugin and the
+  versions plugin itself) were never reported.
+- The JVM modules test on the catalog's Kotest (6.2.6) and logback, like the KMP modules. `configureTestingVersions()`
+  sets them through the `com.pambrose.testing` convention plugin's `pambroseTesting` extension, whose own defaults
+  (Kotest 6.2.5 in 1.1.7) lag the catalog whenever the catalog moves first.
+- The root build script adds each module to the root `dokka` and `kover` configurations through
+  `dependencies.project(path)` rather than the `Project` itself, which Gradle 9 deprecates and Gradle 10 rejects.
+- The detekt baseline support is gone: `make detekt-baseline`, the shared `config/detekt/baseline.xml` lookup and the
+  aggregate `detektBaseline` wiring. No baseline was ever committed, and a shared file could not work, since every
+  module's baseline tasks wrote the same path. Without one, `make detekt-baseline` wrote a separate baseline file for
+  every source set of every module.
 
 ### Tests
 
@@ -36,10 +48,11 @@ All notable changes to Common Utils are documented in this file.
 - AGENTS.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
   Dependabot's own fix job fails there.
 - AGENTS.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone, and `make versions-all`.
-- AGENTS.md notes that the catalog's Kotest now runs ahead of the version the convention plugin gives the JVM
-  modules, updates the tcnative note for grpc 1.85.1, and dates the coverage figures to 5.1.2.
+- AGENTS.md describes how the convention plugin's Kotest and logback versions follow the catalog, updates the
+  tcnative note for grpc 1.85.1, and dates the coverage figures to 5.1.2. The catalog and Dependabot comments on
+  tcnative no longer say it must match grpc's pin, which it deliberately runs ahead of.
 - service-utils' README says the Prometheus duplicate-family failure it describes still holds in 1.10.0.
-- README states Gradle 9.8.2.
+- README states Gradle 9.8.2 and shows a CodeScene code-health badge.
 
 ### Dependency changes
 
@@ -65,8 +78,9 @@ All notable changes to Common Utils are documented in this file.
   ([1.12.0](https://github.com/Kotlin/kotlinx.serialization/releases/tag/v1.12.0)).
 - `prometheus` 1.9.0 → 1.10.0, which prometheus-utils and service-utils export as `api`: an option to keep metric
   suffixes in OpenMetrics 2.0, and dependency updates.
-- `kotest` 6.2.5 → 6.2.6 (tests only). It moves the KMP modules and the Kotest Gradle plugin; the JVM modules keep the
-  6.2.5 runner that `pambrose-gradle-plugins` 1.1.7 adds.
+- `kotest` 6.2.5 → 6.2.6 (tests only), for every module and the Kotest Gradle plugin.
+- `resend` 4.28.0 → 4.29.0
+- `io.github.ben-manes.versions` 0.65.0 → 0.66.0
 - Gradle 9.8.1 → 9.8.2
 - Bump project version to 5.1.2
 

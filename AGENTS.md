@@ -65,13 +65,16 @@ Run `make help` for a self-documenting list of every target.
 The root `build.gradle.kts` applies a shared set of plugins to every subproject and defines several inline configuration functions, including:
 
 - `configureKotlinJvm()` - JVM 17 target, experimental opt-ins (kotlin/jvm modules)
+- `configureTestingVersions()` - sets the Kotest and logback versions that `com.pambrose.testing` adds to the JVM
+  modules to the catalog's (kotlin/jvm modules)
 - `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
 - `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
   on the KMP modules' `-jvm` artifacts), published through the same POM setup; it skips all the Kotlin, lint,
   coverage and docs configuration
-- `configureVersions()` - pre-release filtering and the compact report formatter for the ben-manes `dependencyUpdates` task
+- `configureVersions()` - pre-release filtering and the compact report formatter for the ben-manes `dependencyUpdates`
+  task, which only the root project applies
 - `configurePitest()` - applies `info.solidsoft.pitest` and the Kotest PIT plugin to the modules in
   `mutationModuleNames`. `targetTests` is widened to `com.pambrose.*` because some specs live outside
   `com.pambrose.common`
@@ -83,17 +86,37 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 - `com.pambrose.testing` - JUnit Platform, `kotest-runner-junit5` and `kotlin-test` as default `testImplementation`, logback-classic on test runtime
 - `com.pambrose.kotlinter` - Kotlinter lint/format tasks
 
-The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts`, at the catalog's versions. As of 5.1.2 the catalog's Kotest (6.2.6) runs ahead of the `kotest-runner-junit5` 6.2.5 that `pambrose-gradle-plugins` 1.1.7 adds to the JVM modules, so the KMP modules and the Kotest Gradle plugin test on 6.2.6 and the JVM modules on 6.2.5. The `mutationModuleNames` modules get a mix: the catalog's `kotest-extensions-pitest` pulls their engine, common and assertions-shared jars up to 6.2.6 under the 6.2.5 runner. A convention-plugin release that moves to 6.2.6 brings them back together; the plugin's `pambroseTesting { kotestVersion }` extension can also set it.
+The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root
+script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts`, at the
+catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.5 and 1.6.5 in 1.1.7),
+which lag the catalog whenever the catalog moves first, so `configureTestingVersions()` sets the `kotestVersion` and
+`logbackVersion` of its `pambroseTesting` extension to the catalog's. Every module, the `mutationModuleNames` ones
+included, and the Kotest Gradle plugin therefore test on the catalog's Kotest; bump it in the catalog alone.
 
-Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0; earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies intentionally tracked on a pre-release line still surface updates. Its `outputFormatter` makes `make versions` print, per module, only what is behind and what could not be checked; `make versions-all` passes `--output-formatter=plain` for the plugin's full report, up-to-date dependencies included. Only core-utils checks for a newer Gradle, since every module runs on the same one.
+Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0;
+earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its
+`isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies
+intentionally tracked on a pre-release line still surface updates. Only the root project applies the plugin, so
+`dependencyUpdates` runs once, there, and merges every module's dependencies (gathered by a `partialDependencyUpdates`
+task in each) into one report. That report also covers the plugins in the root `plugins` block, which sit on the root
+buildscript classpath, where a module's own task never looks. Keep the plugin off the modules: applied there, each
+module would print a report of its own, and none of them would list a plugin. The foojay resolver in
+`settings.gradle.kts` is still not checked: only the plugin's settings form covers settings plugins, and a settings
+`plugins` block cannot read the version catalog, so look for a newer foojay by hand. The `outputFormatter` in
+`configureVersions()` makes `make versions` print only what is behind and what could not be checked, naming the
+declaring projects when their versions differ; `make versions-all` passes `--output-formatter=plain` for the plugin's
+full report, up-to-date dependencies included.
 
 The full report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
 'testRuntimeOnly' configuration". No build script declares it: the pitest plugin, applied to the
 `mutationModuleNames` modules, adds it from a `withDependencies` hook at the JUnit Platform version already on the
-test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.5 and 6.2.6). It follows Kotest, so don't pin it
+test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.6). It follows Kotest, so don't pin it
 separately; its 1.14.x/6.x candidates become relevant once Kotest moves.
 
-Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` and a shared suppression baseline at `config/detekt/baseline.xml` (both auto-detected if present).
+Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` (auto-detected if present).
+There is no baseline, since the code has no findings to suppress: fix a new finding or `@Suppress` it. A shared
+baseline file cannot work in this build, because every module's `detektBaseline*` tasks would write the same
+path, so there is no `make detekt-baseline` either.
 
 Version catalog in `gradle/libs.versions.toml` manages all dependency versions.
 

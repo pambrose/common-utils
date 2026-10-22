@@ -4,6 +4,7 @@
 )
 
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import com.pambrose.TestingExtension
 import com.vanniktech.maven.publish.JavaPlatform
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
@@ -11,7 +12,6 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 import dev.detekt.gradle.Detekt
-import dev.detekt.gradle.DetektCreateBaselineTask
 import dev.detekt.gradle.extensions.DetektExtension
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 import io.kotest.framework.gradle.KotestGradleExtension
@@ -49,7 +49,8 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.ben.manes.versions) apply false
+    // Applied to the root project only; see configureVersions().
+    alias(libs.plugins.ben.manes.versions)
     alias(libs.plugins.pambrose.kotlinter) apply false
     alias(libs.plugins.pambrose.testing) apply false
     alias(libs.plugins.kotlinter) apply false
@@ -229,6 +230,11 @@ val kmpPluginIds = listOf(
     libs.plugins.kotlinter,
 ).map { it.get().pluginId }
 
+// The versions of the test dependencies that com.pambrose.testing adds to the JVM modules. The plugin's own defaults
+// lag the catalog whenever the catalog moves first; the KMP modules declare the same libraries at these versions.
+val catalogKotestVersion = libs.versions.kotest.get()
+val catalogLogbackVersion = libs.versions.logback.get()
+
 // JVM modules that get on-demand mutation testing (`make mutation`). Start with the modules whose tests
 // mostly run code without checking its result; add others once their reports are worth reading.
 val mutationModuleNames = setOf(
@@ -239,7 +245,6 @@ val pitestPluginId = libs.plugins.pitest.get().pluginId
 val kotestPitest = libs.kotest.extensions.pitest
 
 val sharedPluginIds = listOf(
-    libs.plugins.ben.manes.versions,
     libs.plugins.detekt,
     libs.plugins.dokka,
     libs.plugins.kover,
@@ -273,6 +278,7 @@ subprojects {
         configureKotlinterForKmp()
     } else {
         configureKotlinJvm()
+        configureTestingVersions()
         configurePublishing(isKmp = false)
     }
 
@@ -281,11 +287,12 @@ subprojects {
 
     configureDetekt()
     configureDokka()
-    configureVersions()
 
-    rootProject.dependencies.add("dokka", this)
-    rootProject.dependencies.add("kover", this)
+    rootProject.dependencies.add("dokka", rootProject.dependencies.project(path))
+    rootProject.dependencies.add("kover", rootProject.dependencies.project(path))
 }
+
+configureVersions()
 
 fun Project.configureKotlinJvm() {
     extensions.configure<KotlinJvmProjectExtension> {
@@ -329,6 +336,14 @@ fun Project.configureKotlinJvm() {
                 freeCompilerArgs.add(collectionLiteralsArg)
             }
         }
+    }
+}
+
+// com.pambrose.testing reads these in afterEvaluate, so setting them right after the plugin is applied takes effect.
+fun Project.configureTestingVersions() {
+    extensions.configure<TestingExtension> {
+        kotestVersion.set(catalogKotestVersion)
+        logbackVersion.set(catalogLogbackVersion)
     }
 }
 
@@ -455,10 +470,8 @@ fun Project.configureDetekt() {
         if (sharedConfig.exists()) {
             config.setFrom(sharedConfig)
         }
-        val sharedBaseline = rootProject.file("$detektConfigDir/baseline.xml")
-        if (sharedBaseline.exists()) {
-            baseline.set(sharedBaseline)
-        }
+        // No baseline: the code has no findings to suppress. A single shared baseline file cannot work here, since
+        // every module's baseline task would write the same path, so fix a new finding or @Suppress it instead.
     }
     tasks.withType<Detekt>().configureEach {
         jvmTarget.set(jvmTargetVersion)
@@ -469,14 +482,11 @@ fun Project.configureDetekt() {
             markdown.required.set(false)
         }
     }
-    // Wire the aggregate tasks to every per-source-set task by type so analysis runs
+    // Wire the aggregate task to every per-source-set task by type so analysis runs
     // with full type resolution on both kotlin/jvm modules (detektMain/detektTest) and
     // KMP modules (detektJvmMain, detektMetadataCommonMain, ...).
     tasks.named("detekt") {
         dependsOn(tasks.withType<Detekt>().matching { it.name != "detekt" })
-    }
-    tasks.named("detektBaseline") {
-        dependsOn(tasks.withType<DetektCreateBaselineTask>().matching { it.name != "detektBaseline" })
     }
 }
 
@@ -577,6 +587,10 @@ fun Project.configureCoordinatesAndPom() {
     }
 }
 
+// The versions plugin is applied to the root project alone. Its dependencyUpdates task merges every module's
+// dependencies into one report, and adds the plugins declared in the root plugins block, which sit on the root
+// buildscript classpath where no module's task looks. The settings plugin would also cover the settings plugins, but
+// a settings plugins block cannot read the version catalog.
 fun Project.configureVersions() {
     // A pre-release qualifier is a `.` or `-` delimiter followed by a known unstable
     // keyword. `m\d` matches milestones (`-M1`/`.M2`) without catching stable classifiers
@@ -587,9 +601,6 @@ fun Project.configureVersions() {
 
     fun isNonStable(version: String): Boolean = preReleaseQualifier.containsMatchIn(version)
 
-    // Every module runs on the same Gradle, so only one module's report checks for a newer one.
-    val checksGradle = name == "core-utils"
-
     tasks.withType<DependencyUpdatesTask>().configureEach {
         notCompatibleWithConfigurationCache("the dependency updates plugin is not compatible with the configuration cache")
         // Reject a pre-release candidate only when the current version is stable. For
@@ -598,17 +609,18 @@ fun Project.configureVersions() {
         rejectVersionIf {
             isNonStable(candidate.version) && !isNonStable(currentVersion)
         }
-        checkForGradleUpdate = checksGradle
 
-        // Prints, under each module's task header, only what is behind and what could not be checked. The
-        // plugin's own report, which `make versions-all` asks for with --output-formatter=plain, first lists
-        // every dependency already up to date: over 1,100 lines across the modules, for a handful of updates.
+        // Prints only what is behind and what could not be checked. The plugin's own report, which
+        // `make versions-all` asks for with --output-formatter=plain, first lists every dependency already up to
+        // date, for a handful of updates. The plugin names the declaring projects only when their versions differ.
         outputFormatter {
             val behind = outdated.dependencies.sortedBy { "${it.group}:${it.name}" }
             if (behind.isEmpty()) println("All dependencies are up to date")
             behind.forEach { d ->
                 val latest = with(d.available) { release ?: milestone ?: integration }
-                println(" - ${d.group}:${d.name} ${d.version} -> $latest")
+                val projects = d.projects.orEmpty()
+                val declaredIn = if (projects.isEmpty()) "" else projects.joinToString(prefix = " (", postfix = ")")
+                println(" - ${d.group}:${d.name} ${d.version} -> $latest$declaredIn")
             }
             unresolved.dependencies.sortedBy { "${it.group}:${it.name}" }.forEach {
                 println(" ? ${it.group}:${it.name}:${it.version} could not be checked")
