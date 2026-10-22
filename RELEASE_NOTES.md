@@ -42,7 +42,7 @@ consumers. There are no API changes.
 - `kotest` 6.2.5 → 6.2.6 (tests only)
 - `resend` 4.28.0 → 4.29.0
 - `brace-expansion` 2.1.4 → 2.1.7 in the JS and wasm toolchains (build only; closes six Dependabot alerts)
-- `io.github.ben-manes.versions` 0.65.0 → 0.66.0, Gradle 9.8.1 → 9.8.2 (build only)
+- `io.github.ben-manes.versions` 0.65.0 → 0.66.0, PIT 1.22.1 → 1.30.1, Gradle 9.8.1 → 9.8.2 (build only)
 
 **Full Changelog**: https://github.com/pambrose/common-utils/compare/5.1.1...5.1.2
 

@@ -30,6 +30,10 @@ All notable changes to Common Utils are documented in this file.
   aggregate `detektBaseline` wiring. No baseline was ever committed, and a shared file could not work, since every
   module's baseline tasks wrote the same path. Without one, `make detekt-baseline` wrote a separate baseline file for
   every source set of every module.
+- `make versions` no longer offers a pre-release with no delimiter before its qualifier, such as Jython's `2.7.5b1`,
+  as an update to a stable version.
+- `make mutation` runs PIT 1.30.1 rather than the pitest plugin's default 1.22.1. The catalog's `pitest` version sets
+  it, and Dependabot now tracks it.
 
 ### Tests
 
@@ -81,6 +85,7 @@ All notable changes to Common Utils are documented in this file.
 - `kotest` 6.2.5 → 6.2.6 (tests only), for every module and the Kotest Gradle plugin.
 - `resend` 4.28.0 → 4.29.0
 - `io.github.ben-manes.versions` 0.65.0 → 0.66.0
+- PIT (`pitest-command-line`) 1.22.1 → 1.30.1 (mutation testing only)
 - Gradle 9.8.1 → 9.8.2
 - Bump project version to 5.1.2
 

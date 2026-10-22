@@ -76,8 +76,10 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 - `configureVersions()` - pre-release filtering and the compact report formatter for the ben-manes `dependencyUpdates`
   task, which only the root project applies
 - `configurePitest()` - applies `info.solidsoft.pitest` and the Kotest PIT plugin to the modules in
-  `mutationModuleNames`. `targetTests` is widened to `com.pambrose.*` because some specs live outside
-  `com.pambrose.common`
+  `mutationModuleNames`, and sets the PIT engine to the catalog's `pitest` version, since the plugin's own default
+  lags. `targetTests` is widened to `com.pambrose.*` because some specs live outside `com.pambrose.common`. The
+  catalog's `pitest-command-line` library is there only so Dependabot tracks that version: the plugin adds the
+  dependency itself
 
 The `kmpModuleNames` set in the root build script decides which modules build with `kotlin("multiplatform")`; everything else gets `kotlin("jvm")`.
 
@@ -96,13 +98,14 @@ included, and the Kotest Gradle plugin therefore test on the catalog's Kotest; b
 Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0;
 earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its
 `isNonStable` filter rejects a pre-release candidate only when the current version is stable, so dependencies
-intentionally tracked on a pre-release line still surface updates. Only the root project applies the plugin, so
-`dependencyUpdates` runs once, there, and merges every module's dependencies (gathered by a `partialDependencyUpdates`
-task in each) into one report. That report also covers the plugins in the root `plugins` block, which sit on the root
-buildscript classpath, where a module's own task never looks. Keep the plugin off the modules: applied there, each
-module would print a report of its own, and none of them would list a plugin. The foojay resolver in
-`settings.gradle.kts` is still not checked: only the plugin's settings form covers settings plugins, and a settings
-`plugins` block cannot read the version catalog, so look for a newer foojay by hand. The `outputFormatter` in
+intentionally tracked on a pre-release line still surface updates. It recognizes a qualifier after a `.` or `-`
+(`-alpha.6`, `.Beta1`) and a Python-style one with no delimiter (Jython's `2.7.5b1`). Only the root project applies
+the plugin, so `dependencyUpdates` runs once, there, and merges every module's dependencies (gathered by a
+`partialDependencyUpdates` task in each) into one report. That report also covers the plugins in the root `plugins`
+block, which sit on the root buildscript classpath, where a module's own task never looks. Keep the plugin off the
+modules: applied there, each module would print a report of its own, and none of them would list a plugin. The foojay
+resolver in `settings.gradle.kts` is still not checked: only the plugin's settings form covers settings plugins, and a
+settings `plugins` block cannot read the version catalog, so look for a newer foojay by hand. The `outputFormatter` in
 `configureVersions()` makes `make versions` print only what is behind and what could not be checked, naming the
 declaring projects when their versions differ; `make versions-all` passes `--output-formatter=plain` for the plugin's
 full report, up-to-date dependencies included.

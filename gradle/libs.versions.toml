@@ -64,6 +64,8 @@ kotest = "6.2.6"
 # KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
 ksp = "2.3.12"
 mockk = "1.14.11"
+# The PIT engine the pitest plugin runs (see configurePitest); the plugin's own default lags (1.22.1 in 1.19.0).
+pitest = "1.30.1"
 
 [libraries]
 # Kotlin & kotlinx
@@ -145,6 +147,9 @@ kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 # PIT test plugin for Kotest specs; the mutation-tested modules add it (see mutationModuleNames)
 kotest-extensions-pitest = { module = "io.kotest:kotest-extensions-pitest", version.ref = "kotest" }
+# No build script uses it: the pitest plugin adds this dependency itself, at the pitest version. It is declared
+# only so that Dependabot tracks that version.
+pitest-command-line = { module = "org.pitest:pitest-command-line", version.ref = "pitest" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 

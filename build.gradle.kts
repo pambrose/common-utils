@@ -243,6 +243,7 @@ val mutationModuleNames = setOf(
 )
 val pitestPluginId = libs.plugins.pitest.get().pluginId
 val kotestPitest = libs.kotest.extensions.pitest
+val pitestEngineVersion = libs.versions.pitest.get()
 
 val sharedPluginIds = listOf(
     libs.plugins.detekt,
@@ -450,6 +451,7 @@ fun Project.configurePitest() {
     pluginManager.apply(pitestPluginId)
     dependencies.add("testImplementation", kotestPitest)
     extensions.configure<PitestPluginExtension> {
+        pitestVersion.set(pitestEngineVersion)
         targetClasses.set(listOf("com.pambrose.common.*"))
         // Some specs live outside com.pambrose.common (e.g. com.pambrose.util.ZipExtensionTests), and PIT
         // otherwise looks for tests only in the targetClasses packages.
@@ -596,8 +598,10 @@ fun Project.configureVersions() {
     // keyword. `m\d` matches milestones (`-M1`/`.M2`) without catching stable classifiers
     // like `-macos`/`-MR1`, and the `[.-]` delimiter catches both dash-style (`-alpha`)
     // and dot-style (Netty's `.Beta1`) qualifiers while leaving `-jre`/`.Final` stable.
+    // The second alternative catches Python-style qualifiers with no delimiter, such as
+    // Jython's `2.7.5b1`: an `a`, `b` or `rc` between two digits.
     val preReleaseQualifier =
-        Regex("""[.-](rc|beta|alpha|m\d|cr|snapshot|eap|dev|milestone|pre)""", RegexOption.IGNORE_CASE)
+        Regex("""[.-](rc|beta|alpha|m\d|cr|snapshot|eap|dev|milestone|pre)|\d(a|b|rc)\d""", RegexOption.IGNORE_CASE)
 
     fun isNonStable(version: String): Boolean = preReleaseQualifier.containsMatchIn(version)
 
