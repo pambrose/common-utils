@@ -1,17 +1,17 @@
 [versions]
 # Toolchain
-gradle-wrapper = "9.8.1"
+gradle-wrapper = "9.8.2"
 jvmTarget = "17"
 
 # Plugins
 detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
-gradlePlugins = "1.1.7"
+gradlePlugins = "1.1.8"
 kotlinter = "5.7.0"
 kover = "0.9.11"
 mavenPublish = "0.37.0"
 pitestPlugin = "1.19.0"
-versions = "0.65.0"
+versions = "0.66.0"
 
 # Kotlin & kotlinx
 # Governs the kotlin-scripting-* artifacts, kotlin-reflect and the Kotlin plugin ids. It is not what compiles the
@@ -22,23 +22,24 @@ kotlin = "2.4.21"
 coroutines = "1.11.0"
 datetime = "0.8.0-0.6.x-compat"
 kotlinxHtml = "0.12.0"
-serialization = "1.11.0"
+serialization = "1.12.0"
 
 # Logging
-logback = "1.6.5"
+logback = "1.6.6"
 logging = "8.0.4"
 
 # Frameworks
 dropwizard = "4.2.40"
-grpc = "1.84.2"
+grpc = "1.85.1"
 jakartaServlet = "6.1.0"
 jetty = "12.1.14"
 ktor = "3.6.0"
-# Keep in sync with grpc
+# Tracks the tcnative that grpc pins, bumped by hand with grpc. Deliberately ahead of grpc 1.85.1's 2.0.81.Final
+# (see AGENTS.md); bring the two together again on a later grpc bump.
 tcnative = "2.0.84.Final"
 
 # Data
-exposed = "1.5.1"
+exposed = "1.6.0"
 h2 = "2.5.252"
 redis = "8.0.2"
 
@@ -48,7 +49,7 @@ python = "2.7.4"
 
 # Observability
 brave = "6.3.1"
-prometheus = "1.9.0"
+prometheus = "1.10.0"
 zipkin = "3.6.1"
 zipkinReporter = "3.5.3"
 
@@ -56,13 +57,15 @@ zipkinReporter = "3.5.3"
 guava = "33.7.2-jre"
 
 # Other
-resend = "4.28.0"
+resend = "4.29.0"
 
 # Testing
-kotest = "6.2.5"
+kotest = "6.2.6"
 # KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
 ksp = "2.3.12"
 mockk = "1.14.11"
+# The PIT engine the pitest plugin runs (see configurePitest); the plugin's own default lags (1.22.1 in 1.19.0).
+pitest = "1.30.1"
 
 [libraries]
 # Kotlin & kotlinx
@@ -144,6 +147,9 @@ kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 # PIT test plugin for Kotest specs; the mutation-tested modules add it (see mutationModuleNames)
 kotest-extensions-pitest = { module = "io.kotest:kotest-extensions-pitest", version.ref = "kotest" }
+# No build script uses it: the pitest plugin adds this dependency itself, at the pitest version. It is declared
+# only so that Dependabot tracks that version.
+pitest-command-line = { module = "org.pitest:pitest-command-line", version.ref = "pitest" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 

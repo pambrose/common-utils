@@ -1,4 +1,4 @@
-.PHONY: default help clean stop build lint detekt detekt-baseline zizmor refresh tests tree depends versions versions-all kdocs \
+.PHONY: default help clean stop build lint detekt zizmor ci refresh tests tree depends versions versions-all kdocs \
 	coverage coverage-html coverage-xml coverage-log coverage-verify coverage-open coverage-packages coverage-modules coverage-clean mutation abi-check abi-update \
 	publish-local publish-local-snapshot publish-snapshot publish-maven-central upgrade-wrapper \
 	_check-gpg-env _require-version _require-gradle-version
@@ -34,15 +34,34 @@ lint: ## Run Kotlinter and Detekt
 detekt: ## Run Detekt static analysis
 	./gradlew detekt
 
-detekt-baseline: ## Generate or update the Detekt baseline
-	./gradlew detektBaseline
-
 # The online audits (impostor commits, known-vulnerable actions, ref confusion) need a GitHub token: GH_TOKEN if set,
 # otherwise gh's. zizmor rejects an empty token, so without one it runs only its offline audits.
 zizmor: ## Audit the GitHub Actions workflows and Dependabot config with zizmor
 	@command -v zizmor >/dev/null 2>&1 || { echo "ERROR: zizmor is not installed (brew install zizmor)" >&2; exit 1; }
 	@token="$${GH_TOKEN:-$$(gh auth token 2>/dev/null)}"; \
 	if [ -n "$$token" ]; then GH_TOKEN="$$token" zizmor .; else zizmor .; fi
+
+# Runs the jobs of the CI workflows (test.yml, kdocs.yml and zizmor.yml) that this host can run, one after another,
+# with the commands CI runs for a pull request, and stops at the first failure. zizmor goes first since it takes
+# seconds. The local publish skips the javadoc jars' Dokka HTML, as a pull request's run does, because the KDocs step
+# renders it anyway, and it publishes to build/ci-m2 rather than ~/.m2, so it never shadows released artifacts for
+# other local builds. Not run: the Codecov upload, the native-windows job (mingwX64Test needs a Windows host) and, on
+# macOS, the linuxX64 tests that `build` runs on Linux. On macOS, `build` already runs the Apple tests through check,
+# so the native-apple step finds them up to date. Gradle reuses up-to-date and cached task results; `make tests`
+# reruns every check task.
+ci: zizmor ## Run the CI jobs this host can run: zizmor, build, local publish, coverage, Apple tests, KDocs
+	./gradlew build
+	./gradlew publishMavenPublicationToMavenLocal publishJvmPublicationToMavenLocal \
+		publishKotlinMultiplatformPublicationToMavenLocal -x dokkaGeneratePublicationHtml \
+		-Dmaven.repo.local=$(CURDIR)/build/ci-m2
+	./gradlew koverXmlReport
+	@if [ "$$(uname -s)" = Darwin ]; then \
+		echo "./gradlew macosArm64Test iosSimulatorArm64Test"; ./gradlew macosArm64Test iosSimulatorArm64Test; \
+	else \
+		echo "Skipping the native-apple job, which needs a macOS host"; \
+	fi
+	./gradlew :dokkaGenerate
+	@echo "Not run locally: the native-windows job (mingwX64Test) and the Codecov upload"
 
 coverage: coverage-html coverage-xml ## Generate Kover HTML and XML reports
 
@@ -99,13 +118,14 @@ depends: ## Show dependency tree (verbose)
 
 # dependencyUpdates is marked incompatible with the configuration cache (configureVersions() in build.gradle.kts), so
 # a run with the cache on builds an entry only to discard it, and says so. --no-configuration-cache skips the cache for
-# this run instead. configureVersions() gives the task a formatter that lists only what is behind in each module;
-# versions-all names the plugin's own plain report, which also lists everything up to date.
-versions: ## List the dependencies with newer versions, and any that could not be checked, in each module
-	./gradlew dependencyUpdates --no-configuration-cache --no-parallel
+# this run instead. The root project's task merges every module's dependencies and the root build script's plugins
+# into one report. configureVersions() gives it a formatter that lists only what is behind; versions-all names the
+# plugin's own plain report, which also lists everything up to date.
+versions: ## List the dependencies and plugins with newer versions, and any that could not be checked
+	./gradlew dependencyUpdates --no-configuration-cache
 
-versions-all: ## The plugin's full dependency report for each module, up-to-date dependencies included
-	./gradlew dependencyUpdates --no-configuration-cache --no-parallel --output-formatter=plain
+versions-all: ## The plugin's full dependency report, up-to-date dependencies and plugins included
+	./gradlew dependencyUpdates --no-configuration-cache --output-formatter=plain
 
 kdocs: ## Generate Dokka HTML documentation
 	./gradlew :dokkaGenerate

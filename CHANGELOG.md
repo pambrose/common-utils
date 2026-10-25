@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.1.2] - 2026-10-25
 
 ### Build & tooling
 
@@ -11,27 +11,95 @@ All notable changes to Common Utils are documented in this file.
   Dependabot cannot fix them itself, since `kotlin-js-store/` holds lockfiles but no `package.json`. Build-only, with
   no effect on consumers.
 - A new scheduled `Cleanup` workflow deletes workflow runs older than 90 days every Monday, keeping the 10 newest of
-  each workflow. GitHub expires the logs at 90 days but never deletes the run records. A manual run can be a dry run
+  each workflow that still exists. A workflow whose file was removed keeps none, since no new run would ever push its
+  last ones out. GitHub expires the logs at 90 days but never deletes the run records. A manual run can be a dry run
   that only lists what it would delete.
+- `make versions` prints one report for the whole build, listing only the dependencies and plugins with newer
+  versions and any that could not be checked, through a report formatter in `configureVersions()`. The new
+  `make versions-all` prints the plugin's full report, up-to-date entries included. The versions plugin is now applied
+  to the root project alone, which merges every module's dependencies and also checks the plugins in the root
+  `plugins` block. Each module used to run its own report, and none of them looked at the root buildscript, so plugins
+  that share no version with a library (KSP, maven-publish, the convention plugins, kotlinter, the PIT plugin and the
+  versions plugin itself) were never reported.
+- The JVM modules test on the catalog's Kotest and logback, like the KMP modules. `configureTestingVersions()` sets
+  them through the `com.pambrose.testing` convention plugin's `pambroseTesting` extension, so a catalog bump no longer
+  waits for a convention-plugin release, as Kotest 6.2.6 had to against 1.1.7's 6.2.5. The defaults of 1.1.8 match
+  the catalog again.
+- The root build script adds each module to the root `dokka` and `kover` configurations through
+  `dependencies.project(path)` rather than the `Project` itself, which Gradle 9 deprecates and Gradle 10 rejects.
+- The detekt baseline support is gone: `make detekt-baseline`, the shared `config/detekt/baseline.xml` lookup and the
+  aggregate `detektBaseline` wiring. No baseline was ever committed, and a shared file could not work, since every
+  module's baseline tasks wrote the same path. Without one, `make detekt-baseline` wrote a separate baseline file for
+  every source set of every module.
+- `make versions` no longer offers a pre-release with no delimiter before its qualifier, such as Jython's `2.7.5b1`,
+  as an update to a stable version.
+- CodeScene reviews every pull request through its GitHub App, with the Bare Minimum quality gates: the check fails
+  when a change lowers a hotspot's Code Health, adds unhealthy new code, or breaks a critical Code Health rule.
+- `make ci` runs the CI jobs this host can run, with the commands a pull request's run uses: zizmor, `build`, the
+  local publish (into `build/ci-m2` rather than `~/.m2`), the Kover XML report, the Apple tests on macOS and the
+  KDocs. The native-windows job and the Codecov upload do not run locally.
+- `make mutation` runs PIT 1.30.1 rather than the pitest plugin's default 1.22.1. The catalog's `pitest` version sets
+  it, and Dependabot now tracks it.
+
+### Tests
+
+- The 66 specs whose `init` block ran past 70 lines of code, which CodeScene reported as a Large Method, now have
+  an `init` that only calls `private fun <topic>Tests()` functions. Each function registers one group of related
+  tests and stays under detekt's 60-line `LongMethod` limit. The tests themselves are unchanged. Local declarations
+  that several groups use became private members, and tests that share mutable state keep their original order. In
+  `JsonIntegrationTest`, a JSON fixture and a `buildJsonObject` builder moved out of the two tests too large for any
+  group.
 
 ### Documentation
 
-- CLAUDE.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
+- CLAUDE.md is renamed to AGENTS.md, and the comments in the root build script and `codecov.yml` that point to it
+  follow.
+- AGENTS.md describes that spec layout, so new tests go into a group rather than back into `init`.
+- AGENTS.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
   Dependabot's own fix job fails there.
-- CLAUDE.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone.
+- AGENTS.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone, `make versions-all`,
+  `make ci` and the CodeScene pull request check.
+- AGENTS.md describes how the convention plugin's Kotest and logback versions follow the catalog, updates the
+  tcnative note for grpc 1.85.1, and dates the coverage figures to 5.1.2. The catalog and Dependabot comments on
+  tcnative no longer say it must match grpc's pin, which it deliberately runs ahead of.
+- service-utils' README says the Prometheus duplicate-family failure it describes still holds in 1.10.0.
+- README states Gradle 9.8.2, lists `make ci` and shows a CodeScene code-health badge.
 
 ### Dependency changes
 
-- `exposed` 1.5.0 → 1.5.1, a SQL injection fix that exposed-utils passes on to consumers through its `api`
+- `exposed` 1.5.0 → 1.6.0. 1.5.1 is a SQL injection fix that exposed-utils passes on to consumers through its `api`
   dependencies ([EXPOSED-909, EXPOSED-1093](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#151)). The
   string arguments of `locate()`, `concat()`, `groupConcat()`, `match()` and the JSON `extract()`, `exists()` and
   `contains()` are bound as query parameters instead of being concatenated into the SQL. An argument the caller
   escaped itself, for example by doubling its single quotes, now reaches the database with the escaping intact.
-  exposed-utils calls none of these functions itself.
-- `grpc` 1.84.1 → 1.84.2, which grpc-utils exports as `api`: two backported fixes. Unary and server-streaming calls
-  defer deserializing the request until the client half-closes, and a call cancelled first discards it unread; and
-  xDS certificate updates no longer risk a `ConcurrentModificationException`. grpc 1.84.2 still pins
-  `netty-tcnative-boringssl-static` 2.0.81.Final, so the catalog's 2.0.84.Final stays ahead of it.
+  exposed-utils calls none of these functions itself. 1.6.0 lists no breaking changes; among its JDBC and core fixes,
+  batch inserts bind column defaults (EXPOSED-1088) and a DAO entity deleted before flush is no longer inserted
+  (EXPOSED-1092) ([1.6.0](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#160)). `exposed-jodatime`
+  moves joda-time to 2.14.4.
+- `grpc` 1.84.1 → 1.85.1, which grpc-utils exports as `api`. Unary and server-streaming calls defer deserializing the
+  request until the client half-closes, and a call cancelled first discards it unread; xDS certificate updates no
+  longer risk a `ConcurrentModificationException`; and a GOAWAY frame with an unrecognized HTTP/2 error code no
+  longer makes Netty clients throw a `NullPointerException` and leave RPCs hanging until their deadline. grpc-netty
+  moves to Netty 4.2.17. grpc 1.85.1 still pins `netty-tcnative-boringssl-static` 2.0.81.Final, so the catalog's
+  2.0.84.Final stays ahead of it.
+- `kotlinx-serialization-json` 1.11.0 → 1.12.0, which json-utils and email-utils export as `api`. Every exception
+  thrown during deserialization, including from custom serializers and `@Serializable` constructors, now reaches the
+  caller as a `JsonException`, still a `SerializationException`. JSON nesting depth is limited, so deeply nested input
+  fails with a `JsonDecodingException` instead of a stack overflow. Much of the Json and core API is now stable
+  ([1.12.0](https://github.com/Kotlin/kotlinx.serialization/releases/tag/v1.12.0)).
+- `prometheus` 1.9.0 → 1.10.0, which prometheus-utils and service-utils export as `api`: an option to keep metric
+  suffixes in OpenMetrics 2.0, and dependency updates.
+- `kotest` 6.2.5 → 6.2.6 (tests only), for every module and the Kotest Gradle plugin.
+- `logback` 1.6.5 → 1.6.6 (tests only)
+- `resend` 4.28.0 → 4.29.0, which email-utils exports as `api`: an inboxes API, a per-request timeout in
+  `RequestOptions`, and `CreateEmailOptions`' builder copying the lists and maps it is given
+  ([v4.29.0](https://github.com/resend/resend-java/releases/tag/v4.29.0)).
+- `pambrose-gradle-plugins` 1.1.7 → 1.1.8, whose only change is the convention plugin's default Kotest and logback
+  (6.2.6 and 1.6.6). The compiler stays Kotlin 2.4.21.
+- `io.github.ben-manes.versions` 0.65.0 → 0.66.0
+- PIT (`pitest-command-line`) 1.22.1 → 1.30.1 (mutation testing only)
+- Gradle 9.8.1 → 9.8.2
+- Bump project version to 5.1.2
 
 ## [5.1.1] - 2026-10-08
 

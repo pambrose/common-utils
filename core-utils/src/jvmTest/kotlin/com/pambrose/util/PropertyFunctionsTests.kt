@@ -51,6 +51,12 @@ class PropertyFunctionsTests : StringSpec() {
         .forEach { name -> System.clearProperty(name) }
     }
 
+    parsingTests()
+    skippedLineTests()
+    fileListTests()
+  }
+
+  private fun parsingTests() {
     "readProperties(List) sets system properties from a file" {
       val file =
         writePropsFile(
@@ -98,7 +104,9 @@ class PropertyFunctionsTests : StringSpec() {
 
       System.getProperty("${KEY_PREFIX}empty") shouldBe ""
     }
+  }
 
+  private fun skippedLineTests() {
     "readProperties skips comment lines starting with '#'" {
       val file =
         writePropsFile(
@@ -129,6 +137,32 @@ class PropertyFunctionsTests : StringSpec() {
       System.getProperty("${KEY_PREFIX}kept") shouldBe "yes"
     }
 
+    "readProperties skips indented and '!' comment lines" {
+      val file =
+        writePropsFile(
+          [
+            "   # ${KEY_PREFIX}indented=should-not-be-set",
+            "!${KEY_PREFIX}bang=should-not-be-set",
+            "${KEY_PREFIX}kept=yes",
+          ].joinToString("\n"),
+        )
+
+      readProperties([file.absolutePath])
+
+      System.getProperty("${KEY_PREFIX}kept") shouldBe "yes"
+      System.getProperties().values.filter { it == "should-not-be-set" }.shouldBeEmpty()
+    }
+
+    "readProperties skips a line with an empty key instead of throwing" {
+      val file = writePropsFile(["=orphan-value", "${KEY_PREFIX}afterEmptyKey=yes"].joinToString("\n"))
+
+      shouldNotThrowAny { readProperties([file.absolutePath]) }
+
+      System.getProperty("${KEY_PREFIX}afterEmptyKey") shouldBe "yes"
+    }
+  }
+
+  private fun fileListTests() {
     "readProperties processes every file passed to it" {
       val first = writePropsFile("${KEY_PREFIX}first=1")
       val second = writePropsFile("${KEY_PREFIX}second=2")
@@ -165,30 +199,6 @@ class PropertyFunctionsTests : StringSpec() {
         readProperties()
         readProperties(emptyList())
       }
-    }
-
-    "readProperties skips indented and '!' comment lines" {
-      val file =
-        writePropsFile(
-          [
-            "   # ${KEY_PREFIX}indented=should-not-be-set",
-            "!${KEY_PREFIX}bang=should-not-be-set",
-            "${KEY_PREFIX}kept=yes",
-          ].joinToString("\n"),
-        )
-
-      readProperties([file.absolutePath])
-
-      System.getProperty("${KEY_PREFIX}kept") shouldBe "yes"
-      System.getProperties().values.filter { it == "should-not-be-set" }.shouldBeEmpty()
-    }
-
-    "readProperties skips a line with an empty key instead of throwing" {
-      val file = writePropsFile(["=orphan-value", "${KEY_PREFIX}afterEmptyKey=yes"].joinToString("\n"))
-
-      shouldNotThrowAny { readProperties([file.absolutePath]) }
-
-      System.getProperty("${KEY_PREFIX}afterEmptyKey") shouldBe "yes"
     }
 
     "readProperties applies nothing when any file is missing" {

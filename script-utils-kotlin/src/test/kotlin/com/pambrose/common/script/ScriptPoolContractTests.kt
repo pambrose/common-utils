@@ -58,6 +58,13 @@ private class ProbeEvaluatorPool : AbstractExprEvaluatorPool<KotlinExprEvaluator
  */
 class ScriptPoolContractTests : StringSpec() {
   init {
+    recycleTests()
+    resetTests()
+    lifecycleTests()
+    cancellationTests()
+  }
+
+  private fun recycleTests() {
     "script pool of size 1 can be reused repeatedly (recycle on success)" {
       withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
@@ -86,35 +93,6 @@ class ScriptPoolContractTests : StringSpec() {
       }
     }
 
-    "script pool resets context between borrows (a var added in one eval is gone in the next)" {
-      withTimeout(TIMEOUT_MS.milliseconds) {
-        val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
-
-        pool.eval {
-          add("x", 99)
-          eval("x")
-        } shouldBe 99
-
-        shouldThrow<ScriptException> {
-          pool.eval { eval("x") }
-        }
-      }
-    }
-
-    "script pool isEmpty is true while borrowed and false after recycle" {
-      withTimeout(TIMEOUT_MS.milliseconds) {
-        val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
-        pool.isEmpty shouldBe false
-
-        pool.eval {
-          pool.isEmpty shouldBe true // the sole instance is borrowed for the duration of the block
-          eval("1 + 1")
-        } shouldBe 2
-
-        pool.isEmpty shouldBe false
-      }
-    }
-
     "expr pool of size 1 can be reused repeatedly (recycle on success)" {
       withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = KotlinExprEvaluatorPool(size = 1)
@@ -138,7 +116,68 @@ class ScriptPoolContractTests : StringSpec() {
         pool.eval("1 > 0") shouldBe true
       }
     }
+  }
 
+  private fun resetTests() {
+    "script pool resets context between borrows (a var added in one eval is gone in the next)" {
+      withTimeout(TIMEOUT_MS.milliseconds) {
+        val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
+
+        pool.eval {
+          add("x", 99)
+          eval("x")
+        } shouldBe 99
+
+        shouldThrow<ScriptException> {
+          pool.eval { eval("x") }
+        }
+      }
+    }
+
+    "expr pool resets an evaluator's context when it is returned" {
+      withTimeout(TIMEOUT_MS.milliseconds) {
+        val pool = ProbeEvaluatorPool()
+        val before = pool.evaluator.engine.context
+        pool.eval("1 > 0") shouldBe true
+        (pool.evaluator.engine.context === before) shouldBe false
+      }
+    }
+  }
+
+  private fun lifecycleTests() {
+    "script pool isEmpty is true while borrowed and false after recycle" {
+      withTimeout(TIMEOUT_MS.milliseconds) {
+        val pool = KotlinScriptPool(size = 1, nullGlobalContext = false)
+        pool.isEmpty shouldBe false
+
+        pool.eval {
+          pool.isEmpty shouldBe true // the sole instance is borrowed for the duration of the block
+          eval("1 + 1")
+        } shouldBe 2
+
+        pool.isEmpty shouldBe false
+      }
+    }
+
+    "pools reject a size that is not positive" {
+      shouldThrow<IllegalArgumentException> { KotlinScriptPool(size = 0, nullGlobalContext = false) }
+      shouldThrow<IllegalArgumentException> { KotlinExprEvaluatorPool(size = -1) }
+    }
+
+    "closing a pool fails later borrows" {
+      withTimeout(TIMEOUT_MS.milliseconds) {
+        val scripts = KotlinScriptPool(size = 1, nullGlobalContext = false)
+        scripts.close()
+        shouldThrow<ClosedReceiveChannelException> { scripts.eval { eval("1") } }
+
+        val evaluators = KotlinExprEvaluatorPool(size = 1)
+        evaluators.close()
+        shouldThrow<ClosedReceiveChannelException> { evaluators.eval("1 > 0") }
+      }
+    }
+  }
+
+  private fun cancellationTests() {
     "a borrower cancelled just as an instance is recycled does not shrink the pool" {
       val waiterThread = Executors.newSingleThreadExecutor()
       val waiterDispatcher = waiterThread.asCoroutineDispatcher()
@@ -179,32 +218,6 @@ class ScriptPoolContractTests : StringSpec() {
           waiterRan.load() shouldBe false
           pool.eval { eval("1 + 1") } shouldBe 2
         }
-      }
-    }
-
-    "pools reject a size that is not positive" {
-      shouldThrow<IllegalArgumentException> { KotlinScriptPool(size = 0, nullGlobalContext = false) }
-      shouldThrow<IllegalArgumentException> { KotlinExprEvaluatorPool(size = -1) }
-    }
-
-    "expr pool resets an evaluator's context when it is returned" {
-      withTimeout(TIMEOUT_MS.milliseconds) {
-        val pool = ProbeEvaluatorPool()
-        val before = pool.evaluator.engine.context
-        pool.eval("1 > 0") shouldBe true
-        (pool.evaluator.engine.context === before) shouldBe false
-      }
-    }
-
-    "closing a pool fails later borrows" {
-      withTimeout(TIMEOUT_MS.milliseconds) {
-        val scripts = KotlinScriptPool(size = 1, nullGlobalContext = false)
-        scripts.close()
-        shouldThrow<ClosedReceiveChannelException> { scripts.eval { eval("1") } }
-
-        val evaluators = KotlinExprEvaluatorPool(size = 1)
-        evaluators.close()
-        shouldThrow<ClosedReceiveChannelException> { evaluators.eval("1 > 0") }
       }
     }
   }

@@ -86,6 +86,15 @@ class RedisUtilsMockTests : StringSpec() {
   }
 
   init {
+    scanKeysTests()
+    poolSuccessTests()
+    poolPingTests()
+    withRedisTests()
+    failedPingTests()
+    poolSizingTests()
+  }
+
+  private fun scanKeysTests() {
     // scanKeys() drives the SCAN command page by page until the cursor returns to "0"
 
     "scanKeys yields keys from every page until the cursor returns to zero" {
@@ -129,7 +138,9 @@ class RedisUtilsMockTests : StringSpec() {
       seq.take(2).toList() shouldBe ["a", "b"]
       verify(exactly = 1) { jedis.scan(any<String>(), any<ScanParams>()) }
     }
+  }
 
+  private fun poolSuccessTests() {
     // Success paths of the pool extension functions (ping() answers, so the block runs)
 
     "withRedisPool invokes block with this client when ping succeeds" {
@@ -179,7 +190,9 @@ class RedisUtilsMockTests : StringSpec() {
       result shouldBe "suspending-nonnull-pool-ok"
       verify(exactly = 1) { client.ping() }
     }
+  }
 
+  private fun poolPingTests() {
     // Ping blocks for up to the socket timeout when Redis is down, so it must not run on the caller's thread.
     "the suspending pool helpers ping on Dispatchers.IO, not the caller's thread" {
       val client = mockk<RedisClient>()
@@ -218,7 +231,9 @@ class RedisUtilsMockTests : StringSpec() {
         withoutTrace.throwableProxy shouldBe null
       }
     }
+  }
 
+  private fun withRedisTests() {
     // The connection-failure paths are exercised against a real unreachable port, an exhausted pool and a
     // rejected password in RedisConfigTests, and the real connect-and-close path against a fake server in
     // RedisConnectionTests. The tests below stub only the private client factory, so the rest of that path runs.
@@ -274,7 +289,9 @@ class RedisUtilsMockTests : StringSpec() {
 
       urls shouldBe List(4) { "redis://user:none@localhost:6379" }
     }
+  }
 
+  private fun failedPingTests() {
     // A client that fails its ping is closed before the block runs. If closing fails too, that failure is kept as
     // a suppressed exception of the ping failure, which is the one logged.
     "a client that fails its ping is closed, and a failure to close it is logged as suppressed" {
@@ -311,7 +328,9 @@ class RedisUtilsMockTests : StringSpec() {
 
       verify(exactly = 1) { client.close() }
     }
+  }
 
+  private fun poolSizingTests() {
     // newRedisClient() pool sizing falls back to system properties before hard-coded defaults
 
     "newRedisClient reads pool sizing from system properties" {

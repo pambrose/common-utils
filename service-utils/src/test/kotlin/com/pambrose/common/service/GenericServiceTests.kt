@@ -346,6 +346,20 @@ private class UninitializedService(
 
 class GenericServiceTests : StringSpec() {
   init {
+    variantBasicsTests()
+    startStopTests()
+    adminEndpointTests()
+    variantLifecycleTests()
+    subServiceFailureTests()
+    metricsReporterTests()
+    configPropagationTests()
+    initGuardTests()
+    servletInitTests()
+    serverExposureTests()
+    shutdownHookTests()
+  }
+
+  private fun variantBasicsTests() {
     "both variants derive the same enablement flags from disabled config" {
       val jetty = TestJettyService()
       jetty.isAdminEnabled shouldBe false
@@ -373,7 +387,9 @@ class GenericServiceTests : StringSpec() {
       ktor.configVals shouldBe "ktor-config"
       (ktor.upTime >= Duration.ZERO) shouldBe true
     }
+  }
 
+  private fun startStopTests() {
     "Jetty service with admin, metrics, and zipkin enabled starts healthy and stops" {
       val service =
         TestJettyService(
@@ -412,6 +428,20 @@ class GenericServiceTests : StringSpec() {
       service.isRunning shouldBe false
     }
 
+    "an admin-disabled Ktor service still serves metrics and stops cleanly" {
+      val service = TestKtorService(metrics = enabledMetrics())
+      service.use {
+        service.startSync()
+        shouldThrow<UninitializedPropertyAccessException> { service.servletService }
+        httpGet(service.metricsService.boundPort, "/metrics").statusCode() shouldBe 200
+      }
+
+      service.state() shouldBe Service.State.TERMINATED
+      service.metricsService.state() shouldBe Service.State.TERMINATED
+    }
+  }
+
+  private fun adminEndpointTests() {
     // Both variants, with admin and metrics paths configured with and without a leading slash.
     ["/", ""].forEach { prefix ->
       val spelling = if (prefix.isEmpty()) "without" else "with"
@@ -435,6 +465,35 @@ class GenericServiceTests : StringSpec() {
       }
     }
 
+    "Ktor service admin health check endpoint reports the registered checks" {
+      val service = TestKtorService(admin = enabledAdmin())
+      service.startSync()
+      service.use { service ->
+        val response = httpGet(service.adminPort, "/healthcheck")
+
+        response.statusCode() shouldBe 200
+        response.body() shouldContain "thread_deadlock"
+        response.body() shouldContain "all_services_healthy"
+      }
+    }
+
+    // A blank admin path turns that endpoint off. The Ktor variant used to normalize "" to "/" before the blank
+    // check, and so served the thread dump at the root.
+    "a blank admin path disables that endpoint on both variants" {
+      Variant.entries.forEach { variant ->
+        variant.newService(admin = enabledAdmin().copy(threadDumpPath = "")).use { service ->
+          service.startSync()
+          withClue(variant) {
+            httpGet(service.adminPort, "/").statusCode() shouldBe 404
+            httpGet(service.adminPort, "/threaddump").statusCode() shouldBe 404
+            httpGet(service.adminPort, "/ping").body().trim() shouldBe "pong"
+          }
+        }
+      }
+    }
+  }
+
+  private fun variantLifecycleTests() {
     Variant.entries.forEach { variant ->
       "a failed $variant startup stops the sub-services that had already started" {
         occupiedLoopbackPort().use { occupied ->
@@ -503,7 +562,9 @@ class GenericServiceTests : StringSpec() {
         ports.forEach { shouldBeReleased(it) }
       }
     }
+  }
 
+  private fun subServiceFailureTests() {
     "shutDown stops the remaining sub-services even when one fails to stop" {
       val service = FailingStopService(enabledMetrics())
       service.startSync()
@@ -533,7 +594,9 @@ class GenericServiceTests : StringSpec() {
       failures.isEmpty() shouldBe false
       failures.map { it.level }.toSet() shouldBe setOf(Level.ERROR)
     }
+  }
 
+  private fun metricsReporterTests() {
     "the Dropwizard exporter is registered with Prometheus only while the service runs" {
       // The value the default registry exports for the Dropwizard counter, or null while nothing exports it. A
       // Dropwizard Counter is exported as a Prometheus counter (exposed as exporter_lifecycle_total), not a gauge.
@@ -571,7 +634,9 @@ class GenericServiceTests : StringSpec() {
 
       mbeanServer.isRegistered(counterName) shouldBe false
     }
+  }
 
+  private fun configPropagationTests() {
     "each metrics export flag reaches its own SystemMetrics.initialize parameter" {
       // In SystemMetrics.initialize parameter order, each with a single flag set.
       val oneFlagEach =
@@ -611,6 +676,13 @@ class GenericServiceTests : StringSpec() {
       }
     }
 
+    "the Zipkin reporter uses the configured service name" {
+      TestJettyService(zipkin = disabledZipkin.copy(enabled = true, serviceName = "configured-name"))
+        .zipkinReporterService.defaultServiceName shouldBe "configured-name"
+    }
+  }
+
+  private fun initGuardTests() {
     "starting a service whose init method was never called fails with a clear message" {
       val failure = shouldThrow<IllegalStateException> { UninitializedService(enabledMetrics()).startSync() }
       failure.cause?.message.orEmpty() shouldContain "initServletService"
@@ -639,30 +711,25 @@ class GenericServiceTests : StringSpec() {
       service.metricsService shouldBe metricsService
     }
 
-    "Ktor service admin health check endpoint reports the registered checks" {
-      val service = TestKtorService(admin = enabledAdmin())
-      service.startSync()
-      service.use { service ->
-        val response = httpGet(service.adminPort, "/healthcheck")
+    "services added before init are managed, while one added after init is not and triggers a warning" {
+      val warnings =
+        capturingServiceLogs { logs ->
+          val service = TestJettyService(extraServices = noopService("early-one") to noopService("early-two"))
+          service.addExtraServices(noopService("late-one"))
 
-        response.statusCode() shouldBe 200
-        response.body() shouldContain "thread_deadlock"
-        response.body() shouldContain "all_services_healthy"
-      }
+          // The extra services are never started, so the aggregate check names exactly the managed ones.
+          val unhealthy = service.runHealthChecks()["all_services_healthy"]?.message.orEmpty()
+          unhealthy shouldContain "early-one"
+          unhealthy shouldContain "early-two"
+          unhealthy shouldNotContain "late-one"
+          // The health check also warns about each unstarted service, so keep only warnings about the late one.
+          logs().filter { it.level == Level.WARN && "late-one" in it.formattedMessage }
+        }
+      warnings.size shouldBe 1
     }
+  }
 
-    "an admin-disabled Ktor service still serves metrics and stops cleanly" {
-      val service = TestKtorService(metrics = enabledMetrics())
-      service.use {
-        service.startSync()
-        shouldThrow<UninitializedPropertyAccessException> { service.servletService }
-        httpGet(service.metricsService.boundPort, "/metrics").statusCode() shouldBe 200
-      }
-
-      service.state() shouldBe Service.State.TERMINATED
-      service.metricsService.state() shouldBe Service.State.TERMINATED
-    }
-
+  private fun servletInitTests() {
     "servletInit adds a servlet to the Jetty admin server" {
       TestJettyService(
         admin = enabledAdmin(),
@@ -687,21 +754,6 @@ class GenericServiceTests : StringSpec() {
       }
     }
 
-    // A blank admin path turns that endpoint off. The Ktor variant used to normalize "" to "/" before the blank
-    // check, and so served the thread dump at the root.
-    "a blank admin path disables that endpoint on both variants" {
-      Variant.entries.forEach { variant ->
-        variant.newService(admin = enabledAdmin().copy(threadDumpPath = "")).use { service ->
-          service.startSync()
-          withClue(variant) {
-            httpGet(service.adminPort, "/").statusCode() shouldBe 404
-            httpGet(service.adminPort, "/threaddump").statusCode() shouldBe 404
-            httpGet(service.adminPort, "/ping").body().trim() shouldBe "pong"
-          }
-        }
-      }
-    }
-
     // The config spells "ping" without a slash and servletInit adds "/ping"; Jetty used to refuse to start with two
     // servlets on one path, and Ktor used to keep serving the built-in one.
     "servletInit replaces a built-in endpoint whatever the leading-slash spelling, on both variants" {
@@ -720,7 +772,9 @@ class GenericServiceTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun serverExposureTests() {
     "the Jetty admin and metrics servers do not reveal the Jetty version" {
       TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics()).use { service ->
         service.startSync()
@@ -735,6 +789,43 @@ class GenericServiceTests : StringSpec() {
       }
     }
 
+    "Jetty admin and metrics servers bind only to the configured host"
+      .config(enabledOrReasonIf = needsNonLoopbackAddress) {
+        TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics()).use { service ->
+          service.startSync()
+          val (adminPort, metricsPort) = service.adminPort to service.metricsService.boundPort
+          httpGet(adminPort, "/ping").statusCode() shouldBe 200
+          httpGet(metricsPort, "/metrics").statusCode() shouldBe 200
+
+          val address = checkNotNull(reachableNonLoopbackAddress)
+          canConnect(address, adminPort) shouldBe false
+          canConnect(address, metricsPort) shouldBe false
+        }
+      }
+
+    "Ktor admin server binds only to the configured host".config(enabledOrReasonIf = needsNonLoopbackAddress) {
+      TestKtorService(admin = enabledAdmin()).use { service ->
+        service.startSync()
+        httpGet(service.adminPort, "/ping").statusCode() shouldBe 200
+        canConnect(checkNotNull(reachableNonLoopbackAddress), service.adminPort) shouldBe false
+      }
+    }
+
+    "admin and metrics servers still bind every interface when no host is configured"
+      .config(enabledOrReasonIf = needsNonLoopbackAddress) {
+        TestJettyService(
+          admin = enabledAdmin().copy(host = null),
+          metrics = enabledMetrics().copy(host = null),
+        ).use { service ->
+          service.startSync()
+          val address = checkNotNull(reachableNonLoopbackAddress)
+          canConnect(address, service.adminPort) shouldBe true
+          canConnect(address, service.metricsService.boundPort) shouldBe true
+        }
+      }
+  }
+
+  private fun shutdownHookTests() {
     "shutdown hook is registered on start and removed on stop" {
       val service = TestJettyService(admin = enabledAdmin())
       service.startSync()
@@ -783,63 +874,6 @@ class GenericServiceTests : StringSpec() {
       // The refused removal left the hook registered, so remove it for real before the JVM exits.
       Runtime.getRuntime().removeShutdownHook(hook) shouldBe true
     }
-
-    "services added before init are managed, while one added after init is not and triggers a warning" {
-      val warnings =
-        capturingServiceLogs { logs ->
-          val service = TestJettyService(extraServices = noopService("early-one") to noopService("early-two"))
-          service.addExtraServices(noopService("late-one"))
-
-          // The extra services are never started, so the aggregate check names exactly the managed ones.
-          val unhealthy = service.runHealthChecks()["all_services_healthy"]?.message.orEmpty()
-          unhealthy shouldContain "early-one"
-          unhealthy shouldContain "early-two"
-          unhealthy shouldNotContain "late-one"
-          // The health check also warns about each unstarted service, so keep only warnings about the late one.
-          logs().filter { it.level == Level.WARN && "late-one" in it.formattedMessage }
-        }
-      warnings.size shouldBe 1
-    }
-
-    "the Zipkin reporter uses the configured service name" {
-      TestJettyService(zipkin = disabledZipkin.copy(enabled = true, serviceName = "configured-name"))
-        .zipkinReporterService.defaultServiceName shouldBe "configured-name"
-    }
-
-    "Jetty admin and metrics servers bind only to the configured host"
-      .config(enabledOrReasonIf = needsNonLoopbackAddress) {
-        TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics()).use { service ->
-          service.startSync()
-          val (adminPort, metricsPort) = service.adminPort to service.metricsService.boundPort
-          httpGet(adminPort, "/ping").statusCode() shouldBe 200
-          httpGet(metricsPort, "/metrics").statusCode() shouldBe 200
-
-          val address = checkNotNull(reachableNonLoopbackAddress)
-          canConnect(address, adminPort) shouldBe false
-          canConnect(address, metricsPort) shouldBe false
-        }
-      }
-
-    "Ktor admin server binds only to the configured host".config(enabledOrReasonIf = needsNonLoopbackAddress) {
-      TestKtorService(admin = enabledAdmin()).use { service ->
-        service.startSync()
-        httpGet(service.adminPort, "/ping").statusCode() shouldBe 200
-        canConnect(checkNotNull(reachableNonLoopbackAddress), service.adminPort) shouldBe false
-      }
-    }
-
-    "admin and metrics servers still bind every interface when no host is configured"
-      .config(enabledOrReasonIf = needsNonLoopbackAddress) {
-        TestJettyService(
-          admin = enabledAdmin().copy(host = null),
-          metrics = enabledMetrics().copy(host = null),
-        ).use { service ->
-          service.startSync()
-          val address = checkNotNull(reachableNonLoopbackAddress)
-          canConnect(address, service.adminPort) shouldBe true
-          canConnect(address, service.metricsService.boundPort) shouldBe true
-        }
-      }
 
     "both variants expose a shutDownHookAction that builds an unstarted hook thread" {
       GenericService.shutDownHookAction(noopService()).isAlive shouldBe false

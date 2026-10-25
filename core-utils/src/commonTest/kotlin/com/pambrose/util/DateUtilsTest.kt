@@ -44,6 +44,15 @@ import kotlin.time.Instant
 
 class DateUtilsTest : StringSpec() {
   init {
+    parseAndIsoTests()
+    displayStringTests()
+    dateFormatTests()
+    ageTests()
+    nowTests()
+    adjustedStringTests()
+  }
+
+  private fun parseAndIsoTests() {
     "parseToLocalDate - parses ISO date" {
       "2024-03-15".parseToLocalDate() shouldBe LocalDate(2024, 3, 15)
     }
@@ -77,7 +86,9 @@ class DateUtilsTest : StringSpec() {
       LocalDateTime(2024, 1, 1, 0, 0).toISO8601() shouldBe "2024-01-01T00:00:00Z"
       LocalDateTime(2024, 3, 15, 8, 30, 0, 500_000_000).toISO8601() shouldBe "2024-03-15T08:30:00Z"
     }
+  }
 
+  private fun displayStringTests() {
     "abbrevDayOfWeek - LocalDate produces 3-letter capitalized day" {
       // 2024-01-08 is a Monday
       LocalDate(2024, 1, 8).abbrevDayOfWeek() shouldBe "Mon"
@@ -128,7 +139,9 @@ class DateUtilsTest : StringSpec() {
     "toLogString - renders a zero millisecond value as 000" {
       LocalDateTime(2024, 3, 7, 9, 5, 7, 0).toLogString() shouldBe "03/07/24 09:05:07.000"
     }
+  }
 
+  private fun dateFormatTests() {
     "toMMDDYYYY - formats year as 4 digits" {
       LocalDate(2024, 1, 5).toMMDDYYYY() shouldBe "01/05/2024"
     }
@@ -167,7 +180,9 @@ class DateUtilsTest : StringSpec() {
     "toMMDDYYYYHHMM - zero-pads a single-digit hour" {
       LocalDateTime(2024, 5, 1, 9, 5).toMMDDYYYYHHMM() shouldBe "05/01/2024 09:05"
     }
+  }
 
+  private fun ageTests() {
     "Instant.age - returns ZERO for null" {
       val nullInstant: Instant? = null
       nullInstant.age shouldBe Duration.ZERO
@@ -193,7 +208,9 @@ class DateUtilsTest : StringSpec() {
       withClue("inZone=$inZone") { (inZone in 1.hours..(1.hours + 1.minutes)) shouldBe true }
       withClue("asUtc=$asUtc") { (asUtc in 5.hours..(5.hours + 1.minutes)) shouldBe true }
     }
+  }
 
+  private fun nowTests() {
     // UTC+14 is ahead of every other zone, so if the zone argument were ignored the reading would be off by hours
     // (unless the host itself runs at UTC+14).
     "localDateNow and localDateTimeNow read the clock in the given zone" {
@@ -220,7 +237,9 @@ class DateUtilsTest : StringSpec() {
       val instant = dateTime.toInstant(zone)
       withClue("instant=$instant, before=$before, after=$after") { (instant in before..after) shouldBe true }
     }
+  }
 
+  private fun adjustedStringTests() {
     "toAdjustedString - truncates duration to specified unit" {
       val d = 1.hours + 30.minutes + 45.seconds + 250.milliseconds
       d.toAdjustedString(DurationUnit.MILLISECONDS) shouldBe "1h 30m 45.25s"

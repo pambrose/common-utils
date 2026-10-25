@@ -29,6 +29,12 @@ import java.time.Duration
 
 class RedisUtilsTests : StringSpec() {
   init {
+    poolValidationTests()
+    clientCreationTests()
+    redisInfoTests()
+  }
+
+  private fun poolValidationTests() {
     // -1 is commons-pool2's "unlimited"; anything below that is meaningless.
     "new redis client validation negative pool size" {
       shouldThrow<IllegalArgumentException> {
@@ -71,7 +77,9 @@ class RedisUtilsTests : StringSpec() {
         RedisUtils.newRedisClient(maxWaitSecs = -1)
       }
     }
+  }
 
+  private fun clientCreationTests() {
     "redis constants" {
       RedisUtils.REDIS_MAX_POOL_SIZE shouldBe "redis.maxPoolSize"
       RedisUtils.REDIS_MAX_IDLE_SIZE shouldBe "redis.maxIdleSize"
@@ -107,7 +115,9 @@ class RedisUtilsTests : StringSpec() {
         client.pool.maxTotal shouldBe 1
       }
     }
+  }
 
+  private fun redisInfoTests() {
     // RedisInfo.includeUserInAuth decides whether to send the username in AUTH: only when the
     // user is a real (non-placeholder) name and the password is not the "none" placeholder.
     "includeUserInAuth is true for a real user with a real password" {

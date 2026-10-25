@@ -39,6 +39,15 @@ import javax.management.ObjectName
 
 class IOExtensionsTests : StringSpec() {
   init {
+    serializationTests()
+    checksumTests()
+    classFilterTests()
+    sizeLimitTests()
+    depthLimitTests()
+    blocklistTests()
+  }
+
+  private fun serializationTests() {
     "secure serialization round trip test" {
       val original = "Hello, World!"
       val bytes = original.toByteArraySecure()
@@ -55,6 +64,31 @@ class IOExtensionsTests : StringSpec() {
       restored shouldBe original
     }
 
+    "secure deserialization type mismatch test" {
+      val original = "Hello"
+      val bytes = original.toByteArraySecure()
+
+      shouldThrow<ClassCastException> {
+        bytes.toObjectSecure(
+          expectedClass = Int::class.javaObjectType,
+          allowedClasses = setOf(Int::class.javaObjectType, Number::class.java, String::class.java),
+        )
+      }
+    }
+
+    "deprecated toByteArray and toObject round trip" {
+      val original = "legacy"
+      val bytes = (original as Serializable).toByteArray()
+      bytes.toObject() shouldBe original
+    }
+
+    "toByteArray and toByteArraySecure produce identical bytes" {
+      val original: Serializable = arrayListOf("a", 1)
+      original.toByteArray() shouldBe original.toByteArraySecure()
+    }
+  }
+
+  private fun checksumTests() {
     "checksum round trip test" {
       val original = "test data".toByteArray()
       val withChecksum = original.withChecksum()
@@ -85,24 +119,27 @@ class IOExtensionsTests : StringSpec() {
       }
     }
 
-    "secure deserialization type mismatch test" {
-      val original = "Hello"
-      val bytes = original.toByteArraySecure()
+    "checksum verification needs the whole 32-byte checksum" {
+      // Exactly 32 bytes is a valid checksum of no data.
+      ByteArray(0).withChecksum().verifyChecksum() shouldBe ByteArray(0)
+      shouldThrow<SecurityException> { ByteArray(31).verifyChecksum() }.message shouldBe
+        "Invalid data: too short for checksum"
+    }
 
-      shouldThrow<ClassCastException> {
-        bytes.toObjectSecure(
-          expectedClass = Int::class.javaObjectType,
-          allowedClasses = setOf(Int::class.javaObjectType, Number::class.java, String::class.java),
-        )
+    "checksum detects accidental corruption but is not tamper-proof" {
+      val corrupted = "payload".toByteArray().withChecksum().also {
+        it[it.size - 1] =
+        (it[it.size - 1].toInt() xor 1).toByte()
       }
-    }
+      shouldThrow<SecurityException> { corrupted.verifyChecksum() }
 
-    "deprecated toByteArray and toObject round trip" {
-      val original = "legacy"
-      val bytes = (original as Serializable).toByteArray()
-      bytes.toObject() shouldBe original
+      // The checksum is unkeyed, so anyone who can change the data can simply recompute it.
+      val forged = "forged".toByteArray().withChecksum()
+      forged.verifyChecksum() shouldBe "forged".toByteArray()
     }
+  }
 
+  private fun classFilterTests() {
     "secure deserialization rejects classes outside whitelist" {
       val original: Serializable = arrayListOf("a", "b")
       val bytes = original.toByteArraySecure()
@@ -139,22 +176,6 @@ class IOExtensionsTests : StringSpec() {
       runSerialFilterProbe("-Djdk.serialFilter=!java.util.ArrayList") shouldBe InvalidClassException::class.java.name
     }
 
-    "checksum verification needs the whole 32-byte checksum" {
-      // Exactly 32 bytes is a valid checksum of no data.
-      ByteArray(0).withChecksum().verifyChecksum() shouldBe ByteArray(0)
-      shouldThrow<SecurityException> { ByteArray(31).verifyChecksum() }.message shouldBe
-        "Invalid data: too short for checksum"
-    }
-
-    "secure deserialization rejects oversized payloads" {
-      // 10MB + 1 byte = exceeds MAX_SERIALIZED_SIZE
-      val tooBig = ByteArray(10 * 1024 * 1024 + 1)
-
-      shouldThrow<SecurityException> {
-        tooBig.toObjectSecure(String::class.java, setOf(String::class.java))
-      }
-    }
-
     "secure deserialization rejects an empty allow-list" {
       val bytes = "no whitelist".toByteArraySecure()
 
@@ -163,20 +184,15 @@ class IOExtensionsTests : StringSpec() {
         bytes.toObjectSecure(String::class.java, emptySet())
       }
     }
+  }
 
-    "secure deserialization accepts moderately nested object graphs" {
-      val nested = nestedLists(10)
-      val bytes = (nested as Serializable).toByteArraySecure()
+  private fun sizeLimitTests() {
+    "secure deserialization rejects oversized payloads" {
+      // 10MB + 1 byte = exceeds MAX_SERIALIZED_SIZE
+      val tooBig = ByteArray(10 * 1024 * 1024 + 1)
 
-      bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java)) shouldBe nested
-    }
-
-    "secure deserialization rejects object graphs nested beyond the depth limit" {
-      // Every class in the graph is allow-listed, so only the stream depth limit can stop it.
-      val bytes = (nestedLists(100) as Serializable).toByteArraySecure()
-
-      shouldThrow<InvalidClassException> {
-        bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java))
+      shouldThrow<SecurityException> {
+        tooBig.toObjectSecure(String::class.java, setOf(String::class.java))
       }
     }
 
@@ -214,6 +230,31 @@ class IOExtensionsTests : StringSpec() {
       }
     }
 
+    "secure deserialization accepts primitive arrays filling the payload" {
+      val values = LongArray(1_000) { it.toLong() }
+      val bytes = (values as Any as Serializable).toByteArraySecure()
+
+      bytes.toObjectSecure(LongArray::class.java, setOf(LongArray::class.java)).toList() shouldBe values.toList()
+    }
+  }
+
+  private fun depthLimitTests() {
+    "secure deserialization accepts moderately nested object graphs" {
+      val nested = nestedLists(10)
+      val bytes = (nested as Serializable).toByteArraySecure()
+
+      bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java)) shouldBe nested
+    }
+
+    "secure deserialization rejects object graphs nested beyond the depth limit" {
+      // Every class in the graph is allow-listed, so only the stream depth limit can stop it.
+      val bytes = (nestedLists(100) as Serializable).toByteArraySecure()
+
+      shouldThrow<InvalidClassException> {
+        bytes.toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java))
+      }
+    }
+
     "secure deserialization rejects a nested HashSet hash-code bomb" {
       // Reading this graph recomputes hash codes at a cost that doubles with each level; at depth 25 it takes
       // seconds, and at 30 about a minute. The depth limit must reject it before the hashing starts.
@@ -223,14 +264,9 @@ class IOExtensionsTests : StringSpec() {
         bytes.toObjectSecure(HashSet::class.java, setOf(HashSet::class.java, String::class.java))
       }
     }
+  }
 
-    "secure deserialization accepts primitive arrays filling the payload" {
-      val values = LongArray(1_000) { it.toLong() }
-      val bytes = (values as Any as Serializable).toByteArraySecure()
-
-      bytes.toObjectSecure(LongArray::class.java, setOf(LongArray::class.java)).toList() shouldBe values.toList()
-    }
-
+  private fun blocklistTests() {
     "secure deserialization blocks dangerous classes" {
       // javax.management.* is on the SecureObjectInputStream blocklist, and ObjectName is
       // Serializable, so its class descriptor trips the block during resolveClass, even when
@@ -276,23 +312,6 @@ class IOExtensionsTests : StringSpec() {
           setOf(RuntimePermission::class.java, BasicPermission::class.java, Permission::class.java),
         )
       restored shouldBe original
-    }
-
-    "toByteArray and toByteArraySecure produce identical bytes" {
-      val original: Serializable = arrayListOf("a", 1)
-      original.toByteArray() shouldBe original.toByteArraySecure()
-    }
-
-    "checksum detects accidental corruption but is not tamper-proof" {
-      val corrupted = "payload".toByteArray().withChecksum().also {
-        it[it.size - 1] =
-        (it[it.size - 1].toInt() xor 1).toByte()
-      }
-      shouldThrow<SecurityException> { corrupted.verifyChecksum() }
-
-      // The checksum is unkeyed, so anyone who can change the data can simply recompute it.
-      val forged = "forged".toByteArray().withChecksum()
-      forged.verifyChecksum() shouldBe "forged".toByteArray()
     }
   }
 

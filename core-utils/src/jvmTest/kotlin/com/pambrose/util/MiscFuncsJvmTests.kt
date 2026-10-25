@@ -43,6 +43,13 @@ import kotlin.time.Duration.Companion.seconds
 // The common helpers (isNull, lpad, rpad, capitalizeFirstChar) are covered on every platform by MiscFuncsTests.
 class MiscFuncsJvmTests : StringSpec() {
   init {
+    hostInfoTests()
+    randomIdTests()
+    sleepTests()
+    captureStdoutTests()
+  }
+
+  private fun hostInfoTests() {
     "resolveHostInfo reports the looked-up host's name and address from a single lookup" {
       var lookups = 0
       val info =
@@ -63,7 +70,9 @@ class MiscFuncsJvmTests : StringSpec() {
     "hostInfo is the resolved local host" {
       hostInfo shouldBe resolveHostInfo()
     }
+  }
 
+  private fun randomIdTests() {
     "random id default test" {
       val id = randomId()
       id shouldHaveLength 10
@@ -88,7 +97,9 @@ class MiscFuncsJvmTests : StringSpec() {
       val ids = (1..100).map { randomId() }.toSet()
       ids.size shouldBeGreaterThan 95 // Should be mostly unique
     }
+  }
 
+  private fun sleepTests() {
     "sleep blocks for at least the requested duration" {
       val start = System.currentTimeMillis()
       sleep(50.milliseconds)
@@ -117,6 +128,19 @@ class MiscFuncsJvmTests : StringSpec() {
       (startTimes.single() >= before) shouldBe true
     }
 
+    // Measured from the last iteration rather than as a total, so scheduling delays on a busy runner cannot
+    // push a correct run over the bound: a trailing sleep would add a full second here.
+    "repeatWithSleep sleeps between iterations but not after the last one" {
+      val iterationTimes: MutableList<Long> = []
+      repeatWithSleep(iterations = 2, sleepTime = 1.seconds) { _, _ -> iterationTimes += System.nanoTime() }
+      val returned = System.nanoTime()
+
+      (iterationTimes[1] - iterationTimes[0]).nanoseconds shouldBeGreaterThanOrEqualTo 1.seconds
+      (returned - iterationTimes[1]).nanoseconds shouldBeLessThan 500.milliseconds
+    }
+  }
+
+  private fun captureStdoutTests() {
     "captureStdout captures println output" {
       val out = captureStdout {
         println("hello captured")
@@ -130,17 +154,6 @@ class MiscFuncsJvmTests : StringSpec() {
         captureStdout { error("boom") }
       }
       System.out shouldBe originalOut
-    }
-
-    // Measured from the last iteration rather than as a total, so scheduling delays on a busy runner cannot
-    // push a correct run over the bound: a trailing sleep would add a full second here.
-    "repeatWithSleep sleeps between iterations but not after the last one" {
-      val iterationTimes: MutableList<Long> = []
-      repeatWithSleep(iterations = 2, sleepTime = 1.seconds) { _, _ -> iterationTimes += System.nanoTime() }
-      val returned = System.nanoTime()
-
-      (iterationTimes[1] - iterationTimes[0]).nanoseconds shouldBeGreaterThanOrEqualTo 1.seconds
-      (returned - iterationTimes[1]).nanoseconds shouldBeLessThan 500.milliseconds
     }
 
     "captureStdout decodes captured output as UTF-8" {

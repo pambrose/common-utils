@@ -42,6 +42,12 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 class PythonScriptPoolTests : StringSpec() {
   init {
+    recycleTests()
+    lifecycleTests()
+    nullGlobalContextTests()
+  }
+
+  private fun recycleTests() {
     "python script pool eagerly creates the requested number of instances" {
       withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = PythonScriptPool(size = 2, nullGlobalContext = false)
@@ -92,7 +98,9 @@ class PythonScriptPoolTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun lifecycleTests() {
     "python script pool isEmpty is true while borrowed and false after recycle" {
       withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = PythonScriptPool(size = 1, nullGlobalContext = false)
@@ -107,6 +115,16 @@ class PythonScriptPoolTests : StringSpec() {
       }
     }
 
+    "closing a python script pool fails later borrows" {
+      withTimeout(TIMEOUT_MS.milliseconds) {
+        val pool = PythonScriptPool(size = 1, nullGlobalContext = false)
+        pool.close()
+        shouldThrow<ClosedReceiveChannelException> { pool.eval { eval("1") } }
+      }
+    }
+  }
+
+  private fun nullGlobalContextTests() {
     "python script pool with nullGlobalContext true still evaluates" {
       withTimeout(TIMEOUT_MS.milliseconds) {
         val pool = PythonScriptPool(size = 1, nullGlobalContext = true)
@@ -126,14 +144,6 @@ class PythonScriptPoolTests : StringSpec() {
             } shouldBe null
           }
         }
-      }
-    }
-
-    "closing a python script pool fails later borrows" {
-      withTimeout(TIMEOUT_MS.milliseconds) {
-        val pool = PythonScriptPool(size = 1, nullGlobalContext = false)
-        pool.close()
-        shouldThrow<ClosedReceiveChannelException> { pool.eval { eval("1") } }
       }
     }
   }

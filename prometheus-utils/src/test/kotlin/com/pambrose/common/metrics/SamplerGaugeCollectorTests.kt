@@ -33,6 +33,13 @@ import io.prometheus.metrics.model.registry.PrometheusRegistry
 
 class SamplerGaugeCollectorTests : StringSpec() {
   init {
+    collectTests()
+    validationTests()
+    samplerTests()
+    registrationTests()
+  }
+
+  private fun collectTests() {
     "sampler gauge collector creation" {
       var value = 42.0
       val collector = SamplerGaugeCollector(
@@ -74,20 +81,6 @@ class SamplerGaugeCollectorTests : StringSpec() {
       ) shouldBe 55.5
     }
 
-    "rejects mismatched label names and values at construction" {
-      val ex = shouldThrow<IllegalArgumentException> {
-        SamplerGaugeCollector(
-          name = "test_sampler_gauge_mismatch",
-          help = "mismatched labels",
-          registry = PrometheusRegistry(),
-          labelNames = ["region", "instance"],
-          labelValues = ["us-east-1"],
-          data = { 1.0 },
-        )
-      }
-      ex.message shouldContain "label"
-    }
-
     "sampler gauge collector dynamic value" {
       var counter = 0
       val collector = SamplerGaugeCollector(
@@ -103,7 +96,45 @@ class SamplerGaugeCollectorTests : StringSpec() {
       (value2 - value1) shouldBe 1.0
       (value3 - value2) shouldBe 1.0
     }
+  }
 
+  private fun validationTests() {
+    "rejects mismatched label names and values at construction" {
+      val ex = shouldThrow<IllegalArgumentException> {
+        SamplerGaugeCollector(
+          name = "test_sampler_gauge_mismatch",
+          help = "mismatched labels",
+          registry = PrometheusRegistry(),
+          labelNames = ["region", "instance"],
+          labelValues = ["us-east-1"],
+          data = { 1.0 },
+        )
+      }
+      ex.message shouldContain "label"
+    }
+
+    // Names are validated as the 1.x client defines them: any non-empty UTF-8 metric name, and a label name that is
+    // valid UTF-8 without a reserved "__" prefix. Repeated label names are rejected too.
+    "invalid or repeated metric and label names are rejected at construction" {
+      listOf(
+        { SamplerGaugeCollector(name = "", help = "h", registry = PrometheusRegistry()) { 1.0 } },
+        { SamplerGaugeCollector("q", "h", ["__x"], ["x"], PrometheusRegistry()) { 1.0 } },
+        { SamplerGaugeCollector("q", "h", [""], ["x"], PrometheusRegistry()) { 1.0 } },
+        { SamplerGaugeCollector("q", "h", ["a", "a"], ["x", "y"], PrometheusRegistry()) { 1.0 } },
+        { SamplerGaugeCollector("q", "h", ["a.b", "a_b"], ["x", "y"], PrometheusRegistry()) { 1.0 } },
+      ).forEach { create -> shouldThrow<IllegalArgumentException> { create() } }
+    }
+
+    "a construction that fails validation registers nothing" {
+      val registry = PrometheusRegistry()
+      shouldThrow<IllegalArgumentException> {
+        SamplerGaugeCollector("test_sampler_gauge_invalid", "h", ["a", "a"], ["x", "y"], registry) { 1.0 }
+      }
+      registry.scrape().size() shouldBe 0
+    }
+  }
+
+  private fun samplerTests() {
     "a throwing sampler reports NaN instead of aborting the scrape" {
       val registry = PrometheusRegistry()
       val collector = SamplerGaugeCollector(
@@ -149,7 +180,9 @@ class SamplerGaugeCollectorTests : StringSpec() {
       registry.sampleValue("test_sampler_gauge_lazy") shouldBe 7.0
       verify(exactly = 1) { sampler() }
     }
+  }
 
+  private fun registrationTests() {
     "an unregistered collector is no longer scraped and its name can be registered again" {
       var sampled = 0
       val registry = PrometheusRegistry()
@@ -177,26 +210,6 @@ class SamplerGaugeCollectorTests : StringSpec() {
       shouldThrow<IllegalArgumentException> {
         SamplerGaugeCollector("test_sampler_gauge_dup", "h", ["node"], ["b"], registry) { 2.0 }
       }.message shouldContain "test_sampler_gauge_dup"
-    }
-
-    // Names are validated as the 1.x client defines them: any non-empty UTF-8 metric name, and a label name that is
-    // valid UTF-8 without a reserved "__" prefix. Repeated label names are rejected too.
-    "invalid or repeated metric and label names are rejected at construction" {
-      listOf(
-        { SamplerGaugeCollector(name = "", help = "h", registry = PrometheusRegistry()) { 1.0 } },
-        { SamplerGaugeCollector("q", "h", ["__x"], ["x"], PrometheusRegistry()) { 1.0 } },
-        { SamplerGaugeCollector("q", "h", [""], ["x"], PrometheusRegistry()) { 1.0 } },
-        { SamplerGaugeCollector("q", "h", ["a", "a"], ["x", "y"], PrometheusRegistry()) { 1.0 } },
-        { SamplerGaugeCollector("q", "h", ["a.b", "a_b"], ["x", "y"], PrometheusRegistry()) { 1.0 } },
-      ).forEach { create -> shouldThrow<IllegalArgumentException> { create() } }
-    }
-
-    "a construction that fails validation registers nothing" {
-      val registry = PrometheusRegistry()
-      shouldThrow<IllegalArgumentException> {
-        SamplerGaugeCollector("test_sampler_gauge_invalid", "h", ["a", "a"], ["x", "y"], registry) { 1.0 }
-      }
-      registry.scrape().size() shouldBe 0
     }
 
     "the constructors without a registry register with the default one" {

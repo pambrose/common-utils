@@ -29,6 +29,12 @@ import kotlinx.html.h1
 
 class EmailUtilsTests : StringSpec() {
   init {
+    basicValidationTests()
+    domainAndLengthTests()
+    htmlEmailTests()
+  }
+
+  private fun basicValidationTests() {
     "is valid email simple" {
       "test@example.com".isValidEmail() shouldBe true
       "user.name@domain.org".isValidEmail() shouldBe true
@@ -69,7 +75,9 @@ class EmailUtilsTests : StringSpec() {
       "user-name@example.com".isValidEmail() shouldBe true
       "test@my-domain.com".isValidEmail() shouldBe true
     }
+  }
 
+  private fun domainAndLengthTests() {
     "accepts a bare IPv4-literal domain, octets 0 through 255" {
       "user@192.168.1.1".isValidEmail() shouldBe true
       "user@0.0.0.0".isValidEmail() shouldBe true
@@ -117,7 +125,9 @@ class EmailUtilsTests : StringSpec() {
     "rejects a very long address instead of overflowing the stack" {
       ("a@" + "a.".repeat(5_000) + "com").isValidEmail() shouldBe false
     }
+  }
 
+  private fun htmlEmailTests() {
     "email() builds an HTML doc with embedded css and body content" {
       val html = email {
         h1 { +"Hello" }

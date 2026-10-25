@@ -48,9 +48,15 @@ import redis.clients.jedis.exceptions.JedisException
  * refuses connections, so nothing here needs a Redis server.
  */
 class RedisConfigTests : StringSpec() {
-  init {
-    val unreachableUrl = "redis://localhost:1"
+  private val unreachableUrl = "redis://localhost:1"
 
+  init {
+    clientConfigTests()
+    configValidationTests()
+    unreachableServerTests()
+  }
+
+  private fun clientConfigTests() {
     // The database index and protocol in the URL were silently dropped, so redis://h:6379/3 used database 0.
     "the client config carries the database index from the url" {
       RedisUtils.clientConfig("redis://localhost:6379/3").database shouldBe 3
@@ -98,7 +104,9 @@ class RedisConfigTests : StringSpec() {
         HostAndPort("cache.example.com", 6379)
       RedisUtils.hostAndPort("redis://cache.example.com:6380") shouldBe HostAndPort("cache.example.com", 6380)
     }
+  }
 
+  private fun configValidationTests() {
     // A URL that can never work is a configuration error, not a connection failure: it throws before the block
     // runs, rather than passing it null.
     "an invalid url throws IllegalArgumentException from every function that takes one" {
@@ -154,7 +162,9 @@ class RedisConfigTests : StringSpec() {
         client.pool.maxTotal shouldBe -1
       }
     }
+  }
 
+  private fun unreachableServerTests() {
     // Building a client does not report an unreachable server, so the withRedis family has to check the connection.
     "withRedis passes null to the block when the server is unreachable" {
       val callCount = AtomicInt(0)

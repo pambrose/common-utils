@@ -95,6 +95,14 @@ class UpsertStatementTests : StringSpec() {
       TransactionManager.closeAndUnregister(db)
     }
 
+    conflictIndexTests()
+    dialectTests()
+    rejectedTargetTests()
+    unsupportedIndexTests()
+    updateColumnTests()
+  }
+
+  private fun conflictIndexTests() {
     "upsert with conflict index inserts a new row when no conflict exists" {
       transaction(db) {
         val conflictIndex = emailIndex
@@ -151,7 +159,9 @@ class UpsertStatementTests : StringSpec() {
         row[UpsertUsersTable.name] shouldBe "Alice Renumbered"
       }
     }
+  }
 
+  private fun dialectTests() {
     // H2 builds UPSERT from MERGE, which cannot take a WHERE clause, so a forwarded one is rejected.
     "upsert forwards where to Exposed" {
       transaction(db) {
@@ -167,6 +177,16 @@ class UpsertStatementTests : StringSpec() {
       }
     }
 
+    // H2 in MySQL mode keeps H2's own upsert, so the dialect check is exercised directly.
+    "MySQL and MariaDB are rejected, since ON DUPLICATE KEY UPDATE cannot target one index" {
+      shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MysqlDialect()) }
+      shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MariaDBDialect()) }
+      checkConflictIndexSupported(H2Dialect())
+      checkConflictIndexSupported(PostgreSQLDialect())
+    }
+  }
+
+  private fun rejectedTargetTests() {
     // A non-unique index, or one from another table, is a conflict target the database rejects at runtime.
 
     "upsert rejects a non-unique index" {
@@ -185,6 +205,24 @@ class UpsertStatementTests : StringSpec() {
       }
     }
 
+    "upsert rejects an index belonging to another table" {
+      transaction(db) {
+        val otherTableIndex = UpsertOtherTable.indices.single { it.unique }
+
+        val exception =
+          shouldThrow<IllegalArgumentException> {
+            UpsertUsersTable.upsert(otherTableIndex) {
+              it[id] = 1
+              it[email] = "alice@example.com"
+              it[name] = "Alice"
+            }
+          }
+        exception.message shouldContain "upsert_test_users"
+      }
+    }
+  }
+
+  private fun unsupportedIndexTests() {
     "upsert rejects a functional index instead of falling back to another unique index" {
       transaction(db) {
         listOf("u_lower_email", "u_email_mixed").forEach { name ->
@@ -214,31 +252,9 @@ class UpsertStatementTests : StringSpec() {
         exception.message shouldContain "partial"
       }
     }
+  }
 
-    // H2 in MySQL mode keeps H2's own upsert, so the dialect check is exercised directly.
-    "MySQL and MariaDB are rejected, since ON DUPLICATE KEY UPDATE cannot target one index" {
-      shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MysqlDialect()) }
-      shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MariaDBDialect()) }
-      checkConflictIndexSupported(H2Dialect())
-      checkConflictIndexSupported(PostgreSQLDialect())
-    }
-
-    "upsert rejects an index belonging to another table" {
-      transaction(db) {
-        val otherTableIndex = UpsertOtherTable.indices.single { it.unique }
-
-        val exception =
-          shouldThrow<IllegalArgumentException> {
-            UpsertUsersTable.upsert(otherTableIndex) {
-              it[id] = 1
-              it[email] = "alice@example.com"
-              it[name] = "Alice"
-            }
-          }
-        exception.message shouldContain "upsert_test_users"
-      }
-    }
-
+  private fun updateColumnTests() {
     "upsert forwards onUpdate so only the listed columns change" {
       transaction(db) {
         val conflictIndex = emailIndex

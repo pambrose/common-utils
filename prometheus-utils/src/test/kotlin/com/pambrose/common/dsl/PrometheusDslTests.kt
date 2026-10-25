@@ -31,6 +31,13 @@ import io.prometheus.metrics.model.registry.PrometheusRegistry
 
 class PrometheusDslTests : StringSpec() {
   init {
+    counterTests()
+    gaugeAndDistributionTests()
+    registryTests()
+    nameCollisionTests()
+  }
+
+  private fun counterTests() {
     "counter creation" {
       val registry = PrometheusRegistry()
       val counter =
@@ -55,6 +62,28 @@ class PrometheusDslTests : StringSpec() {
       registry.sampleValue("test_dsl_counter_suffixed_total_total") shouldBe null
     }
 
+    "counter with labels" {
+      val registry = PrometheusRegistry()
+      val counter =
+        PrometheusDsl.counter(registry) {
+          name("test_dsl_counter_with_labels")
+          help("Test counter with labels")
+          labelNames("method", "status")
+        }
+      counter.labelValues("GET", "200").inc()
+      counter.labelValues("GET", "200").inc()
+      counter.labelValues("POST", "500").inc()
+
+      counter.labelValues("GET", "200").get() shouldBe 2.0
+      registry.sampleValue(
+        "test_dsl_counter_with_labels_total",
+        "method" to "POST",
+        "status" to "500",
+      ) shouldBe 1.0
+    }
+  }
+
+  private fun gaugeAndDistributionTests() {
     "gauge creation" {
       val registry = PrometheusRegistry()
       val gauge =
@@ -100,27 +129,9 @@ class PrometheusDslTests : StringSpec() {
       registry.sampleValue("test_dsl_histogram_creation_bucket", "le" to "10.0") shouldBe 1.0
       registry.sampleValue("test_dsl_histogram_creation_bucket", "le" to "+Inf") shouldBe 2.0
     }
+  }
 
-    "counter with labels" {
-      val registry = PrometheusRegistry()
-      val counter =
-        PrometheusDsl.counter(registry) {
-          name("test_dsl_counter_with_labels")
-          help("Test counter with labels")
-          labelNames("method", "status")
-        }
-      counter.labelValues("GET", "200").inc()
-      counter.labelValues("GET", "200").inc()
-      counter.labelValues("POST", "500").inc()
-
-      counter.labelValues("GET", "200").get() shouldBe 2.0
-      registry.sampleValue(
-        "test_dsl_counter_with_labels_total",
-        "method" to "POST",
-        "status" to "500",
-      ) shouldBe 1.0
-    }
-
+  private fun registryTests() {
     "each builder registers with the default registry when none is given" {
       val counter = PrometheusDsl.counter { name("default_dsl_counter").help("default counter") }
       val gauge = PrometheusDsl.gauge { name("default_dsl_gauge").help("default gauge") }
@@ -166,7 +177,9 @@ class PrometheusDslTests : StringSpec() {
       registry.sampleValue("isolated_dsl_histogram_count") shouldBe 1.0
       PrometheusRegistry.defaultRegistry.metricNames() shouldNotContain "isolated_dsl_counter"
     }
+  }
 
+  private fun nameCollisionTests() {
     // Each builder registers the metric, so the registry rejects a name that is already in use.
     "a builder whose name is already registered throws IllegalArgumentException" {
       val registry = PrometheusRegistry()

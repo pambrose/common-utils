@@ -120,6 +120,13 @@ private class HoldingServer : AutoCloseable {
 
 class ServerExtensionsTests : StringSpec() {
   init {
+    inFlightCallTests()
+    shutdownSequenceTests()
+    timeoutArgumentTests()
+    jvmShutdownHookTests()
+  }
+
+  private fun inFlightCallTests() {
     "shutdownGracefully lets an in-flight call finish before the server terminates" {
       HoldingServer().use { holding ->
         val server = holding.server
@@ -151,7 +158,9 @@ class ServerExtensionsTests : StringSpec() {
         Status.fromThrowable(failure.cause).code shouldBeIn cutOff
       }
     }
+  }
 
+  private fun shutdownSequenceTests() {
     "shutdownGracefully invokes shutdown, awaitTermination, and shutdownNow in order" {
       val server = mockk<Server>(relaxed = true)
       every { server.awaitTermination(any(), any()) } returns true
@@ -189,7 +198,9 @@ class ServerExtensionsTests : StringSpec() {
 
       verify(exactly = 1) { server.shutdownNow() }
     }
+  }
 
+  private fun timeoutArgumentTests() {
     "shutdownGracefully(Duration) converts to milliseconds" {
       val server = mockk<Server>(relaxed = true)
       every { server.awaitTermination(any(), any()) } returns true
@@ -215,7 +226,9 @@ class ServerExtensionsTests : StringSpec() {
         server.shutdownGracefully(0.milliseconds)
       }
     }
+  }
 
+  private fun jvmShutdownHookTests() {
     "shutdownWithJvm registers a shutdown hook that shuts down the server" {
       val server = mockk<Server>(relaxed = true)
       every { server.awaitTermination(any(), any()) } returns true

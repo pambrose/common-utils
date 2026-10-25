@@ -35,6 +35,14 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class ResponseUtilsTests : StringSpec() {
   init {
+    callRespondWithTests()
+    routingRespondWithTests()
+    callRedirectTests()
+    routingRedirectTests()
+    uriPrefixTests()
+  }
+
+  private fun callRespondWithTests() {
     "ApplicationCall respondWith uses default text/html content type" {
       testApplication {
         routing {
@@ -81,7 +89,9 @@ class ResponseUtilsTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun routingRespondWithTests() {
     "RoutingContext respondWith uses default text/html content type" {
       testApplication {
         routing {
@@ -111,7 +121,9 @@ class ResponseUtilsTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun callRedirectTests() {
     "ApplicationCall redirectTo issues a 302 by default" {
       testApplication {
         routing {
@@ -159,7 +171,9 @@ class ResponseUtilsTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun routingRedirectTests() {
     "RoutingContext redirectTo issues a 302 by default" {
       testApplication {
         routing {
@@ -189,7 +203,9 @@ class ResponseUtilsTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun uriPrefixTests() {
     "uriPrefix joins scheme, host, and port" {
       val cp = mockk<RequestConnectionPoint>()
       every { cp.scheme } returns "https"

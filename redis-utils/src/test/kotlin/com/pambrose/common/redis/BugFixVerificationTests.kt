@@ -32,7 +32,16 @@ import kotlin.concurrent.atomics.incrementAndFetch
 import redis.clients.jedis.exceptions.JedisConnectionException
 
 class BugFixVerificationTests : StringSpec() {
+  // Port 1 reliably refuses connections, so `ping()` throws JedisConnectionException.
+  private val unreachableUrl = "redis://localhost:1"
+
   init {
+    urlCredentialTests()
+    poolConnectionFailureTests()
+    blockExceptionTests()
+  }
+
+  private fun urlCredentialTests() {
     // Bug #4: urlDetails() threw IndexOutOfBoundsException when userInfo had no colon
     // Before fix: split(colon, 2).get(1) crashed on single-element list
     // After fix: getOrElse(1) { "" } returns empty string when index is missing
@@ -66,10 +75,9 @@ class BugFixVerificationTests : StringSpec() {
         client.pool.maxTotal shouldBe 1
       }
     }
+  }
 
-    // Port 1 reliably refuses connections, so `ping()` throws JedisConnectionException.
-    val unreachableUrl = "redis://localhost:1"
-
+  private fun poolConnectionFailureTests() {
     "withRedisPool: connection failure invokes block exactly once with null" {
       val callCount = AtomicInt(0)
       val client = RedisUtils.newRedisClient(redisUrl = unreachableUrl, maxPoolSize = 1)
@@ -127,7 +135,9 @@ class BugFixVerificationTests : StringSpec() {
         callCount.load() shouldBe 0
       }
     }
+  }
 
+  private fun blockExceptionTests() {
     "withRedis: block JedisConnectionException propagates and block invoked once" {
       val callCount = AtomicInt(0)
       shouldThrow<JedisConnectionException> {
