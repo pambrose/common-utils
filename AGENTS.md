@@ -21,6 +21,10 @@ Run `make help` for a self-documenting list of every target.
 ### Testing
 
 - `make tests` - Run `./gradlew --rerun-tasks check` (lint + tests)
+- `make ci` - Run the CI jobs this host can run, one after another, with the commands a pull request's run uses:
+  `make zizmor`, `build`, the local publish (into `build/ci-m2`, not `~/.m2`), `koverXmlReport`, the macOS and iOS
+  simulator tests on macOS, and `:dokkaGenerate`. The native-windows job and the Codecov upload do not run locally.
+  Up-to-date and cached task results are reused, so use `make tests` to rerun every check
 - `./gradlew test` - Run all JVM-module tests
 - `./gradlew :MODULE_NAME:test` - Run tests for a JVM module (e.g., `./gradlew :redis-utils:test`)
 - `./gradlew :MODULE_NAME:test --tests "ClassName"` - Run a specific test class in a JVM module
@@ -90,7 +94,7 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 
 The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root
 script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts`, at the
-catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.5 and 1.6.5 in 1.1.7),
+catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.6 and 1.6.6 in 1.1.8),
 which lag the catalog whenever the catalog moves first, so `configureTestingVersions()` sets the `kotestVersion` and
 `logbackVersion` of its `pambroseTesting` extension to the catalog's. Every module, the `mutationModuleNames` ones
 included, and the Kotest Gradle plugin therefore test on the catalog's Kotest; bump it in the catalog alone.
@@ -162,6 +166,13 @@ action to a commit SHA with the release in a trailing comment, and every job set
 default persona fails the job. Findings show as annotations rather than going to code scanning, so the job needs
 only `contents: read`. The zizmor version comes from the pinned action release, so it moves with Dependabot's bumps
 of that action. Run `make zizmor` before pushing a workflow change.
+
+CodeScene (project 7520 on codescene.io, whose badge the README shows) reviews every pull request through its
+`CodeScene Access` GitHub App, so no workflow runs it. Its PR integration uses the Bare Minimum profile: the check
+fails when a change lowers a hotspot's Code Health, adds new code that is not healthy, or breaks a critical Code
+Health rule. CodeScene comments only on a pull request that fails a gate or that it rates as higher risk, and posts
+its findings as a PR review. The profile lives in the project's configuration on codescene.io, not in the repository,
+and the check is not required on master. A finding can be suppressed from the results page that the check links to.
 
 `cleanup.yml` runs every Monday at 07:23 UTC and deletes workflow runs older than 90 days, always keeping the 10
 newest of each workflow that still exists. A workflow whose file was removed keeps none, since no new run would ever

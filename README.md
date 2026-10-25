@@ -320,6 +320,9 @@ make abi-update
 
 # Audit the GitHub Actions workflows and Dependabot config with zizmor (also run in CI)
 make zizmor
+
+# Run the CI jobs this machine can run, with CI's commands (all but the Windows tests and the Codecov upload)
+make ci
 ```
 
 ### Code Quality
@@ -332,6 +335,7 @@ This project maintains high code quality standards:
   `check`, and Codecov upload from CI
 - **Mutation testing**: PIT with the Kotest plugin, run on demand for selected modules
 - **API compatibility**: Kotlin ABI dumps committed under each module's `api/` directory and checked by `check`
+- **Code health**: CodeScene reviews every pull request against its Bare Minimum quality gates
 - **CI security**: zizmor audits the GitHub Actions workflows and Dependabot config on every push and pull request
 - **Platforms**: CI runs the multiplatform tests on Linux, macOS (macOS and iOS simulator) and Windows (mingwX64)
 - **Security**: Regular dependency updates and security reviews

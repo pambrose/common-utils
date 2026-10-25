@@ -5,7 +5,7 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## v5.1.2 — 2026-10-20
+## v5.1.2 — 2026-10-25
 
 A patch release of dependency updates, including an Exposed SQL injection fix that exposed-utils passes on to
 consumers. There are no API changes.
@@ -21,6 +21,8 @@ consumers. There are no API changes.
 - **Shorter dependency report**: `make versions` prints one report for the whole build, listing only the
   dependencies and plugins with newer versions; `make versions-all` prints the full report. The Gradle plugins are now
   checked too.
+- **Local CI run**: `make ci` runs the CI jobs a local host can run, with the commands a pull request's run uses. Only
+  the Windows native tests and the Codecov upload are left out.
 - **AGENTS.md**: CLAUDE.md is renamed to AGENTS.md.
 
 ### Behavior changes
@@ -39,10 +41,11 @@ consumers. There are no API changes.
   ahead of its 2.0.81.Final pin)
 - `kotlinx-serialization-json` 1.11.0 → 1.12.0
 - `prometheus` 1.9.0 → 1.10.0
-- `kotest` 6.2.5 → 6.2.6 (tests only)
-- `resend` 4.28.0 → 4.29.0
+- `kotest` 6.2.5 → 6.2.6, `logback` 1.6.5 → 1.6.6 (tests only)
+- `resend` 4.28.0 → 4.29.0 (adds an inboxes API and per-request timeouts)
 - `brace-expansion` 2.1.4 → 2.1.7 in the JS and wasm toolchains (build only; closes six Dependabot alerts)
-- `io.github.ben-manes.versions` 0.65.0 → 0.66.0, PIT 1.22.1 → 1.30.1, Gradle 9.8.1 → 9.8.2 (build only)
+- `pambrose-gradle-plugins` 1.1.7 → 1.1.8, `io.github.ben-manes.versions` 0.65.0 → 0.66.0, PIT 1.22.1 → 1.30.1,
+  Gradle 9.8.1 → 9.8.2 (build only)
 
 **Full Changelog**: https://github.com/pambrose/common-utils/compare/5.1.1...5.1.2
 

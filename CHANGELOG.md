@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [5.1.2] - 2026-10-20
+## [5.1.2] - 2026-10-25
 
 ### Build & tooling
 
@@ -21,9 +21,10 @@ All notable changes to Common Utils are documented in this file.
   `plugins` block. Each module used to run its own report, and none of them looked at the root buildscript, so plugins
   that share no version with a library (KSP, maven-publish, the convention plugins, kotlinter, the PIT plugin and the
   versions plugin itself) were never reported.
-- The JVM modules test on the catalog's Kotest (6.2.6) and logback, like the KMP modules. `configureTestingVersions()`
-  sets them through the `com.pambrose.testing` convention plugin's `pambroseTesting` extension, whose own defaults
-  (Kotest 6.2.5 in 1.1.7) lag the catalog whenever the catalog moves first.
+- The JVM modules test on the catalog's Kotest and logback, like the KMP modules. `configureTestingVersions()` sets
+  them through the `com.pambrose.testing` convention plugin's `pambroseTesting` extension, so a catalog bump no longer
+  waits for a convention-plugin release, as Kotest 6.2.6 had to against 1.1.7's 6.2.5. The defaults of 1.1.8 match
+  the catalog again.
 - The root build script adds each module to the root `dokka` and `kover` configurations through
   `dependencies.project(path)` rather than the `Project` itself, which Gradle 9 deprecates and Gradle 10 rejects.
 - The detekt baseline support is gone: `make detekt-baseline`, the shared `config/detekt/baseline.xml` lookup and the
@@ -32,6 +33,11 @@ All notable changes to Common Utils are documented in this file.
   every source set of every module.
 - `make versions` no longer offers a pre-release with no delimiter before its qualifier, such as Jython's `2.7.5b1`,
   as an update to a stable version.
+- CodeScene reviews every pull request through its GitHub App, with the Bare Minimum quality gates: the check fails
+  when a change lowers a hotspot's Code Health, adds unhealthy new code, or breaks a critical Code Health rule.
+- `make ci` runs the CI jobs this host can run, with the commands a pull request's run uses: zizmor, `build`, the
+  local publish (into `build/ci-m2` rather than `~/.m2`), the Kover XML report, the Apple tests on macOS and the
+  KDocs. The native-windows job and the Codecov upload do not run locally.
 - `make mutation` runs PIT 1.30.1 rather than the pitest plugin's default 1.22.1. The catalog's `pitest` version sets
   it, and Dependabot now tracks it.
 
@@ -51,12 +57,13 @@ All notable changes to Common Utils are documented in this file.
 - AGENTS.md describes that spec layout, so new tests go into a group rather than back into `init`.
 - AGENTS.md notes that a Dependabot alert on `kotlin-js-store/` has to be fixed through `yarnResolutions`, because
   Dependabot's own fix job fails there.
-- AGENTS.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone, and `make versions-all`.
+- AGENTS.md describes the `Cleanup` workflow and why it leaves caches and artifacts alone, `make versions-all`,
+  `make ci` and the CodeScene pull request check.
 - AGENTS.md describes how the convention plugin's Kotest and logback versions follow the catalog, updates the
   tcnative note for grpc 1.85.1, and dates the coverage figures to 5.1.2. The catalog and Dependabot comments on
   tcnative no longer say it must match grpc's pin, which it deliberately runs ahead of.
 - service-utils' README says the Prometheus duplicate-family failure it describes still holds in 1.10.0.
-- README states Gradle 9.8.2 and shows a CodeScene code-health badge.
+- README states Gradle 9.8.2, lists `make ci` and shows a CodeScene code-health badge.
 
 ### Dependency changes
 
@@ -83,7 +90,12 @@ All notable changes to Common Utils are documented in this file.
 - `prometheus` 1.9.0 → 1.10.0, which prometheus-utils and service-utils export as `api`: an option to keep metric
   suffixes in OpenMetrics 2.0, and dependency updates.
 - `kotest` 6.2.5 → 6.2.6 (tests only), for every module and the Kotest Gradle plugin.
-- `resend` 4.28.0 → 4.29.0
+- `logback` 1.6.5 → 1.6.6 (tests only)
+- `resend` 4.28.0 → 4.29.0, which email-utils exports as `api`: an inboxes API, a per-request timeout in
+  `RequestOptions`, and `CreateEmailOptions`' builder copying the lists and maps it is given
+  ([v4.29.0](https://github.com/resend/resend-java/releases/tag/v4.29.0)).
+- `pambrose-gradle-plugins` 1.1.7 → 1.1.8, whose only change is the convention plugin's default Kotest and logback
+  (6.2.6 and 1.6.6). The compiler stays Kotlin 2.4.21.
 - `io.github.ben-manes.versions` 0.65.0 → 0.66.0
 - PIT (`pitest-command-line`) 1.22.1 → 1.30.1 (mutation testing only)
 - Gradle 9.8.1 → 9.8.2
