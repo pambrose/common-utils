@@ -2,6 +2,16 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Build & tooling
+
+- Pin `serialize-javascript` to 7.1.3 (from 7.0.5) through `yarnResolutions`, closing two Dependabot alerts on the JS
+  and wasm toolchain lockfiles for GHSA-m5mm-p8h7-m29v (low): an unescaped `</script` at the end of a serialized
+  function body allowed cross-site scripting. Build-only, with no effect on consumers.
+- The workflows move to `actions/setup-java` 6.1.0 and `zizmorcore/zizmor-action` 0.7.1, which runs zizmor 1.31.1
+  (#224).
+
 ## [5.1.2] - 2026-10-25
 
 ### Build & tooling

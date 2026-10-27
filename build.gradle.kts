@@ -146,7 +146,7 @@ kover {
 }
 
 // Force patched versions of vulnerable transitive npm packages in the JS/wasmJs test
-// toolchains (Dependabot: ws DoS, serialize-javascript RCE/DoS, jsdiff DoS, brace-expansion
+// toolchains (Dependabot: ws DoS, serialize-javascript RCE/DoS/XSS, jsdiff DoS, brace-expansion
 // DoS, js-yaml DoS). The toolchain requests them with pins/ranges that cannot reach the fixed
 // versions on their own — or, for brace-expansion and js-yaml, with a range that yarn will not
 // re-resolve while the lockfile already holds a satisfying-but-vulnerable entry. See the
@@ -154,7 +154,7 @@ kover {
 // upgrade tasks silently no-op unless the generated package.json files are deleted first.
 val yarnResolutions = mapOf(
     "ws" to "8.21.0",
-    "serialize-javascript" to "7.0.5",
+    "serialize-javascript" to "7.1.3",
     "diff" to "8.0.3",
     "brace-expansion" to "2.1.7",
     "js-yaml" to "4.3.2",
