@@ -2,7 +2,16 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.2.0] - 2026-10-28
+
+### Added
+
+- `SystemMetrics.forget(registry)` (prometheus-utils) forgets which metric sets `initialize` registered with a
+  registry, so the next `initialize` registers them again. `initialize` remembers each set it registered, per
+  registry, and so never registered a set again once `PrometheusRegistry.clear()` had removed it; a test harness
+  that clears and reuses the default registry between specs had no way back short of reflection. `forget` does not
+  unregister anything, and leaves what was registered with other registries; `registry` defaults to the default
+  registry.
 
 ### Build & tooling
 
@@ -11,6 +20,12 @@ All notable changes to Common Utils are documented in this file.
   function body allowed cross-site scripting. Build-only, with no effect on consumers.
 - The workflows move to `actions/setup-java` 6.1.0 and `zizmorcore/zizmor-action` 0.7.1, which runs zizmor 1.31.1
   (#224).
+
+### Documentation
+
+- The prometheus-utils README describes when to call `SystemMetrics.forget` and lists it in the API reference.
+- AGENTS.md dates the tcnative note and the coverage figures to 5.2.0.
+- Bump project version to 5.2.0
 
 ## [5.1.2] - 2026-10-25
 

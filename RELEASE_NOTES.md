@@ -5,6 +5,29 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v5.2.0 — 2026-10-28
+
+A minor, binary-compatible release. prometheus-utils' `SystemMetrics` can forget what it registered with a registry,
+so a registry that is cleared and reused gets its metric sets back.
+
+### Highlights
+
+- **`SystemMetrics.forget(registry)`**: `initialize` remembers each metric set it registered, per registry, and
+  never registered one again once `PrometheusRegistry.clear()` had removed it. A test harness that clears and reuses
+  the default registry between specs can now call `forget` after clearing it, and the next `initialize` registers the
+  sets again. `forget` unregisters nothing and leaves other registries alone; `registry` defaults to the default
+  registry.
+
+### Dependency bumps
+
+- `serialize-javascript` 7.0.5 → 7.1.3 in the JS and wasm toolchains (build only; closes two Dependabot alerts for
+  GHSA-m5mm-p8h7-m29v)
+- `actions/setup-java` 6.1.0, `zizmorcore/zizmor-action` 0.7.1 (CI only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.1.2...5.2.0
+
+---
+
 ## v5.1.2 — 2026-10-25
 
 A patch release of dependency updates, including an Exposed SQL injection fix that exposed-utils passes on to

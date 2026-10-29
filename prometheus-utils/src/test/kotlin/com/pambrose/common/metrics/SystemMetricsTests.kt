@@ -179,6 +179,40 @@ class SystemMetricsTests : StringSpec() {
       registry.sampleValue("jvm_threads_current") shouldBe null
     }
 
+    "after forget, an exporter removed with clear is registered again" {
+      val registry = PrometheusRegistry()
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+      registry.clear()
+
+      SystemMetrics.forget(registry)
+      SystemMetrics.initialize(enableThreadExports = true, registry = registry)
+
+      registry.sampleValue("jvm_threads_current").shouldNotBeNull()
+    }
+
+    "forget leaves what was registered with other registries" {
+      val forgotten = PrometheusRegistry()
+      val kept = spyk(PrometheusRegistry())
+      SystemMetrics.initialize(enableThreadExports = true, registry = forgotten)
+      SystemMetrics.initialize(enableThreadExports = true, registry = kept)
+
+      SystemMetrics.forget(forgotten)
+
+      shouldRegisterNothing(kept) { SystemMetrics.initialize(enableThreadExports = true, registry = kept) }
+    }
+
+    // The registry a test harness reuses between specs, and clears before each.
+    "forget with no registry forgets the default registry" {
+      val registry = PrometheusRegistry.defaultRegistry
+      SystemMetrics.initialize(enableThreadExports = true)
+      registry.clear()
+
+      SystemMetrics.forget()
+      SystemMetrics.initialize(enableThreadExports = true)
+
+      registry.sampleValue("jvm_threads_current").shouldNotBeNull()
+    }
+
     "a later call registers exporters that were not requested before" {
       val registry = PrometheusRegistry()
       SystemMetrics.initialize(enableThreadExports = true, registry = registry)

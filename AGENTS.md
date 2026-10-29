@@ -185,7 +185,7 @@ Deleting a run also drops its check results from old commits and pull requests.
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
-POM lists, update that list to match. As of 5.1.2 the catalog deliberately runs tcnative ahead of grpc's pin
+POM lists, update that list to match. As of 5.2.0 the catalog deliberately runs tcnative ahead of grpc's pin
 (2.0.84.Final against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc
 bump is the time to bring the two together again.
 
@@ -315,7 +315,7 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.1.2 the project sits at 99.4% line and 96.1% branch, and the weakest package
+`codecov.yml` point here). As of 5.2.0 the project sits at 99.4% line and 96.1% branch, and the weakest package
 by line coverage is `service` at 98.2%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,

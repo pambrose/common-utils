@@ -143,6 +143,10 @@ all or nothing. A set whose metrics are already registered elsewhere, for exampl
 `JvmMetrics.builder().register()` after `initialize` on the same registry throws part-way (client behaviour), so use
 one or the other. Pass `registry` to use a registry other than the default one.
 
+`initialize` remembers what it registered with each registry, so a set removed with `registry.clear()` is not
+registered again. On a registry that is cleared and reused, as a test harness does between specs, call
+`SystemMetrics.forget(registry)` after clearing it, and the next `initialize` registers the sets again.
+
 | Flag | Metric set | Example series |
 |---|---|---|
 | `enableStandardExports` | `ProcessMetrics` | `process_cpu_seconds_total`, `process_open_fds` |
@@ -204,6 +208,7 @@ are the 1.x ones from `io.prometheus.metrics.core.metrics`.
 
 ### `SystemMetrics`
 
+- `forget(registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry)` — forgets which metric sets `initialize` registered with `registry`, so the next call registers them again
 - `initialize(enableStandardExports: Boolean = false, enableMemoryPoolsExports: Boolean = false, enableGarbageCollectorExports: Boolean = false, enableThreadExports: Boolean = false, enableClassLoadingExports: Boolean = false, enableVersionInfoExports: Boolean = false, enableBufferPoolExports: Boolean = false, enableCompilationExports: Boolean = false, enableNativeMemoryExports: Boolean = false, registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry)`
 
 ## Dependencies
