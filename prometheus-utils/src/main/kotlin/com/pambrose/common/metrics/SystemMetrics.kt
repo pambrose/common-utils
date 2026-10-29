@@ -47,7 +47,8 @@ object SystemMetrics {
    *
    * This method is synchronized and safe to call repeatedly: a metric set already registered by an earlier call is
    * skipped, and one requested for the first time is registered. Registrations are tracked per registry, so a metric
-   * set later removed with [PrometheusRegistry.clear] is not registered again.
+   * set later removed with [PrometheusRegistry.clear] is not registered again until [forget] is called for that
+   * registry.
    *
    * Each metric set is registered all or nothing. The client's `register(registry)` for a set adds its metrics one
    * at a time and returns no handle, so a name clash part-way through would leave the earlier metrics registered and
@@ -131,5 +132,21 @@ object SystemMetrics {
     register(enableBufferPoolExports, "JVM buffer pool") { JvmBufferPoolMetrics.builder().register(it) }
     register(enableCompilationExports, "JVM compilation") { JvmCompilationMetrics.builder().register(it) }
     register(enableNativeMemoryExports, "JVM native memory") { JvmNativeMemoryMetrics.builder().register(it) }
+  }
+
+  /**
+   * Forgets which metric sets [initialize] registered with [registry], so the next call registers them again.
+   *
+   * Call it after [PrometheusRegistry.clear] on a registry that is reused, as a test harness does between specs.
+   * Without it, the cleared metric sets are never registered with that registry again. It does not unregister
+   * anything, so calling it while the sets are still registered makes the next [initialize] skip them with a warning,
+   * since their names are taken. What was registered with other registries is kept.
+   *
+   * @param registry the registry to forget. Defaults to [PrometheusRegistry.defaultRegistry].
+   */
+  @Synchronized
+  @JvmOverloads
+  fun forget(registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry) {
+    registeredSets.remove(registry)
   }
 }

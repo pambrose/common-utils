@@ -33,6 +33,9 @@ public final class com/pambrose/common/metrics/SamplerGaugeCollector : io/promet
 
 public final class com/pambrose/common/metrics/SystemMetrics {
 	public static final field INSTANCE Lcom/pambrose/common/metrics/SystemMetrics;
+	public final fun forget ()V
+	public final fun forget (Lio/prometheus/metrics/model/registry/PrometheusRegistry;)V
+	public static synthetic fun forget$default (Lcom/pambrose/common/metrics/SystemMetrics;Lio/prometheus/metrics/model/registry/PrometheusRegistry;ILjava/lang/Object;)V
 	public final fun initialize ()V
 	public final fun initialize (Z)V
 	public final fun initialize (ZZ)V
