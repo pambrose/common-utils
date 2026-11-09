@@ -411,9 +411,9 @@ fun Project.configureKotlinMultiplatform() {
             }
     }
 
-    // Eight test JVMs at once on a developer's machine and on the self-hosted runner, which runs CI's check job, and one on
-    // GitHub's own runners, which have two CPUs and 8 GB for a private repository, so the timing-sensitive specs don't race
-    // other JVMs for them there. GitHub Actions sets RUNNER_ENVIRONMENT to github-hosted or self-hosted in every job.
+    // Eight test JVMs at once on a developer's machine and one on GitHub's hosted runners, which run every CI job, so
+    // the timing-sensitive specs don't race other JVMs for CPU there. GitHub Actions sets RUNNER_ENVIRONMENT in every
+    // job. This covers the KMP modules only: the JVM modules' test tasks keep Gradle's default of one fork.
     val testForks = if (providers.environmentVariable("RUNNER_ENVIRONMENT").orNull == "github-hosted") 1 else 8
 
     // The com.pambrose.testing convention plugin does this for the JVM modules.
