@@ -411,9 +411,15 @@ fun Project.configureKotlinMultiplatform() {
             }
     }
 
+    // Eight test JVMs at once on a developer's machine and one on GitHub's hosted runners, which run every CI job, so
+    // the timing-sensitive specs don't race other JVMs for CPU there. GitHub Actions sets RUNNER_ENVIRONMENT in every
+    // job. This covers the KMP modules only: the JVM modules' test tasks keep Gradle's default of one fork.
+    val testForks = if (providers.environmentVariable("RUNNER_ENVIRONMENT").orNull == "github-hosted") 1 else 8
+
     // The com.pambrose.testing convention plugin does this for the JVM modules.
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+        maxParallelForks = testForks
         testLogging {
             events = setOf(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED, TestLogEvent.STANDARD_ERROR)
             exceptionFormat = TestExceptionFormat.FULL

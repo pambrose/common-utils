@@ -94,7 +94,7 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 
 The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root
 script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts`, at the
-catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.6 and 1.6.6 in 1.1.8),
+catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.6 and 1.6.6 in 1.1.9),
 which lag the catalog whenever the catalog moves first, so `configureTestingVersions()` sets the `kotestVersion` and
 `logbackVersion` of its `pambroseTesting` extension to the catalog's. Every module, the `mutationModuleNames` ones
 included, and the Kotest Gradle plugin therefore test on the catalog's Kotest; bump it in the catalog alone.
