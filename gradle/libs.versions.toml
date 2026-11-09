@@ -6,7 +6,7 @@ jvmTarget = "17"
 # Plugins
 detekt = "2.0.0-alpha.6"
 dokka = "2.3.0"
-gradlePlugins = "1.1.8"
+gradlePlugins = "1.1.9"
 kotlinter = "5.7.0"
 kover = "0.9.11"
 mavenPublish = "0.37.0"
@@ -63,7 +63,7 @@ resend = "4.30.0"
 kotest = "6.2.6"
 # KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
 ksp = "2.3.13"
-mockk = "1.14.11"
+mockk = "1.14.12"
 # The PIT engine the pitest plugin runs (see configurePitest); the plugin's own default lags (1.22.1 in 1.19.0).
 pitest = "1.30.2"
 
