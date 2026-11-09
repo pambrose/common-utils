@@ -11,7 +11,7 @@ kotlinter = "5.7.0"
 kover = "0.9.11"
 mavenPublish = "0.37.0"
 pitestPlugin = "1.19.0"
-versions = "0.66.0"
+versions = "0.67.0"
 
 # Kotlin & kotlinx
 # Governs the kotlin-scripting-* artifacts, kotlin-reflect and the Kotlin plugin ids. It is not what compiles the
@@ -33,7 +33,7 @@ dropwizard = "4.2.40"
 grpc = "1.85.1"
 jakartaServlet = "6.1.0"
 jetty = "12.1.14"
-ktor = "3.6.0"
+ktor = "3.6.1"
 # Tracks the tcnative that grpc pins, bumped by hand with grpc. Deliberately ahead of grpc 1.85.1's 2.0.81.Final
 # (see AGENTS.md); bring the two together again on a later grpc bump.
 tcnative = "2.0.84.Final"
@@ -62,7 +62,7 @@ resend = "4.29.0"
 # Testing
 kotest = "6.2.6"
 # KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
-ksp = "2.3.12"
+ksp = "2.3.13"
 mockk = "1.14.11"
 # The PIT engine the pitest plugin runs (see configurePitest); the plugin's own default lags (1.22.1 in 1.19.0).
 pitest = "1.30.1"
