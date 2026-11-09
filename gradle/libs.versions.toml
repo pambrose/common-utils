@@ -1,17 +1,17 @@
 [versions]
 # Toolchain
-gradle-wrapper = "9.8.2"
+gradle-wrapper = "9.9.0"
 jvmTarget = "17"
 
 # Plugins
 detekt = "2.0.0-alpha.6"
-dokka = "2.2.0"
-gradlePlugins = "1.1.8"
+dokka = "2.3.0"
+gradlePlugins = "1.1.9"
 kotlinter = "5.7.0"
 kover = "0.9.11"
 mavenPublish = "0.37.0"
 pitestPlugin = "1.19.0"
-versions = "0.66.0"
+versions = "0.67.0"
 
 # Kotlin & kotlinx
 # Governs the kotlin-scripting-* artifacts, kotlin-reflect and the Kotlin plugin ids. It is not what compiles the
@@ -26,20 +26,20 @@ serialization = "1.12.0"
 
 # Logging
 logback = "1.6.6"
-logging = "8.0.4"
+logging = "8.0.6"
 
 # Frameworks
 dropwizard = "4.2.40"
 grpc = "1.85.1"
 jakartaServlet = "6.1.0"
 jetty = "12.1.14"
-ktor = "3.6.0"
+ktor = "3.6.1"
 # Tracks the tcnative that grpc pins, bumped by hand with grpc. Deliberately ahead of grpc 1.85.1's 2.0.81.Final
 # (see AGENTS.md); bring the two together again on a later grpc bump.
 tcnative = "2.0.84.Final"
 
 # Data
-exposed = "1.6.0"
+exposed = "1.6.1"
 h2 = "2.5.252"
 redis = "8.0.2"
 
@@ -57,15 +57,15 @@ zipkinReporter = "3.5.3"
 guava = "33.7.2-jre"
 
 # Other
-resend = "4.29.0"
+resend = "4.30.0"
 
 # Testing
 kotest = "6.2.6"
 # KSP versions independent of Kotlin since 2.3.0 (required by the kotest plugin)
-ksp = "2.3.12"
-mockk = "1.14.11"
+ksp = "2.3.13"
+mockk = "1.14.12"
 # The PIT engine the pitest plugin runs (see configurePitest); the plugin's own default lags (1.22.1 in 1.19.0).
-pitest = "1.30.1"
+pitest = "1.30.2"
 
 [libraries]
 # Kotlin & kotlinx
