@@ -58,9 +58,17 @@ Run `make help` for a self-documenting list of every target.
 
 ### Publishing
 
-- `make publish-snapshot` - Publish `-SNAPSHOT` to Maven Central (requires `GPG_SIGNING_KEY_ID` env var and
-  `gradle-signing-password` keychain entry)
+- `make publish-snapshot` - Publish `-SNAPSHOT` to Maven Central (requires the `GPG_SIGNING_KEY_ID` env var, the
+  `gradle-signing-password` keychain entry (account `gpg-signing`), and the `maven-central-username` and
+  `maven-central-password` keychain entries (account `maven-central`))
 - `make publish-maven-central` - Publish and release to Maven Central (same prerequisites)
+- The Maven Central credentials are a user token's name and password from central.sonatype.com. The Makefile reads
+  them from the macOS keychain and passes them only to the publishing commands, as
+  `ORG_GRADLE_PROJECT_mavenCentralUsername` and `ORG_GRADLE_PROJECT_mavenCentralPassword`; keep them out of
+  `~/.gradle/gradle.properties`, which every Gradle build on the machine reads. The entries are shared by every repository that publishes this way. Add them once with
+  `security add-generic-password -a maven-central -s maven-central-username -U -w` (and the same for
+  `maven-central-password`), which prompts for the value so it stays out of the shell history. Both publish targets
+  check the entries first through `_check-maven-central-env`, which names a missing or empty entry, never its value.
 
 ## Architecture
 
@@ -117,7 +125,7 @@ full report, up-to-date dependencies included.
 The full report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
 'testRuntimeOnly' configuration". No build script declares it: the pitest plugin, applied to the
 `mutationModuleNames` modules, adds it from a `withDependencies` hook at the JUnit Platform version already on the
-test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.6). It follows Kotest, so don't pin it
+test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.7). It follows Kotest, so don't pin it
 separately; its 1.14.x/6.x candidates become relevant once Kotest moves.
 
 Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` (auto-detected if present).
@@ -185,9 +193,9 @@ Deleting a run also drops its check results from old commits and pull requests.
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
-POM lists, update that list to match. As of 5.2.0 the catalog deliberately runs tcnative ahead of grpc's pin
-(2.0.84.Final against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc
-bump is the time to bring the two together again.
+POM lists, update that list to match. The catalog deliberately runs tcnative ahead of grpc's pin (2.0.85.Final
+against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc bump is the
+time to bring the two together again.
 
 ### Experimental Kotlin Features
 
