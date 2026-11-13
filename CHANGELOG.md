@@ -23,6 +23,10 @@ All notable changes to Common Utils are documented in this file.
   before 5.1.2. Malformed input and missing fields still fail with a `SerializationException`, and none of the
   `@Serializable` types in this library throws anything else. `JsonElement.toString` is up to twice as fast
   ([1.13.0](https://github.com/Kotlin/kotlinx.serialization/releases/tag/v1.13.0)).
+- `netty-tcnative-boringssl-static` 2.0.84.Final → 2.0.85.Final, a runtime dependency of grpc-utils: fixes for
+  several native memory leaks and an out-of-bounds read in ALPN protocol selection, and the macOS native library now
+  needs macOS 11 or later. It stays ahead of the 2.0.81.Final that grpc 1.85.1 pins
+  ([2.0.85.Final](https://github.com/netty/netty-tcnative/compare/netty-tcnative-parent-2.0.84.Final...netty-tcnative-parent-2.0.85.Final)).
 - `kotlin-logging` 8.0.6 → 8.0.7, which core-utils' JVM artifact exports as `api`; only its dependency updates
 - `kotest` 6.2.6 → 6.2.7 (tests only), for every module and the Kotest Gradle plugin
 - `ksp` 2.3.13 → 2.3.14 (build only), which the Kotest Gradle plugin requires

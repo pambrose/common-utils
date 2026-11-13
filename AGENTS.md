@@ -193,9 +193,9 @@ Deleting a run also drops its check results from old commits and pull requests.
 `netty-tcnative-boringssl-static`'s main jar holds no native code: its POM pulls the per-platform jars in as
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
-POM lists, update that list to match. As of 5.2.0 the catalog deliberately runs tcnative ahead of grpc's pin
-(2.0.84.Final against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc
-bump is the time to bring the two together again.
+POM lists, update that list to match. The catalog deliberately runs tcnative ahead of grpc's pin (2.0.85.Final
+against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc bump is the
+time to bring the two together again.
 
 ### Experimental Kotlin Features
 

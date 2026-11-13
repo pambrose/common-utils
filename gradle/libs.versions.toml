@@ -36,7 +36,7 @@ jetty = "12.1.15"
 ktor = "3.6.1"
 # Tracks the tcnative that grpc pins, bumped by hand with grpc. Deliberately ahead of grpc 1.85.1's 2.0.81.Final
 # (see AGENTS.md); bring the two together again on a later grpc bump.
-tcnative = "2.0.84.Final"
+tcnative = "2.0.85.Final"
 
 # Data
 exposed = "1.6.1"
