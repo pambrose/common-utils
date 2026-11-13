@@ -79,7 +79,7 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 - `configureKotlinJvm()` - JVM 17 target, experimental opt-ins (kotlin/jvm modules)
 - `configureTestingVersions()` - sets the Kotest and logback versions that `com.pambrose.testing` adds to the JVM
   modules to the catalog's (kotlin/jvm modules)
-- `configureKotlinMultiplatform()` - full KMP target list, opt-ins, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
+- `configureKotlinMultiplatform()` - full KMP target list, opt-ins, and, through `configureKmpTests()`, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
 - `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
@@ -181,6 +181,16 @@ fails when a change lowers a hotspot's Code Health, adds new code that is not he
 Health rule. CodeScene comments only on a pull request that fails a gate or that it rates as higher risk, and posts
 its findings as a PR review. The profile lives in the project's configuration on codescene.io, not in the repository,
 and the check is not required on master. A finding can be suppressed from the results page that the check links to.
+
+Codacy (`gh/pambrose/common-utils` on app.codacy.com) analyzes master and every pull request through its GitHub
+App, as the `Codacy Static Code Analysis` check, which is not required on master either. Its tool settings live on
+codacy.io, not in the repository. Its detekt reads `config/detekt/detekt.yml` (the tool's configuration-file
+setting), so it reports what the local detekt tasks do, with one difference: it also analyzes the Gradle build
+scripts, which they skip, so a function in a `*.gradle.kts` file has to stay under the same 60-line `LongMethod`
+limit. That detekt predates detekt 2's rule renames (its pattern list still has `CommentOverPrivateFunction`, detekt
+2's `DocumentationOverPrivateFunction`), so a rule configured under a name only detekt 2 knows may not take effect
+there. Stylelint checks the CSS, such as email-utils' `css/email.css`, with Codacy's own pattern set, which wants one
+declaration per line in a rule that has several.
 
 `cleanup.yml` runs every Monday at 07:23 UTC and deletes workflow runs older than 90 days, always keeping the 10
 newest of each workflow that still exists. A workflow whose file was removed keeps none, since no new run would ever

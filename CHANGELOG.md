@@ -4,6 +4,12 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- email-utils' default stylesheet, `css/email.css`, puts each declaration on its own line, as Codacy's Stylelint asks.
+  The rules are unchanged, so emails render as before, though the stylesheet embedded in each one is longer by its
+  added whitespace.
+
 ### Build & tooling
 
 - `make publish-snapshot` and `make publish-maven-central` read the Maven Central credentials, a user token's name and
@@ -14,6 +20,13 @@ All notable changes to Common Utils are documented in this file.
   every Gradle build on the machine reads. A new `_check-maven-central-env` step fails either target before Gradle
   starts when an entry is missing or empty, naming the entry and the `security add-generic-password` command that
   adds it.
+- `configureKotlinMultiplatform()` in the root build script hands its test-task setup to a new `configureKmpTests()`,
+  bringing it back under detekt's 60-line `LongMethod` limit. Codacy analyzes the build scripts, which the local
+  detekt tasks skip, and reported the function at 65 lines after the test-fork setting was added.
+- Codacy's detekt reads `config/detekt/detekt.yml` instead of Codacy's own rule set, which reported rules the config
+  turns off, such as `LongParameterList` on public API that only a major release could change, and test code the
+  config excludes. Codacy now reports what the local detekt tasks do, plus the build scripts. The setting lives on
+  codacy.io, and AGENTS.md describes it.
 
 ### Dependency changes
 
