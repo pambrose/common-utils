@@ -2,6 +2,18 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Build & tooling
+
+- `make publish-snapshot` and `make publish-maven-central` read the Maven Central credentials, a user token's name and
+  password from central.sonatype.com, from the macOS keychain entries `maven-central-username` and
+  `maven-central-password` (account `maven-central`), as they already read the signing key's passphrase. The
+  credentials reach only the publishing commands, as `ORG_GRADLE_PROJECT_mavenCentralUsername` and
+  `ORG_GRADLE_PROJECT_mavenCentralPassword`, so they no longer need to be in `~/.gradle/gradle.properties`, which
+  every Gradle build on the machine reads. A new `_check-maven-central-env` step fails either target before Gradle starts when an
+  entry is missing or empty, naming the entry and the `security add-generic-password` command that adds it.
+
 ## [5.2.0] - 2026-10-28
 
 ### Added

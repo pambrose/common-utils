@@ -58,9 +58,17 @@ Run `make help` for a self-documenting list of every target.
 
 ### Publishing
 
-- `make publish-snapshot` - Publish `-SNAPSHOT` to Maven Central (requires `GPG_SIGNING_KEY_ID` env var and
-  `gradle-signing-password` keychain entry)
+- `make publish-snapshot` - Publish `-SNAPSHOT` to Maven Central (requires the `GPG_SIGNING_KEY_ID` env var, the
+  `gradle-signing-password` keychain entry (account `gpg-signing`), and the `maven-central-username` and
+  `maven-central-password` keychain entries (account `maven-central`))
 - `make publish-maven-central` - Publish and release to Maven Central (same prerequisites)
+- The Maven Central credentials are a user token's name and password from central.sonatype.com. The Makefile reads
+  them from the macOS keychain and passes them only to the publishing commands, as
+  `ORG_GRADLE_PROJECT_mavenCentralUsername` and `ORG_GRADLE_PROJECT_mavenCentralPassword`; keep them out of
+  `~/.gradle/gradle.properties`, which every Gradle build on the machine reads. The entries are shared by every repository that publishes this way. Add them once with
+  `security add-generic-password -a maven-central -s maven-central-username -U -w` (and the same for
+  `maven-central-password`), which prompts for the value so it stays out of the shell history. Both publish targets
+  check the entries first through `_check-maven-central-env`, which names a missing or empty entry, never its value.
 
 ## Architecture
 
