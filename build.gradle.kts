@@ -411,6 +411,11 @@ fun Project.configureKotlinMultiplatform() {
             }
     }
 
+    configureKmpTests()
+}
+
+// A KMP module's test tasks, kept out of configureKotlinMultiplatform() to hold it under detekt's LongMethod limit.
+fun Project.configureKmpTests() {
     // Eight test JVMs at once on a developer's machine and one on GitHub's hosted runners, which run every CI job, so
     // the timing-sensitive specs don't race other JVMs for CPU there. GitHub Actions sets RUNNER_ENVIRONMENT in every
     // job. This covers the KMP modules only: the JVM modules' test tasks keep Gradle's default of one fork.
