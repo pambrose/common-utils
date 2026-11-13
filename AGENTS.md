@@ -125,7 +125,7 @@ full report, up-to-date dependencies included.
 The full report lists `org.junit.platform:junit-platform-launcher` as "contributed by a plugin into the
 'testRuntimeOnly' configuration". No build script declares it: the pitest plugin, applied to the
 `mutationModuleNames` modules, adds it from a `withDependencies` hook at the JUnit Platform version already on the
-test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.6). It follows Kotest, so don't pin it
+test classpath, which Kotest's runner sets (1.13.4 with Kotest 6.2.7). It follows Kotest, so don't pin it
 separately; its 1.14.x/6.x candidates become relevant once Kotest moves.
 
 Detekt is applied directly in the root `build.gradle.kts` via `configureDetekt()`. The aggregate `detekt` task depends on every per-source-set detekt task by type (`detektMain`/`detektTest` on JVM modules; `detektJvmMain`, `detektMetadataCommonMain`, etc. on KMP modules), so analysis runs with full type resolution. Optional shared config lives at `config/detekt/detekt.yml` (auto-detected if present).

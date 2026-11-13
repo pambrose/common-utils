@@ -11,8 +11,22 @@ All notable changes to Common Utils are documented in this file.
   `maven-central-password` (account `maven-central`), as they already read the signing key's passphrase. The
   credentials reach only the publishing commands, as `ORG_GRADLE_PROJECT_mavenCentralUsername` and
   `ORG_GRADLE_PROJECT_mavenCentralPassword`, so they no longer need to be in `~/.gradle/gradle.properties`, which
-  every Gradle build on the machine reads. A new `_check-maven-central-env` step fails either target before Gradle starts when an
-  entry is missing or empty, naming the entry and the `security add-generic-password` command that adds it.
+  every Gradle build on the machine reads. A new `_check-maven-central-env` step fails either target before Gradle
+  starts when an entry is missing or empty, naming the entry and the `security add-generic-password` command that
+  adds it.
+
+### Dependency changes
+
+- `kotlinx-serialization-json` 1.12.0 → 1.13.0, which json-utils and email-utils export as `api`. It reverts 1.12.0's
+  exception rework: Json no longer wraps the exceptions thrown by serializers, including custom serializers and
+  `@Serializable` constructors, in a `JsonException`, so such an exception reaches the caller as thrown again, as
+  before 5.1.2. Malformed input and missing fields still fail with a `SerializationException`, and none of the
+  `@Serializable` types in this library throws anything else. `JsonElement.toString` is up to twice as fast
+  ([1.13.0](https://github.com/Kotlin/kotlinx.serialization/releases/tag/v1.13.0)).
+- `kotlin-logging` 8.0.6 → 8.0.7, which core-utils' JVM artifact exports as `api`; only its dependency updates
+- `kotest` 6.2.6 → 6.2.7 (tests only), for every module and the Kotest Gradle plugin
+- `ksp` 2.3.13 → 2.3.14 (build only), which the Kotest Gradle plugin requires
+- Gradle wrapper 9.9.0 → 9.9.1
 
 ## [5.2.0] - 2026-10-28
 
