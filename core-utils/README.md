@@ -214,6 +214,17 @@ runCatchingCancellable { parse() }
   .onFailureOrRethrow<NumberFormatException, _> { e -> logger.warn { "bad number" } }
 ```
 
+On the JVM, `runCatchingInterruptible` also rethrows `InterruptedException`. Use it around blocking calls: the JVM
+clears a thread's interrupt flag when it throws that exception, so a `Result` that caught it would lose the
+interruption.
+
+```kotlin
+import com.pambrose.common.util.runCatchingInterruptible
+
+runCatchingInterruptible { latch.await(5, TimeUnit.SECONDS) }
+  .onFailure { e -> logger.warn { "failed: ${e.message}" } }
+```
+
 ### Hashing (JVM)
 
 MD5 and SHA-256 with optional salts. These are **not** password-hashing functions — use a dedicated
@@ -404,15 +415,16 @@ Grouped by file; see the KDoc for full signatures.
 
 ### jvmMain
 
-| Area      | Entry points                                                                                                                                                                                            |
-|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Hashing   | `md5`, `sha256`, `newStringSalt`, `newByteArraySalt`, `md5Of`                                                                                                                                           |
-| Encoding  | `encode()`, `decode()`                                                                                                                                                                                  |
-| I/O       | `toByteArray`, `toByteArraySecure` (an alias for it), `toObjectSecure`, `withChecksum`, `verifyChecksum`, and the deprecated `toObject`                                                                 |
-| Content   | `ContentRoot`, `ContentSource`, `FileSystemSource`, `GitHubRepo`, `GitLabRepo`, `GitHubFile`, `GitLabFile`, `UrlSource`, `FileSource`, `OwnerType`                                                      |
-| Version   | `@Version`, `version()`, `buildString()`, `buildDateTime()`, `versionDesc()`                                                                                                                            |
-| Durations | `timeUnitToDuration`, `Duration.format`                                                                                                                                                                 |
-| Misc      | `hostInfo`, `sleep`, `randomId`, `repeatWithSleep`, `captureStdout`, `waitForPortAvailable`, `readProperties`, `ReadResources`, `getBanner`, `stackTraceAsString`, `typeParameterCount`, `singleAssign` |
+| Area       | Entry points                                                                                                                                                                                            |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Hashing    | `md5`, `sha256`, `newStringSalt`, `newByteArraySalt`, `md5Of`                                                                                                                                           |
+| Encoding   | `encode()`, `decode()`                                                                                                                                                                                  |
+| I/O        | `toByteArray`, `toByteArraySecure` (an alias for it), `toObjectSecure`, `withChecksum`, `verifyChecksum`, and the deprecated `toObject`                                                                 |
+| Content    | `ContentRoot`, `ContentSource`, `FileSystemSource`, `GitHubRepo`, `GitLabRepo`, `GitHubFile`, `GitLabFile`, `UrlSource`, `FileSource`, `OwnerType`                                                      |
+| Version    | `@Version`, `version()`, `buildString()`, `buildDateTime()`, `versionDesc()`                                                                                                                            |
+| Durations  | `timeUnitToDuration`, `Duration.format`                                                                                                                                                                 |
+| Exceptions | `runCatchingInterruptible`                                                                                                                                                                              |
+| Misc       | `hostInfo`, `sleep`, `randomId`, `repeatWithSleep`, `captureStdout`, `waitForPortAvailable`, `readProperties`, `ReadResources`, `getBanner`, `stackTraceAsString`, `typeParameterCount`, `singleAssign` |
 
 ## Dependencies
 

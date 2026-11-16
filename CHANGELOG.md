@@ -4,6 +4,14 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `runCatchingInterruptible` (core-utils, JVM only) works like `runCatchingCancellable` but also rethrows
+  `InterruptedException`, for use around blocking calls. The JVM clears a thread's interrupt flag when it throws that
+  exception, so a `Result` that caught it, as `runCatchingCancellable`'s does, loses the interruption.
+  `runCatchingCancellable` itself is unchanged, since `InterruptedException` exists only on the JVM. The new function
+  shares the `ExceptionUtilsKt` facade class with the common ones, so Java callers find all of them there.
+
 ### Changed
 
 - email-utils' default stylesheet, `css/email.css`, puts each declaration on its own line, as Codacy's Stylelint asks.
@@ -42,6 +50,7 @@ All notable changes to Common Utils are documented in this file.
   ([2.0.85.Final](https://github.com/netty/netty-tcnative/compare/netty-tcnative-parent-2.0.84.Final...netty-tcnative-parent-2.0.85.Final)).
 - `kotlin-logging` 8.0.6 → 8.0.7, which core-utils' JVM artifact exports as `api`; only its dependency updates
 - `kotest` 6.2.6 → 6.2.7 (tests only), for every module and the Kotest Gradle plugin
+- `logback` 1.6.6 → 1.6.7 (tests only)
 - `ksp` 2.3.13 → 2.3.14 (build only), which the Kotest Gradle plugin requires
 - Gradle wrapper 9.9.0 → 9.9.1
 
