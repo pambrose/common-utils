@@ -127,6 +127,7 @@ public final class com/pambrose/common/util/DateUtils {
 public final class com/pambrose/common/util/ExceptionUtilsKt {
 	public static final fun onFailureRethrowCancellation (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public static final fun runCatchingCancellable (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static final fun runCatchingInterruptible (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 }
 
 public class com/pambrose/common/util/FileSource : com/pambrose/common/util/ContentSource {

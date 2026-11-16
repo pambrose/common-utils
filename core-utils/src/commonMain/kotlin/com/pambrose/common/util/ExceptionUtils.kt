@@ -14,9 +14,14 @@
  *   limitations under the License.
  */
 
+@file:JvmName("ExceptionUtilsKt")
+@file:JvmMultifileClass
+
 package com.pambrose.common.util
 
 import kotlinx.coroutines.CancellationException
+import kotlin.jvm.JvmMultifileClass
+import kotlin.jvm.JvmName
 
 /**
  * Like [runCatching], but rethrows [CancellationException] to preserve coroutine cancellation semantics.

@@ -4,6 +4,14 @@ All notable changes to Common Utils are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `runCatchingInterruptible` (core-utils, JVM only) works like `runCatchingCancellable` but also rethrows
+  `InterruptedException`, for use around blocking calls. The JVM clears a thread's interrupt flag when it throws that
+  exception, so a `Result` that caught it, as `runCatchingCancellable`'s does, loses the interruption.
+  `runCatchingCancellable` itself is unchanged, since `InterruptedException` exists only on the JVM. The new function
+  shares the `ExceptionUtilsKt` facade class with the common ones, so Java callers find all of them there.
+
 ### Changed
 
 - email-utils' default stylesheet, `css/email.css`, puts each declaration on its own line, as Codacy's Stylelint asks.
