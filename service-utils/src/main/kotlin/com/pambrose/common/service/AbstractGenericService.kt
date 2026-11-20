@@ -35,6 +35,7 @@ import com.google.common.util.concurrent.Service
 import com.google.common.util.concurrent.ServiceManager
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports
+import io.prometheus.metrics.model.registry.MultiCollector
 import io.prometheus.metrics.model.registry.PrometheusRegistry
 import java.io.Closeable
 import kotlin.time.TimeSource.Monotonic
@@ -92,8 +93,10 @@ abstract class AbstractGenericService<T> protected constructor(
   private lateinit var serviceManager: ServiceManager
 
   // Registered with Prometheus only while the service runs, so a stopped service stops exporting and a second
-  // instance in the same JVM does not add duplicate metric families.
-  private var dropwizardExports: DropwizardExports? = null
+  // instance in the same JVM does not add duplicate metric families. Held by its interface, from the api dependency
+  // prometheus-metrics-model: DropwizardExports' module is runtime-only, so a consumer's tools that read the class with
+  // its compile classpath, such as Dokka, can't resolve that type.
+  private var dropwizardExports: MultiCollector? = null
 
   @Volatile
   private var shutDownHook: Thread? = null
