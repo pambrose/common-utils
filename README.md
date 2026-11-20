@@ -264,7 +264,7 @@ artifacts too):
 ## Technology Stack
 
 - **Languages**: Kotlin 2.4.21, Java
-- **Build System**: Gradle 9.8.2 with Kotlin DSL
+- **Build System**: Gradle 9.9.2 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava

@@ -14,6 +14,10 @@ All notable changes to Common Utils are documented in this file.
 
 ### Changed
 
+- service-utils' `AbstractGenericService` holds its Dropwizard exporter by the `MultiCollector` interface rather than
+  as a `DropwizardExports`, so none of its declarations names a type from service-utils' runtime-only dependencies.
+  A consumer's Dokka, which reads the class with the consumer's compile classpath, no longer reports that type as
+  unresolved. The field is private, so the API is unchanged.
 - email-utils' default stylesheet, `css/email.css`, puts each declaration on its own line, as Codacy's Stylelint asks.
   The rules are unchanged, so emails render as before, though the stylesheet embedded in each one is longer by its
   added whitespace.
@@ -35,6 +39,14 @@ All notable changes to Common Utils are documented in this file.
   turns off, such as `LongParameterList` on public API that only a major release could change, and test code the
   config excludes. Codacy now reports what the local detekt tasks do, plus the build scripts. The setting lives on
   codacy.io, and AGENTS.md describes it.
+- The KMP modules' test tasks run in up to eight forks on a developer's machine and in one on GitHub-hosted runners,
+  which GitHub Actions marks through `RUNNER_ENVIRONMENT`, so the timing-sensitive specs don't race other test JVMs
+  for CPU in CI. The JVM modules keep Gradle's default of one fork.
+
+### Documentation
+
+- README states Gradle 9.9.2.
+- AGENTS.md notes the KMP modules' test forks.
 
 ### Dependency changes
 
@@ -53,11 +65,39 @@ All notable changes to Common Utils are documented in this file.
   after the handshake completes
   ([2.0.86.Final](https://github.com/netty/netty-tcnative/compare/netty-tcnative-parent-2.0.85.Final...netty-tcnative-parent-2.0.86.Final)).
   It stays ahead of the 2.0.81.Final that grpc 1.85.1 pins.
-- `kotlin-logging` 8.0.6 → 8.0.7, which core-utils' JVM artifact exports as `api`; only its dependency updates
+- `guava` 33.7.2-jre → 33.8.0-jre, which guava-utils exports as `api`: `HashBiMap` and `LinkedHashMultimap`'s value
+  sets defend against hash flooding
+  ([GHSA-v5x9-67m3-7m56](https://github.com/google/guava/security/advisories/GHSA-v5x9-67m3-7m56)). A few methods of
+  `ForwardingMap.StandardValues` became `final` by accident, which Guava says its next release will undo
+  ([33.8.0](https://github.com/google/guava/releases/tag/v33.8.0)).
+- `ktor` 3.6.0 → 3.6.1, which ktor-client-utils, ktor-server-utils, recaptcha-utils and email-utils export as `api`:
+  bug fixes only. A malformed request path fails with a `BadRequestException` again, as before 3.6.0 (KTOR-10023),
+  a CIO keep-alive connection no longer hangs when a response fails before writing any bytes (KTOR-10037), and a
+  client connection leak is fixed (KTOR-7175) ([3.6.1](https://github.com/ktorio/ktor/releases/tag/3.6.1)).
+- `exposed` 1.6.0 → 1.6.1, which exposed-utils exports as `api`: bug fixes, among them a thread-safe JDBC and R2DBC
+  transaction context registry (EXPOSED-1097) and `LocalDateTimeColumnType` reading datetimes before the Unix epoch
+  correctly ([1.6.1](https://github.com/JetBrains/Exposed/blob/main/CHANGELOG.md#161)). `exposed-jodatime` moves
+  joda-time to 2.15.1.
+- `jetty` 12.1.14 → 12.1.15, which jetty-utils exports as `api`: bug fixes, among them a positive cookie `Max-Age`
+  taking precedence over an expired `Expires`, `HttpCookieUtils` honoring `expires`, and an off-by-one in `HttpURI`'s
+  path character validation ([12.1.15](https://github.com/jetty/jetty.project/releases/tag/jetty-12.1.15)).
+- `resend` 4.29.0 → 4.31.0, which email-utils exports as `api`: inbox drafts accept `path` attachments, automations'
+  send-email steps take a `topic_id`, and domains gain forge activation methods
+  ([v4.30.0](https://github.com/resend/resend-java/releases/tag/v4.30.0),
+  [v4.31.0](https://github.com/resend/resend-java/releases/tag/v4.31.0)).
+- `kotlin-logging` 8.0.4 → 8.0.7, which core-utils' JVM artifact exports as `api`: `logger.at(...)` reports the right
+  caller, and `withLoggingContextAsync` keeps its entries off the thread MDC and ignores its now-deprecated
+  `restorePrevious` parameter. Nothing in this library calls either.
 - `kotest` 6.2.6 → 6.2.7 (tests only), for every module and the Kotest Gradle plugin
-- `logback` 1.6.6 → 1.6.7 (tests only)
-- `ksp` 2.3.13 → 2.3.14 (build only), which the Kotest Gradle plugin requires
-- Gradle wrapper 9.9.0 → 9.9.1
+- `mockk` 1.14.11 → 1.14.12 (tests only)
+- `logback` 1.6.6 → 1.6.8 (tests only)
+- `ksp` 2.3.12 → 2.3.14 (build only), which the Kotest Gradle plugin requires
+- Dokka 2.2.0 → 2.3.0 (build only)
+- `pambrose-gradle-plugins` 1.1.8 → 1.1.9, a build-tooling release whose convention plugins are unchanged. The
+  compiler stays Kotlin 2.4.21.
+- `io.github.ben-manes.versions` 0.66.0 → 0.67.0
+- PIT (`pitest-command-line`) 1.30.1 → 1.30.2 (mutation testing only)
+- Gradle wrapper 9.8.2 → 9.9.2
 
 ## [5.2.0] - 2026-10-28
 

@@ -79,7 +79,10 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
 - `configureKotlinJvm()` - JVM 17 target, experimental opt-ins (kotlin/jvm modules)
 - `configureTestingVersions()` - sets the Kotest and logback versions that `com.pambrose.testing` adds to the JVM
   modules to the catalog's (kotlin/jvm modules)
-- `configureKotlinMultiplatform()` - full KMP target list, opt-ins, and, through `configureKmpTests()`, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`)
+- `configureKotlinMultiplatform()` - full KMP target list, opt-ins, and, through `configureKmpTests()`, JUnit Platform for `jvmTest` (modules listed in `kmpModuleNames`).
+  `configureKmpTests()` also runs their test tasks in up to eight forks, or in one on GitHub-hosted runners (detected
+  through `RUNNER_ENVIRONMENT`), so the timing-sensitive specs don't race other test JVMs for CPU in CI; the JVM
+  modules keep Gradle's default of one fork
 - `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
