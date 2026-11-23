@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.3.0] - 2026-11-23
 
 ### Added
 
@@ -54,11 +54,22 @@ All notable changes to Common Utils are documented in this file.
 - The KMP modules' test tasks run in up to eight forks on a developer's machine and in one on GitHub-hosted runners,
   which GitHub Actions marks through `RUNNER_ENVIRONMENT`, so the timing-sensitive specs don't race other test JVMs
   for CPU in CI. The JVM modules keep Gradle's default of one fork.
+- The workflows move to `actions/setup-java` 6.3.0, `gradle/actions/setup-gradle` 6.4.1 and
+  `zizmorcore/zizmor-action` 0.8.1, which runs zizmor 1.32 (#227, #228, #234, #238). setup-java 6.3.0 no longer
+  registers its Java problem matcher by default. The matcher turned javac and Maven compiler messages and uncaught
+  `Exception in thread` lines into annotations, and the last `test` run on master with it registered had none, so
+  CI's annotations are unchanged.
 
 ### Documentation
 
 - README states Gradle 9.9.2.
-- AGENTS.md notes the KMP modules' test forks.
+- The core-utils README describes `runCatchingInterruptible` and lists it in the API reference.
+- The service-utils README describes embedding a service with `registersShutDownHook`, which lines each service logs
+  at INFO, and what its JVM shutdown hook logs. The guava-utils README gives the level at which
+  `genericServiceListener` logs each transition.
+- llms.txt mentions `runCatchingInterruptible` under core-utils and `registersShutDownHook` under service-utils.
+- AGENTS.md describes the Maven Central keychain entries, Codacy's detekt setup and the KMP modules' test forks, gives
+  the convention plugins' Kotest and logback defaults as of 1.1.10, and dates the coverage figures to 5.3.0.
 
 ### Dependency changes
 
@@ -105,11 +116,13 @@ All notable changes to Common Utils are documented in this file.
 - `logback` 1.6.6 → 1.6.8 (tests only)
 - `ksp` 2.3.12 → 2.3.14 (build only), which the Kotest Gradle plugin requires
 - Dokka 2.2.0 → 2.3.0 (build only)
-- `pambrose-gradle-plugins` 1.1.8 → 1.1.9, a build-tooling release whose convention plugins are unchanged. The
-  compiler stays Kotlin 2.4.21.
+- `pambrose-gradle-plugins` 1.1.8 → 1.1.10 (build only). 1.1.9 left the convention plugins unchanged, and 1.1.10
+  moves `com.pambrose.testing`'s default Kotest and logback to 6.2.7 and 1.6.8, the versions the catalog already
+  sets through `configureTestingVersions()`, so every module tests as before. The compiler stays Kotlin 2.4.21.
 - `io.github.ben-manes.versions` 0.66.0 → 0.67.0
 - PIT (`pitest-command-line`) 1.30.1 → 1.30.2 (mutation testing only)
 - Gradle wrapper 9.8.2 → 9.9.2
+- Bump project version to 5.3.0
 
 ## [5.2.0] - 2026-10-28
 

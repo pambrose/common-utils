@@ -6,7 +6,7 @@ jvmTarget = "17"
 # Plugins
 detekt = "2.0.0-alpha.6"
 dokka = "2.3.0"
-gradlePlugins = "1.1.9"
+gradlePlugins = "1.1.10"
 kotlinter = "5.7.0"
 kover = "0.9.11"
 mavenPublish = "0.37.0"

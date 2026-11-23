@@ -105,10 +105,11 @@ Common behavior for testing and linting on the **JVM modules** is provided by [`
 
 The KMP modules apply the raw `org.jmailen.kotlinter` plugin instead (same reporters, configured inline in the root
 script) and declare their kotest/logback test dependencies explicitly in their own `build.gradle.kts`, at the
-catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.6 and 1.6.6 in 1.1.9),
-which lag the catalog whenever the catalog moves first, so `configureTestingVersions()` sets the `kotestVersion` and
-`logbackVersion` of its `pambroseTesting` extension to the catalog's. Every module, the `mutationModuleNames` ones
-included, and the Kotest Gradle plugin therefore test on the catalog's Kotest; bump it in the catalog alone.
+catalog's versions. `com.pambrose.testing` has Kotest and logback versions of its own (6.2.7 and 1.6.8 in 1.1.10,
+the catalog's versions for now), which lag the catalog whenever the catalog moves first, so
+`configureTestingVersions()` sets the `kotestVersion` and `logbackVersion` of its `pambroseTesting` extension to the
+catalog's. Every module, the `mutationModuleNames` ones included, and the Kotest Gradle plugin therefore test on the
+catalog's Kotest; bump it in the catalog alone.
 
 Dependency-update reporting uses the `io.github.ben-manes.versions` plugin (the id it publishes under as of 0.57.0;
 earlier releases used `com.github.ben-manes.versions`), configured by the inline `configureVersions()`: its
@@ -336,7 +337,7 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.2.0 the project sits at 99.4% line and 96.1% branch, and the weakest package
+`codecov.yml` point here). As of 5.3.0 the project sits at 99.3% line and 96.2% branch, and the weakest package
 by line coverage is `service` at 98.2%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,

@@ -5,6 +5,68 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v5.3.0 — 2026-11-23
+
+A minor, binary-compatible release. A service-utils service can run inside a host application without registering a
+JVM shutdown hook of its own, and services log less at INFO. core-utils adds `runCatchingInterruptible` on the JVM.
+Dependency updates bring consumers Guava's hash-flooding fix and fixes for several netty-tcnative native bugs.
+
+### Highlights
+
+- **Embedded services**: `AbstractGenericService` has a `protected open val registersShutDownHook`, `true` by
+  default. A service that runs inside a host application, which stops it after its own work, overrides it to return
+  `false`, and `startUp()` then registers no JVM shutdown hook that would stop the service on `SIGTERM` in parallel
+  with the host's own shutdown. The service stops when `stopSync()` or `close()` is called.
+- **`runCatchingInterruptible`** (core-utils, JVM only): works like `runCatchingCancellable`, but also rethrows
+  `InterruptedException`, for use around blocking calls. The JVM clears a thread's interrupt flag when it throws that
+  exception, so a `Result` that caught it would lose the interruption.
+- **Guava security fix**: `guava` 33.8.0-jre's `HashBiMap` and `LinkedHashMultimap` value sets defend against hash
+  flooding ([GHSA-v5x9-67m3-7m56](https://github.com/google/guava/security/advisories/GHSA-v5x9-67m3-7m56)).
+  guava-utils and service-utils export Guava as `api`, so consumers pick up the fix by upgrading.
+- **netty-tcnative fixes**: grpc-utils ships `netty-tcnative-boringssl-static` 2.0.86.Final, which fixes several
+  native memory leaks and an out-of-bounds read in ALPN protocol selection, wipes session ticket keys before freeing
+  them, and validates the ALPN and NPN protocol lists.
+- **Publishing credentials from the keychain**: `make publish-snapshot` and `make publish-maven-central` read the
+  Maven Central user token from the macOS keychain, as they already read the signing key's passphrase, so it no
+  longer needs to be in `~/.gradle/gradle.properties`.
+
+### Behavior changes
+
+- **Less logging at INFO**: service-utils logs one INFO line per lifecycle milestone (each service running or
+  terminated, and all of a service's services healthy or stopped) and anything that went wrong. Feature setup, such
+  as "Metrics service disabled" and "Adding service", moves to DEBUG, and guava-utils' `genericServiceListener` logs
+  the starting and stopping transitions at DEBUG. Enable DEBUG for those loggers to see the old lines.
+- **Shutdown hook output goes to the logger**: the hook's "shutting down" and "shut down complete" lines log at INFO
+  through the `com.pambrose.common.service.AbstractGenericService` logger instead of going to stderr. A logging
+  framework that stops itself in a shutdown hook of its own, such as Log4j 2 by default, can drop them.
+- **Serializer exceptions are no longer wrapped**: with kotlinx.serialization 1.13.0, which json-utils and email-utils
+  export as `api`, an exception thrown by a serializer, including a custom serializer or a `@Serializable` constructor,
+  reaches the caller as thrown, as before 5.1.2, rather than wrapped in a `JsonException`. Malformed input and missing
+  fields still fail with a `SerializationException`.
+- **Ktor 3.6.1**: a malformed request path fails with a `BadRequestException` again, as before 3.6.0.
+- **macOS 11 or later for tcnative**: the macOS native library in netty-tcnative 2.0.85.Final and later needs macOS 11
+  or later.
+- email-utils' default stylesheet puts each declaration on its own line. Emails render as before, but the stylesheet
+  embedded in each one is longer by the added whitespace.
+
+### Dependency bumps
+
+- `kotlinx-serialization-json` 1.12.0 → 1.13.0
+- `guava` 33.7.2-jre → 33.8.0-jre (security fix)
+- `netty-tcnative-boringssl-static` 2.0.84.Final → 2.0.86.Final (stays ahead of the 2.0.81.Final that grpc 1.85.1
+  pins)
+- `ktor` 3.6.0 → 3.6.1, `exposed` 1.6.0 → 1.6.1, `jetty` 12.1.14 → 12.1.15 (bug fixes)
+- `resend` 4.29.0 → 4.31.0
+- `kotlin-logging` 8.0.4 → 8.0.7
+- `kotest` 6.2.6 → 6.2.7, `mockk` 1.14.11 → 1.14.12, `logback` 1.6.6 → 1.6.8 (tests only)
+- `pambrose-gradle-plugins` 1.1.8 → 1.1.10, Dokka 2.2.0 → 2.3.0, `ksp` 2.3.12 → 2.3.14,
+  `io.github.ben-manes.versions` 0.66.0 → 0.67.0, PIT 1.30.1 → 1.30.2, Gradle 9.8.2 → 9.9.2 (build only)
+- `actions/setup-java` 6.3.0, `gradle/actions/setup-gradle` 6.4.1, `zizmorcore/zizmor-action` 0.8.1 (CI only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.2.0...5.3.0
+
+---
+
 ## v5.2.0 — 2026-10-28
 
 A minor, binary-compatible release. prometheus-utils' `SystemMetrics` can forget what it registered with a registry,
