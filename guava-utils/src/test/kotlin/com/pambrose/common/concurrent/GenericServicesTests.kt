@@ -172,11 +172,12 @@ class GenericServicesTests : StringSpec() {
       verify(exactly = 1, timeout = 5_000) { logger.error(capture(cause), capture(message)) }
       cause.captured.message shouldBe "startUp failed"
       message.captured() shouldBe "Failed on STARTING $service"
-      // Only "Starting" was logged at info level: the service never ran, stopped, or terminated.
-      verify(exactly = 1) { logger.info(any<() -> Any?>()) }
+      // Only "Starting" was logged, at debug level: the service never ran, stopped, or terminated.
+      verify(exactly = 1) { logger.debug(any<() -> Any?>()) }
+      verify(exactly = 0) { logger.info(any<() -> Any?>()) }
     }
 
-    "genericServiceListener logs each lifecycle transition once it is added" {
+    "genericServiceListener logs running and terminated at info, and starting and stopping at debug" {
       val logger = mockk<KLogger>(relaxed = true)
       val service = BlockingService()
       service.addListener(service.genericServiceListener(logger), MoreExecutors.directExecutor())
@@ -184,8 +185,14 @@ class GenericServicesTests : StringSpec() {
       service.startSync()
       service.stopSync()
 
-      // starting, running, stopping, and terminated
-      verify(exactly = 4, timeout = 5_000) { logger.info(any<() -> Any?>()) }
+      // "Terminated" is the last transition, so once both info calls arrive, every call has.
+      verify(exactly = 2, timeout = 5_000) { logger.info(any<() -> Any?>()) }
+      val infoMessages: MutableList<() -> Any?> = []
+      val debugMessages: MutableList<() -> Any?> = []
+      verify(exactly = 2) { logger.info(capture(infoMessages)) }
+      verify(exactly = 2) { logger.debug(capture(debugMessages)) }
+      infoMessages.map { it() } shouldBe ["Running $service", "Terminated $service"]
+      debugMessages.map { it() } shouldBe ["Starting $service", "Stopping $service"]
     }
   }
 

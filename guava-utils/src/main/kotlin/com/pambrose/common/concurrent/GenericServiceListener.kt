@@ -22,8 +22,9 @@ import com.google.common.util.concurrent.Service
 import io.github.oshai.kotlinlogging.KLogger
 
 /**
- * Creates a [Service.Listener] for this [Service] that logs all lifecycle transitions
- * (starting, running, stopping, terminated, failed) using the provided [logger].
+ * Creates a [Service.Listener] for this [Service] that logs all lifecycle transitions using the provided [logger]:
+ * running and terminated at INFO, the starting and stopping that lead to them at DEBUG, and failed at ERROR with
+ * its cause.
  *
  * @param logger the [KLogger] instance to use for logging lifecycle events.
  * @return a configured [Service.Listener].
@@ -31,9 +32,9 @@ import io.github.oshai.kotlinlogging.KLogger
 fun Service.genericServiceListener(logger: KLogger) =
   serviceListener {
     val service = this@genericServiceListener
-    starting { logger.info { "Starting $service" } }
+    starting { logger.debug { "Starting $service" } }
     running { logger.info { "Running $service" } }
-    stopping { logger.info { "Stopping $service" } }
+    stopping { logger.debug { "Stopping $service" } }
     terminated { logger.info { "Terminated $service" } }
     failed { from, t -> logger.error(t) { "Failed on $from $service" } }
   }

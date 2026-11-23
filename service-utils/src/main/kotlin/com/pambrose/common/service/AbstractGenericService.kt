@@ -104,6 +104,19 @@ abstract class AbstractGenericService<T> protected constructor(
   /** Visible for testing: the JVM shutdown hook currently registered for this service, or `null`. */
   internal val registeredShutDownHook: Thread? get() = shutDownHook
 
+  /**
+   * Whether a successful [startUp] registers a JVM shutdown hook that stops this service, built by
+   * [shutDownHookAction]. `true` by default.
+   *
+   * Override it to return `false` when something else owns the service's lifecycle, such as a host application that
+   * embeds the service and stops it after its own work: the hook would stop the service in parallel with the host's
+   * own shutdown. Without the hook, the service stops only when [stopAsync], [stopSync], or [close] is called.
+   *
+   * It is read in [startUp], never during construction, so an override may return a value the subclass's constructor
+   * sets.
+   */
+  protected open val registersShutDownHook: Boolean get() = true
+
   /** The JMX reporter for Dropwizard metrics. Initialized when metrics are enabled. */
   lateinit var jmxReporter: JmxReporter
     private set
@@ -136,9 +149,9 @@ abstract class AbstractGenericService<T> protected constructor(
   protected fun initMetricsAndHealthChecks() {
     checkNotInitialized()
     if (isMetricsEnabled) {
-      logger.info { "Enabling Dropwizard metrics" }
+      logger.debug { "Enabling Dropwizard metrics" }
 
-      logger.info { "Enabling JMX metrics" }
+      logger.debug { "Enabling JMX metrics" }
       metricsService = MetricsService(metricsConfig.port, metricsConfig.path, metricsConfig.host) { addService(this) }
       SystemMetrics.initialize(
         enableStandardExports = metricsConfig.standardExportsEnabled,
@@ -153,7 +166,7 @@ abstract class AbstractGenericService<T> protected constructor(
       )
       jmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     } else {
-      logger.info { "Metrics service disabled" }
+      logger.debug { "Metrics service disabled" }
     }
 
     if (isZipkinEnabled) {
@@ -161,7 +174,7 @@ abstract class AbstractGenericService<T> protected constructor(
       zipkinReporterService =
         ZipkinReporterService(url, zipkinConfig.serviceName) { addService(this) }
     } else {
-      logger.info { "Zipkin reporter service disabled" }
+      logger.debug { "Zipkin reporter service disabled" }
     }
 
     addListener(genericServiceListener(logger), directExecutor())
@@ -225,7 +238,8 @@ abstract class AbstractGenericService<T> protected constructor(
       throw e
     }
 
-    shutDownHook = shutDownHookAction(this).also { Runtime.getRuntime().addShutdownHook(it) }
+    if (registersShutDownHook)
+      shutDownHook = shutDownHookAction(this).also { Runtime.getRuntime().addShutdownHook(it) }
   }
 
   override fun shutDown() {
@@ -268,7 +282,7 @@ abstract class AbstractGenericService<T> protected constructor(
           "all_services_healthy check do not include it"
       }
     else
-      logger.info { "Adding service $service" }
+      logger.debug { "Adding service $service" }
     services += service
   }
 
@@ -333,15 +347,18 @@ abstract class AbstractGenericService<T> protected constructor(
     /**
      * Creates a JVM shutdown hook [Thread] that gracefully stops the given [Service].
      *
+     * The thread logs at INFO when it begins stopping the service and when the service has stopped. JVM shutdown hooks
+     * run concurrently, so a logging framework that stops itself in a hook of its own can drop these lines.
+     *
      * @param service The Guava [Service] to stop when the JVM shuts down.
      * @return A [Thread] suitable for use with [Runtime.addShutdownHook].
      */
     fun shutDownHookAction(service: Service) =
       Thread {
-        System.err.println("*** ${service.simpleClassName} shutting down ***")
+        logger.info { "*** ${service.simpleClassName} shutting down ***" }
         service.stopAsync()
         service.awaitTerminated()
-        System.err.println("*** ${service.simpleClassName} shut down complete ***")
+        logger.info { "*** ${service.simpleClassName} shut down complete ***" }
       }
   }
 }
