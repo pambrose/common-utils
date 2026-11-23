@@ -2,14 +2,14 @@
 
 > Modular Kotlin/Java utility libraries providing extension functions, DSLs, and helpers for common frameworks. Each module is independently consumable via Maven Central.
 
-- Version: 5.2.0
+- Version: 5.3.0
 - Group: com.pambrose.common-utils
 - Repository: https://github.com/pambrose/common-utils
 - Maven Central: https://central.sonatype.com/namespace/com.pambrose.common-utils
 - License: Apache 2.0
 - Kotlin: 2.4.21, JVM 17
 - Base package: com.pambrose.common.*
-- Install: `implementation("com.pambrose.common-utils:<module>:5.2.0")`
+- Install: `implementation("com.pambrose.common-utils:<module>:5.3.0")`
 - Multiplatform: core-utils, json-utils, and ktor-client-utils are Kotlin Multiplatform (JVM, JS, wasmJs,
   Native — iOS/macOS/tvOS/watchOS/Linux/Windows); all other modules are JVM-only
 - Maven (non-Gradle) consumers of the three multiplatform modules must use the `-jvm` artifact
@@ -20,7 +20,7 @@
 
 Use core-utils for general Kotlin/Java utility needs. Other modules target specific frameworks — pick only what you need.
 
-- [core-utils](core-utils/README.md): General-purpose Kotlin extensions and helpers (multiplatform). Use for string/number/collection operations, I/O, atomic delegates, date/time formatting and duration helpers (DateUtils; zone-neutral, no bundled tz database), reflection, version management. No framework dependencies. Foundation for most other modules.
+- [core-utils](core-utils/README.md): General-purpose Kotlin extensions and helpers (multiplatform). Use for string/number/collection operations, I/O, atomic delegates, date/time formatting and duration helpers (DateUtils; zone-neutral, no bundled tz database), reflection, version management, cancellation-aware `runCatching` (`runCatchingCancellable`; `runCatchingInterruptible` on the JVM also rethrows `InterruptedException`). No framework dependencies. Foundation for most other modules.
 - [json-utils](json-utils/README.md): Kotlinx.serialization helpers (multiplatform). Use for JsonElement navigation (`get` takes dot-notation paths; `getByPath` splits on `/`), type-safe extraction, format configs (pretty/raw/lenient/strict). Depends on: core-utils.
 - [exposed-utils](exposed-utils/README.md): JetBrains Exposed SQL extensions. Use for custom SQL expressions, UPSERT, timed transactions, ResultRow helpers. Depends on: kotlin-logging.
 - [redis-utils](redis-utils/README.md): Jedis client extensions. Use for Redis connection management and common operation patterns. Depends on: core-utils.
@@ -35,7 +35,7 @@ Use core-utils for general Kotlin/Java utility needs. Other modules target speci
 - [script-utils-java](script-utils-java/README.md): Java scripting engine. Use for compiling and evaluating Java source, with script pooling. Depends on: script-utils-common.
 - [script-utils-python](script-utils-python/README.md): Jython engine. Use for Python 2.7 script execution and expression evaluation, with script pooling. Depends on: script-utils-common.
 - [script-utils-common](script-utils-common/README.md): Base scripting interfaces. Abstract engines, script pools, evaluator frameworks. Foundation for script-utils-* modules.
-- [service-utils](service-utils/README.md): Service lifecycle. Use for service base classes, admin interfaces, metrics/servlet/Zipkin service integration. Depends on: core-utils, guava-utils, ktor-server-utils, jetty-utils, dropwizard-utils, zipkin-utils and Prometheus `prometheus-metrics-model` (all `api`), and prometheus-utils.
+- [service-utils](service-utils/README.md): Service lifecycle. Use for service base classes, admin interfaces, metrics/servlet/Zipkin service integration. A service embedded in a host application overrides `registersShutDownHook` to return `false` so it registers no JVM shutdown hook of its own. Depends on: core-utils, guava-utils, ktor-server-utils, jetty-utils, dropwizard-utils, zipkin-utils and Prometheus `prometheus-metrics-model` (all `api`), and prometheus-utils.
 - [guava-utils](guava-utils/README.md): Google Guava integration. Use for concurrent programming (BooleanMonitor, ConditionalValue, GenericMonitor), service lifecycle (GenericIdleService, GenericExecutionThreadService), thread-safe monitoring, GZIP compression helpers. Depends on: core-utils.
 - [email-utils](email-utils/README.md): Email sending via the Resend API. Use for HTML email bodies, address validation, and decoding Resend webhook payloads (signature verification is not included). Depends on: core-utils.
 - [recaptcha-utils](recaptcha-utils/README.md): Google reCAPTCHA server-side verification via the Ktor HTTP client. Use for token validation in a Ktor route, plus the script and widget helpers. Depends on: core-utils.
