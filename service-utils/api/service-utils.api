@@ -10,6 +10,7 @@ public abstract class com/pambrose/common/service/AbstractGenericService : com/p
 	public final fun getJmxReporter ()Lcom/codahale/metrics/jmx/JmxReporter;
 	protected final fun getMetricRegistry ()Lcom/codahale/metrics/MetricRegistry;
 	public final fun getMetricsService ()Lcom/pambrose/common/service/MetricsService;
+	protected fun getRegistersShutDownHook ()Z
 	protected final fun getServices ()Ljava/util/List;
 	protected abstract fun getServletServiceOrNull ()Lcom/pambrose/common/concurrent/GenericIdleService;
 	protected final fun getStartTime-z9LOYto ()J

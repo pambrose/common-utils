@@ -161,7 +161,8 @@ when the service fails.
 ### Service Listeners
 
 `genericServiceListener` is an **extension function** on `Service` that builds a listener logging every state
-transition. It only builds the listener, so add it to the service:
+transition: running and terminated at INFO, the starting and stopping that lead to them at DEBUG, and a failure at
+ERROR with its cause. It only builds the listener, so add it to the service:
 
 ```kotlin
 import com.google.common.util.concurrent.MoreExecutors

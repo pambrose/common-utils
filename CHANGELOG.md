@@ -11,9 +11,21 @@ All notable changes to Common Utils are documented in this file.
   exception, so a `Result` that caught it, as `runCatchingCancellable`'s does, loses the interruption.
   `runCatchingCancellable` itself is unchanged, since `InterruptedException` exists only on the JVM. The new function
   shares the `ExceptionUtilsKt` facade class with the common ones, so Java callers find all of them there.
+- service-utils' `AbstractGenericService` has a `protected open val registersShutDownHook`, `true` by default. A
+  subclass that runs inside a host application, which stops the service after its own work, overrides it to return
+  `false`, and `startUp()` then registers no JVM shutdown hook that would stop the service on `SIGTERM`.
 
 ### Changed
 
+- service-utils' services log less at INFO: one line per lifecycle milestone (each service running or terminated,
+  and all of a service's services healthy or stopped) and anything that went wrong. Feature setup, such as "Metrics
+  service disabled", "Enabling JMX metrics" and "Adding service", moves to DEBUG. guava-utils'
+  `genericServiceListener`, which every service installs, logs its starting and stopping transitions at DEBUG
+  instead of INFO; running, terminated and failed are unchanged.
+- The JVM shutdown hook from service-utils' `shutDownHookAction` logs its "shutting down" and "shut down complete"
+  lines at INFO, through the `com.pambrose.common.service.AbstractGenericService` logger, instead of printing them
+  to stderr. A logging framework that stops itself in a shutdown hook of its own, such as Log4j 2 by default, can
+  drop them.
 - service-utils' `AbstractGenericService` holds its Dropwizard exporter by the `MultiCollector` interface rather than
   as a `DropwizardExports`, so none of its declarations names a type from service-utils' runtime-only dependencies.
   A consumer's Dokka, which reads the class with the consumer's compile classpath, no longer reports that type as

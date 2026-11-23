@@ -242,12 +242,14 @@ A plain scrape gets the Prometheus text format (`Content-Type: text/plain; versi
 - `protected val healthCheckRegistry: HealthCheckRegistry`, `protected val metricRegistry: MetricRegistry`,
   `protected val services: MutableList<Service>`, `protected val startTime: TimeMark`
 - `protected abstract val servletServiceOrNull: GenericIdleService?`
+- `protected open val registersShutDownHook: Boolean` — `true` by default; override it to return `false` and
+  `startUp()` registers no JVM shutdown hook
 - `protected fun initMetricsAndHealthChecks()`, `protected fun addService(service: Service)`,
   `protected fun addServices(service: Service, vararg services: Service)`,
   `protected open fun registerHealthChecks()`
 - `override fun startUp()`, `override fun shutDown()`, `override fun close()` — `close()` calls `stopSync()`
 - `companion object { fun shutDownHookAction(service: Service): Thread }` — an unstarted thread that calls
-  `stopAsync()` then `awaitTerminated()`
+  `stopAsync()` then `awaitTerminated()`, logging at INFO before and after
 
 ### `GenericService<T>` and `GenericKtorService<T>`
 
@@ -365,7 +367,19 @@ copy of the service list, so a service added afterwards is not managed, is absen
   counters and gauges gauges.
 - **Shutdown hook**: registered at the end of a successful `startUp()` and removed during `shutDown()`. Removal
   failures — an `IllegalStateException` when the JVM is already shutting down, for instance — are swallowed
-  rather than failing the shutdown.
+  rather than failing the shutdown. The hook logs `*** <class name> shutting down ***` and
+  `*** <class name> shut down complete ***` at INFO. JVM shutdown hooks run concurrently, so a logging framework
+  that stops itself in a hook of its own can drop those lines, and the service's own shutdown logging with them:
+  Log4j 2 (unless `shutdownHook="disable"`), `java.util.logging`, Logback with `<shutdownHook/>`, and Spring Boot
+  all do. Logback without `<shutdownHook/>` registers no hook, and keeps logging until the JVM halts.
+- **Embedding a service**: a service that runs inside a host application, which stops it after its own work,
+  overrides `registersShutDownHook` to return `false`; otherwise the hook stops the service on `SIGTERM` in parallel
+  with the host's own shutdown. The service then stops only when `stopSync()` or `close()` is called.
+  The Ktor variant's admin server still registers Ktor's own shutdown hook when admin is enabled, unless the JVM-wide
+  `io.ktor.server.engine.ShutdownHook` system property is `false`, which turns it off for every Ktor server.
+- **Logging levels**: INFO carries one line per lifecycle milestone, each service running or terminated and all of a
+  service's services healthy or stopped, and failures log at WARN or ERROR. Feature setup, such as which features
+  are enabled or disabled and each service added, and the starting and stopping transitions log at DEBUG.
 
 ## Zipkin Delivery on Shutdown
 

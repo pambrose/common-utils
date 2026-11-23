@@ -87,7 +87,7 @@ abstract class GenericService<T> protected constructor(
           addService(this)
         }
     } else {
-      logger.info { "Admin service disabled" }
+      logger.debug { "Admin service disabled" }
     }
 
     initMetricsAndHealthChecks()

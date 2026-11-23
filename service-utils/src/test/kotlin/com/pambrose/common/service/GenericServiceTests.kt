@@ -36,8 +36,11 @@ import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.core.test.Enabled
 import io.kotest.core.test.EnabledOrReasonIf
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.collections.shouldContainInOrder
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -56,6 +59,8 @@ import io.prometheus.metrics.model.registry.PrometheusRegistry
 import io.prometheus.metrics.model.snapshots.CounterSnapshot
 import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import java.lang.management.ManagementFactory
 import java.net.Inet4Address
 import java.net.InetAddress
@@ -98,17 +103,24 @@ private val needsNonLoopbackAddress: EnabledOrReasonIf = {
     Enabled.disabled("no non-loopback IPv4 address accepts local connections")
 }
 
-// Runs block with a function that snapshots the log events emitted by the service package in the meantime.
+// Runs block with a function that snapshots the log events emitted by the service package in the meantime, DEBUG
+// events included.
 private inline fun <T> capturingServiceLogs(block: (logs: () -> List<ILoggingEvent>) -> T): T {
   val appender = ListAppender<ILoggingEvent>().apply { start() }
   val logger = LoggerFactory.getLogger(AbstractGenericService::class.java.packageName) as Logger
+  val savedLevel = logger.level
+  logger.level = Level.DEBUG
   logger.addAppender(appender)
   return try {
     block { synchronized(appender) { appender.list.toList() } }
   } finally {
     logger.detachAppender(appender)
+    logger.level = savedLevel
   }
 }
+
+// The messages of the events logged at level.
+private fun List<ILoggingEvent>.messagesAt(level: Level) = filter { it.level == level }.map { it.formattedMessage }
 
 private fun noopService(name: String = "noop"): Service =
   object : AbstractIdleService() {
@@ -207,11 +219,13 @@ private fun checkEndpoints(
   }
 }
 
+// registersHook overrides registersShutDownHook when set, and leaves the default in place when null.
 private class TestJettyService(
   admin: AdminConfig = disabledAdmin,
   metrics: MetricsConfig = disabledMetrics,
   zipkin: ZipkinConfig = disabledZipkin,
   extraServices: Pair<Service, Service>? = null,
+  private val registersHook: Boolean? = null,
   servletInit: ServletGroup.() -> Unit = {},
 ) : GenericService<String>(
     configVals = "jetty-config",
@@ -222,6 +236,8 @@ private class TestJettyService(
   ) {
   // run() blocks until the service is asked to stop, keeping it RUNNING between start and close.
   private val stopRequested = CountDownLatch(1)
+
+  override val registersShutDownHook get() = registersHook ?: super.registersShutDownHook
 
   override fun run() {
     stopRequested.await()
@@ -253,6 +269,7 @@ private class TestKtorService(
   metrics: MetricsConfig = disabledMetrics,
   zipkin: ZipkinConfig = disabledZipkin,
   initKtor: Application.() -> Unit = {},
+  private val registersHook: Boolean? = null,
   servletInit: HttpServletGroup.() -> Unit = {},
 ) : GenericKtorService<String>(
     configVals = "ktor-config",
@@ -262,6 +279,8 @@ private class TestKtorService(
     versionBlock = { "ktor-version" },
   ) {
   private val stopRequested = CountDownLatch(1)
+
+  override val registersShutDownHook get() = registersHook ?: super.registersShutDownHook
 
   override fun run() {
     stopRequested.await()
@@ -290,10 +309,11 @@ private enum class Variant {
     admin: AdminConfig = disabledAdmin,
     metrics: MetricsConfig = disabledMetrics,
     zipkin: ZipkinConfig = disabledZipkin,
+    registersHook: Boolean? = null,
   ): AbstractGenericService<String> =
     when (this) {
-      Jetty -> TestJettyService(admin, metrics, zipkin)
-      Ktor -> TestKtorService(admin, metrics, zipkin)
+      Jetty -> TestJettyService(admin, metrics, zipkin, registersHook = registersHook)
+      Ktor -> TestKtorService(admin, metrics, zipkin, registersHook = registersHook)
     }
 }
 
@@ -357,6 +377,8 @@ class GenericServiceTests : StringSpec() {
     servletInitTests()
     serverExposureTests()
     shutdownHookTests()
+    optionalShutdownHookTests()
+    lifecycleLoggingTests()
   }
 
   private fun variantBasicsTests() {
@@ -843,7 +865,22 @@ class GenericServiceTests : StringSpec() {
       service.startSync()
       val hook = service.registeredShutDownHook ?: error("expected a shutdown hook to be registered after start")
 
-      hook.run()
+      // The hook reports its two milestones through the logger, not on the host's stderr.
+      val stderr = ByteArrayOutputStream()
+      val savedErr = System.err
+      val logged =
+        capturingServiceLogs { logs ->
+          System.setErr(PrintStream(stderr, true))
+          try {
+            hook.run()
+          } finally {
+            System.setErr(savedErr)
+          }
+          logs()
+        }
+      logged.messagesAt(Level.INFO) shouldContainInOrder
+        ["*** TestJettyService shutting down ***", "*** TestJettyService shut down complete ***"]
+      stderr.toString() shouldNotContain "TestJettyService"
 
       service.state() shouldBe Service.State.TERMINATED
       service.registeredShutDownHook shouldBe null
@@ -878,6 +915,107 @@ class GenericServiceTests : StringSpec() {
     "both variants expose a shutDownHookAction that builds an unstarted hook thread" {
       GenericService.shutDownHookAction(noopService()).isAlive shouldBe false
       GenericKtorService.shutDownHookAction(noopService()).isAlive shouldBe false
+    }
+  }
+
+  private fun optionalShutdownHookTests() {
+    "both variants register the shutdown hook by default, and none when a subclass turns it off" {
+      Variant.entries.forEach { variant ->
+        withClue(variant) {
+          variant.newService().use { service ->
+            service.startSync()
+            service.registeredShutDownHook shouldNotBe null
+          }
+          // An override backed by a constructor parameter is read at start, after the subclass has set it.
+          variant.newService(registersHook = true).use { service ->
+            service.startSync()
+            service.registeredShutDownHook shouldNotBe null
+          }
+          variant.newService(registersHook = false).use { service ->
+            service.startSync()
+            service.isRunning shouldBe true
+            service.registeredShutDownHook shouldBe null
+          }
+        }
+      }
+    }
+
+    "a service with the shutdown hook off starts and stops cleanly without adding or removing a JVM hook" {
+      val service = TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics(), registersHook = false)
+      val runtime = spyk(Runtime.getRuntime())
+      mockkStatic(Runtime::class)
+      try {
+        every { Runtime.getRuntime() } returns runtime
+        service.startSync()
+        service.runHealthChecks().values.all { it.isHealthy } shouldBe true
+        httpGet(service.adminPort, "/ping").statusCode() shouldBe 200
+        service.close()
+        verify(exactly = 0) { runtime.addShutdownHook(any()) }
+        verify(exactly = 0) { runtime.removeShutdownHook(any()) }
+      } finally {
+        unmockkStatic(Runtime::class)
+      }
+
+      service.state() shouldBe Service.State.TERMINATED
+      service.registeredShutDownHook shouldBe null
+      shouldBeReleased(service.adminPort)
+      shouldBeReleased(service.metricsService.boundPort)
+    }
+  }
+
+  private fun lifecycleLoggingTests() {
+    "a service logs one line per lifecycle milestone at info, and its setup and transitions at debug" {
+      val logged =
+        capturingServiceLogs { logs ->
+          val service = TestJettyService()
+          service.startSync()
+          service.close()
+          // The ServiceManager's listener can still be running when close() returns.
+          eventually(5.seconds) {
+            logs().messagesAt(Level.INFO).any { it == "All TestJettyService services stopped" } shouldBe true
+          }
+          logs()
+        }
+
+      // The ServiceManager's events can come before or after the service's own, so their order is not checked.
+      logged.messagesAt(Level.INFO).map { it.substringBefore(" [") } shouldContainExactlyInAnyOrder
+        [
+          "Running TestJettyService",
+          "All TestJettyService services healthy",
+          "Terminated TestJettyService",
+          "All TestJettyService services stopped",
+        ]
+      logged.messagesAt(Level.DEBUG).map { it.substringBefore(" [") } shouldContainAll
+        [
+          "Admin service disabled",
+          "Metrics service disabled",
+          "Zipkin reporter service disabled",
+          "Adding service TestJettyService",
+          "Starting TestJettyService",
+          "Stopping TestJettyService",
+        ]
+    }
+
+    "enabling metrics and admin logs their setup at debug, and only their services' milestones at info" {
+      val logged =
+        capturingServiceLogs { logs ->
+          val service = TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics())
+          service.startSync()
+          service.close()
+          eventually(5.seconds) {
+            logs().messagesAt(Level.INFO).any { it == "All TestJettyService services stopped" } shouldBe true
+          }
+          logs()
+        }
+
+      logged.messagesAt(Level.DEBUG) shouldContainAll ["Enabling Dropwizard metrics", "Enabling JMX metrics"]
+      // Each service, the sub-services included, logs only its running and terminated transitions at info.
+      val info = logged.messagesAt(Level.INFO)
+      val transitions = info.filter { it.startsWith("Running ") || it.startsWith("Terminated ") }
+      transitions.map { it.substringBefore(" ") } shouldContainExactlyInAnyOrder
+        ["Running", "Running", "Running", "Terminated", "Terminated", "Terminated"]
+      info - transitions.toSet() shouldContainExactlyInAnyOrder
+        ["All TestJettyService services healthy", "All TestJettyService services stopped"]
     }
   }
 }
