@@ -13,6 +13,22 @@ All notable changes to Common Utils are documented in this file.
   which have no fixed release, so the pins cross majors; mocha calls only APIs both still export. The
   `brace-expansion` 2.1.7 pin is gone: minimatch, its only dependent, now asks for the already patched ^5.0.12,
   which resolves to 5.1.0. Build-only, with no effect on consumers.
+- `make release` releases the version in `gradle.properties` from master once its release PR has merged. It runs
+  `make release-check`, then `make tests`, asks before publishing, publishes and releases to Maven Central, and
+  tags HEAD as the version, reusing the tag a GitHub release created first made. When the GitHub release doesn't
+  exist yet, it prints the `gh release create` command. `make release-check` publishes nothing; it fails unless the
+  checkout is fit to publish: a final version, a clean master at `origin/master`, dated CHANGELOG and RELEASE_NOTES
+  sections, README and llms.txt bumped from the previous version, no tag of the version on another commit, every CI
+  check and each required CI job passed for HEAD, and no artifact of the version on Maven Central yet.
+
+### Dependency changes
+
+- `grpc` 1.85.1 → 1.86.0, whose `grpc-stub` and `grpc-netty` grpc-utils exports as `api`. Channels now use the
+  rewritten pick-first load balancer (gRFC A62, with A61's dual-stack support) by default, unary and server-streaming
+  calls defer deserializing the request until the client half-closes, and Netty gets fixes for stream resets on early
+  trailers and for draining a gracefully shut down server connection before closing it
+  ([1.86.0](https://github.com/grpc/grpc-java/releases/tag/v1.86.0)). grpc 1.86.0 still names netty-tcnative
+  2.0.81.Final, so the catalog's 2.0.86.Final stays ahead of it.
 
 ## [5.3.0] - 2026-11-23
 

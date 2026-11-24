@@ -30,11 +30,11 @@ logging = "8.0.7"
 
 # Frameworks
 dropwizard = "4.2.40"
-grpc = "1.85.1"
+grpc = "1.86.0"
 jakartaServlet = "6.1.0"
 jetty = "12.1.15"
 ktor = "3.6.1"
-# Tracks the tcnative that grpc pins, bumped by hand with grpc. Deliberately ahead of grpc 1.85.1's 2.0.81.Final
+# Tracks the tcnative that grpc pins, bumped by hand with grpc. Deliberately ahead of grpc 1.86.0's 2.0.81.Final
 # (see AGENTS.md); bring the two together again on a later grpc bump.
 tcnative = "2.0.86.Final"
 
