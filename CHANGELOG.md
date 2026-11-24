@@ -2,6 +2,18 @@
 
 All notable changes to Common Utils are documented in this file.
 
+## [Unreleased]
+
+### Build & tooling
+
+- Pin `glob` to 14.0.2 (from 10.5.0) and `minimatch` to 11.0.1 (from 9.0.9) through `yarnResolutions`, closing two
+  Dependabot alerts on the JS toolchain lockfile: GHSA-3g3m-2fjr-6pw4 (medium), where glob kept walking the
+  filesystem after its `AbortSignal` fired, and GHSA-g3hv-75wg-m249 (medium), a minimatch denial of service through
+  brace-pattern amplification. mocha 11.7.6, the only package that uses either, asks for glob ^10 and minimatch ^9,
+  which have no fixed release, so the pins cross majors; mocha calls only APIs both still export. The
+  `brace-expansion` 2.1.7 pin is gone: minimatch, its only dependent, now asks for the already patched ^5.0.12,
+  which resolves to 5.1.0. Build-only, with no effect on consumers.
+
 ## [5.3.0] - 2026-11-23
 
 ### Added
