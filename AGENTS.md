@@ -62,6 +62,19 @@ Run `make help` for a self-documenting list of every target.
   `gradle-signing-password` keychain entry (account `gpg-signing`), and the `maven-central-username` and
   `maven-central-password` keychain entries (account `maven-central`))
 - `make publish-maven-central` - Publish and release to Maven Central (same prerequisites)
+- `make release` - Release the version in `gradle.properties` once its release PR (the version bump, CHANGELOG,
+  RELEASE_NOTES, README and llms.txt) has merged: `make release-check`, then `make tests`, then a confirmation prompt,
+  `make publish-maven-central`, and `make release-tag`, which tags HEAD as the version and pushes the tag. A tag on
+  HEAD that creating the GitHub release first already made is reused. When the GitHub release doesn't exist yet, it
+  prints the `gh release create` command. It needs the publish targets' prerequisites and a logged-in `gh`
+- `make release-check` - Publishes nothing; fails unless the checkout is fit to publish the version. The version is
+  final (no `-SNAPSHOT`, `-rc`, `-beta` or `-alpha`), the tree is clean, and HEAD is `origin/master`. CHANGELOG.md
+  and RELEASE_NOTES.md have a dated section for it, and the latter links the diff from the previous release.
+  README.md and llms.txt mention it and no longer give the previous version in a coordinate, a Maven `<version>` or
+  llms.txt's Version line. No tag of the version is on another commit, here or on GitHub. Every CI check on HEAD
+  passed, and each job in the Makefile's `RELEASE_REQUIRED_JOBS` ran and passed, so renaming a CI job means updating
+  that list. Finally, no artifact of the version is on Maven Central yet. The artifact list comes from
+  `settings.gradle.kts` and `kmpModuleNames`, so adding a module needs no Makefile change
 - The Maven Central credentials are a user token's name and password from central.sonatype.com. The Makefile reads
   them from the macOS keychain and passes them only to the publishing commands, as
   `ORG_GRADLE_PROJECT_mavenCentralUsername` and `ORG_GRADLE_PROJECT_mavenCentralPassword`; keep them out of
@@ -208,7 +221,7 @@ Deleting a run also drops its check results from old commits and pull requests.
 classifier dependencies on itself, which Gradle drops. `grpc-utils/build.gradle.kts` therefore lists the classifier
 jars explicitly, and `OpenSslTests` fails if OpenSSL does not load. When a tcnative bump changes the classifiers its
 POM lists, update that list to match. The catalog deliberately runs tcnative ahead of grpc's pin (2.0.86.Final
-against the 2.0.81.Final that grpc 1.85.1 still names), so don't move it back to match; a later grpc bump is the
+against the 2.0.81.Final that grpc 1.86.0 still names), so don't move it back to match; a later grpc bump is the
 time to bring the two together again.
 
 ### Experimental Kotlin Features
