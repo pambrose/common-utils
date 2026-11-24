@@ -265,9 +265,17 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
     an entry that still satisfies its range, so bumping a package already inside its requested range (the
     usual shape of a CVE fix) requires the explicit pin — `kotlinUpgradeYarnLock` alone will not do it.
   - The map is shared by both toolchains, so a pin for a package only one of them uses still adds a bare
-    pin-only entry (plus its transitives) to the other's lockfile. `diff`, `serialize-javascript`,
-    `brace-expansion`, and `js-yaml` are all pin-only entries in `kotlin-js-store/wasm/yarn.lock` — their
-    presence there does not mean the wasm toolchain actually pulls them in.
+    pin-only entry (plus its transitives) to the other's lockfile. `diff`, `serialize-javascript`, `js-yaml`,
+    `glob` and `minimatch` (with `brace-expansion` and glob's other transitives) are all pin-only entries in
+    `kotlin-js-store/wasm/yarn.lock` — their presence there does not mean the wasm toolchain actually pulls them
+    in.
+  - A pin can cross a major version when the requested line has no fixed release, as `glob` (14.x for mocha's
+    ^10) and `minimatch` (11.x for its ^9) do. Check that the package asking for it uses only APIs the new major
+    still exports, and since a passing `jsNodeTest` may never reach that code (Gradle hands mocha exact file
+    paths), call those APIs directly against `build/js/node_modules`. A pin also covers every copy of the
+    package, so drop or move an older pin whose only dependent the new one replaces: `brace-expansion` was pinned
+    to 2.1.7 for minimatch 9, and left in place it would give minimatch 11, which asks for ^5.0.12, an API
+    without the `expand` export it calls.
 - Verify JS/wasm toolchain changes with `./gradlew jsNodeTest --rerun wasmJsNodeTest --rerun`; without
   `--rerun` these tasks report `UP-TO-DATE` and verify nothing.
 - `settings.gradle.kts` uses `FAIL_ON_PROJECT_REPOS` repositories mode with ivy repositories for the Node.js,

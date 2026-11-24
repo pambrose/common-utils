@@ -146,18 +146,24 @@ kover {
 }
 
 // Force patched versions of vulnerable transitive npm packages in the JS/wasmJs test
-// toolchains (Dependabot: ws DoS, serialize-javascript RCE/DoS/XSS, jsdiff DoS, brace-expansion
-// DoS, js-yaml DoS). The toolchain requests them with pins/ranges that cannot reach the fixed
-// versions on their own — or, for brace-expansion and js-yaml, with a range that yarn will not
-// re-resolve while the lockfile already holds a satisfying-but-vulnerable entry. See the
-// "Kotlin Multiplatform Notes" section of AGENTS.md for the procedure when changing these; the
-// upgrade tasks silently no-op unless the generated package.json files are deleted first.
+// toolchains (Dependabot: ws DoS, serialize-javascript RCE/DoS/XSS, jsdiff DoS, js-yaml DoS,
+// glob traversal after cancellation, minimatch DoS). The toolchain requests them with
+// pins/ranges that cannot reach the fixed versions on their own — or, for js-yaml, with a range
+// that yarn will not re-resolve while the lockfile already holds a satisfying-but-vulnerable
+// entry. mocha 11 asks for glob ^10 and minimatch ^9, and no release of either line is fixed,
+// so these pins cross majors; mocha uses only APIs both still export (glob's hasMagic, sync and
+// Glob, and minimatch's minimatch). minimatch is the only package that uses brace-expansion, and
+// minimatch 11 asks for the already patched ^5.0.12, so brace-expansion needs no pin: one at
+// 2.x would hand minimatch 11 an API without the `expand` export it calls. See the "Kotlin
+// Multiplatform Notes" section of AGENTS.md for the procedure when changing these; the upgrade
+// tasks silently no-op unless the generated package.json files are deleted first.
 val yarnResolutions = mapOf(
     "ws" to "8.21.0",
     "serialize-javascript" to "7.1.3",
     "diff" to "8.0.3",
-    "brace-expansion" to "2.1.7",
     "js-yaml" to "4.3.2",
+    "glob" to "14.0.2",
+    "minimatch" to "11.0.1",
 )
 
 // The settings script declares ivy repositories for the Node.js/Yarn/Binaryen distributions
