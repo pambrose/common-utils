@@ -30,11 +30,16 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.io.File
 import java.io.InvalidClassException
+import java.io.ObjectStreamClass
 import java.io.Serializable
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Method
+import java.lang.reflect.Proxy
 import java.nio.ByteBuffer
 import java.security.BasicPermission
 import java.security.Permission
 import java.util.concurrent.TimeUnit
+import javax.management.MBeanServer
 import javax.management.ObjectName
 
 class IOExtensionsTests : StringSpec() {
@@ -45,6 +50,10 @@ class IOExtensionsTests : StringSpec() {
     sizeLimitTests()
     depthLimitTests()
     blocklistTests()
+    classNameCheckTests()
+    proxyTests()
+    topLevelObjectTests()
+    validGraphTests()
   }
 
   private fun serializationTests() {
@@ -315,6 +324,133 @@ class IOExtensionsTests : StringSpec() {
     }
   }
 
+  private fun classNameCheckTests() {
+    // Loading a class before checking it would let a sender probe the classpath: a class that is present would fail
+    // with SecurityException, and one that is absent with ClassNotFoundException. Both names keep the stream length.
+    "secure deserialization rejects a class name that is not allow-listed before loading it" {
+      for (name in ["java.util.HashMap", "com.nope.Nonexist"]) {
+        val bytes = (42 as Serializable).toByteArraySecure().replaceAscii("java.lang.Integer", name)
+        shouldThrow<SecurityException> {
+          bytes.toObjectSecure(Serializable::class.java, setOf(Int::class.javaObjectType, Number::class.java))
+        }.message shouldBe "Class not in whitelist: $name"
+      }
+    }
+
+    // A stream names an array class by its descriptor, such as [Ljava.lang.ProcessBuilder;, which a plain name match
+    // against the blocklist misses.
+    "secure deserialization blocks arrays of blocklisted classes even when allow-listed" {
+      val arrays: List<Any> = [arrayOf<ProcessBuilder>(), arrayOf<Array<ProcessBuilder>>(), arrayOf<ObjectName>()]
+      for (array in arrays) {
+        val bytes = (array as Serializable).toByteArraySecure()
+        shouldThrow<SecurityException> {
+          bytes.toObjectSecure(Serializable::class.java, setOf(array.javaClass))
+        }.message shouldBe "Blocked dangerous class: ${array.javaClass.name}"
+      }
+    }
+  }
+
+  private fun proxyTests() {
+    // A dynamic proxy's interfaces are named in the stream and resolved through resolveProxyClass, not resolveClass.
+    "secure deserialization blocks a dynamic proxy with a blocklisted interface even when allow-listed" {
+      val bytes = proxyOf(MBeanServer::class.java).toByteArraySecure()
+
+      shouldThrow<SecurityException> {
+        bytes.toObjectSecure(
+          Serializable::class.java,
+          setOf(Proxy::class.java, SerializableHandler::class.java, MBeanServer::class.java),
+        )
+      }.message shouldBe "Blocked dangerous class: javax.management.MBeanServer"
+    }
+
+    "secure deserialization rejects a dynamic proxy whose interface is not allow-listed" {
+      val bytes = proxyOf(Greeter::class.java).toByteArraySecure()
+      val rejected = "Class not in whitelist: ${Greeter::class.java.name}"
+
+      shouldThrow<SecurityException> {
+        bytes.toObjectSecure(Serializable::class.java, setOf(Proxy::class.java, SerializableHandler::class.java))
+      }.message shouldBe rejected
+      // The interface is checked before the proxy class is defined, so it is rejected ahead of Proxy itself.
+      shouldThrow<SecurityException> {
+        bytes.toObjectSecure(Serializable::class.java, setOf(SerializableHandler::class.java))
+      }.message shouldBe rejected
+    }
+
+    "secure deserialization reads a dynamic proxy whose interfaces, handler and Proxy are all allow-listed" {
+      val bytes = proxyOf(Greeter::class.java).toByteArraySecure()
+
+      val restored =
+        bytes.toObjectSecure(
+          Serializable::class.java,
+          setOf(Proxy::class.java, SerializableHandler::class.java, Greeter::class.java),
+        )
+      (restored as Greeter).greet() shouldBe "hello"
+    }
+  }
+
+  private fun topLevelObjectTests() {
+    // ObjectInputStream builds a string without calling resolveClass, so only a check of the result can stop it.
+    "secure deserialization rejects a top-level String that is not allow-listed" {
+      // The second string is over 65535 bytes, so it is written as TC_LONGSTRING rather than TC_STRING.
+      for (text in ["pwned", "x".repeat(70_000)]) {
+        shouldThrow<SecurityException> {
+          text.toByteArraySecure().toObjectSecure(Serializable::class.java, setOf(Int::class.javaObjectType))
+        }.message shouldBe "Class not in whitelist: java.lang.String"
+      }
+    }
+
+    // A Class (TC_CLASS) or class descriptor (TC_CLASSDESC) is likewise built without resolving its own class.
+    "secure deserialization rejects a top-level Class or class descriptor that is not allow-listed" {
+      val allowed = setOf(Int::class.javaObjectType, Number::class.java)
+      val classBytes = (Int::class.javaObjectType as Serializable).toByteArraySecure()
+      val descriptorBytes = ObjectStreamClass.lookup(Int::class.javaObjectType).toByteArraySecure()
+
+      shouldThrow<SecurityException> {
+        classBytes.toObjectSecure(Serializable::class.java, allowed)
+      }.message shouldBe "Class not in whitelist: java.lang.Class"
+      shouldThrow<SecurityException> {
+        descriptorBytes.toObjectSecure(Serializable::class.java, allowed)
+      }.message shouldBe "Class not in whitelist: java.io.ObjectStreamClass"
+      classBytes.toObjectSecure(Class::class.java, allowed + Class::class.java) shouldBe Int::class.javaObjectType
+    }
+
+    "secure deserialization reports a serialized null as a ClassCastException" {
+      // The stream header AC ED 00 05 followed by TC_NULL (0x70).
+      val bytes = byteArrayOf(0xAC.toByte(), 0xED.toByte(), 0x00, 0x05, 0x70)
+
+      shouldThrow<ClassCastException> {
+        bytes.toObjectSecure(String::class.java, setOf(String::class.java))
+      }.message shouldBe "Expected java.lang.String, got null"
+    }
+  }
+
+  private fun validGraphTests() {
+    "secure deserialization reads strings nested in an allow-listed object without String allow-listed" {
+      val list = arrayListOf("a", "b")
+      (list as Serializable).toByteArraySecure()
+        .toObjectSecure(ArrayList::class.java, setOf(ArrayList::class.java)) shouldBe list
+
+      val strings = arrayOf("a", "b")
+      (strings as Any as Serializable).toByteArraySecure()
+        .toObjectSecure(Serializable::class.java, setOf(Array<String>::class.java)) shouldBe strings
+    }
+
+    // An enum constant with a body is an instance of a subclass that the stream never names.
+    "secure deserialization reads an enum constant with a body" {
+      (Polarity.POSITIVE as Serializable).toByteArraySecure()
+        .toObjectSecure(Polarity::class.java, setOf(Polarity::class.java, Enum::class.java)) shouldBe Polarity.POSITIVE
+    }
+
+    // readResolve can return a class the stream never names: List.of(1, 2) is written as java.util.CollSer.
+    "secure deserialization reads an object that readResolve replaces" {
+      val allowed = setOf(Class.forName("java.util.CollSer"), Int::class.javaObjectType, Number::class.java)
+      (java.util.List.of(1, 2) as Serializable).toByteArraySecure()
+        .toObjectSecure(Serializable::class.java, allowed) shouldBe listOf(1, 2)
+    }
+  }
+
+  private fun proxyOf(vararg interfaces: Class<*>): Serializable =
+    Proxy.newProxyInstance(javaClass.classLoader, interfaces, SerializableHandler()) as Serializable
+
   private fun nestedLists(depth: Int): ArrayList<Any> =
     if (depth == 0) arrayListOf() else arrayListOf(nestedLists(depth - 1))
 
@@ -365,6 +501,40 @@ class IOExtensionsTests : StringSpec() {
     check(process.exitValue() == 0) { "Probe failed: $output" }
     return output.trim().lines().last()
   }
+}
+
+/** An interface for the dynamic proxies in [IOExtensionsTests]. */
+interface Greeter {
+  fun greet(): String
+}
+
+/** A serializable invocation handler, so a dynamic proxy that uses it can be written to a stream. */
+private class SerializableHandler :
+  InvocationHandler,
+  Serializable {
+  override fun invoke(
+    proxy: Any,
+    method: Method,
+    args: Array<out Any?>?,
+  ): Any? =
+    when (method.name) {
+      "greet" -> "hello"
+      "equals" -> proxy === args?.firstOrNull()
+      "hashCode" -> System.identityHashCode(proxy)
+      else -> "proxy"
+    }
+
+  private companion object {
+    private const val serialVersionUID = 1L
+  }
+}
+
+/** An enum whose first constant has a body, which makes that constant an instance of a subclass of the enum. */
+enum class Polarity {
+  POSITIVE {
+    override fun toString() = "+"
+  },
+  NEGATIVE,
 }
 
 /**

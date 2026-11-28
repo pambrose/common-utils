@@ -76,6 +76,7 @@ class StringExtensionTests : StringSpec() {
     patternTests()
     maxLengthTests()
     maskingTests()
+    adjacentUrlMaskingTests()
   }
 
   private fun numberTests() {
@@ -520,6 +521,35 @@ class StringExtensionTests : StringSpec() {
       "from https://a:b@h1 to https://c:d@h2".maskUrlCredentials() shouldBe
         "from https://*****:*****@h1 to https://*****:*****@h2"
       "see scheme:// then https://c:d@h2/x".maskUrlCredentials() shouldBe "see scheme:// then https://*****:*****@h2/x"
+    }
+  }
+
+  private fun adjacentUrlMaskingTests() {
+    // A URL with no path used to run on into the next URL, whose credentials were then skipped.
+    "mask url credentials masks a URL that follows a pathless one after punctuation" {
+      "https://u1:p1@h1,https://u2:p2@h2".maskUrlCredentials() shouldBe
+        "https://*****:*****@h1,https://*****:*****@h2"
+      "https://h1,https://u2:p2@h2".maskUrlCredentials() shouldBe "https://h1,https://*****:*****@h2"
+      """{"a":"https://u1:p1@h1","b":"https://u2:p2@h2"}""".maskUrlCredentials() shouldBe
+        """{"a":"https://*****:*****@h1","b":"https://*****:*****@h2"}"""
+      "(https://u1:p1@h1;'https://u2:p2@h2')".maskUrlCredentials() shouldBe
+        "(https://*****:*****@h1;'https://*****:*****@h2')"
+      "http://a@b://c@d".maskUrlCredentials() shouldBe "http://*****:*****@b://*****:*****@d"
+    }
+
+    "mask url credentials still masks a single URL" {
+      "https://u:p@h".maskUrlCredentials() shouldBe "https://*****:*****@h"
+      "postgres://admin:s3cret@db:5432".maskUrlCredentials() shouldBe "postgres://*****:*****@db:5432"
+      "redis://:s3cret@cache:6379/0".maskUrlCredentials() shouldBe "redis://*****:*****@cache:6379/0"
+    }
+
+    // RFC 3986 allows a raw ' in userinfo, and lenient parsers such as MongoDB's and libpq's also take a raw ", <, >,
+    // { or }, so none of them ends the authority: a password holding one must still be masked.
+    "mask url credentials masks a password holding quotes, angle brackets or braces" {
+      "https://u:it's@h/x".maskUrlCredentials() shouldBe "https://*****:*****@h/x"
+      """mongodb://u:p{a}"s<s>@h:27017""".maskUrlCredentials() shouldBe "mongodb://*****:*****@h:27017"
+      """{"db":"postgresql://u:pa\"ss@h/db","b":"https://u2:p2@h2"}""".maskUrlCredentials() shouldBe
+        """{"db":"postgresql://*****:*****@h/db","b":"https://*****:*****@h2"}"""
     }
   }
 }
