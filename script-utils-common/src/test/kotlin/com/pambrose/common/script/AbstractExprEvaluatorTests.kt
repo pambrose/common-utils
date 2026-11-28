@@ -20,8 +20,11 @@ package com.pambrose.common.script
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import java.lang.ref.WeakReference
+import javax.script.ScriptContext.ENGINE_SCOPE
 import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
 
@@ -30,8 +33,22 @@ private class GuardedFakeEvaluator : AbstractExprEvaluator(FAKE_EXTENSION) {
   val fakeEngine get() = scriptEngine as FakeScriptEngine
 }
 
+// Puts a new object in evaluator's engine scope and evaluates it, returning only a weak reference to it, so that no
+// frame of the caller keeps it reachable. The Kotlin engine keeps its REPL state there the same way.
+private fun holdInEngineScope(evaluator: FakeEvaluator): WeakReference<Any> {
+  val held = Any()
+  evaluator.fakeEngine.put("held", held)
+  (evaluator.compute("held") === held) shouldBe true
+  return WeakReference(held)
+}
+
 class AbstractExprEvaluatorTests : StringSpec() {
   init {
+    evaluationTests()
+    contextTests()
+  }
+
+  private fun evaluationTests() {
     "eval returns a Boolean result" {
       FakeEvaluator().use { evaluator ->
         evaluator.eval("true") shouldBe true
@@ -67,7 +84,9 @@ class AbstractExprEvaluatorTests : StringSpec() {
         evaluator.eval("true") shouldBe true
       }
     }
+  }
 
+  private fun contextTests() {
     "each evaluator has global bindings of its own, which resetContext can null" {
       GuardedFakeEvaluator().use { first ->
         GuardedFakeEvaluator().use { second ->
@@ -89,6 +108,17 @@ class AbstractExprEvaluatorTests : StringSpec() {
         val before = evaluator.fakeEngine.context
         pool.blockingEval("true") shouldBe true
         (evaluator.fakeEngine.context === before) shouldBe false
+      }
+    }
+
+    // The engine keeps the context of its last evaluation, as the Kotlin and Jython engines do, so a reset that only
+    // replaced the context left what the previous one held reachable until the next evaluation.
+    "resetContext releases what the context it replaces held" {
+      FakeEvaluator().use { evaluator ->
+        val held = holdInEngineScope(evaluator)
+        evaluator.resetContext()
+        evaluator.fakeEngine.lastContext.shouldNotBeNull().getBindings(ENGINE_SCOPE).isEmpty() shouldBe true
+        held.isClearedAfterGc() shouldBe true
       }
     }
   }

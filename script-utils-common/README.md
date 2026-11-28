@@ -102,15 +102,18 @@ type rendered by the subclass's `renderType`.
 A value whose runtime class cannot be named in generated code — the private list class behind `listOf(1, 2)`, for
 example — is declared as the nearest class or interface that generated code can name, found breadth-first through its
 superclasses and interfaces, with fully-qualified type arguments. A class qualifies only if it and every class
-enclosing it are public and it declares as many type parameters as were registered; the search falls back to `Any`,
-which is declared without type arguments. An array keeps its own class and is declared with its registered element
-type, such as `kotlin.Array<kotlin.Int>` or `java.lang.Integer[]`. A value that is a local or anonymous class is
-rejected by `add` outright.
+enclosing it are public, it is not an inner class of a generic class (naming one takes the outer class's type
+arguments, which a value does not carry), and it declares as many type parameters as were registered; the search
+falls back to `Any`, which is declared without type arguments. When the nearest class that qualifies takes no type
+arguments, the value needs none either, whatever its own class declares: the value of `IntStream.of(1, 2)`, a
+package-private `IntPipeline.Head<E_IN>`, is added without type arguments and declared as an `IntStream`. An array
+keeps its own class and is declared with its registered element type, such as `kotlin.Array<kotlin.Int>` or
+`java.lang.Integer[]`. A value that is a local or anonymous class is rejected by `add` outright.
 
 ### Resetting
 
 - **`resetContext(nullGlobalContext)`** clears the value and type maps and gives the engine a fresh
-  `SimpleScriptContext`
+  `SimpleScriptContext`, emptying the engine-scope bindings it replaces (see [Engine Bindings](#engine-bindings))
 - **`resetForReuse(nullGlobalContext)`** prepares an instance for its next user; `AbstractScriptPool` calls it when an
   instance is returned, and subclasses holding more state extend it — `JavaScript` also clears its imports and
   restores the default isolation
@@ -159,12 +162,17 @@ any failure to close one is attached to the original exception as a suppressed e
 
 Borrowing suspends until an instance is free, and the instance is reset and returned even when the block throws. If
 the reset itself throws, the instance is still returned, and the reset's exception propagates to the borrower.
-`AbstractScriptPool` resets with `resetForReuse`, `AbstractExprEvaluatorPool` with `resetContext`, so no borrower sees
-the previous borrower's variables. An instance handed to a borrower that is cancelled before it resumes goes back into
-the pool rather than being lost, so a cancellation cannot shrink the pool.
+`AbstractScriptPool` resets every returned instance with `resetForReuse`, so no borrower sees the previous borrower's
+variables. `AbstractExprEvaluatorPool` resets an evaluator with `resetContext` only once it has been returned
+`resetEvery` times, so until then a top-level declaration an expression makes, such as `val y = 1; y > 0`, stays
+visible to the evaluator's later borrowers. An instance handed to a borrower that is cancelled before it resumes goes
+back into the pool rather than being lost, so a cancellation cannot shrink the pool.
 
 `close()` closes the pool and the instances it holds; an instance still borrowed is closed when it is returned, and
-later borrows throw `ClosedReceiveChannelException`.
+later borrows throw `ClosedReceiveChannelException`. Every instance the pool holds is closed even when closing one
+throws: the first failure propagates, with the later ones attached as suppressed. Likewise, when the reset of an
+instance returned after the pool closed throws, and closing that instance throws too, the reset's exception propagates
+with the close failure attached as suppressed.
 
 A custom pool supplies its own factory:
 
@@ -208,6 +216,11 @@ engine.engineBindings["key"] = "value"
 bindings, or `null` when `nullGlobalContext` is `true`. `globalBindings` and `bindings(scope)` are nullable for that
 reason; `engineBindings` never is.
 
+Before replacing the context, `resetContext` empties the engine-scope bindings it replaces. The Kotlin and Jython
+engines keep the context of their last evaluation until the next one, so otherwise an idle engine would keep the
+previous variables, and the Kotlin engine its whole REPL state, reachable. The global-scope bindings it replaces are
+left as they are, since `ScriptEngineManager` gives the same ones to every engine it creates.
+
 ## API Reference
 
 ### `AbstractEngine(extension: String) : Closeable`
@@ -223,7 +236,7 @@ reason; `engineBindings` never is.
 - `open fun params(name: String, types: Array<out KType> = ...): String`
 - `fun resetContext(nullGlobalContext: Boolean)`
 - `open fun resetForReuse(nullGlobalContext: Boolean)`
-- `protected val valueMap: MutableMap<String, Any>`
+- `protected val valueMap: Map<String, Any>`
 - `protected fun register(name, value, types)`, `protected fun checkName(name)`, `protected fun prepare(code)`
 - `protected open fun isReserved(name: String): Boolean`, `protected open fun renderType(type: KType): String`
 - `protected open fun bindVariables(variables: Map<String, Any>)`
@@ -248,8 +261,10 @@ reason; `engineBindings` never is.
 
 - `suspend fun <R> eval(block: T.() -> R): R`
 
-### `AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(size: Int)`
+### `AbstractExprEvaluatorPool<T : AbstractExprEvaluator>(size: Int, resetEvery: Int)`
 
+- `constructor(size: Int)` — resets each evaluator's context on every return (`resetEvery = 1`)
+- `val resetEvery: Int` — how many times an evaluator is returned between resets of its context; must be positive
 - `suspend fun eval(expr: String): Boolean`
 - `fun blockingEval(expr: String): Boolean`
 

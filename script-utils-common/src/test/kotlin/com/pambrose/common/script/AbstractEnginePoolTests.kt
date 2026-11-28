@@ -22,6 +22,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
@@ -50,6 +51,7 @@ class AbstractEnginePoolTests : StringSpec() {
     constructionTests()
     resetTests()
     closeTests()
+    closeFailureTests()
     borrowTests()
   }
 
@@ -159,6 +161,47 @@ class AbstractEnginePoolTests : StringSpec() {
         release.countDown()
         holder.join()
         pool.created.single().closed shouldBe true
+      }
+    }
+  }
+
+  private fun closeFailureTests() {
+    // The first failure used to end the draining, leaving every later idle instance open.
+    "closing a pool closes every instance even when closing one fails, and throws the first failure" {
+      val pool = FakeEvaluatorPool(size = 3, failClose = true)
+      val thrown = shouldThrow<IOException> { pool.close() }
+      thrown.message shouldBe "cannot close evaluator 0"
+      thrown.suppressed.map { it.message } shouldBe ["cannot close evaluator 1", "cannot close evaluator 2"]
+      pool.created.map { it.closed } shouldBe [true, true, true]
+    }
+
+    // The failure to close the instance, once the pool was closed, used to replace the reset failure entirely.
+    "when the reset and closing the returned instance both fail, the reset failure propagates first" {
+      withTimeout(TIMEOUT) {
+        val pool = FakeEvaluatorPool(size = 1, failClose = true)
+        pool.onReset = { throw IllegalStateException("reset failed") }
+        val thrown = shouldThrow<IllegalStateException> { pool.borrow { pool.close() } }
+        thrown.message shouldBe "reset failed"
+        thrown.suppressed.map { it.message } shouldBe ["cannot close evaluator 0"]
+        pool.created.single().closed shouldBe true
+      }
+    }
+
+    "when the block, the reset, and the close all fail, each later failure is attached to the one before" {
+      withTimeout(TIMEOUT) {
+        val pool = FakeEvaluatorPool(size = 1, failClose = true)
+        pool.onReset = { throw IllegalStateException("reset failed") }
+        val thrown =
+          shouldThrow<IllegalArgumentException> {
+            pool.borrow {
+              pool.close()
+              throw IllegalArgumentException("block failed")
+            }
+          }
+        thrown.message shouldBe "block failed"
+        val resetFailure = thrown.suppressed.single()
+        resetFailure.message shouldBe "reset failed"
+        resetFailure.suppressed.map { it.message } shouldBe ["cannot close evaluator 0"]
       }
     }
   }

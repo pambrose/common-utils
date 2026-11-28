@@ -50,10 +50,16 @@ object ScriptUtils {
    * Resets the context of this [ScriptEngine] by creating a new [SimpleScriptContext]
    * with fresh bindings.
    *
+   * The engine-scope bindings being replaced are cleared first. Some engines keep the context of their last evaluation
+   * until the next one, as the Kotlin engine (with its REPL state) and Jython do, so otherwise everything bound in
+   * that scope would stay reachable while the engine sat idle. The global-scope bindings being replaced are left as
+   * they are, since `ScriptEngineManager` gives the same ones to every engine it creates.
+   *
    * @param nullGlobalContext if `true`, sets the global scope bindings to `null`;
    *   otherwise creates new empty bindings for the global scope
    */
   fun ScriptEngine.resetContext(nullGlobalContext: Boolean = false) {
+    getBindings(ENGINE_SCOPE)?.clear()
     context =
       SimpleScriptContext()
         .apply {
