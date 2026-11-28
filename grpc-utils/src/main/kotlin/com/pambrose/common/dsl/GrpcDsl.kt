@@ -150,10 +150,12 @@ object GrpcDsl {
    * @param tlsContext the TLS configuration for the server; defaults to [PLAINTEXT_CONTEXT]
    * @param inProcessServerName if non-empty, creates an in-process server with this name
    * @param bindAddress the address to listen on, such as `"127.0.0.1"` (Netty transport only); `null`, the
-   *   default, listens on every interface
+   *   default, listens on every interface. Surrounding whitespace is trimmed, and a host name is resolved when
+   *   the server is built
    * @param block a configuration block applied to the server builder before building
    * @return the built [Server]
-   * @throws IllegalArgumentException if the Netty transport is chosen and [port] is not in `0..65535`
+   * @throws IllegalArgumentException if the Netty transport is chosen and [port] is not in `0..65535`, or
+   *   [bindAddress] is blank or does not resolve to an IP address
    */
   fun server(
     port: Int = -1,
@@ -191,16 +193,31 @@ object GrpcDsl {
     require(port in 0..MAX_PORT) {
       "port must be in 0..$MAX_PORT for a Netty server, but was $port; set inProcessServerName for an in-process one"
     }
-    val where = if (bindAddress == null) "port $port" else "$bindAddress:$port"
-    logger.info { "Listening for gRPC traffic on $where using ${tlsContext.desc()}" }
+    val host = bindAddress?.trim()
     val nettyBuilder =
-      if (bindAddress == null)
+      if (host == null)
         NettyServerBuilder.forPort(port)
       else
-        NettyServerBuilder.forAddress(InetSocketAddress(bindAddress, port))
+        NettyServerBuilder.forAddress(bindSocketAddress(host, port))
+    val where = if (host == null) "port $port" else "$host:$port"
+    logger.info { "Listening for gRPC traffic on $where using ${tlsContext.desc()}" }
     return nettyBuilder.also { builder ->
       if (tlsContext.sslContext.isNotNull())
         builder.sslContext(tlsContext.sslContext)
+    }
+  }
+
+  // InetSocketAddress resolves "" to loopback and leaves a blank or unknown host unresolved, which Netty only
+  // reports from start(); checking both here fails at build time, before anything is logged as listening.
+  private fun bindSocketAddress(
+    host: String,
+    port: Int,
+  ): InetSocketAddress {
+    require(host.isNotEmpty()) {
+      "bindAddress must not be blank; omit it or pass null to listen on every interface"
+    }
+    return InetSocketAddress(host, port).also { address ->
+      require(!address.isUnresolved) { "bindAddress ${host.toDoubleQuoted()} could not be resolved to an IP address" }
     }
   }
 

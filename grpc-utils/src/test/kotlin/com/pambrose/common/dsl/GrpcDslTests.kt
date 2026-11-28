@@ -110,6 +110,7 @@ class GrpcDslTests : StringSpec() {
     channelOptionTests()
     tlsContextTests()
     nettyServerTests()
+    bindAddressTests()
     validationAndCompatibilityTests()
   }
 
@@ -380,6 +381,42 @@ class GrpcDslTests : StringSpec() {
         address.address.isLoopbackAddress shouldBe true
         address.port shouldNotBe 0
       }
+    }
+  }
+
+  private fun bindAddressTests() {
+    // InetSocketAddress("", port) resolves to loopback, so "" used to bind 127.0.0.1 while logging ":port", and a
+    // blank address was left unresolved, failing only in start(), inside Netty.
+    "a blank bindAddress is rejected when the server is built" {
+      shouldThrow<IllegalArgumentException> {
+        GrpcDsl.server(port = 0, bindAddress = "") {}
+      }.message shouldContain "bindAddress must not be blank"
+
+      shouldThrow<IllegalArgumentException> {
+        GrpcDsl.server(port = 0, bindAddress = "   ") {}
+      }.message shouldContain "bindAddress must not be blank"
+    }
+
+    "the in-process transport still ignores bindAddress, even a blank one" {
+      val server = GrpcDsl.server(inProcessServerName = InProcessServerBuilder.generateName(), bindAddress = "") {}
+      server.isShutdown shouldBe false
+    }
+
+    // InetSocketAddress leaves a padded address unresolved, so it too used to fail only in start().
+    "a whitespace-padded bindAddress is trimmed and binds that address" {
+      GrpcDsl.server(port = 0, bindAddress = " $LOOPBACK ") {}.use { server ->
+        val address = server.listenSockets.single().shouldBeInstanceOf<InetSocketAddress>()
+        address.address.hostAddress shouldBe LOOPBACK
+        address.port shouldNotBe 0
+      }
+    }
+
+    // A bracketed literal that is not an IPv6 address fails to parse before any DNS lookup, so the test stays
+    // hermetic.
+    "an unresolvable bindAddress is rejected when the server is built, naming the address" {
+      shouldThrow<IllegalArgumentException> {
+        GrpcDsl.server(port = 0, bindAddress = "[not-an-ip]") {}
+      }.message shouldContain "\"[not-an-ip]\""
     }
   }
 

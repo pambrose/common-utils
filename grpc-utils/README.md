@@ -214,7 +214,9 @@ failing at JVM exit where it would skip the shutdown entirely.
 - `channel(hostName: String = "", port: Int = -1, enableRetry: Boolean = true, maxRetryAttempts: Int = 5, tlsContext: TlsContext = PLAINTEXT_CONTEXT, overrideAuthority: String = "", inProcessServerName: String = "", block: ManagedChannelBuilder<*>.() -> Unit): ManagedChannel`
 - `server(port: Int = -1, tlsContext: TlsContext = PLAINTEXT_CONTEXT, inProcessServerName: String = "", bindAddress: String? = null, block: ServerBuilder<*>.() -> Unit): Server`
   — without `inProcessServerName`, `port` must be in `0..65535` (`0` lets the OS choose), or it throws
-  `IllegalArgumentException`
+  `IllegalArgumentException`. `bindAddress` is trimmed and resolved when the server is built; a blank one, or
+  one that does not resolve to an IP address, throws `IllegalArgumentException` (pass `null` to listen on every
+  interface). The in-process transport ignores it
 - `attributes(block: Attributes.Builder.() -> Unit): Attributes`
 - `streamObserver(init: StreamObserverHelper<T>.() -> Unit): StreamObserver<T>` — each callback may be
   registered at most once; a second registration throws `IllegalStateException`
@@ -223,6 +225,21 @@ failing at JVM exit where it would skip the shutdown entirely.
 
 - `buildClientTlsContext(certChainFilePath: String = "", privateKeyFilePath: String = "", trustCertCollectionFilePath: String = ""): TlsContext`
 - `buildServerTlsContext(certChainFilePath: String, privateKeyFilePath: String, trustCertCollectionFilePath: String = ""): TlsContext`
+- `clientTlsContextBuilder(certChainFilePath: String = "", privateKeyFilePath: String = "", trustCertCollectionFilePath: String = ""): TlsContextBuilder`
+- `serverTlsContext(certChainFilePath: String, privateKeyFilePath: String, trustCertCollectionFilePath: String = ""): TlsContextBuilder`
+
+All four throw `IllegalArgumentException` for a missing file, a missing required path (the server's certificate
+chain and key, or one half of a client's pair), or a file that holds no valid PEM certificates or unencrypted PEM
+private key. `buildClientTlsContext` and `buildServerTlsContext` also throw `SSLException`, from
+`SslContextBuilder.build()`, when material that parsed cannot form a context, such as a certificate chain that does
+not link up. `clientTlsContextBuilder` and `serverTlsContext` never call `build()`, so they declare no checked
+exception; that `SSLException` comes from your own `builder.build()` call instead.
+
+### `TlsContextBuilder`
+
+- `data class TlsContextBuilder(builder: SslContextBuilder, mutualAuth: Boolean)` — a Netty `SslContextBuilder`
+  that already carries gRPC's ALPN configuration, plus whether mutual auth is configured. Wrap the result of
+  `builder.build()` as `TlsContext(sslContext, mutualAuth)` to hand it to `channel` or `server`
 
 ### `TlsContext`
 
