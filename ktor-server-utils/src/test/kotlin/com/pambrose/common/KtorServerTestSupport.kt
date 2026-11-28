@@ -48,3 +48,19 @@ internal suspend fun rawHttpExchange(
     server.stop(0, 0)
   }
 }
+
+/** The status code of this raw HTTP response. */
+internal val String.statusCode: Int
+  get() = lines().first().split(' ')[1].toInt()
+
+/** The body of this raw HTTP response: everything after the blank line that ends the headers. */
+internal val String.body: String
+  get() = substringAfter("\r\n\r\n")
+
+/** The values of every [name] header in this raw HTTP response, in the order sent. */
+internal fun String.headerValues(name: String): List<String> =
+  substringBefore("\r\n\r\n")
+    .lines()
+    .drop(1)
+    .filter { it.substringBefore(':').trim().equals(name, ignoreCase = true) }
+    .map { it.substringAfter(':').trim() }

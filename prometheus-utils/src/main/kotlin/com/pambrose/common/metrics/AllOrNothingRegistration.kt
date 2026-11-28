@@ -25,8 +25,9 @@ import kotlin.contracts.contract
 // Runs block with a registry that passes every registration straight on to this one and remembers it. If block
 // throws, whatever it registered is unregistered again, so its collectors end up registered all together or not at
 // all. The client's register(registry) methods return nothing to unregister with, and a set of them can be rejected
-// part-way through, so this is where such a partial registration is undone.
-internal inline fun <T> PrometheusRegistry.registerAllOrNothing(block: (PrometheusRegistry) -> T): T {
+// part-way through, so this is where such a partial registration is undone. block may return the tracking registry
+// itself, to unregister the whole set later.
+internal inline fun <T> PrometheusRegistry.registerAllOrNothing(block: (TrackingRegistry) -> T): T {
   contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
   val tracking = TrackingRegistry(this)
   var complete = false

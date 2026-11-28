@@ -24,13 +24,13 @@ import kotlin.jvm.JvmName
 import kotlin.math.log10
 
 /** Returns `true` if this trimmed [String] is wrapped in single quotes. */
-fun String.isSingleQuoted() = trim().run { length >= 2 && startsWith("'") && endsWith("'") }
+fun String.isSingleQuoted() = isBracketed('\'', '\'')
 
 /** Returns `true` if this trimmed [String] is not wrapped in single quotes. */
 fun String.isNotSingleQuoted() = !isSingleQuoted()
 
 /** Returns `true` if this trimmed [String] is wrapped in double quotes. */
-fun String.isDoubleQuoted() = trim().run { length >= 2 && startsWith("\"") && endsWith("\"") }
+fun String.isDoubleQuoted() = isBracketed('"', '"')
 
 /** Returns `true` if this trimmed [String] is not wrapped in double quotes. */
 fun String.isNotDoubleQuoted() = !isDoubleQuoted()

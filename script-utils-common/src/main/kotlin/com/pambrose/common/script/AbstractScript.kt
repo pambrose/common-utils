@@ -183,13 +183,14 @@ abstract class AbstractScript(
   // nearest nameable supertype, if it takes none: the package-private IntPipeline.Head<E_IN> behind IntStream.of(1, 2)
   // is declared as an IntStream. Otherwise it is a public supertype taking that many: a lambda is declared as a
   // Function1<A, B>, and the private enum behind Comparator.naturalOrder() as a Comparator<T>. A public class is still
-  // checked strictly.
+  // checked strictly. It is the nearest supertype, not any: the private list behind listOf(1, 2) implements
+  // RandomAccess, which takes none, but is declared as an AbstractList<E>.
   private fun Any.isDeclaredAsSupertypeFor(types: Array<out KType>): Boolean =
-    when {
-      typeParameterCount == types.size -> false
-      types.isEmpty() -> javaClass.isDeclaredAsNonGenericSupertype()
-      else -> !javaClass.isPubliclyAccessible() && javaClass.hasNameableSupertype(types.size)
-    }
+    typeParameterCount != types.size && !javaClass.isPubliclyAccessible() &&
+      if (types.isEmpty())
+        javaClass.nameableSupertypes().firstOrNull()?.typeParameters?.isEmpty() == true
+      else
+        javaClass.hasNameableSupertype(types.size)
 
   /**
    * Records [value] under [name], to be bound to the engine before the next evaluation. Unlike [add], it does not
@@ -294,12 +295,6 @@ abstract class AbstractScript(
       supertypesBreadthFirst().filter { it !in UNHELPFUL_SUPERTYPES && it.isPubliclyAccessible() }
 
     fun Class<*>.hasNameableSupertype(arity: Int) = nameableSupertypes().any { it.typeParameters.size == arity }
-
-    // Whether generated code declares a value of this class as a supertype that takes no type arguments: the class
-    // cannot be named, and the nearest one it can name takes none. The nearest, not any: the private list behind
-    // listOf(1, 2) implements RandomAccess, which takes none, but is declared as an AbstractList<E>.
-    fun Class<*>.isDeclaredAsNonGenericSupertype() =
-      !isPubliclyAccessible() && nameableSupertypes().firstOrNull()?.typeParameters?.isEmpty() == true
 
     fun Class<*>.supertypesBreadthFirst(): Sequence<Class<*>> =
       sequence {

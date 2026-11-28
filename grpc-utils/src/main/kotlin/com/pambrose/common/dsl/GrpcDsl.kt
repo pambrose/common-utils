@@ -211,8 +211,6 @@ object GrpcDsl {
     }
   }
 
-  // InetSocketAddress resolves "" to loopback and leaves a blank or unknown host unresolved, which Netty only
-  // reports from start(); checking both here fails at build time, before anything is logged as listening.
   // InetSocketAddress leaves an unknown host unresolved, which Netty only reports from start(); this fails at build
   // time, before anything is logged as listening.
   private fun InetSocketAddress.checkedBindAddress(): InetSocketAddress =

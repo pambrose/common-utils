@@ -129,6 +129,12 @@ compatible: no declaration is removed or changed in an ABI dump.
   catalog. The resolved dependencies are unchanged (R3-048).
 - prometheus-utils' default-registry tests clean up in a `finally` (R3-020), and script-utils-kotlin's pool contract
   tests cover `resetEvery` (R3-033).
+- Cleanups after the review fixes, with no behavior change: the publish recipes read their secrets through two Make
+  functions instead of four copied blocks; guava-utils, redis-utils and zipkin-utils declare core-utils `runtimeOnly`,
+  so the compiler enforces that they don't use it (the published POMs are unchanged); service-utils' admin and metrics
+  servers use jetty-utils' status-only error handler instead of a copy of their own; and
+  `KtorServletRequest.getCookies()` skips a name `Cookie` would reject before constructing it, so a `Cookie` header
+  full of invalid names no longer costs one exception per name.
 - Pin `glob` to 14.0.2 (from 10.5.0) and `minimatch` to 11.0.1 (from 9.0.9) through `yarnResolutions`, closing two
   Dependabot alerts on the JS toolchain lockfile: GHSA-3g3m-2fjr-6pw4 (medium), where glob kept walking the
   filesystem after its `AbortSignal` fired, and GHSA-g3hv-75wg-m249 (medium), a minimatch denial of service through

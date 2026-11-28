@@ -73,10 +73,10 @@ private val forbidden =
   )
 
 // Serves a context built by servletContextHandler, with the failing servlet at /fail and nothing else, from a real
-// Jetty server whose connector keeps Jetty's default HttpConfiguration (sendServerVersion on). Each request in paths
-// is sent once per Accept header.
+// Jetty server whose connector keeps Jetty's default HttpConfiguration (sendServerVersion on), and requests path once
+// per Accept header.
 private fun fetchAll(
-  paths: List<String>,
+  path: String,
   block: ServletContextHandler.() -> Unit = {},
 ): List<Pair<String, HttpResponse<String>>> {
   val server =
@@ -91,15 +91,13 @@ private fun fetchAll(
   return try {
     val port = (server.connectors.single() as ServerConnector).localPort
     val client = HttpClient.newHttpClient()
-    paths.flatMap { path ->
-      errorPageAcceptHeaders.map { accept ->
-        val request =
-          HttpRequest.newBuilder(URI("http://$LOOPBACK:$port$path"))
-            .timeout(Duration.ofSeconds(10))
-            .apply { accept?.let { header("Accept", it) } }
-            .build()
-        "$path, Accept ${accept ?: "absent"}" to client.send(request, HttpResponse.BodyHandlers.ofString())
-      }
+    errorPageAcceptHeaders.map { accept ->
+      val request =
+        HttpRequest.newBuilder(URI("http://$LOOPBACK:$port$path"))
+          .timeout(Duration.ofSeconds(10))
+          .apply { accept?.let { header("Accept", it) } }
+          .build()
+      "$path, Accept ${accept ?: "absent"}" to client.send(request, HttpResponse.BodyHandlers.ofString())
     }
   } finally {
     server.stop()
@@ -114,22 +112,25 @@ class ServletContextHandlerErrorTests : StringSpec() {
 
   private fun errorPageTests() {
     "a servlet exception's 500 page names neither Jetty nor the exception, its message or its cause" {
-      fetchAll(["/fail"]).forEach { (label, response) ->
-        withClue("$label, body:\n${response.body()}") {
-          response.statusCode() shouldBe 500
-          response.body() shouldContain "Server Error"
-          forbidden.forEach { response.body().lowercase() shouldNotContain it.lowercase() }
-        }
-      }
+      checkErrorPages("/fail", 500, "Server Error")
     }
 
     "a 404 page names neither Jetty nor the servlet handler" {
-      fetchAll(["/no-such-path"]).forEach { (label, response) ->
-        withClue("$label, body:\n${response.body()}") {
-          response.statusCode() shouldBe 404
-          response.body() shouldContain "Not Found"
-          forbidden.forEach { response.body().lowercase() shouldNotContain it.lowercase() }
-        }
+      checkErrorPages("/no-such-path", 404, "Not Found")
+    }
+  }
+
+  // Each format of path's error page has the status and its reason phrase, and nothing internal.
+  private fun checkErrorPages(
+    path: String,
+    status: Int,
+    reason: String,
+  ) {
+    fetchAll(path).forEach { (label, response) ->
+      withClue("$label, body:\n${response.body()}") {
+        response.statusCode() shouldBe status
+        response.body() shouldContain reason
+        forbidden.forEach { response.body().lowercase() shouldNotContain it.lowercase() }
       }
     }
   }
@@ -148,7 +149,7 @@ class ServletContextHandlerErrorTests : StringSpec() {
     "a caller's own error handler controls the page" {
       val showsMessage = ErrorHandler().apply { isShowStacks = false }
 
-      fetchAll(["/fail"]) { errorHandler = showsMessage }.forEach { (label, response) ->
+      fetchAll("/fail") { errorHandler = showsMessage }.forEach { (label, response) ->
         withClue("$label, body:\n${response.body()}") {
           response.statusCode() shouldBe 500
           response.body() shouldContain FAILURE_MESSAGE

@@ -123,9 +123,11 @@ internal class KtorServletRequest(
 
   // As the servlet spec defines, null when the request carries no cookies. Ktor's parser accepts names that Cookie
   // rejects with IllegalArgumentException (names holding a separator such as '/', '@' or ','), so such a cookie is
-  // skipped rather than failing every servlet that reads its cookies.
+  // skipped rather than failing every servlet that reads its cookies. They are skipped before Cookie sees them, so a
+  // Cookie header full of them costs no exceptions; runCatching only backs up that check.
   override fun getCookies(): Array<Cookie>? =
     request.cookies.rawCookies
+      .filterKeys { it.isValidCookieName() }
       .mapNotNull { (name, value) -> runCatching { Cookie(name, value) }.getOrNull() }
       .takeIf { it.isNotEmpty() }
       ?.toTypedArray()
@@ -247,3 +249,14 @@ internal class KtorServletRequest(
 
   override fun getServletConnection(): ServletConnection = throw UnsupportedOperationException()
 }
+
+// The characters jakarta.servlet.http.Cookie rejects in a name, chosen by the same system property its static
+// initializer reads, along with control and non-ASCII characters.
+private val cookieNameSpecials: String =
+  if (System.getProperty("org.glassfish.web.rfc2109_cookie_names_enforced", "true").toBoolean())
+    "/()<>@,;:\\\"[]?={} \t"
+  else
+    ",; "
+
+// Whether Cookie(name, value) accepts this name.
+private fun String.isValidCookieName() = isNotEmpty() && all { it.code in 0x20 until 0x7f && it !in cookieNameSpecials }

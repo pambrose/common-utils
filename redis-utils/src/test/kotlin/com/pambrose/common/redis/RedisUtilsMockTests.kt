@@ -345,16 +345,21 @@ class RedisUtilsMockTests : StringSpec() {
     }
   }
 
-  // A client whose ping() reports [pingStarted] and then waits for [releasePing] before running [answer].
+  // Holds a gated client's ping: started completes once the ping begins, and the ping waits for release.
+  private class PingGate {
+    val started = CompletableDeferred<Unit>()
+    val release = CountDownLatch(1)
+  }
+
+  // A client whose ping() reports through [gate] that it started, then waits for its release before running [answer].
   private fun gatedClient(
-    pingStarted: CompletableDeferred<Unit>,
-    releasePing: CountDownLatch,
+    gate: PingGate,
     answer: () -> String = { "PONG" },
   ): RedisClient =
     mockk {
       every { ping() } answers {
-        pingStarted.complete(Unit)
-        releasePing.await(10, SECONDS)
+        gate.started.complete(Unit)
+        gate.release.await(10, SECONDS)
         answer()
       }
       every { close() } just Runs
@@ -364,8 +369,7 @@ class RedisUtilsMockTests : StringSpec() {
   // returns what [call] threw, after checking that its block never ran.
   private suspend fun cancelWhileConnecting(
     client: RedisClient,
-    pingStarted: CompletableDeferred<Unit>,
-    releasePing: CountDownLatch,
+    gate: PingGate,
     call: suspend (url: String, block: (RedisClient) -> String) -> String?,
   ): Throwable? {
     val blockRuns = AtomicInt(0)
@@ -377,9 +381,9 @@ class RedisUtilsMockTests : StringSpec() {
             val result = runCatching { call("redis://cache.example.com:6379") { "${blockRuns.incrementAndFetch()}" } }
             thrown.store(result.exceptionOrNull())
           }
-        withTimeout(10.seconds) { pingStarted.await() }
+        withTimeout(10.seconds) { gate.started.await() }
         connecting.cancel()
-        releasePing.countDown()
+        gate.release.countDown()
         connecting.join()
       }
     }
@@ -393,11 +397,10 @@ class RedisUtilsMockTests : StringSpec() {
     "cancelling a suspending withRedis variant while it connects closes the client once" {
       suspendingWithRedisVariants.forEach { (name, call) ->
         withClue(name) {
-          val pingStarted = CompletableDeferred<Unit>()
-          val releasePing = CountDownLatch(1)
-          val client = gatedClient(pingStarted, releasePing)
+          val gate = PingGate()
+          val client = gatedClient(gate)
 
-          cancelWhileConnecting(client, pingStarted, releasePing, call).shouldBeInstanceOf<CancellationException>()
+          cancelWhileConnecting(client, gate, call).shouldBeInstanceOf<CancellationException>()
 
           verify(exactly = 1) { client.ping() }
           verify(exactly = 1) { client.close() }
@@ -409,11 +412,10 @@ class RedisUtilsMockTests : StringSpec() {
     "a client that fails its ping while the caller is cancelled is closed only once" {
       suspendingWithRedisVariants.forEach { (name, call) ->
         withClue(name) {
-          val pingStarted = CompletableDeferred<Unit>()
-          val releasePing = CountDownLatch(1)
-          val client = gatedClient(pingStarted, releasePing) { throw JedisConnectionException("simulated failure") }
+          val gate = PingGate()
+          val client = gatedClient(gate) { throw JedisConnectionException("simulated failure") }
 
-          cancelWhileConnecting(client, pingStarted, releasePing, call).shouldBeInstanceOf<CancellationException>()
+          cancelWhileConnecting(client, gate, call).shouldBeInstanceOf<CancellationException>()
 
           verify(exactly = 1) { client.close() }
         }
@@ -426,13 +428,12 @@ class RedisUtilsMockTests : StringSpec() {
     "a failure to close the client after a cancellation is suppressed by the cancellation" {
       suspendingWithRedisVariants.forEach { (name, call) ->
         withClue(name) {
-          val pingStarted = CompletableDeferred<Unit>()
-          val releasePing = CountDownLatch(1)
+          val gate = PingGate()
           val closeFailure = JedisException("simulated close failure")
-          val client = gatedClient(pingStarted, releasePing)
+          val client = gatedClient(gate)
           every { client.close() } throws closeFailure
 
-          val thrown = cancelWhileConnecting(client, pingStarted, releasePing, call)
+          val thrown = cancelWhileConnecting(client, gate, call)
 
           thrown.shouldBeInstanceOf<CancellationException>().suppressed.toList() shouldBe [closeFailure]
           verify(exactly = 1) { client.close() }
