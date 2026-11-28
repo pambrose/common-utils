@@ -25,7 +25,13 @@ import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 /**
  * Runs the real client path (build the client, ping over the wire, run the block, close the client) against
@@ -33,6 +39,11 @@ import kotlin.time.Duration.Companion.seconds
  */
 class RedisConnectionTests : StringSpec() {
   init {
+    connectionTests()
+    cancellationTests()
+  }
+
+  private fun connectionTests() {
     "each withRedis variant connects to the url, pings, runs the block and closes the connection" {
       withRedisVariants.forEach { (name, call) ->
         withClue(name) {
@@ -76,6 +87,38 @@ class RedisConnectionTests : StringSpec() {
         }
 
         eventually(5.seconds) { server.open.load() shouldBe 0 }
+      }
+    }
+  }
+
+  private fun cancellationTests() {
+    // Cancellation cannot interrupt the blocking connection check, so it finished and connected, and then
+    // withContext threw instead of returning the client: nothing closed it, and its connection stayed open.
+    "cancelling a suspending withRedis variant while it connects closes the connection" {
+      suspendingWithRedisVariants.forEach { (name, call) ->
+        withClue(name) {
+          val pingGate = CountDownLatch(1)
+          FakeRedisServer(pingGate).use { server ->
+            val blockRuns = AtomicInt(0)
+            coroutineScope {
+              val connecting =
+                launch {
+                  call(server.url) {
+                    blockRuns.incrementAndFetch()
+                    "ran"
+                  }
+                }
+              withTimeout(10.seconds) { server.pingArrived.await() }
+              connecting.cancel()
+              pingGate.countDown()
+              connecting.join()
+            }
+
+            blockRuns.load() shouldBe 0
+            server.pings.load() shouldBe 1
+            eventually(5.seconds) { server.open.load() shouldBe 0 }
+          }
+        }
       }
     }
   }
