@@ -50,9 +50,9 @@
 ## Issues
 
 ### core-utils
-- [ ] **R3-001** `MEDIUM` · security — `toObjectSecure` has allow-list/blocklist bypasses (`TC_STRING`, `resolveProxyClass`, array descriptors) and loads unallowed classes before checking the whitelist (follows CR-001, RV-001) ([details](#r3-001))
-- [ ] **R3-002** `MEDIUM` · security — `maskUrlCredentials` leaves subsequent URL credentials unmasked when URLs are separated by punctuation (follows RV-002) ([details](#r3-002))
-- [ ] **R3-003** `LOW` · bug — `toObjectSecure` throws `NullPointerException` instead of `ClassCastException` on a serialized `null` stream ([details](#r3-003))
+- [ ] **R3-001** `MEDIUM` · security — `toObjectSecure` has allow-list/blocklist bypasses (`TC_STRING`, `resolveProxyClass`, array descriptors) and loads unallowed classes before checking the whitelist (follows CR-001, RV-001) ([details](#r3-001)) — in progress (#244)
+- [ ] **R3-002** `MEDIUM` · security — `maskUrlCredentials` leaves subsequent URL credentials unmasked when URLs are separated by punctuation (follows RV-002) ([details](#r3-002)) — in progress (#244)
+- [ ] **R3-003** `LOW` · bug — `toObjectSecure` throws `NullPointerException` instead of `ClassCastException` on a serialized `null` stream ([details](#r3-003)) — in progress (#244)
 - [ ] **R3-004** `LOW` · bug — `String.trimEnds` overflows `2 * len` for `len >= 2^30`, bypassing its `require` check ([details](#r3-004))
 - [ ] **R3-005** `LOW` · bug — `String.isBracketed` returns `true` for a single-character string when `startChar == endChar` ([details](#r3-005))
 - [ ] **R3-006** `LOW` · bug — Remaining negative-value edge cases in `Int.lpad`, `Duration.format`, and `MiscJavaFuncs.sleepSecs` (follows RV-006) ([details](#r3-006))
@@ -64,13 +64,13 @@
 - [ ] **R3-010** `LOW` · docs — `json-utils/README.md` conversion snippet omits `import com.pambrose.common.json.parseJson` and does not compile (follows RV-017) ([details](#r3-010))
 
 ### ktor-server-utils
-- [ ] **R3-011** `HIGH` · security — `HerokuHttpsRedirect` allows open redirects and malformed URLs on non-origin-form request targets even when `host` is pinned, and trusts the `Host` header by default (follows CR-040, RV-026) ([details](#r3-011))
+- [ ] **R3-011** `HIGH` · security — `HerokuHttpsRedirect` allows open redirects and malformed URLs on non-origin-form request targets even when `host` is pinned, and trusts the `Host` header by default (follows CR-040, RV-026) ([details](#r3-011)) — in progress (#244)
 - [ ] **R3-012** `MEDIUM` · bug — `ServletRoute` fabricates `Content-Type: application/octet-stream` and `Content-Length: 0` on `304 Not Modified`, `204 No Content`, and bodyless responses (follows RV-023, RV-025) ([details](#r3-012))
 - [ ] **R3-013** `LOW` · bug — `KtorServletResponse` violates Jakarta Servlet 6.1 contracts for committed responses, `setContentType(null)`, `reset()`, and null header names (follows RV-024, RV-025) ([details](#r3-013))
 - [ ] **R3-014** `LOW` · bug — `KtorServletRequest.getCookies()` crashes with HTTP 500 on any `Cookie` header containing a non-token cookie name (follows RV-025) ([details](#r3-014))
 
 ### service-utils
-- [ ] **R3-015** `MEDIUM` · security — Jetty admin and metrics 404/500 error pages still disclose Jetty (`org.eclipse.jetty...Default404Servlet`) and internal exception messages/causes (follows RV-031) ([details](#r3-015))
+- [ ] **R3-015** `MEDIUM` · security — Jetty admin and metrics 404/500 error pages still disclose Jetty (`org.eclipse.jetty...Default404Servlet`) and internal exception messages/causes (follows RV-031) ([details](#r3-015)) — in progress (#244)
 - [ ] **R3-016** `MEDIUM` · leak — `AbstractGenericService.startUp()` leaks all started sub-services if `Runtime.addShutdownHook()` throws (follows CR-046) ([details](#r3-016))
 - [ ] **R3-017** `LOW` · docs — `service-utils/README.md` still documents removed Ktor plugins (`call-logging`, `compression`) and attributes a bind `host` to `ZipkinConfig` (follows RV-034) ([details](#r3-017))
 
@@ -108,8 +108,8 @@
 
 ### redis-utils
 - [ ] **R3-038** `MEDIUM` · leak — `withSuspendingRedis` / `withSuspendingNonNullRedis` leak `RedisClient` if cancelled while connecting (follows RV-066) ([details](#r3-038))
-- [ ] **R3-039** `MEDIUM` · security — `RedisUtils.urlDetails` does not validate URL scheme or port range, silently downgrading non-`rediss` TLS schemes to plaintext ([details](#r3-039))
-- [ ] **R3-040** `LOW` · bug — `RedisUtils.urlDetails` splits `uri.userInfo` after percent-decoding, corrupting usernames containing `%3A` ([details](#r3-040))
+- [ ] **R3-039** `MEDIUM` · security — `RedisUtils.urlDetails` does not validate URL scheme or port range, silently downgrading non-`rediss` TLS schemes to plaintext ([details](#r3-039)) — in progress (#244)
+- [ ] **R3-040** `LOW` · bug — `RedisUtils.urlDetails` splits `uri.userInfo` after percent-decoding, corrupting usernames containing `%3A` ([details](#r3-040)) — in progress (#244)
 - [ ] **R3-041** `LOW` · docs — `redis-utils/README.md` lists `internal class RedisInfo` as public API ([details](#r3-041))
 
 ### exposed-utils
