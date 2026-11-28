@@ -174,12 +174,13 @@ object RedisUtils {
 
   // JedisURIHelper reads the query as it always has, but its message for an unknown protocol quotes the value, which
   // an unescaped '?' in a password can supply, so it is replaced.
-  private fun URI.redisProtocol(): RedisProtocol? =
+  private fun URI.redisProtocol(): RedisProtocol? {
     try {
-      JedisURIHelper.getRedisProtocol(this)
+      return JedisURIHelper.getRedisProtocol(this)
     } catch (_: IllegalArgumentException) {
       throw IllegalArgumentException(INVALID_PROTOCOL_MSG)
     }
+  }
 
   // java.net.URI reports no host when there is none, and also when it cannot parse the authority as host[:port]:
   // for a name such as redis_cache (an underscore is legal in a Docker Compose service name but not in a URI host),
