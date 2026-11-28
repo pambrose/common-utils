@@ -2,7 +2,9 @@
 
 package com.pambrose.common.features
 
+import com.pambrose.common.headerValues
 import com.pambrose.common.rawHttpExchange
+import com.pambrose.common.statusCode
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
@@ -52,11 +54,8 @@ class HerokuHttpsRedirectTests : StringSpec() {
       routing { get("{...}") { call.respondText("Hello") } }
     }
 
-  private val String.statusCode: Int
-    get() = lines().first().split(' ')[1].toInt()
-
   private val String.location: String?
-    get() = lines().firstOrNull { it.startsWith("Location:", ignoreCase = true) }?.substringAfter(":")?.trim()
+    get() = headerValues("Location").firstOrNull()
 
   init {
     forwardedProtoTests()

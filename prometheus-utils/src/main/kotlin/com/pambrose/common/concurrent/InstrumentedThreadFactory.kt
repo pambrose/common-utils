@@ -18,6 +18,7 @@
 package com.pambrose.common.concurrent
 
 import com.pambrose.common.dsl.PrometheusDsl
+import com.pambrose.common.metrics.TrackingRegistry
 import com.pambrose.common.metrics.registerAllOrNothing
 import io.prometheus.metrics.core.metrics.Counter
 import io.prometheus.metrics.core.metrics.Gauge
@@ -48,16 +49,19 @@ class InstrumentedThreadFactory
     private val delegate: ThreadFactory,
     name: String,
     help: String,
-    private val registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
+    registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
   ) : ThreadFactory {
     private val created: Counter
     private val running: Gauge
     private val terminated: Counter
 
+    // What the constructor registered, which unregister removes.
+    private val registration: TrackingRegistry
+
     init {
       // Register all three metrics or none: when a later name is already taken, the metrics registered before it
       // are removed again, so a failed construction leaves nothing behind in the registry.
-      registry.registerAllOrNothing { tracking ->
+      registration = registry.registerAllOrNothing { tracking ->
         created =
           PrometheusDsl.counter(tracking) {
             name("${name}_threads_created")
@@ -73,6 +77,7 @@ class InstrumentedThreadFactory
             name("${name}_threads_terminated")
             help("$help threads terminated")
           }
+        tracking
       }
     }
 
@@ -84,11 +89,7 @@ class InstrumentedThreadFactory
      * more than once is harmless. The factory keeps working afterwards: it still creates threads and updates the
      * metrics, which are simply no longer exported.
      */
-    fun unregister() {
-      registry.unregister(created)
-      registry.unregister(running)
-      registry.unregister(terminated)
-    }
+    fun unregister() = registration.unregisterAll()
 
     /**
      * Creates a thread through the delegate, counting it as created.

@@ -16,7 +16,10 @@
 
 package com.pambrose.common.servlet
 
+import com.pambrose.common.body
+import com.pambrose.common.headerValues
 import com.pambrose.common.rawHttpExchange
+import com.pambrose.common.statusCode
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -184,17 +187,3 @@ class ServletRouteBodylessTests : StringSpec() {
     }
   }
 }
-
-private val String.statusCode: Int
-  get() = lines().first().split(' ')[1].toInt()
-
-private val String.body: String
-  get() = substringAfter("\r\n\r\n")
-
-// The values of every [name] header in this raw response, in the order sent.
-private fun String.headerValues(name: String): List<String> =
-  substringBefore("\r\n\r\n")
-    .lines()
-    .drop(1)
-    .filter { it.substringBefore(':').trim().equals(name, ignoreCase = true) }
-    .map { it.substringAfter(':').trim() }

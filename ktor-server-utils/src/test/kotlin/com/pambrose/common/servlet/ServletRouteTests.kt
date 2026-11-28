@@ -16,6 +16,7 @@
 
 package com.pambrose.common.servlet
 
+import com.pambrose.common.body
 import com.pambrose.common.rawHttpExchange
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -74,8 +75,8 @@ class ServletRouteTests : StringSpec() {
       val responses = text.split("HTTP/1.1 ").filter { it.isNotEmpty() }
       responses.size shouldBe 2
       responses[0].lowercase() shouldContain "content-length: 13"
-      responses[0].substringAfter("\r\n\r\n") shouldBe ""
-      responses[1].substringAfter("\r\n\r\n") shouldBe "Hello, World!"
+      responses[0].body shouldBe ""
+      responses[1].body shouldBe "Hello, World!"
     }
 
     "TRACE is answered by HttpServlet.doTrace instead of failing with a 500" {
