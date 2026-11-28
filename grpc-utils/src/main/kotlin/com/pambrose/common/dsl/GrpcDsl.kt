@@ -194,11 +194,15 @@ object GrpcDsl {
       "port must be in 0..$MAX_PORT for a Netty server, but was $port; set inProcessServerName for an in-process one"
     }
     val host = bindAddress?.trim()
+    // InetSocketAddress would resolve "" to loopback, so a blank address is rejected before one is built.
+    require(host == null || host.isNotEmpty()) {
+      "bindAddress must not be blank; omit it or pass null to listen on every interface"
+    }
     val nettyBuilder =
       if (host == null)
         NettyServerBuilder.forPort(port)
       else
-        NettyServerBuilder.forAddress(bindSocketAddress(host, port))
+        NettyServerBuilder.forAddress(InetSocketAddress(host, port).checkedBindAddress())
     val where = if (host == null) "port $port" else "$host:$port"
     logger.info { "Listening for gRPC traffic on $where using ${tlsContext.desc()}" }
     return nettyBuilder.also { builder ->
@@ -209,17 +213,12 @@ object GrpcDsl {
 
   // InetSocketAddress resolves "" to loopback and leaves a blank or unknown host unresolved, which Netty only
   // reports from start(); checking both here fails at build time, before anything is logged as listening.
-  private fun bindSocketAddress(
-    host: String,
-    port: Int,
-  ): InetSocketAddress {
-    require(host.isNotEmpty()) {
-      "bindAddress must not be blank; omit it or pass null to listen on every interface"
+  // InetSocketAddress leaves an unknown host unresolved, which Netty only reports from start(); this fails at build
+  // time, before anything is logged as listening.
+  private fun InetSocketAddress.checkedBindAddress(): InetSocketAddress =
+    apply {
+      require(!isUnresolved) { "bindAddress ${hostString.toDoubleQuoted()} could not be resolved to an IP address" }
     }
-    return InetSocketAddress(host, port).also { address ->
-      require(!address.isUnresolved) { "bindAddress ${host.toDoubleQuoted()} could not be resolved to an IP address" }
-    }
-  }
 
   private fun createInProcessServer(inProcessServerName: String): InProcessServerBuilder {
     logger.info { "Listening for gRPC traffic with in-process server name $inProcessServerName" }

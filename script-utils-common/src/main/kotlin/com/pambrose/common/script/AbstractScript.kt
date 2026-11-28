@@ -108,13 +108,9 @@ abstract class AbstractScript(
   @Synchronized
   open fun params(
     name: String,
-    types: Array<out KType> = registeredTypes(name),
+    // Evaluated before params takes the lock, so the default takes it itself.
+    types: Array<out KType> = synchronized(this) { typeMap[name] } ?: error("No type parameters registered for $name"),
   ): String = if (types.isEmpty()) "" else types.joinToString(", ", "<", ">") { renderType(it) }
-
-  // The default argument of params is evaluated before params takes the lock, so this takes it itself.
-  @Synchronized
-  private fun registeredTypes(name: String): Array<out KType> =
-    typeMap[name] ?: error("No type parameters registered for $name")
 
   /**
    * Renders [type] as a type argument in generated source. The default renders its fully-qualified Kotlin name.
@@ -155,24 +151,13 @@ abstract class AbstractScript(
         throw ScriptException("Variable $qname is a local or an anonymous class")
       }
 
-      // A value whose own class cannot be named is declared as its nearest nameable supertype, so when that takes no
-      // type arguments, neither does the value: the package-private IntPipeline.Head<E_IN> behind IntStream.of(1, 2) is
-      // declared as an IntStream.
-      paramCnt > 0 && types.isEmpty() && value.javaClass.isDeclaredAsNonGenericSupertype() -> {
+      value.isDeclaredAsSupertypeFor(types) -> {
         register(name, value, types)
       }
 
       paramCnt > 0 && types.isEmpty() -> {
         val plural = "parameter".pluralize(paramCnt)
         throw ScriptException("Expected $paramCnt type $plural to be specified for $qname")
-      }
-
-      // A value whose own class cannot be named is declared as a public supertype, which may take type arguments the
-      // class itself does not: a lambda is declared as a Function1<A, B>, and the private enum behind
-      // Comparator.naturalOrder() as a Comparator<T>. A public class is still checked strictly.
-      types.isNotEmpty() && paramCnt != types.size && !value.javaClass.isPubliclyAccessible() &&
-        value.javaClass.hasNameableSupertype(types.size) -> {
-        register(name, value, types)
       }
 
       paramCnt == 0 && types.isNotEmpty() -> {
@@ -192,6 +177,19 @@ abstract class AbstractScript(
       }
     }
   }
+
+  // Whether this value fits [types] although its own class takes a different number of type parameters, because
+  // generated code cannot name its class and declares it as a supertype instead. When [types] is empty, that is the
+  // nearest nameable supertype, if it takes none: the package-private IntPipeline.Head<E_IN> behind IntStream.of(1, 2)
+  // is declared as an IntStream. Otherwise it is a public supertype taking that many: a lambda is declared as a
+  // Function1<A, B>, and the private enum behind Comparator.naturalOrder() as a Comparator<T>. A public class is still
+  // checked strictly.
+  private fun Any.isDeclaredAsSupertypeFor(types: Array<out KType>): Boolean =
+    when {
+      typeParameterCount == types.size -> false
+      types.isEmpty() -> javaClass.isDeclaredAsNonGenericSupertype()
+      else -> !javaClass.isPubliclyAccessible() && javaClass.hasNameableSupertype(types.size)
+    }
 
   /**
    * Records [value] under [name], to be bound to the engine before the next evaluation. Unlike [add], it does not

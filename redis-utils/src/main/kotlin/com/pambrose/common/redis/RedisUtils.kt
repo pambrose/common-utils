@@ -88,8 +88,8 @@ object RedisUtils {
   private const val INVALID_DATABASE_MSG =
     "Redis URL path must be empty or a database index, such as /3; a '/' in the password must be percent-encoded as %2F"
 
-  private val invalidProtocolMsg =
-    "Redis URL protocol must be ${RedisProtocol.entries.joinToString(" or ") { it.version() }}"
+  // RedisProtocol's two versions, RESP2 and RESP3
+  private const val INVALID_PROTOCOL_MSG = "Redis URL protocol must be 2 or 3"
 
   private val validPorts = 1..65535
 
@@ -178,7 +178,7 @@ object RedisUtils {
     try {
       JedisURIHelper.getRedisProtocol(this)
     } catch (_: IllegalArgumentException) {
-      throw IllegalArgumentException(invalidProtocolMsg)
+      throw IllegalArgumentException(INVALID_PROTOCOL_MSG)
     }
 
   // java.net.URI reports no host when there is none, and also when it cannot parse the authority as host[:port]:
