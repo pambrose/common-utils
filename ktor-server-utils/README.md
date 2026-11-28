@@ -85,12 +85,28 @@ unless an exclusion predicate matches. The redirect goes to the configured `host
 host when `host` is not set, and keeps the path and query string exactly as the client sent them (order, case and
 encoding), so signed URLs survive the redirect.
 
+Set `host` explicitly unless an upstream router (such as Heroku's) only forwards requests addressed to your
+application's own domains. Without it, the redirect goes to whatever host the client names in its `Host` header, so
+a client that reaches the application directly can send `Host: evil.example` and get redirected there.
+
+`host` must be an ASCII host name (punycode for an internationalized one), an IPv4 address or a bracketed IPv6
+literal, with no scheme, userinfo or path; anything else makes `install` throw `IllegalArgumentException`. Set the
+port with `sslPort`. A `:port` (1 to 65535) appended to `host`, such as `myapp.example.com:8443`, is still accepted
+for compatibility and is used as given, so leave `sslPort` at its default in that case. Instead of a redirect, a
+request gets `400 Bad Request` when:
+
+- its request target is neither origin-form (`/path?query`) nor an absolute-form `http://` or `https://` URI. Only
+  the path and query of an absolute-form target are kept, so `GET http://anyhost/hello?b=2&a=1` redirects to
+  `https://<host>/hello?b=2&a=1`, while targets such as `@evil.example/phish` or `.evil.example/phish`, which would
+  otherwise become part of the redirect's host, are refused.
+- `host` is not set and the request's host is not a valid host name or IP literal.
+
 ```kotlin
 import com.pambrose.common.features.HerokuHttpsRedirect
 import io.ktor.server.application.install
 
 install(HerokuHttpsRedirect) {
-  host = "myapp.herokuapp.com" // optional; defaults to the request's host
+  host = "myapp.herokuapp.com" // recommended; defaults to the request's Host header
   sslPort = 443              // defaults to the HTTPS default port
   permanentRedirect = true   // the default: 301; set false for a 302
 
