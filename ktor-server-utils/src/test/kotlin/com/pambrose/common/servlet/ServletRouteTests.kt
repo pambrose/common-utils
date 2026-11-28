@@ -151,6 +151,16 @@ class ServletRouteTests : StringSpec() {
           "dispatcher=REQUEST;context=true"
       }
     }
+
+    "a cookie whose name the servlet API rejects is skipped rather than failing the request" {
+      testApplication {
+        routing { servlet("/info", RequestInfoServlet()) }
+        client.get("/info") { header(HttpHeaders.Cookie, "bad/name=1; good=2") }.apply {
+          status shouldBe HttpStatusCode.OK
+          bodyAsText() shouldContain ";cookies=good:2;"
+        }
+      }
+    }
   }
 
   private fun requestPassthroughTests() {

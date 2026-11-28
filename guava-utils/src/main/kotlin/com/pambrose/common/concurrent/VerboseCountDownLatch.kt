@@ -20,6 +20,7 @@ package com.pambrose.common.concurrent
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.CountDownLatch
 import kotlin.time.Duration
+import kotlin.time.toKotlinDuration
 
 /**
  * A [CountDownLatch] that logs a message on each wait timeout and retries until the latch reaches zero.
@@ -47,6 +48,36 @@ class VerboseCountDownLatch(
   ) = await(timeout) { msg }
 
   /**
+   * The verbose [await] for Java callers: the overloads taking a Kotlin [Duration] are compiled under a mangled name
+   * that Java cannot call.
+   *
+   * @param timeout the duration of each individual wait attempt.
+   * @param msg the message to log on each timeout.
+   * @throws InterruptedException if the current thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
+   */
+  @Throws(InterruptedException::class)
+  fun await(
+    timeout: java.time.Duration,
+    msg: String,
+  ) = await(timeout.toKotlinDuration(), msg)
+
+  /**
+   * The verbose [await] with a message lambda, for Java callers; see the `java.time.Duration` [await] taking a
+   * `String`.
+   *
+   * @param timeout the duration of each individual wait attempt.
+   * @param msg a lambda producing the message to log on each timeout.
+   * @throws InterruptedException if the current thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
+   */
+  @Throws(InterruptedException::class)
+  fun await(
+    timeout: java.time.Duration,
+    msg: () -> Any?,
+  ) = await(timeout.toKotlinDuration(), msg)
+
+  /**
    * Waits repeatedly for the latch to reach zero, logging the result of [msg] at INFO level
    * each time the [timeout] expires without the latch being satisfied.
    *
@@ -67,6 +98,10 @@ class VerboseCountDownLatch(
     }
   }
 
+  @Deprecated(
+    "This companion object has no public members. It becomes private in 6.0.0.",
+    level = DeprecationLevel.WARNING,
+  )
   companion object {
     private val logger = KotlinLogging.logger {}
   }

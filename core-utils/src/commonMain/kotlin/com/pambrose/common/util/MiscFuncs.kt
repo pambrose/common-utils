@@ -56,16 +56,21 @@ fun Any?.isNull(): Boolean {
  * @param width the minimum width of the resulting string
  * @param padChar the character to pad with (default `'0'`)
  * @return the left-padded string
+ * @throws IllegalArgumentException if [width] is negative
  */
 fun Int.lpad(
   width: Int,
   padChar: Char = '0',
-): String =
+): String {
+  // Checked up front, not left to padStart: the zero-padded negative branch clamps width - 1 at 0, and for
+  // Int.MIN_VALUE width - 1 overflows to Int.MAX_VALUE.
+  require(width >= 0) { "Desired length $width is less than zero." }
   // As with "%0Nd", zeros go between the sign and the digits, and the sign counts toward the width.
-  if (this < 0 && padChar == '0')
+  return if (this < 0 && padChar == '0')
     "-" + toString().removePrefix("-").padStart((width - 1).coerceAtLeast(0), padChar)
   else
     toString().padStart(width, padChar)
+}
 
 /**
  * Right-pads this [Int] to the specified [width] with [padChar].

@@ -1,7 +1,8 @@
 description = "gRPC client and server utilities for Kotlin"
 
 dependencies {
-    api(project(":core-utils"))
+    // Used internally (string and null-check helpers, AtomicDelegates), but no core-utils type is in the public API.
+    implementation(project(":core-utils"))
 
     api(libs.grpc.stub)
     // TlsContext.sslContext and TlsContextBuilder.builder are Netty types (SslContext,
@@ -10,6 +11,8 @@ dependencies {
 
     // The in-process transport; grpc-netty comes in through the api line above.
     implementation(libs.grpc.inprocess)
+
+    implementation(libs.kotlin.logging)
 
     runtimeOnly(libs.netty.tcnative)
     // The main tcnative jar holds no native code. Its POM adds the per-platform jars as classifier dependencies on

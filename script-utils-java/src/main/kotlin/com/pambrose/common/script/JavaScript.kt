@@ -24,6 +24,8 @@ import javax.script.ScriptContext
 import javax.script.ScriptException
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
+import kotlin.reflect.KTypeProjection
+import kotlin.reflect.KVariance
 
 // https://github.com/eobermuhlner/java-scriptengine
 // https://gitter.im/java-scriptengine/community
@@ -37,6 +39,7 @@ import kotlin.reflect.KType
  *
  * Variable declarations use fully-qualified type names, so they need no imports. A value whose runtime class cannot be
  * named, such as the private list class behind `listOf(1, 2)`, is declared as its nearest public class or interface.
+ * A use-site `out T` or `in T` type argument is declared as `? extends T` or `? super T`.
  *
  * Common literal JVM-termination calls (`System.exit`, `Runtime.getRuntime().exit/halt`) are rejected
  * on a best-effort basis via [ScriptGuards]. This is a convenience against accidental termination,
@@ -56,6 +59,8 @@ class JavaScript : AbstractScript("java", false) {
    * Generates Java-style public field declarations for all registered variables.
    *
    * Each declaration includes the Java type name and any type parameters.
+   *
+   * @throws ScriptException if a variable has a type argument Java source cannot name, such as a local class
    */
   val varDecls: String
     @Synchronized get() = valueMap.entries.joinToString("\n") { (name, value) ->
@@ -90,12 +95,18 @@ class JavaScript : AbstractScript("java", false) {
    *
    * @param T the type of the class to import
    * @param clazz the class to add to the import list
-   * @throws IllegalArgumentException if [clazz] has no canonical name (a local, anonymous or hidden class, or an array
-   *   of one), which Java source cannot name
+   * @throws IllegalArgumentException if [clazz] cannot be imported: it has no canonical name (a local, anonymous or
+   *   hidden class, or an array of one), which Java source cannot name, or it is a primitive type, an array class, or a
+   *   class in the unnamed package, none of which a Java import declaration can name
    */
   @Synchronized
   fun <T> import(clazz: Class<T>) {
-    imports += requireNotNull(clazz.canonicalName) { "${clazz.name} has no canonical name, so it cannot be imported" }
+    val canonicalName =
+      requireNotNull(clazz.canonicalName) { "${clazz.name} has no canonical name, so it cannot be imported" }
+    require(!clazz.isPrimitive) { "$canonicalName is a primitive type, so it cannot be imported" }
+    require(!clazz.isArray) { "$canonicalName is an array class, so it cannot be imported" }
+    require(clazz.packageName.isNotEmpty()) { "$canonicalName is in the unnamed package, so it cannot be imported" }
+    imports += canonicalName
   }
 
   /**
@@ -103,7 +114,7 @@ class JavaScript : AbstractScript("java", false) {
    *
    * @param T the type of the class to import
    * @param clazz the class to add to the import list
-   * @throws IllegalArgumentException if [clazz] has no canonical name
+   * @throws IllegalArgumentException if [clazz] cannot be imported (see [import])
    */
   fun <T> addImport(clazz: Class<T>) = import(clazz)
 
@@ -134,18 +145,46 @@ class JavaScript : AbstractScript("java", false) {
     assignIsolation(DEFAULT_ISOLATION)
   }
 
-  // Java source for a Kotlin type argument: kotlin.collections.List<kotlin.Int> -> java.util.List<java.lang.Integer>
-  // A star projection is null here. It is ? as a type argument, but Java has no array of ?, so Array<*> is rendered
-  // with the array's erased component type, as java.lang.Object[].
+  /**
+   * Renders [type] as Java source: `kotlin.collections.List<kotlin.Int>` becomes `java.util.List<java.lang.Integer>`,
+   * and a use-site `out T` or `in T` type argument becomes `? extends T` or `? super T`.
+   *
+   * @throws ScriptException if [type], or one of its type arguments, is a class Java source cannot name: a local,
+   *   anonymous or hidden class, or an array of one
+   */
   override fun renderType(type: KType): String {
-    val args = type.arguments.map { argument -> argument.type?.let(::renderType) }
     val clazz = (type.classifier as? KClass<*>)?.javaObjectType
     return when {
       clazz == null -> "Object"
-      clazz.isArray -> "${args.singleOrNull() ?: clazz.componentType.canonicalName}[]"
-      args.isEmpty() -> clazz.canonicalName
-      else -> "${clazz.canonicalName}<${args.joinToString(", ") { it ?: "?" }}>"
+      clazz.isArray -> "${arrayElementType(clazz, type.arguments.singleOrNull())}[]"
+      type.arguments.isEmpty() -> clazz.sourceName()
+      else -> "${clazz.sourceName()}<${type.arguments.joinToString(", ", transform = ::renderArgument)}>"
     }
+  }
+
+  // A star projection has no type: it is ? as a type argument.
+  private fun renderArgument(argument: KTypeProjection): String {
+    val type = argument.type ?: return "?"
+    return when (argument.variance) {
+      KVariance.OUT -> "? extends ${renderType(type)}"
+      KVariance.IN -> "? super ${renderType(type)}"
+      else -> renderType(type)
+    }
+  }
+
+  // Java arrays are covariant, so Array<out T> is a T[], like Array<T>. Java has no array of ? or of ? super T, so
+  // Array<*> and Array<in T> are rendered with the array's erased component type: java.lang.Object[] for the types
+  // typeOf creates, as in Kotlin's own JVM signatures. A primitive array, such as an IntArray, has no type argument and
+  // is rendered as itself.
+  private fun arrayElementType(
+    clazz: Class<*>,
+    argument: KTypeProjection?,
+  ): String {
+    val elementType = argument?.type
+    return if (elementType == null || argument.variance == KVariance.IN)
+      clazz.componentType.sourceName()
+    else
+      renderType(elementType)
   }
 
   /**
@@ -196,7 +235,8 @@ class JavaScript : AbstractScript("java", false) {
    * @param action optional Java statements executed before [expr] is evaluated
    * @param verbose if `true`, logs the generated script before evaluation
    * @return the result of evaluating [expr], or `null` if it evaluates to `null`
-   * @throws ScriptException if [expr] or [action] contains a literal JVM-termination call, or fails to compile or run
+   * @throws ScriptException if [expr] or [action] contains a literal JVM-termination call, or fails to compile or run,
+   *   or a variable has a type argument Java source cannot name, such as a local class
    */
   @Synchronized
   fun eval(
@@ -241,5 +281,10 @@ $varDecls
 
     // java-scriptengine's own default isolation.
     val DEFAULT_ISOLATION = Isolation.CallerClassLoader
+
+    // Java source names a class by its canonical name, which a local, anonymous or hidden class, or an array of one,
+    // does not have.
+    fun Class<*>.sourceName(): String =
+      canonicalName ?: throw ScriptException("$typeName has no canonical name, so Java source cannot name it")
   }
 }

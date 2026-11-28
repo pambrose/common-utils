@@ -60,6 +60,7 @@ class ScriptPoolContractTests : StringSpec() {
   init {
     recycleTests()
     resetTests()
+    resetEveryTests()
     lifecycleTests()
     cancellationTests()
   }
@@ -140,6 +141,31 @@ class ScriptPoolContractTests : StringSpec() {
         val before = pool.evaluator.engine.context
         pool.eval("1 > 0") shouldBe true
         (pool.evaluator.engine.context === before) shouldBe false
+      }
+    }
+  }
+
+  private fun resetEveryTests() {
+    "expr pool keeps an evaluator's declarations until its resetEvery-th return" {
+      withTimeout(TIMEOUT_MS.milliseconds) {
+        KotlinExprEvaluatorPool(size = 1, resetEvery = 2).use { pool ->
+          pool.resetEvery shouldBe 2
+          pool.eval("val y = 1; y > 0") shouldBe true
+          // The first return did not reset the REPL, so the next borrower still sees y...
+          pool.eval("y == 1") shouldBe true
+          // ...but the second one did, so y is gone.
+          shouldThrow<ScriptException> { pool.eval("y == 1") }
+        }
+      }
+    }
+
+    "expr pool resets every DEFAULT_RESET_EVERY returns by default and rejects a resetEvery that is not positive" {
+      KotlinExprEvaluatorPool.DEFAULT_RESET_EVERY shouldBe 20
+      KotlinExprEvaluatorPool(size = 1).use { pool ->
+        pool.resetEvery shouldBe KotlinExprEvaluatorPool.DEFAULT_RESET_EVERY
+      }
+      listOf(0, -1).forEach { resetEvery ->
+        shouldThrow<IllegalArgumentException> { KotlinExprEvaluatorPool(size = 1, resetEvery = resetEvery) }
       }
     }
   }

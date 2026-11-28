@@ -19,7 +19,9 @@
 package com.pambrose.common.servlet
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -29,6 +31,7 @@ import io.ktor.http.headersOf
 import io.ktor.http.parametersOf
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.ApplicationRequest
+import io.ktor.server.request.RequestCookies
 import io.ktor.util.Attributes
 import io.mockk.every
 import io.mockk.mockk
@@ -42,6 +45,33 @@ class KtorServletRequestTests : StringSpec() {
     parameterAndAttributeTests()
     unsupportedTests()
     derivedHeaderTests()
+    cookieTests()
+  }
+
+  // Ktor's cookie parser accepts names holding separators such as '/', '@' or ',' that the servlet API's Cookie rejects,
+  // and Cookie's constructor threw, failing every servlet that read its cookies with a 500.
+  private fun cookieTests() {
+    "getCookies skips a cookie whose name the servlet API rejects and keeps the others" {
+      val cookies = KtorServletRequest(cookieRequest("bad/name=1; good=2; a@b=3; c,d=4; last=5")).cookies
+      // Ktor's rawCookies map does not keep the header's order.
+      cookies.shouldNotBeNull().map { it.name to it.value }.toSet() shouldBe setOf("good" to "2", "last" to "5")
+    }
+
+    "getCookies is null when the request has no cookies, or only ones the servlet API rejects" {
+      listOf(null, "bad/name=1", "a@b=1; [x]=2").forEach { header ->
+        withClue("Cookie: <$header>") {
+          KtorServletRequest(cookieRequest(header)).cookies shouldBe null
+        }
+      }
+    }
+  }
+
+  // A mocked ApplicationRequest with the given Cookie header (none when null), parsed by Ktor's own RequestCookies.
+  private fun cookieRequest(header: String?): ApplicationRequest {
+    val request = mockk<ApplicationRequest>()
+    every { request.headers } returns if (header == null) Headers.Empty else headersOf(HttpHeaders.Cookie, header)
+    every { request.cookies } returns RequestCookies(request)
+    return request
   }
 
   private fun headerTests() {

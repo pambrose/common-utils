@@ -343,6 +343,14 @@ private class TestKtorService(
   }
 }
 
+// A counter in a test service's Dropwizard metric registry.
+private fun AbstractGenericService<*>.testCounter(name: String): Counter =
+  when (this) {
+    is TestJettyService -> counter(name)
+    is TestKtorService -> counter(name)
+    else -> error("${this::class.simpleName} exposes no metric registry")
+  }
+
 // The two admin server variants, so the lifecycle tests run against both.
 private enum class Variant {
   Jetty,
@@ -421,8 +429,6 @@ class GenericServiceTests : StringSpec() {
     servletInitTests()
     serverExposureTests()
     errorPageTests()
-    shutdownHookTests()
-    optionalShutdownHookTests()
     lifecycleLoggingTests()
   }
 
@@ -914,6 +920,72 @@ class GenericServiceTests : StringSpec() {
     }
   }
 
+  private fun lifecycleLoggingTests() {
+    "a service logs one line per lifecycle milestone at info, and its setup and transitions at debug" {
+      val logged =
+        capturingServiceLogs { logs ->
+          val service = TestJettyService()
+          service.startSync()
+          service.close()
+          // The ServiceManager's listener can still be running when close() returns.
+          eventually(5.seconds) {
+            logs().messagesAt(Level.INFO).any { it == "All TestJettyService services stopped" } shouldBe true
+          }
+          logs()
+        }
+
+      // The ServiceManager's events can come before or after the service's own, so their order is not checked.
+      logged.messagesAt(Level.INFO).map { it.substringBefore(" [") } shouldContainExactlyInAnyOrder
+        [
+          "Running TestJettyService",
+          "All TestJettyService services healthy",
+          "Terminated TestJettyService",
+          "All TestJettyService services stopped",
+        ]
+      logged.messagesAt(Level.DEBUG).map { it.substringBefore(" [") } shouldContainAll
+        [
+          "Admin service disabled",
+          "Metrics service disabled",
+          "Zipkin reporter service disabled",
+          "Adding service TestJettyService",
+          "Starting TestJettyService",
+          "Stopping TestJettyService",
+        ]
+    }
+
+    "enabling metrics and admin logs their setup at debug, and only their services' milestones at info" {
+      val logged =
+        capturingServiceLogs { logs ->
+          val service = TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics())
+          service.startSync()
+          service.close()
+          eventually(5.seconds) {
+            logs().messagesAt(Level.INFO).any { it == "All TestJettyService services stopped" } shouldBe true
+          }
+          logs()
+        }
+
+      logged.messagesAt(Level.DEBUG) shouldContainAll ["Enabling Dropwizard metrics", "Enabling JMX metrics"]
+      // Each service, the sub-services included, logs only its running and terminated transitions at info.
+      val info = logged.messagesAt(Level.INFO)
+      val transitions = info.filter { it.startsWith("Running ") || it.startsWith("Terminated ") }
+      transitions.map { it.substringBefore(" ") } shouldContainExactlyInAnyOrder
+        ["Running", "Running", "Running", "Terminated", "Terminated", "Terminated"]
+      info - transitions.toSet() shouldContainExactlyInAnyOrder
+        ["All TestJettyService services healthy", "All TestJettyService services stopped"]
+    }
+  }
+}
+
+// The shutdown hook's registration, removal and opt-out, apart from GenericServiceTests to keep each spec under
+// detekt's LargeClass limit.
+class GenericServiceShutdownHookTests : StringSpec() {
+  init {
+    shutdownHookTests()
+    shutdownHookFailureTests()
+    optionalShutdownHookTests()
+  }
+
   private fun shutdownHookTests() {
     "shutdown hook is registered on start and removed on stop" {
       val service = TestJettyService(admin = enabledAdmin())
@@ -985,6 +1057,44 @@ class GenericServiceTests : StringSpec() {
     }
   }
 
+  private fun shutdownHookFailureTests() {
+    Variant.entries.forEach { variant ->
+      "a $variant service that cannot register its shutdown hook stops every sub-service it started" {
+        val metricName = "hook_failure_${variant.name.lowercase()}"
+        val service =
+          variant.newService(
+            admin = enabledAdmin(),
+            metrics = enabledMetrics(),
+            zipkin = disabledZipkin.copy(enabled = true),
+          )
+        service.testCounter(metricName).inc()
+
+        // addShutdownHook throws this when the service starts while the JVM is shutting down.
+        val runtime = spyk(Runtime.getRuntime())
+        every { runtime.addShutdownHook(any()) } throws IllegalStateException("Shutdown in progress")
+        mockkStatic(Runtime::class)
+        try {
+          every { Runtime.getRuntime() } returns runtime
+          shouldThrow<IllegalStateException> { service.startSync() }.cause?.message shouldBe "Shutdown in progress"
+          verify { runtime.addShutdownHook(any()) }
+        } finally {
+          unmockkStatic(Runtime::class)
+        }
+
+        service.state() shouldBe Service.State.FAILED
+        service.registeredShutDownHook shouldBe null
+        service.zipkinReporterService.state() shouldBe Service.State.TERMINATED
+        service.metricsService.state() shouldBe Service.State.TERMINATED
+        shouldBeReleased(service.metricsService.boundPort)
+        shouldBeReleased(service.adminPort)
+        // Neither the JMX reporter nor the Dropwizard exporter still exposes the service's metrics.
+        ManagementFactory.getPlatformMBeanServer()
+          .isRegistered(ObjectName("metrics:name=$metricName,type=counters")) shouldBe false
+        PrometheusRegistry.defaultRegistry.scrape().none { it.metadata.prometheusName == metricName } shouldBe true
+      }
+    }
+  }
+
   private fun optionalShutdownHookTests() {
     "both variants register the shutdown hook by default, and none when a subclass turns it off" {
       Variant.entries.forEach { variant ->
@@ -1027,62 +1137,6 @@ class GenericServiceTests : StringSpec() {
       service.registeredShutDownHook shouldBe null
       shouldBeReleased(service.adminPort)
       shouldBeReleased(service.metricsService.boundPort)
-    }
-  }
-
-  private fun lifecycleLoggingTests() {
-    "a service logs one line per lifecycle milestone at info, and its setup and transitions at debug" {
-      val logged =
-        capturingServiceLogs { logs ->
-          val service = TestJettyService()
-          service.startSync()
-          service.close()
-          // The ServiceManager's listener can still be running when close() returns.
-          eventually(5.seconds) {
-            logs().messagesAt(Level.INFO).any { it == "All TestJettyService services stopped" } shouldBe true
-          }
-          logs()
-        }
-
-      // The ServiceManager's events can come before or after the service's own, so their order is not checked.
-      logged.messagesAt(Level.INFO).map { it.substringBefore(" [") } shouldContainExactlyInAnyOrder
-        [
-          "Running TestJettyService",
-          "All TestJettyService services healthy",
-          "Terminated TestJettyService",
-          "All TestJettyService services stopped",
-        ]
-      logged.messagesAt(Level.DEBUG).map { it.substringBefore(" [") } shouldContainAll
-        [
-          "Admin service disabled",
-          "Metrics service disabled",
-          "Zipkin reporter service disabled",
-          "Adding service TestJettyService",
-          "Starting TestJettyService",
-          "Stopping TestJettyService",
-        ]
-    }
-
-    "enabling metrics and admin logs their setup at debug, and only their services' milestones at info" {
-      val logged =
-        capturingServiceLogs { logs ->
-          val service = TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics())
-          service.startSync()
-          service.close()
-          eventually(5.seconds) {
-            logs().messagesAt(Level.INFO).any { it == "All TestJettyService services stopped" } shouldBe true
-          }
-          logs()
-        }
-
-      logged.messagesAt(Level.DEBUG) shouldContainAll ["Enabling Dropwizard metrics", "Enabling JMX metrics"]
-      // Each service, the sub-services included, logs only its running and terminated transitions at info.
-      val info = logged.messagesAt(Level.INFO)
-      val transitions = info.filter { it.startsWith("Running ") || it.startsWith("Terminated ") }
-      transitions.map { it.substringBefore(" ") } shouldContainExactlyInAnyOrder
-        ["Running", "Running", "Running", "Terminated", "Terminated", "Terminated"]
-      info - transitions.toSet() shouldContainExactlyInAnyOrder
-        ["All TestJettyService services healthy", "All TestJettyService services stopped"]
     }
   }
 }

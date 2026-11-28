@@ -140,6 +140,7 @@ if (json.containsKeys("user", "profile", "email"))
 
 ```kotlin
 import com.pambrose.common.json.deepCopy
+import com.pambrose.common.json.parseJson
 import com.pambrose.common.json.reformatJson
 import com.pambrose.common.json.toFormattedString
 import com.pambrose.common.json.toJsonElement
@@ -166,8 +167,14 @@ println(json.toFormattedString(indent = "    "))
 
 `parseJson` (and `reformatJson`, which uses it) accepts only valid JSON. kotlinx.serialization's tree parser takes
 any unquoted token as a literal, so `hello`, `007`, `+3` and `0x10` would otherwise be accepted and then re-encoded
-differently on each platform; they throw `SerializationException` instead. `NaN`, `Infinity` and `-Infinity`, which
-kotlinx writes for non-finite doubles, are accepted.
+differently on each platform; they throw `SerializationException` instead. `parseJson` accepts `NaN`, `Infinity` and
+`-Infinity`, which kotlinx writes for non-finite doubles.
+
+JSON cannot represent a non-finite number, though, so `reformatJson`, `toFormattedString` and `toJsonString` throw
+`SerializationException` rather than write one: they encode with kotlinx's default
+`allowSpecialFloatingPointValues = false`, as do all the `JsonContentUtils` formats. That includes valid JSON with a
+number too large for a `Double`, such as `1e500`, which becomes an infinity when re-encoded. `JsonElement.toString()`
+writes compact output that keeps each parsed number as it was read, `NaN` and `1e500` included.
 
 `parseJson` was called `toJsonElement` on a `String`, which shadowed the generic `T.toJsonElement()`: `"42"` parsed
 to the number 42 on a `String` but serialized to the string `"42"` in generic code. The old name still works, and is
@@ -240,7 +247,8 @@ This module depends on:
 - Kotlin Standard Library
 - core-utils
 - Kotlinx Serialization JSON
-- kotlin-logging (internally)
+- kotlin-logging, exposed as an `api` dependency on every platform only because the deprecated
+  `JsonElementUtils.logger` is a `KLogger`; it becomes internal again when `JsonElementUtils` is removed
 
 ## Installation
 
@@ -283,6 +291,9 @@ Maven consumers must depend on the `-jvm` artifact, since this is a multiplatfor
   `JsonPrimitive(1.0)` becomes `"1.0"` on the JVM but `"1"` on JS.
 - To reformat a JSON **string**, call `reformatJson()`. On a `String`, `toJsonString(prettyPrint = …)` serializes
   the string itself as a JSON string literal.
+- `reformatJson`, `toFormattedString` and `toJsonString` throw `SerializationException` for `NaN`, `Infinity`,
+  `-Infinity` and numbers too large for a `Double` (such as `1e500`), which JSON cannot represent, even though
+  `parseJson` accepts them.
 
 ## License
 

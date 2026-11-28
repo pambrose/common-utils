@@ -190,13 +190,8 @@ including an assignment of `null`, which still counts as set — and throws `Ill
 one. Its `compareValue` parameter defaults to `initValue` and must equal it; a differing value could never match
 and would leave the property permanently unsettable, so it is rejected with `IllegalArgumentException`.
 
-On the JVM, `singleAssign()` provides a write-once property:
-
-```kotlin
-import com.pambrose.common.delegate.SingleAssignVar.singleAssign
-
-var config: String? by singleAssign()
-```
+The JVM-only `SingleAssignVar.singleAssign()` is deprecated since 5.0.0. It returns the same delegate as
+`singleSetReference`, which works on every platform, so use `AtomicDelegates.singleSetReference()` instead.
 
 ### Exception Utilities
 
@@ -421,16 +416,16 @@ Grouped by file; see the KDoc for full signatures.
 
 ### jvmMain
 
-| Area       | Entry points                                                                                                                                                                                            |
-|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Hashing    | `md5`, `sha256`, `newStringSalt`, `newByteArraySalt`, `md5Of`                                                                                                                                           |
-| Encoding   | `encode()`, `decode()`                                                                                                                                                                                  |
-| I/O        | `toByteArray`, `toByteArraySecure` (an alias for it), `toObjectSecure`, `withChecksum`, `verifyChecksum`, and the deprecated `toObject`                                                                 |
-| Content    | `ContentRoot`, `ContentSource`, `FileSystemSource`, `GitHubRepo`, `GitLabRepo`, `GitHubFile`, `GitLabFile`, `UrlSource`, `FileSource`, `OwnerType`                                                      |
-| Version    | `@Version`, `version()`, `buildString()`, `buildDateTime()`, `versionDesc()`                                                                                                                            |
-| Durations  | `timeUnitToDuration`, `Duration.format`                                                                                                                                                                 |
-| Exceptions | `runCatchingInterruptible`                                                                                                                                                                              |
-| Misc       | `hostInfo`, `sleep`, `randomId`, `repeatWithSleep`, `captureStdout`, `waitForPortAvailable`, `readProperties`, `ReadResources`, `getBanner`, `stackTraceAsString`, `typeParameterCount`, `singleAssign` |
+| Area       | Entry points                                                                                                                                                                                                               |
+|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Hashing    | `md5`, `sha256`, `newStringSalt`, `newByteArraySalt`, `md5Of`                                                                                                                                                              |
+| Encoding   | `encode()`, `decode()`                                                                                                                                                                                                     |
+| I/O        | `toByteArray`, `toByteArraySecure` (an alias for it), `toObjectSecure`, `withChecksum`, `verifyChecksum`, and the deprecated `toObject`                                                                                    |
+| Content    | `ContentRoot`, `ContentSource`, `FileSystemSource`, `GitHubRepo`, `GitLabRepo`, `GitHubFile`, `GitLabFile`, `UrlSource`, `FileSource`, `OwnerType`                                                                         |
+| Version    | `@Version`, `version()`, `buildString()`, `buildDateTime()`, `versionDesc()`                                                                                                                                               |
+| Durations  | `timeUnitToDuration`, `Duration.format`                                                                                                                                                                                    |
+| Exceptions | `runCatchingInterruptible`                                                                                                                                                                                                 |
+| Misc       | `hostInfo`, `sleep`, `randomId`, `repeatWithSleep`, `captureStdout`, `waitForPortAvailable`, `readProperties`, `ReadResources`, `getBanner`, `stackTraceAsString`, `typeParameterCount`, and the deprecated `singleAssign` |
 
 ## Dependencies
 

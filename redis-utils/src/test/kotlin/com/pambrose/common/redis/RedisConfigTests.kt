@@ -111,8 +111,9 @@ class RedisConfigTests : StringSpec() {
     // runs, rather than passing it null.
     "an invalid url throws IllegalArgumentException from every function that takes one" {
       mapOf(
-        "redis://localhost:6379/abc" to "For input string: \"abc\"",
-        "redis://localhost:6379/0?protocol=9" to "Unknown protocol 9",
+        // Neither message quotes the offending value, which can be part of a password (see RedisUrlTests).
+        "redis://localhost:6379/abc" to "Redis URL path must be empty or a database index, such as /3",
+        "redis://localhost:6379/0?protocol=9" to "Redis URL protocol must be 2 or 3",
         // The index in the message varies between JDKs.
         "redis://local host:6379" to "Malformed Redis URL: Illegal character in authority at index ",
         // Read as scheme "localhost" with no host, which jedis would have sent to 127.0.0.1.

@@ -61,7 +61,10 @@ fun CountDownLatch.await(duration: Duration): Boolean = await(duration.inWholeNa
  * @param T the return type of [block].
  * @param block the code to execute while holding the permit.
  * @return the result of [block].
+ * @throws InterruptedException if the thread is interrupted while waiting for a permit, in which case [block] does not
+ *   run and no permit is taken or released.
  */
+@Throws(InterruptedException::class)
 fun <T> Semaphore.withLock(block: () -> T): T {
   acquire()
   return try {

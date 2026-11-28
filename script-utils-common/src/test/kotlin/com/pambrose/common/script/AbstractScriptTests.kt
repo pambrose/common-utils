@@ -20,12 +20,16 @@ package com.pambrose.common.script
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import java.lang.ref.WeakReference
+import java.util.stream.IntStream
 import javax.script.ScriptContext.ENGINE_SCOPE
 import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.reflect.typeOf
 import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration.Companion.seconds
@@ -66,11 +70,77 @@ private class PrivateOuter {
   ) : Box<T>
 }
 
+// Private, with a type parameter of its own, while its nearest nameable supertype, Runnable, takes none.
+private class HiddenGenericRunnable<T> : Runnable {
+  override fun run() {
+    // Never run.
+  }
+}
+
+// Generated code cannot name an inner class of a generic class without the outer class's type arguments, which a value
+// does not carry. A nested class needs none.
+class GenericOuter<T> {
+  inner class Inner : Runnable {
+    override fun run() {
+      // Never run.
+    }
+  }
+
+  inner class InnerBox<U>(
+    override val item: U,
+  ) : Box<U>
+
+  inner class Middle {
+    inner class Innermost : Runnable {
+      override fun run() {
+        // Never run.
+      }
+    }
+  }
+
+  class Nested : Runnable {
+    override fun run() {
+      // Never run.
+    }
+  }
+}
+
+// A non-generic class, so generated code can name its inner class.
+class PlainOuter {
+  inner class Inner : Runnable {
+    override fun run() {
+      // Never run.
+    }
+  }
+}
+
+// Binds a new object in script and evaluates it, returning only a weak reference to it, so that no frame of the caller
+// keeps it reachable.
+private fun bindAndEvaluate(script: FakeScript): WeakReference<Any> {
+  val variable = Any()
+  script.add("variable", variable)
+  (script.eval("variable") === variable) shouldBe true
+  return WeakReference(variable)
+}
+
+// Waits until thread is blocked, as on entering a monitor another thread holds.
+private fun awaitBlocked(thread: Thread) {
+  val deadline = System.nanoTime() + 10.seconds.inWholeNanoseconds
+  while (thread.state != Thread.State.BLOCKED) {
+    check(System.nanoTime() < deadline) { "${thread.name} never blocked" }
+    Thread.sleep(1)
+  }
+}
+
 class AbstractScriptTests : StringSpec() {
   init {
     accessibleClassTests()
+    nonGenericSupertypeTests()
+    innerClassTests()
     bindingTests()
     resetTests()
+    releaseTests()
+    concurrencyTests()
   }
 
   private fun accessibleClassTests() {
@@ -127,6 +197,67 @@ class AbstractScriptTests : StringSpec() {
         val primitives = intArrayOf(1, 2)
         script.add("primitives", primitives)
         script.accessibleClassOf("primitives", primitives) shouldBe IntArray::class
+      }
+    }
+  }
+
+  private fun nonGenericSupertypeTests() {
+    // IntStream.of(1, 2) is a package-private IntPipeline.Head<E_IN>, so adding it without a type argument used to
+    // throw.
+    "a value whose class cannot be named needs no type arguments when its nearest nameable supertype takes none" {
+      FakeScript().use { script ->
+        val ints = IntStream.of(1, 2)
+        script.add("ints", ints)
+        script.accessibleClassOf("ints", ints) shouldBe IntStream::class
+        script.params("ints") shouldBe ""
+
+        val runnable = HiddenGenericRunnable<Int>()
+        script.add("runnable", runnable)
+        script.accessibleClassOf("runnable", runnable) shouldBe Runnable::class
+      }
+    }
+
+    "a value whose nearest nameable supertype is generic still needs its type arguments" {
+      FakeScript().use { script ->
+        // A private Arrays.ArrayList, whose nearest nameable supertype is AbstractList<E>, though it also implements
+        // RandomAccess, which takes none.
+        shouldThrow<ScriptException> { script.add("list", listOf(1, 2)) }.message shouldContain
+          "Expected 1 type parameter to be specified for"
+        shouldThrow<ScriptException> { script.add("box", HiddenBox(1)) }.message shouldContain
+          "Expected 1 type parameter to be specified for"
+        // A public generic class always needs them.
+        shouldThrow<ScriptException> { script.add("mutable", mutableListOf(1)) }
+      }
+    }
+  }
+
+  private fun innerClassTests() {
+    // GenericOuter.Inner used to be returned, which generated code cannot name without GenericOuter's type argument.
+    "an inner class of a generic class is declared as a nameable supertype" {
+      FakeScript().use { script ->
+        val inner = GenericOuter<Int>().Inner()
+        script.add("inner", inner)
+        script.accessibleClassOf("inner", inner) shouldBe Runnable::class
+
+        val innerBox = GenericOuter<Int>().InnerBox("a")
+        script.add("innerBox", innerBox, typeOf<String>())
+        script.accessibleClassOf("innerBox", innerBox) shouldBe Box::class
+
+        val innermost = GenericOuter<Int>().Middle().Innermost()
+        script.add("innermost", innermost)
+        script.accessibleClassOf("innermost", innermost) shouldBe Runnable::class
+      }
+    }
+
+    "an inner class of a non-generic class and a nested class of a generic class are declared as themselves" {
+      FakeScript().use { script ->
+        val inner = PlainOuter().Inner()
+        script.add("inner", inner)
+        script.accessibleClassOf("inner", inner) shouldBe PlainOuter.Inner::class
+
+        val nested = GenericOuter.Nested()
+        script.add("nested", nested)
+        script.accessibleClassOf("nested", nested) shouldBe GenericOuter.Nested::class
       }
     }
   }
@@ -231,6 +362,43 @@ class AbstractScriptTests : StringSpec() {
             pool.eval { fakeEngine.getBindings(GLOBAL_SCOPE) } shouldNotBe null
           }
         }
+      }
+    }
+  }
+
+  private fun releaseTests() {
+    // The Kotlin and Jython engines keep the context of their last evaluation until the next one, as FakeScriptEngine
+    // does, so a reset that only replaced the context left the previous user's variables reachable.
+    "resetContext releases the variables bound to the context it replaces" {
+      FakeScript().use { script ->
+        val variable = bindAndEvaluate(script)
+        val previous = script.fakeEngine.lastContext.shouldNotBeNull()
+
+        script.resetContext(false)
+
+        previous.getBindings(ENGINE_SCOPE).isEmpty() shouldBe true
+        variable.isClearedAfterGc() shouldBe true
+      }
+    }
+  }
+
+  private fun concurrencyTests() {
+    // params(name)'s default argument read the registered types before taking the instance's lock, so a call waiting
+    // for the lock rendered the types registered before it waited, not the ones registered while it did.
+    "params reads the registered types while holding the instance's lock" {
+      FakeScript().use { script ->
+        script.add("list", mutableListOf(1), typeOf<Int>())
+        val rendered = AtomicReference<Result<String>?>(null)
+        val reader = Thread { rendered.store(runCatching { script.params("list") }) }
+
+        synchronized(script) {
+          reader.start()
+          awaitBlocked(reader)
+          script.add("list", mutableListOf("a"), typeOf<String>())
+        }
+        reader.join(10.seconds.inWholeMilliseconds)
+
+        rendered.load().shouldNotBeNull().getOrThrow() shouldBe "<kotlin.String>"
       }
     }
   }

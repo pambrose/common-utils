@@ -96,12 +96,16 @@ public abstract class com/pambrose/common/concurrent/GenericMonitor {
 	public final fun waitUntilTrue-NqJ4yvY (JJLkotlin/jvm/functions/Function0;)Z
 	public final fun waitUntilTrue-VtjQ1oo (JLkotlin/jvm/functions/Function0;)Z
 	public final fun waitUntilTrueWithInterruption ()V
+	public final fun waitUntilTrueWithInterruption (Ljava/time/Duration;)Z
+	public final fun waitUntilTrueWithInterruption (Ljava/time/Duration;Ljava/time/Duration;Lkotlin/jvm/functions/Function0;)Z
+	public final fun waitUntilTrueWithInterruption (Ljava/time/Duration;Lkotlin/jvm/functions/Function0;)Z
 	public final fun waitUntilTrueWithInterruption-LRDsOJo (J)Z
 	public final fun waitUntilTrueWithInterruption-NqJ4yvY (JJLkotlin/jvm/functions/Function0;)Z
 	public final fun waitUntilTrueWithInterruption-VtjQ1oo (JLkotlin/jvm/functions/Function0;)Z
 }
 
 public final class com/pambrose/common/concurrent/GenericServiceListenerKt {
+	public static final synthetic fun genericServiceListener (Lcom/google/common/util/concurrent/Service;Lio/github/oshai/kotlinlogging/KLogger;)Lcom/google/common/util/concurrent/Service$Listener;
 	public static final fun genericServiceListener (Lcom/google/common/util/concurrent/Service;Lio/github/oshai/kotlinlogging/KLogger;)Lcom/pambrose/common/dsl/GuavaDsl$ServiceListenerHelper;
 }
 
@@ -115,6 +119,8 @@ public abstract class com/pambrose/common/concurrent/GenericValueWaiter {
 public final class com/pambrose/common/concurrent/VerboseCountDownLatch : java/util/concurrent/CountDownLatch {
 	public static final field Companion Lcom/pambrose/common/concurrent/VerboseCountDownLatch$Companion;
 	public fun <init> (I)V
+	public final fun await (Ljava/time/Duration;Ljava/lang/String;)V
+	public final fun await (Ljava/time/Duration;Lkotlin/jvm/functions/Function0;)V
 	public final fun await-VtjQ1oo (JLjava/lang/String;)V
 	public final fun await-VtjQ1oo (JLkotlin/jvm/functions/Function0;)V
 }

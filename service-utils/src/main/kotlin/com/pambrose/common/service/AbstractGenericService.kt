@@ -233,13 +233,15 @@ abstract class AbstractGenericService<T> protected constructor(
         servletService.startSync()
         stopActions.addFirst { servletService.stopSync() }
       }
+
+      // Last, so a hook is never left registered by a failed start. addShutdownHook throws IllegalStateException
+      // once the JVM is shutting down, which must stop what started above like any other failed step.
+      if (registersShutDownHook)
+        shutDownHook = shutDownHookAction(this).also { Runtime.getRuntime().addShutdownHook(it) }
     }.exceptionOrNull()?.let { e ->
       stopActions.runEach().forEach(e::addSuppressed)
       throw e
     }
-
-    if (registersShutDownHook)
-      shutDownHook = shutDownHookAction(this).also { Runtime.getRuntime().addShutdownHook(it) }
   }
 
   override fun shutDown() {

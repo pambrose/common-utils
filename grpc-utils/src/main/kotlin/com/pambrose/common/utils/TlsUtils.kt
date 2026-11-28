@@ -93,7 +93,9 @@ object TlsUtils {
    * @param trustCertCollectionFilePath path to the trusted CA certificates file; when empty, the JVM's
    *   default trust store is used
    * @return a [TlsContext] containing the built [SslContext]
-   * @throws SSLException if SSL context creation fails
+   * @throws IllegalArgumentException for any of the reasons [clientTlsContextBuilder] gives
+   * @throws SSLException if Netty cannot build a context from material that did parse, such as a certificate
+   *   chain in which one certificate is not issued by the next
    */
   @Throws(SSLException::class)
   fun buildClientTlsContext(
@@ -119,10 +121,11 @@ object TlsUtils {
    * @param trustCertCollectionFilePath path to the trusted CA certificates file; when empty, the JVM's
    *   default trust store is used
    * @return a [TlsContextBuilder] wrapping the configured [SslContextBuilder]
-   * @throws SSLException if SSL context builder creation fails
-   * @throws IllegalArgumentException if a given file does not exist, or only one of the cert/key pair is given
+   * @throws IllegalArgumentException if a given file does not exist, only one of the cert/key pair is given, or a
+   *   file does not hold valid PEM certificates or an unencrypted PEM private key. Problems the material shows only
+   *   when it is assembled, such as a broken certificate chain, surface later, as an [SSLException] from
+   *   [SslContextBuilder.build]
    */
-  @Throws(SSLException::class)
   fun clientTlsContextBuilder(
     certChainFilePath: String = "",
     privateKeyFilePath: String = "",
@@ -166,7 +169,9 @@ object TlsUtils {
    * @param privateKeyFilePath path to the server private key file (required)
    * @param trustCertCollectionFilePath path to the trusted client CA certificates (enables mutual auth)
    * @return a [TlsContext] containing the built [SslContext]
-   * @throws SSLException if SSL context creation fails
+   * @throws IllegalArgumentException for any of the reasons [serverTlsContext] gives
+   * @throws SSLException if Netty cannot build a context from material that did parse, such as a certificate
+   *   chain in which one certificate is not issued by the next
    */
   @Throws(SSLException::class)
   fun buildServerTlsContext(
@@ -192,10 +197,11 @@ object TlsUtils {
    * @param privateKeyFilePath path to the server private key file (required)
    * @param trustCertCollectionFilePath path to the trusted client CA certificates (enables mutual auth)
    * @return a [TlsContextBuilder] wrapping the configured [SslContextBuilder]
-   * @throws SSLException if SSL context builder creation fails
-   * @throws IllegalArgumentException if a required path is empty, or a given file does not exist
+   * @throws IllegalArgumentException if a required path is empty, a given file does not exist, or a file does not
+   *   hold valid PEM certificates or an unencrypted PEM private key. Problems the material shows only when it is
+   *   assembled, such as a broken certificate chain, surface later, as an [SSLException] from
+   *   [SslContextBuilder.build]
    */
-  @Throws(SSLException::class)
   fun serverTlsContext(
     certChainFilePath: String,
     privateKeyFilePath: String,

@@ -590,16 +590,17 @@ fun Project.configureCoordinatesAndPom() {
         // signAllPublications() unconditionally would break `make publish-local`, since that publishes the
         // release version with no key and the signing task then fails with "No configured signatory".
         // The risk worth catching is an *unsigned upload to Central*, which Central rejects only after the
-        // fact, so guard that path explicitly instead.
-        val hasSigningKey = providers.gradleProperty("signingInMemoryKey").isPresent
+        // fact, so guard that path explicitly instead. A blank key counts as missing: it is what an empty or failed
+        // export leaves, and signing with it would fail later with a less clear error.
+        val hasSigningKey = providers.gradleProperty("signingInMemoryKey").orNull?.isNotBlank() == true
         if (hasSigningKey) {
             signAllPublications()
         }
         tasks.matching { it.name.contains("MavenCentral") }.configureEach {
             doFirst {
                 require(hasSigningKey) {
-                    "Publishing to Maven Central requires a signing key: set ORG_GRADLE_PROJECT_signingInMemoryKey, " +
-                        "as `make publish-snapshot` and `make publish-maven-central` do."
+                    "Publishing to Maven Central requires a signing key: set ORG_GRADLE_PROJECT_signingInMemoryKey " +
+                        "to a non-blank key, as `make publish-snapshot` and `make publish-maven-central` do."
                 }
             }
         }

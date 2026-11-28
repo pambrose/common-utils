@@ -21,6 +21,7 @@ package com.pambrose.common.script
 
 import java.io.IOException
 import java.io.Reader
+import java.lang.ref.WeakReference
 import java.util.Collections
 import javax.script.AbstractScriptEngine
 import javax.script.Bindings
@@ -39,18 +40,24 @@ const val FAKE_EXTENSION = "fake"
  *
  * It evaluates a single token: `true`, `false`, `null`, an integer, a double-quoted string, or the name of a binding,
  * which it looks up in the engine scope and then the global scope. Anything else throws a [ScriptException]. It records
- * every script it is given in [evaluated].
+ * every script it is given in [evaluated], and, like the Kotlin and Jython engines, keeps the context of its last
+ * evaluation in [lastContext] until the next one.
  */
 class FakeScriptEngine(
   private val factory: ScriptEngineFactory,
 ) : AbstractScriptEngine() {
   val evaluated: MutableList<String> = Collections.synchronizedList([])
 
+  @Volatile
+  var lastContext: ScriptContext? = null
+    private set
+
   override fun eval(
     script: String,
     context: ScriptContext,
   ): Any? {
     evaluated += script
+    lastContext = context
     val code = script.trim()
     return when {
       code == "true" || code == "false" -> code.toBoolean()
@@ -71,6 +78,23 @@ class FakeScriptEngine(
 
   override fun getFactory(): ScriptEngineFactory = factory
 }
+
+/**
+ * Requests garbage collection until this reference is cleared, and returns whether it was. Gives up after about five
+ * seconds, so a referent that something still holds fails a test instead of hanging it.
+ */
+@Suppress("ExplicitGarbageCollectionCall")
+fun WeakReference<*>.isClearedAfterGc(): Boolean {
+  repeat(GC_ATTEMPTS) {
+    System.gc()
+    if (get() == null) return true
+    Thread.sleep(GC_PAUSE_MILLIS)
+  }
+  return false
+}
+
+private const val GC_ATTEMPTS = 100
+private const val GC_PAUSE_MILLIS = 50L
 
 /** Creates [FakeScriptEngine]s for the [FAKE_EXTENSION] extension. */
 class FakeScriptEngineFactory : ScriptEngineFactory {

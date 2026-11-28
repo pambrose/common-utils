@@ -104,7 +104,7 @@ class ResendServiceTests : StringSpec() {
       req.html shouldBe "<h1>Hi</h1>"
     }
 
-    // Resend.emails() builds a new OkHttp client each time, so one must be taken once and reused.
+    // Resend.emails() allocates a new Emails service each time, so one must be taken once and reused.
     "the Resend emails service is created once and reused for every send" {
       stubSend()
 

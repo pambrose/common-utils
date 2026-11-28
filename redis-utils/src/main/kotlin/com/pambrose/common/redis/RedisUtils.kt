@@ -22,15 +22,18 @@ import java.net.URISyntaxException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
+import kotlin.concurrent.atomics.AtomicReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import redis.clients.jedis.ConnectionPoolConfig
 import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.Protocol.DEFAULT_DATABASE
 import redis.clients.jedis.Protocol.DEFAULT_PORT
 import redis.clients.jedis.Protocol.DEFAULT_TIMEOUT
 import redis.clients.jedis.RedisClient
+import redis.clients.jedis.RedisProtocol
 import redis.clients.jedis.SslOptions
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.exceptions.JedisException
@@ -47,12 +50,15 @@ import redis.clients.jedis.util.JedisURIHelper
  * such as `tls` or `redis+tls`, is rejected rather than connecting without TLS.
  *
  * A URL without a port uses 6379. A URL that can never work (one that is malformed, has no host, has another scheme
- * or a port that is not a number from 1 to 65535, or carries a non-numeric database index or an unknown `protocol`)
- * is a configuration error: every function that takes a URL throws [IllegalArgumentException] for it, rather than
- * treating it as a connection failure.
+ * or a port that is not a number from 1 to 65535, has a path other than a database index such as `/3`, or carries an
+ * unknown `protocol`) is a configuration error: every function that takes a URL throws [IllegalArgumentException]
+ * for it, rather than treating it as a connection failure. No such message repeats any part of the URL, which may
+ * hold a password.
  *
  * Percent-escapes in the user name and password are decoded after the user info is split at its first `:`, so an
- * escaped `%3A` stays in the user name, and a literal `+` stays a `+`.
+ * escaped `%3A` stays in the user name, and a literal `+` stays a `+`. A `/`, `?`, `#` or `@` in either must be
+ * percent-encoded (`%2F`, `%3F`, `%23`, `%40`): unescaped, an `@` ends the user info too early, and each of the
+ * others ends the authority before the host.
  */
 object RedisUtils {
   private val logger = KotlinLogging.logger {}
@@ -79,6 +85,12 @@ object RedisUtils {
 
   private const val INVALID_PORT_MSG = "Redis URL port must be a number from 1 to 65535"
 
+  private const val INVALID_DATABASE_MSG =
+    "Redis URL path must be empty or a database index, such as /3; a '/' in the password must be percent-encoded as %2F"
+
+  // RedisProtocol's two versions, RESP2 and RESP3
+  private const val INVALID_PROTOCOL_MSG = "Redis URL protocol must be 2 or 3"
+
   private val validPorts = 1..65535
 
   // The exception's message says why (refused, timed out, bad credentials, pool exhausted) and holds no secrets, so
@@ -101,11 +113,15 @@ object RedisUtils {
    * @property uri the parsed [URI]
    * @property user the username extracted from the URL's userinfo
    * @property password the password extracted from the URL's userinfo
+   * @property database the database index from the URL's path, or 0 when it has none
+   * @property protocol the `protocol` from the URL's query, or `null` to leave the choice to Jedis
    */
   internal class RedisInfo(
     val uri: URI,
     val user: String,
     val password: String,
+    val database: Int = DEFAULT_DATABASE,
+    val protocol: RedisProtocol? = null,
   ) {
     // The single rule for what counts as a real password: blank and the "none" placeholder are neither sent
     // as a password nor treated as credentials to attach a username to.
@@ -139,7 +155,31 @@ object RedisUtils {
     // Split before decoding, as JedisURIHelper does: userInfo is already decoded, so an escaped ':' (%3A) in the
     // user name would split it.
     val userInfo = uri.rawUserInfo?.split(":", limit = 2).orEmpty().map(::decodeUserInfo)
-    return RedisInfo(uri, userInfo.getOrElse(0) { "" }, userInfo.getOrElse(1) { "" })
+    return RedisInfo(
+      uri = uri,
+      user = userInfo.getOrElse(0) { "" },
+      password = userInfo.getOrElse(1) { "" },
+      database = uri.databaseIndex(),
+      protocol = uri.redisProtocol(),
+    )
+  }
+
+  // The path is empty, "/" or "/" and the index. JedisURIHelper.getDBIndex would parse it with Integer.parseInt, whose
+  // message quotes it, and an unescaped '/' in a password puts the rest of the password, and the host, in the path.
+  // Only ASCII digits are accepted: parseInt also takes a sign and other scripts' digits.
+  private fun URI.databaseIndex(): Int {
+    val index = path.orEmpty().removePrefix("/").ifEmpty { return DEFAULT_DATABASE }
+    return requireNotNull(index.takeIf { it.isAsciiDigits() }?.toIntOrNull()) { INVALID_DATABASE_MSG }
+  }
+
+  // JedisURIHelper reads the query as it always has, but its message for an unknown protocol quotes the value, which
+  // an unescaped '?' in a password can supply, so it is replaced.
+  private fun URI.redisProtocol(): RedisProtocol? {
+    try {
+      return JedisURIHelper.getRedisProtocol(this)
+    } catch (_: IllegalArgumentException) {
+      throw IllegalArgumentException(INVALID_PROTOCOL_MSG)
+    }
   }
 
   // java.net.URI reports no host when there is none, and also when it cannot parse the authority as host[:port]:
@@ -157,7 +197,9 @@ object RedisUtils {
   }
 
   // URI accepts only ASCII digits in a port, whereas toIntOrNull() also accepts a sign.
-  private fun String.isValidPort() = all { it in '0'..'9' } && toIntOrNull() in validPorts
+  private fun String.isValidPort() = isAsciiDigits() && toIntOrNull() in validPorts
+
+  private fun String.isAsciiDigits() = all { it in '0'..'9' }
 
   // Decodes as JedisURIHelper does: a URI keeps a literal '+', which URLDecoder alone would turn into a space. The
   // URI constructor has already rejected a malformed escape, so this cannot throw.
@@ -184,8 +226,8 @@ object RedisUtils {
 
   // Jedis' own URI-aware builders are deliberately not used here: DefaultJedisClientConfig.builder(URI) and the
   // deprecated StandaloneClientBuilder.fromURI(URI) both throw IllegalArgumentException for a URL that carries a
-  // user but no password, such as redis://username@localhost:6379, which this library accepts. Only the parts
-  // with no such trap (database index, protocol) are delegated to JedisURIHelper.
+  // user but no password, such as redis://username@localhost:6379, which this library accepts. urlDetails() has
+  // already read and checked every part of the URL used here, so building the config cannot reject it.
   private fun clientConfig(info: RedisInfo): DefaultJedisClientConfig {
     val builder =
       DefaultJedisClientConfig.builder()
@@ -202,10 +244,8 @@ object RedisUtils {
       builder.password(info.password)
     }
 
-    if (JedisURIHelper.hasDbIndex(info.uri))
-      builder.database(JedisURIHelper.getDBIndex(info.uri))
-
-    JedisURIHelper.getRedisProtocol(info.uri)?.let { builder.protocol(it) }
+    builder.database(info.database)
+    info.protocol?.let { builder.protocol(it) }
 
     return builder.build()
   }
@@ -435,7 +475,9 @@ object RedisUtils {
    * Suspending variant of [withRedis]. Creates a short-lived connection, executes a suspending [block], and closes it.
    *
    * Passes `null` to [block] if the connection fails. Connecting, pinging and closing run on [Dispatchers.IO];
-   * [block] runs in the caller's context, so Jedis calls made in it still block their thread.
+   * [block] runs in the caller's context, so Jedis calls made in it still block their thread. A caller cancelled
+   * while connecting waits for the attempt to finish, which cancellation cannot interrupt, and the client is closed
+   * without running [block].
    *
    * @param T the return type of the block
    * @param redisUrl the Redis connection URL
@@ -456,7 +498,8 @@ object RedisUtils {
   /**
    * Suspending variant of [withNonNullRedis]. Creates a short-lived connection, executes a suspending [block],
    * and closes it. Returns `null` if the connection fails. Connecting, pinging and closing run on
-   * [Dispatchers.IO]; [block] runs in the caller's context.
+   * [Dispatchers.IO]; [block] runs in the caller's context. Cancellation while connecting closes the client without
+   * running [block], as in [withSuspendingRedis].
    *
    * @param T the return type of the block
    * @param redisUrl the Redis connection URL
@@ -482,15 +525,34 @@ object RedisUtils {
   private suspend fun RedisClient.pingSucceedsOnIo(printStackTrace: Boolean) =
     withContext(ioDispatcher) { pingSucceeds(printStackTrace) }
 
+  // Cancellation cannot interrupt connectOrNull, whose ping is blocking socket I/O, so a caller cancelled meanwhile
+  // still gets a connected client back on the IO thread. withContext then throws instead of returning it, so the
+  // client is recorded as soon as it exists and closed here, rather than leaking its pool and socket. Once this
+  // returns, the caller hands the client to useOnIo with no suspension point in between.
   private suspend fun connectOrNullOnIo(
     redisUrl: String,
     printStackTrace: Boolean,
-  ) = withContext(ioDispatcher) { connectOrNull(redisUrl, printStackTrace) }
+  ): RedisClient? {
+    val connected = AtomicReference<RedisClient?>(null)
+    try {
+      return withContext(ioDispatcher) { connectOrNull(redisUrl, printStackTrace).also { connected.store(it) } }
+    } catch (e: Throwable) {
+      connected.load()?.closeOnIo()?.let(e::addSuppressed)
+      throw e
+    }
+  }
+
+  // Closes on the IO dispatcher, under NonCancellable so that a cancelled caller still closes the client, and returns
+  // what closing threw, if anything. The two are nested because a withContext that changes the dispatcher throws a
+  // CancellationException on returning to a cancelled caller, even under NonCancellable, which would discard both
+  // the close failure and the exception the caller is about to rethrow; one that keeps the dispatcher does not.
+  private suspend fun RedisClient.closeOnIo(): Throwable? =
+    withContext(NonCancellable) { withContext(ioDispatcher) { runCatching { close() }.exceptionOrNull() } }
 
   // Like use(), but closes on the IO dispatcher, and under NonCancellable so a cancelled block still closes it.
   private suspend fun <T> RedisClient.useOnIo(block: suspend (RedisClient) -> T): T {
     val result = runCatching { block(this) }
-    val closeFailure = withContext(NonCancellable + ioDispatcher) { runCatching { close() }.exceptionOrNull() }
+    val closeFailure = closeOnIo()
     result.exceptionOrNull()?.let { failure ->
       closeFailure?.let(failure::addSuppressed)
       throw failure

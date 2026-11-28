@@ -177,12 +177,39 @@ class UpsertStatementTests : StringSpec() {
       }
     }
 
-    // H2 in MySQL mode keeps H2's own upsert, so the dialect check is exercised directly.
+    // No MySQL or MariaDB server is available to the tests, so those dialects are checked directly. H2Dialect reads
+    // its compatibility mode from the current transaction's database, so it is checked inside one.
     "MySQL and MariaDB are rejected, since ON DUPLICATE KEY UPDATE cannot target one index" {
       shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MysqlDialect()) }
       shouldThrow<UnsupportedByDialectException> { checkConflictIndexSupported(MariaDBDialect()) }
-      checkConflictIndexSupported(H2Dialect())
       checkConflictIndexSupported(PostgreSQLDialect())
+      transaction(db) { checkConflictIndexSupported(H2Dialect()) }
+    }
+
+    // Exposed gives H2 in MySQL or MariaDB mode MySQL's ON DUPLICATE KEY UPDATE upsert, so it is rejected the same
+    // way, and before body runs.
+    "H2 in MySQL and MariaDB mode is rejected before the body runs" {
+      listOf("MySQL", "MariaDB").forEach { mode ->
+        val modeDb = Database.connect("jdbc:h2:mem:upsert_${mode.lowercase()}_mode;MODE=$mode;DB_CLOSE_DELAY=-1")
+        try {
+          var bodyRan = false
+          transaction(modeDb) {
+            val exception =
+              shouldThrow<UnsupportedByDialectException> {
+                UpsertUsersTable.upsert(emailIndex) {
+                  bodyRan = true
+                  it[id] = 1
+                  it[email] = "alice@example.com"
+                  it[name] = "Alice"
+                }
+              }
+            exception.message shouldContain "ON DUPLICATE KEY UPDATE matches any unique key"
+          }
+          bodyRan shouldBe false
+        } finally {
+          TransactionManager.closeAndUnregister(modeDb)
+        }
+      }
     }
   }
 

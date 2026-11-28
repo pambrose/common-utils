@@ -48,9 +48,22 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.time.Duration
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.SECONDS
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.incrementAndFetch
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.UnifiedJedis
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -91,6 +104,8 @@ class RedisUtilsMockTests : StringSpec() {
     poolPingTests()
     withRedisTests()
     failedPingTests()
+    cancellationTests()
+    cancelledCloseFailureTests()
     poolSizingTests()
   }
 
@@ -326,6 +341,133 @@ class RedisUtilsMockTests : StringSpec() {
         withNonNullRedis(redisUrl = "redis://cache.example.com:6379") { "should-not-run" } shouldBe null
       }
 
+      verify(exactly = 1) { client.close() }
+    }
+  }
+
+  // A client whose ping() reports [pingStarted] and then waits for [releasePing] before running [answer].
+  private fun gatedClient(
+    pingStarted: CompletableDeferred<Unit>,
+    releasePing: CountDownLatch,
+    answer: () -> String = { "PONG" },
+  ): RedisClient =
+    mockk {
+      every { ping() } answers {
+        pingStarted.complete(Unit)
+        releasePing.await(10, SECONDS)
+        answer()
+      }
+      every { close() } just Runs
+    }
+
+  // Starts [call] against the stubbed factory, cancels it once [client] is pinging, lets the ping finish, and
+  // returns what [call] threw, after checking that its block never ran.
+  private suspend fun cancelWhileConnecting(
+    client: RedisClient,
+    pingStarted: CompletableDeferred<Unit>,
+    releasePing: CountDownLatch,
+    call: suspend (url: String, block: (RedisClient) -> String) -> String?,
+  ): Throwable? {
+    val blockRuns = AtomicInt(0)
+    val thrown = AtomicReference<Throwable?>(null)
+    withClientFactoryReturning(client) {
+      coroutineScope {
+        val connecting =
+          launch {
+            val result = runCatching { call("redis://cache.example.com:6379") { "${blockRuns.incrementAndFetch()}" } }
+            thrown.store(result.exceptionOrNull())
+          }
+        withTimeout(10.seconds) { pingStarted.await() }
+        connecting.cancel()
+        releasePing.countDown()
+        connecting.join()
+      }
+    }
+    blockRuns.load() shouldBe 0
+    return thrown.load()
+  }
+
+  private fun cancellationTests() {
+    // connectOrNull's ping is blocking I/O that cancellation cannot interrupt, so it finished and returned the
+    // connected client, and withContext then threw instead of returning it: nothing closed the client.
+    "cancelling a suspending withRedis variant while it connects closes the client once" {
+      suspendingWithRedisVariants.forEach { (name, call) ->
+        withClue(name) {
+          val pingStarted = CompletableDeferred<Unit>()
+          val releasePing = CountDownLatch(1)
+          val client = gatedClient(pingStarted, releasePing)
+
+          cancelWhileConnecting(client, pingStarted, releasePing, call).shouldBeInstanceOf<CancellationException>()
+
+          verify(exactly = 1) { client.ping() }
+          verify(exactly = 1) { client.close() }
+        }
+      }
+    }
+
+    // connectOrNull already closes a client that fails its ping; the cancellation must not close it again.
+    "a client that fails its ping while the caller is cancelled is closed only once" {
+      suspendingWithRedisVariants.forEach { (name, call) ->
+        withClue(name) {
+          val pingStarted = CompletableDeferred<Unit>()
+          val releasePing = CountDownLatch(1)
+          val client = gatedClient(pingStarted, releasePing) { throw JedisConnectionException("simulated failure") }
+
+          cancelWhileConnecting(client, pingStarted, releasePing, call).shouldBeInstanceOf<CancellationException>()
+
+          verify(exactly = 1) { client.close() }
+        }
+      }
+    }
+  }
+
+  private fun cancelledCloseFailureTests() {
+    // The cancellation is what the caller sees; a failure to close the client is kept as a suppressed exception.
+    "a failure to close the client after a cancellation is suppressed by the cancellation" {
+      suspendingWithRedisVariants.forEach { (name, call) ->
+        withClue(name) {
+          val pingStarted = CompletableDeferred<Unit>()
+          val releasePing = CountDownLatch(1)
+          val closeFailure = JedisException("simulated close failure")
+          val client = gatedClient(pingStarted, releasePing)
+          every { client.close() } throws closeFailure
+
+          val thrown = cancelWhileConnecting(client, pingStarted, releasePing, call)
+
+          thrown.shouldBeInstanceOf<CancellationException>().suppressed.toList() shouldBe [closeFailure]
+          verify(exactly = 1) { client.close() }
+        }
+      }
+    }
+
+    // Closing switched to Dispatchers.IO in a withContext that, on returning to the cancelled caller, threw a fresh
+    // CancellationException in place of its result, so the failure to close was lost.
+    "a failure to close the client after its block is cancelled is suppressed by the cancellation" {
+      val closeFailure = JedisException("simulated close failure")
+      val client = connectedClient()
+      every { client.close() } throws closeFailure
+      val blockStarted = CompletableDeferred<Unit>()
+      val thrown = AtomicReference<Throwable?>(null)
+
+      withClientFactoryReturning(client) {
+        coroutineScope {
+          val running =
+            launch {
+              val result =
+                runCatching {
+                  withSuspendingNonNullRedis("redis://cache.example.com:6379") {
+                    blockStarted.complete(Unit)
+                    awaitCancellation()
+                  }
+                }
+              thrown.store(result.exceptionOrNull())
+            }
+          withTimeout(10.seconds) { blockStarted.await() }
+          running.cancelAndJoin()
+        }
+      }
+
+      thrown.load().shouldBeInstanceOf<CancellationException>().suppressed.toList() shouldBe [closeFailure]
       verify(exactly = 1) { client.close() }
     }
   }

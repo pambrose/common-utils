@@ -393,6 +393,16 @@ class StringExtensionTests : StringSpec() {
       "".isBracketed('{', '}') shouldBe false
     }
 
+    // As with isSingleQuoted and isDoubleQuoted, one character cannot be both the opener and the closer. A lone
+    // "|" used to count as bracketed by '|' and '|'.
+    "a single character is not bracketed when the start and end characters are the same" {
+      "|".isBracketed('|', '|') shouldBe false
+      "  |  ".isBracketed('|', '|') shouldBe false
+      "|".isNotBracketed('|', '|') shouldBe true
+      "||".isBracketed('|', '|') shouldBe true
+      " |x| ".isBracketed('|', '|') shouldBe true
+    }
+
     "is not bracketed test" {
       "[fddsf]".isNotBracketed() shouldBe false
       "  [fddsf]  ".isNotBracketed() shouldBe false
@@ -424,6 +434,15 @@ class StringExtensionTests : StringSpec() {
       shouldThrow<IllegalArgumentException> { "a".trimEnds() }
       shouldThrow<IllegalArgumentException> { " [x] ".trimEnds(2) }
       shouldThrow<IllegalArgumentException> { "abc".trimEnds(-1) }
+    }
+
+    // 2 * len overflows to a negative Int for len >= 2^30, which used to slip past the length check: the JVM and
+    // Native then threw IndexOutOfBoundsException, and JS clamped the indices and returned the whole string.
+    "trimEnds rejects a length whose double overflows an Int" {
+      shouldThrow<IllegalArgumentException> { "hello".trimEnds(1 shl 30) }
+      shouldThrow<IllegalArgumentException> { "hello".trimEnds(Int.MAX_VALUE) }
+      "hello".trimEnds(2) shouldBe "l"
+      shouldThrow<IllegalArgumentException> { "hello".trimEnds(3) }
     }
 
     "null if blank test" {

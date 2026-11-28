@@ -10,9 +10,15 @@ cases. Published on Maven Central.
 Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, and **ktor-client-utils**. They target
 JVM, JS, wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code lives in `src/commonMain`, JVM-bound
 code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM. Most depend
-on core-utils' jvm variant via ordinary project dependencies; jetty-utils, dropwizard-utils, prometheus-utils,
-exposed-utils and ktor-server-utils do not (they declare kotlin-logging directly where they log), and neither does
-ktor-client-utils. Don't add core-utils to a module for one helper: every consumer inherits its whole `api` surface.
+on core-utils' jvm variant via ordinary project dependencies. json-utils, email-utils, recaptcha-utils,
+script-utils-common (and through it the script-utils-* engines) and service-utils export it as `api`. grpc-utils,
+guava-utils, redis-utils and zipkin-utils take it as `implementation` (since 5.4.0), because no core-utils type is in
+their public API; only grpc-utils uses it, and the other three keep it solely so that code compiled against an earlier
+release still finds it at runtime, until 6.0.0 drops it. They declare what they use themselves (kotlin-logging,
+kotlinx-coroutines), as `api` where it is in their API (guava-utils' `KLogger`). jetty-utils, dropwizard-utils,
+prometheus-utils, exposed-utils and ktor-server-utils do not depend on core-utils (they declare kotlin-logging directly
+where they log), and neither does ktor-client-utils. Don't add core-utils to a module for one helper: as `api`, every
+consumer inherits its whole `api` surface.
 
 ## Common Development Commands
 
@@ -81,7 +87,11 @@ Run `make help` for a self-documenting list of every target.
   `~/.gradle/gradle.properties`, which every Gradle build on the machine reads. The entries are shared by every repository that publishes this way. Add them once with
   `security add-generic-password -a maven-central -s maven-central-username -U -w` (and the same for
   `maven-central-password`), which prompts for the value so it stays out of the shell history. Both publish targets
-  check the entries first through `_check-maven-central-env`, which names a missing or empty entry, never its value.
+  check the entries first through `_check-maven-central-env`, which names a missing or empty entry, never its value,
+  and `_check-gpg-env` fails the same way on a missing or empty `gradle-signing-password` (the signing key must have a
+  passphrase). The publish recipes then resolve each secret (`GPG_ENV`, `MAVEN_CENTRAL_ENV`) as a separate shell
+  assignment and export it, stopping before `./gradlew` if a command fails or prints nothing. Don't go back to prefix
+  assignments (`VAR="$(...)" ./gradlew`): a failing substitution there still runs Gradle, with the secret set to `""`.
 
 ## Architecture
 
@@ -96,7 +106,7 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
   `configureKmpTests()` also runs their test tasks in up to eight forks, or in one on GitHub-hosted runners (detected
   through `RUNNER_ENVIRONMENT`), so the timing-sensitive specs don't race other test JVMs for CPU in CI; the JVM
   modules keep Gradle's default of one fork
-- `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
+- `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present and not blank**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing or blank, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
   on the KMP modules' `-jvm` artifacts), published through the same POM setup; it skips all the Kotlin, lint,
@@ -325,7 +335,8 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   committed self-signed PEM fixtures (`grpc-utils/src/test/resources/tls/`); Exposed tests use in-memory H2;
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
 - `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
-  MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
+  MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`. It is `null`
+  until the first verification builds the client, so an app with reCAPTCHA disabled opens no CIO selector.
 - ktor-client-utils declares no client engine, so its client-creating `commonTest` specs rely on one supplied
   by the test source sets: CIO is a `jvmTest` and `nativeTest` dependency, and js/wasmJs fall back to the Js
   engine bundled in ktor-client-core. Kotlin/Native has no such fallback, so dropping CIO from `nativeTest`
@@ -358,8 +369,8 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.3.1 the project sits at 99.3% line and 96.2% branch, and the weakest package
-by line coverage is `service` at 98.2%.
+`codecov.yml` point here). As of 5.4.0 the project sits at 99.3% line and 96.1% branch, and the weakest package
+by line coverage is `service` at 98.3%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
   service-utils, ktor-server-utils and guava-utils) could lose all its coverage without failing the aggregate.
@@ -405,6 +416,9 @@ All modules use: `com.pambrose.common.*`
   `copy`, so keep a hidden overload of each (Kotlin allows an explicit `copy` with other parameters), give it the
   old defaults so its `$default` bridge survives, and add the property last so `componentN` keeps its meaning;
   `MetricsConfig` shows the pattern, and `MetricsConfigTests` calls the old signatures by reflection. A
+  `HIDDEN` deprecation compiles the declaration as synthetic, which changes its dump line; when the line must stay as
+  it is, as for a narrower return type, keep the old body as a `@PublishedApi internal` function with the old
+  `@JvmName` and mark the new Kotlin-facing one `@JvmSynthetic`, as `genericServiceListener` does. A
   declaration that could never be called successfully (for example one that always threw) may be dropped in a
   minor release, with a CHANGELOG note. One deliberate exception: the 5.1.1 patch release dropped
   `DateUtils.toCreated`, which only Canvas Cache used, and the inline two-receiver `with(a, b)`; it is not a precedent

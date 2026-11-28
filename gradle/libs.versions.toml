@@ -155,11 +155,6 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 
 [bundles]
 # Frameworks
-dropwizard-service = [
-  "dropwizard-servlets",
-  "dropwizard-jmx",
-]
-
 ktor-server-service = [
   "ktor-server-cio",
 ]

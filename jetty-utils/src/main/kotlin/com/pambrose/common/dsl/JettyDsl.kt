@@ -17,6 +17,7 @@
 
 package com.pambrose.common.dsl
 
+import com.pambrose.common.servlet.StatusOnlyErrorHandler
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
@@ -63,8 +64,19 @@ object JettyDsl {
   /**
    * Creates and configures a [ServletContextHandler].
    *
+   * The handler starts with an error handler whose pages show only the status code, its reason phrase and the
+   * request URI: no exception class, message, cause or stack trace, no servlet name, and no "Powered by Jetty"
+   * footer. Without one, a servlet error would fall to the server's error handler, which shows the exception's class
+   * and message and, unless the connector's `sendServerVersion` is off, the Jetty version. To show more, set
+   * [ServletContextHandler.setErrorHandler] in [block], for example to an `ErrorPageErrorHandler`; setting it to
+   * `null` hands this context's errors back to the server's error handler.
+   *
    * @param block an optional lambda with [ServletContextHandler] as receiver for adding servlets and filters.
    * @return the configured [ServletContextHandler] instance.
    */
-  fun servletContextHandler(block: ServletContextHandler.() -> Unit = {}) = ServletContextHandler().apply(block)
+  fun servletContextHandler(block: ServletContextHandler.() -> Unit = {}): ServletContextHandler =
+    ServletContextHandler().apply {
+      errorHandler = StatusOnlyErrorHandler()
+      block()
+    }
 }

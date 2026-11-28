@@ -31,6 +31,11 @@ import kotlin.time.Duration.Companion.seconds
 
 class DurationFormatTests : StringSpec() {
   init {
+    signTests()
+    layoutTests()
+  }
+
+  private fun signTests() {
     // abs(Long.MIN_VALUE) is still negative, so -INFINITE used to format as "--106751991167:-7:-12:-55".
     "a negative infinite duration mirrors the positive one" {
       Duration.INFINITE.format() shouldBe "106751991167:07:12:55"
@@ -41,6 +46,28 @@ class DurationFormatTests : StringSpec() {
       (-500).microseconds.format() shouldBe "0:00:00:00"
     }
 
+    // Without milliseconds the output shows whole seconds, so a negative duration under one second used to format
+    // as "-0:00:00:00".
+    "a negative duration that truncates to zero seconds has no sign when milliseconds are omitted" {
+      (-500).milliseconds.format() shouldBe "0:00:00:00"
+      (-999).milliseconds.format() shouldBe "0:00:00:00"
+      (-500).milliseconds.format(includeMillis = true) shouldBe "-0:00:00:00.500"
+      (-1000).milliseconds.format() shouldBe "-0:00:00:01"
+      (-1500).milliseconds.format() shouldBe "-0:00:00:01"
+      (-1500).milliseconds.format(includeMillis = true) shouldBe "-0:00:00:01.500"
+    }
+
+    // The largest finite Duration is Long.MAX_VALUE / 2 - 1 milliseconds; an infinite one formats as Long.MAX_VALUE.
+    "an infinite duration formats as Long.MAX_VALUE milliseconds, not as the largest finite duration" {
+      val largestFinite = (Long.MAX_VALUE / 2 - 1).milliseconds
+      largestFinite.isFinite() shouldBe true
+      (largestFinite + 1.milliseconds).isInfinite() shouldBe true
+      largestFinite.format(includeMillis = true) shouldBe "53375995583:15:36:27.902"
+      Duration.INFINITE.format(includeMillis = true) shouldBe "106751991167:07:12:55.807"
+    }
+  }
+
+  private fun layoutTests() {
     "format zero duration" {
       val duration = 0.seconds
       duration.format() shouldBe "0:00:00:00"

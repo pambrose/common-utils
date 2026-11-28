@@ -31,23 +31,27 @@ spelling such as `tls://` or `redis+tls://`, throws rather than connecting witho
 
 The whole URL is read, not just the host and port:
 
-| URL part      | Effect                            |
-|---------------|-----------------------------------|
-| `/3` path     | selects database 3                |
-| `?protocol=3` | selects the RESP protocol version |
-| userinfo      | sent with `AUTH`                  |
+| URL part      | Effect                                         |
+|---------------|------------------------------------------------|
+| `/3` path     | selects database 3; no path, or `/`, selects 0 |
+| `?protocol=3` | selects the RESP protocol version (`2` or `3`) |
+| userinfo      | sent with `AUTH`                               |
 
 The password is sent only when it is a real one: a blank password and the placeholder `none` both count as no
 password. The user is sent only alongside a real password, and only when the name itself is a real one — not
 blank, `default` or `user`. Percent-escapes in either are decoded after the userinfo is split at its first `:`, so
 `tenant%3Aalice:secret` is the user `tenant:alice`, and a literal `+` stays a `+`.
 
+A `/`, `?`, `#` or `@` in the user name or password must be percent-encoded, as `%2F`, `%3F`, `%23` and `%40`.
+Unescaped, an `@` ends the userinfo too early, and each of the others ends the authority before the host: in
+`redis://alice:123/abc@host`, the host is `alice`, the port `123` and the path `/abc@host`.
+
 A URL without a port connects to 6379. A URL that can never work throws `IllegalArgumentException` from every
 function that takes one, before any block runs; it is a configuration error, not a connection failure, so it does
 not take the `null` path described below. That covers a malformed URL, one with no host (such as
 `localhost:6379`, which parses as the scheme `localhost`), a scheme other than `redis` or `rediss`, a port that is
-not a number from 1 to 65535, a non-numeric database index and an unknown `protocol`. Apart from the last two,
-whose messages quote the offending value, these messages leave out the URL, which may hold a password.
+not a number from 1 to 65535, a path other than `/` or a database index such as `/3` (digits only), and an unknown
+`protocol`. None of these messages repeats any part of the URL, which may hold a password.
 
 ### Short-lived Clients
 
@@ -96,9 +100,12 @@ failures, which arrive as a plain `JedisException` — it logs the error with th
 stack trace when `printStackTrace = true`, and then passes `null` to the block or returns `null`.
 
 The suspending variants connect, ping and close on `Dispatchers.IO`, since each of those is a blocking Jedis call
-that can take the full 2-second timeout when Redis is down. The block itself runs in the caller's context, so
-Jedis calls inside it still block their thread: wrap them in `withContext(Dispatchers.IO)` when calling from a
-limited dispatcher such as `Dispatchers.Default` or a Ktor event loop.
+that can take the full 2-second timeout when Redis is down. Cancellation cannot interrupt those calls, so a
+coroutine cancelled while `withSuspendingRedis` or `withSuspendingNonNullRedis` is connecting waits for the
+connection attempt to finish, closes any client it made, and then throws the `CancellationException` without
+running the block. The block itself runs in the caller's context, so Jedis calls inside it still block their
+thread: wrap them in `withContext(Dispatchers.IO)` when calling from a limited dispatcher such as
+`Dispatchers.Default` or a Ktor event loop.
 
 ### Scanning Keys
 
@@ -126,7 +133,6 @@ it rejects a pattern without a `{hash-tag}`, and with one it returns only that t
 - `fun <T> RedisClient.withNonNullRedisPool(printStackTrace = false, block: (RedisClient) -> T): T?`
 - `suspend fun <T> RedisClient.withSuspendingRedisPool(...)` and `withSuspendingNonNullRedisPool(...)`
 - `fun UnifiedJedis.scanKeys(pattern: String, count: Int = 100): Sequence<String>`
-- `class RedisInfo(uri, user, password)` — the parsed URL, with `includeUserInAuth`
 - Constants `REDIS_MAX_POOL_SIZE`, `REDIS_MAX_IDLE_SIZE`, `REDIS_MIN_IDLE_SIZE`, `REDIS_MAX_WAIT_SECS`,
   `UNLIMITED_POOL_SIZE`
 
@@ -135,8 +141,11 @@ it rejects a pattern without a `{hash-tag}`, and with one it returns only that t
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
-- Jedis (`redis.clients:jedis`)
+- Jedis (`redis.clients:jedis`), an `api` dependency
+- kotlin-logging and kotlinx-coroutines, internally
+- core-utils, as an `implementation` dependency since 5.4.0: no core-utils type is in this module's API, so it is
+  no longer on a consumer's compile classpath. Depend on core-utils yourself to call it. It is kept on the runtime
+  classpath for code compiled against earlier releases, and 6.0.0 removes it.
 
 ## Installation
 

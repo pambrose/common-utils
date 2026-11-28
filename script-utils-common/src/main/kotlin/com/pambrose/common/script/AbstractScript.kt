@@ -108,7 +108,8 @@ abstract class AbstractScript(
   @Synchronized
   open fun params(
     name: String,
-    types: Array<out KType> = typeMap[name] ?: error("No type parameters registered for $name"),
+    // Evaluated before params takes the lock, so the default takes it itself.
+    types: Array<out KType> = synchronized(this) { typeMap[name] } ?: error("No type parameters registered for $name"),
   ): String = if (types.isEmpty()) "" else types.joinToString(", ", "<", ">") { renderType(it) }
 
   /**
@@ -129,7 +130,9 @@ abstract class AbstractScript(
    * @param types the type parameters for generic types (e.g., for `List<String>`, pass `typeOf<String>()`). A value
    *   whose own class cannot be named in generated code, and takes no type parameters, may still be given some when a
    *   public class or interface it implements takes that many; it is then declared as that type (a lambda as a
-   *   `Function1<A, B>`, the value of `Comparator.naturalOrder()` as a `Comparator<T>`)
+   *   `Function1<A, B>`, the value of `Comparator.naturalOrder()` as a `Comparator<T>`). Such a value needs none, even
+   *   when its own class takes some, when the nearest class or interface generated code can name takes none (the value
+   *   of `IntStream.of(1, 2)` is declared as an `IntStream`)
    * @throws ScriptException if the name is not a valid identifier, the value is a local/anonymous class, or the type
    *   parameter count is invalid
    */
@@ -148,17 +151,13 @@ abstract class AbstractScript(
         throw ScriptException("Variable $qname is a local or an anonymous class")
       }
 
+      value.isDeclaredAsSupertypeFor(types) -> {
+        register(name, value, types)
+      }
+
       paramCnt > 0 && types.isEmpty() -> {
         val plural = "parameter".pluralize(paramCnt)
         throw ScriptException("Expected $paramCnt type $plural to be specified for $qname")
-      }
-
-      // A value whose own class cannot be named is declared as a public supertype, which may take type arguments the
-      // class itself does not: a lambda is declared as a Function1<A, B>, and the private enum behind
-      // Comparator.naturalOrder() as a Comparator<T>. A public class is still checked strictly.
-      types.isNotEmpty() && paramCnt != types.size && !value.javaClass.isPubliclyAccessible() &&
-        value.javaClass.hasNameableSupertype(types.size) -> {
-        register(name, value, types)
       }
 
       paramCnt == 0 && types.isNotEmpty() -> {
@@ -178,6 +177,19 @@ abstract class AbstractScript(
       }
     }
   }
+
+  // Whether this value fits [types] although its own class takes a different number of type parameters, because
+  // generated code cannot name its class and declares it as a supertype instead. When [types] is empty, that is the
+  // nearest nameable supertype, if it takes none: the package-private IntPipeline.Head<E_IN> behind IntStream.of(1, 2)
+  // is declared as an IntStream. Otherwise it is a public supertype taking that many: a lambda is declared as a
+  // Function1<A, B>, and the private enum behind Comparator.naturalOrder() as a Comparator<T>. A public class is still
+  // checked strictly.
+  private fun Any.isDeclaredAsSupertypeFor(types: Array<out KType>): Boolean =
+    when {
+      typeParameterCount == types.size -> false
+      types.isEmpty() -> javaClass.isDeclaredAsNonGenericSupertype()
+      else -> !javaClass.isPubliclyAccessible() && javaClass.hasNameableSupertype(types.size)
+    }
 
   /**
    * Records [value] under [name], to be bound to the engine before the next evaluation. Unlike [add], it does not
@@ -246,10 +258,11 @@ abstract class AbstractScript(
   /**
    * The nearest class or interface of [value]'s runtime class that generated code can name, searched breadth-first
    * through its superclasses and interfaces. [Enum] and `java.lang.Record` are skipped, since they carry none of the
-   * value's own API, and so are classes whose module does not export their package. The runtime class itself may be private or internal, as the list behind
-   * `listOf(1, 2)` is. A candidate must declare as many type parameters as were registered for [name], or any number
-   * when none were registered. Falls back to [Any], which takes no type arguments, so callers must not append the
-   * registered ones to it.
+   * value's own API, and so are classes whose module does not export their package. The runtime class itself may be
+   * private or internal, as the list behind `listOf(1, 2)` is, or an inner class of a generic class, which generated
+   * code cannot name without the outer class's type arguments. A candidate must declare as many type parameters as were
+   * registered for [name], or any number when none were registered. Falls back to [Any], which takes no type arguments,
+   * so callers must not append the registered ones to it.
    *
    * An array is the exception: its own class is returned. Its JVM class declares no type parameters, and generated code
    * names an object array by its registered element type (`kotlin.Array<kotlin.Int>`, `java.lang.Integer[]`), so the
@@ -282,6 +295,12 @@ abstract class AbstractScript(
 
     fun Class<*>.hasNameableSupertype(arity: Int) = nameableSupertypes().any { it.typeParameters.size == arity }
 
+    // Whether generated code declares a value of this class as a supertype that takes no type arguments: the class
+    // cannot be named, and the nearest one it can name takes none. The nearest, not any: the private list behind
+    // listOf(1, 2) implements RandomAccess, which takes none, but is declared as an AbstractList<E>.
+    fun Class<*>.isDeclaredAsNonGenericSupertype() =
+      !isPubliclyAccessible() && nameableSupertypes().firstOrNull()?.typeParameters?.isEmpty() == true
+
     fun Class<*>.supertypesBreadthFirst(): Sequence<Class<*>> =
       sequence {
         val seen = HashSet<Class<*>>()
@@ -296,14 +315,25 @@ abstract class AbstractScript(
         }
       }
 
-    // Whether generated Kotlin or Java code can name this class: it and every class enclosing it are public, and its
-    // module exports its package. Local and anonymous classes are never public to Kotlin reflection, lambda classes are
-    // never public to Java, and a JDK class such as sun.nio.cs.UTF_8 is public but in a package java.base keeps to itself.
+    // Whether generated Kotlin or Java code can name this class: it and every class enclosing it are public, its
+    // module exports its package, and no class it is an inner class of is generic. Local and anonymous classes are
+    // never public to Kotlin reflection, lambda classes are never public to Java, and a JDK class such as
+    // sun.nio.cs.UTF_8 is public but in a package java.base keeps to itself.
     fun Class<*>.isPubliclyAccessible(): Boolean =
       (!module.isNamed || module.isExported(packageName)) &&
         generateSequence(this) { it.enclosingClass }.all { clazz ->
           Modifier.isPublic(clazz.modifiers) &&
             runCatching { clazz.kotlin.visibility == KVisibility.PUBLIC }.getOrDefault(false)
-        }
+        } &&
+        innerClassOwners().none { it.typeParameters.isNotEmpty() }
+
+    // The classes an instance of this class belongs to an instance of: the class enclosing it when it is an inner
+    // class, that class's enclosing class when it is an inner class too, and so on. Naming Outer<T>.Inner takes Outer's
+    // type arguments, which a value does not carry: Kotlin rejects a bare Outer.Inner, and Java rejects Outer.Inner<U>.
+    // A nested (static) class has no owner, so Outer.Nested can be named.
+    fun Class<*>.innerClassOwners(): Sequence<Class<*>> =
+      generateSequence(this) { clazz ->
+        clazz.enclosingClass.takeIf { clazz.isMemberClass && !Modifier.isStatic(clazz.modifiers) }
+      }.drop(1)
   }
 }

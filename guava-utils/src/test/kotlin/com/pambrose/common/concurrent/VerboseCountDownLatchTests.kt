@@ -4,6 +4,7 @@ package com.pambrose.common.concurrent
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.util.concurrent.CountDownLatch
@@ -13,11 +14,13 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
+import java.time.Duration as JavaDuration
 
 class VerboseCountDownLatchTests : StringSpec() {
   init {
     basicLatchTests()
     verboseAwaitTests()
+    javaDurationAwaitTests()
   }
 
   private fun basicLatchTests() {
@@ -131,6 +134,65 @@ class VerboseCountDownLatchTests : StringSpec() {
       shouldThrow<IllegalArgumentException> { latch.await(Duration.ZERO, "never logged") }
       shouldThrow<IllegalArgumentException> { latch.await(500.microseconds, "never logged") }
       shouldThrow<IllegalArgumentException> { latch.await((-1).milliseconds) { "never logged" } }
+    }
+  }
+
+  // The Kotlin Duration awaits compile under a mangled name (await-VtjQ1oo) that Java cannot call, so Java callers use
+  // the java.time.Duration overloads.
+  private fun javaDurationAwaitTests() {
+    "Java callers get verbose await overloads that declare InterruptedException" {
+      for (msgType in listOf(String::class.java, Function0::class.java)) {
+        VerboseCountDownLatch::class.java
+          .getMethod("await", JavaDuration::class.java, msgType)
+          .exceptionTypes
+          .toList() shouldContain InterruptedException::class.java
+      }
+    }
+
+    "the java.time.Duration await with a string message waits until the latch is counted down" {
+      val latch = VerboseCountDownLatch(1)
+      val (waiter, done) = inDaemonThread { latch.await(JavaDuration.ofHours(1), "still waiting") }
+
+      waiter.awaitParked()
+      done.isDone shouldBe false
+      latch.countDown()
+      done.getGuarded()
+    }
+
+    "the java.time.Duration await with a message lambda logs on each timeout until counted down" {
+      val latch = VerboseCountDownLatch(1)
+      val timedOut = CountDownLatch(1)
+      val (_, done) =
+        inDaemonThread {
+          latch.await(JavaDuration.ofMillis(10)) {
+            timedOut.countDown()
+            "still waiting"
+          }
+        }
+
+      // The message lambda runs only after an attempt times out, proving the await retried.
+      timedOut.await(HANG_GUARD_SECONDS, TimeUnit.SECONDS) shouldBe true
+      latch.countDown()
+      done.getGuarded()
+    }
+
+    "the java.time.Duration awaits throw InterruptedException and reject a timeout below 1 ms" {
+      val awaits: List<VerboseCountDownLatch.() -> Unit> =
+        [
+          { await(JavaDuration.ofHours(1), "still waiting") },
+          { await(JavaDuration.ofHours(1)) { "still waiting" } },
+        ]
+      for (awaitVerbosely in awaits) {
+        val latch = VerboseCountDownLatch(1)
+        val (waiter, outcome) = inDaemonThread { runCatching { latch.awaitVerbosely() } }
+        waiter.awaitParked()
+        waiter.interrupt()
+        outcome.getGuarded().exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
+      }
+
+      val latch = VerboseCountDownLatch(0)
+      shouldThrow<IllegalArgumentException> { latch.await(JavaDuration.ZERO, "never logged") }
+      shouldThrow<IllegalArgumentException> { latch.await(JavaDuration.ofNanos(500_000)) { "never logged" } }
     }
   }
 }

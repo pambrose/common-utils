@@ -31,10 +31,13 @@ import java.io.InputStream
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.decrementAndFetch
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.concurrent.thread
+import kotlinx.coroutines.CompletableDeferred
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.RedisClient
 
@@ -52,6 +55,9 @@ internal val withRedisVariants =
     variant("withSuspendingRedis") { url, block -> withSuspendingRedis(url) { block(it.shouldNotBeNull()) } },
     variant("withSuspendingNonNullRedis") { url, block -> withSuspendingNonNullRedis(url) { block(it) } },
   )
+
+/** The suspending members of [withRedisVariants], which connect on another dispatcher and can be cancelled. */
+internal val suspendingWithRedisVariants = withRedisVariants.filter { (name, _) -> name.startsWith("withSuspending") }
 
 private fun variant(
   name: String,
@@ -79,8 +85,13 @@ internal inline fun <T> capturingRedisLogs(block: (logs: () -> List<ILoggingEven
  *
  * It binds [LOOPBACK] rather than every interface: on macOS, another app's `127.0.0.1` listener on the same port
  * would otherwise receive the test's loopback connections.
+ *
+ * With a [pingGate], each `PING` is answered only once the gate opens, which holds a client's connection check
+ * open for as long as a test needs.
  */
-internal class FakeRedisServer : AutoCloseable {
+internal class FakeRedisServer(
+  private val pingGate: CountDownLatch? = null,
+) : AutoCloseable {
   private val serverSocket = ServerSocket(0, 0, InetAddress.getByName(LOOPBACK))
 
   val port: Int = serverSocket.localPort
@@ -95,6 +106,9 @@ internal class FakeRedisServer : AutoCloseable {
 
   /** `PING` commands answered so far. */
   val pings = AtomicInt(0)
+
+  /** Completed when the first `PING` arrives, before [pingGate] holds its answer. */
+  val pingArrived = CompletableDeferred<Unit>()
 
   private val acceptor =
     thread(isDaemon = true, name = "fake-redis-acceptor") {
@@ -135,6 +149,9 @@ internal class FakeRedisServer : AutoCloseable {
   private fun replyTo(command: List<String>): String {
     val name = command.firstOrNull().orEmpty()
     return if (name.equals("PING", ignoreCase = true)) {
+      pingArrived.complete(Unit)
+      // Bounded, so a test that never opens the gate cannot leave this thread waiting forever.
+      pingGate?.await(GATE_TIMEOUT_SECS, SECONDS)
       pings.incrementAndFetch()
       "+PONG\r\n"
     } else {
@@ -177,5 +194,9 @@ internal class FakeRedisServer : AutoCloseable {
   override fun close() {
     serverSocket.close()
     acceptor.join()
+  }
+
+  private companion object {
+    const val GATE_TIMEOUT_SECS = 10L
   }
 }

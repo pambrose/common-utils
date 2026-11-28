@@ -42,6 +42,16 @@ object SystemMetrics {
   // The metric sets registered so far, per registry, so a repeat call registers only the newly requested ones.
   private val registeredSets = WeakHashMap<PrometheusRegistry, MutableSet<String>>()
 
+  // Each registration of the client's JvmMemoryPoolAllocationMetrics adds a GC notification listener, holding a counter
+  // of its own, to every GarbageCollectorMXBean, and nothing ever removes it: the listener class is package-private,
+  // register() returns no handle, and unregistering or clearing only drops the counter from the registry. Registering
+  // the set once per registry would leave another listener on the GC beans for the rest of the JVM's life after every
+  // clear() and forget() cycle and for every isolated registry. So it is registered once per process, here, and every
+  // registry that asks for it gets these same collectors. A failed registration is not kept, so the next call retries.
+  private val sharedAllocationMetrics by lazy {
+    TrackingRegistry(PrometheusRegistry()).also { JvmMemoryPoolAllocationMetrics.builder().register(it) }
+  }
+
   /**
    * Registers the selected JVM and process metric sets with [registry].
    *
@@ -62,7 +72,11 @@ object SystemMetrics {
    * @param enableStandardExports whether to register the process metrics (`ProcessMetrics`: CPU time, start time,
    *   open and max file descriptors, and, on Linux, virtual and resident memory).
    * @param enableMemoryPoolsExports whether to register the JVM memory metrics (`JvmMemoryMetrics`) and the per-pool
-   *   allocation counter (`JvmMemoryPoolAllocationMetrics`), each as its own all-or-nothing set.
+   *   allocation counter (`JvmMemoryPoolAllocationMetrics`), each as its own all-or-nothing set. The client updates
+   *   the allocation counter from a GC notification listener that it never removes, so the counter is created once
+   *   per process, with a single listener, and every registry gets that same counter. It counts from the first
+   *   registration in the JVM: a registry that registers it later, or again after a [PrometheusRegistry.clear] and
+   *   [forget], shows the running total rather than starting from zero.
    * @param enableGarbageCollectorExports whether to register the garbage collector metrics
    *   (`JvmGarbageCollectorMetrics`).
    * @param enableThreadExports whether to register the thread metrics (`JvmThreadsMetrics`).
@@ -120,9 +134,7 @@ object SystemMetrics {
 
     register(enableStandardExports, "process") { ProcessMetrics.builder().register(it) }
     register(enableMemoryPoolsExports, "JVM memory") { JvmMemoryMetrics.builder().register(it) }
-    register(enableMemoryPoolsExports, "JVM memory pool allocation") {
-      JvmMemoryPoolAllocationMetrics.builder().register(it)
-    }
+    register(enableMemoryPoolsExports, "JVM memory pool allocation") { sharedAllocationMetrics.registerAllWith(it) }
     register(enableGarbageCollectorExports, "JVM garbage collector") {
       JvmGarbageCollectorMetrics.builder().register(it)
     }
@@ -141,6 +153,10 @@ object SystemMetrics {
    * Without it, the cleared metric sets are never registered with that registry again. It does not unregister
    * anything, so calling it while the sets are still registered makes the next [initialize] skip them with a warning,
    * since their names are taken. What was registered with other registries is kept.
+   *
+   * Repeated clear and forget cycles leave nothing behind but one thing that is not per registry: the GC notification
+   * listener behind the allocation counter of `enableMemoryPoolsExports`, which is attached once per process and stays
+   * attached for the life of the JVM, however many registries use the counter.
    *
    * @param registry the registry to forget. Defaults to [PrometheusRegistry.defaultRegistry].
    */

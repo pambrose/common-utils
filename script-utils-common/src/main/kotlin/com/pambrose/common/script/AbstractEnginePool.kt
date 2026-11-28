@@ -76,7 +76,9 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
   /**
    * Suspends until an instance can be borrowed, runs [block] with it, then resets it with [reset] and returns it to the
    * pool, even if [block] or [reset] throws. An exception from [reset] propagates to the caller, unless [block] threw
-   * too: then the block's exception propagates, with the reset failure attached as suppressed.
+   * too: then the block's exception propagates, with the reset failure attached as suppressed. When the pool was closed
+   * while the instance was borrowed, returning it closes it, and a failure to close it is attached to a reset failure as
+   * suppressed instead of replacing it.
    *
    * @param block the work to do with the borrowed instance
    * @return the result of [block]
@@ -84,14 +86,10 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
    */
   protected suspend fun <R> withInstance(block: (T) -> R): R {
     val instance = channel.receive()
-    // use() keeps the block's exception, with a reset failure attached as suppressed. The finally returns the instance
-    // even when reset throws, so a failing reset cannot keep it out of the pool: a size-1 pool would then wait forever.
+    // use() keeps the block's exception, with a recycling failure attached as suppressed. The instance is returned even
+    // when reset throws, so a failing reset cannot keep it out of the pool: a size-1 pool would then wait forever.
     return AutoCloseable {
-      try {
-        reset(instance)
-      } finally {
-        returnToPool(instance)
-      }
+      sequenceOf({ reset(instance) }, { returnToPool(instance) }).runEach { it() }
     }.use { block(instance) }
   }
 
@@ -103,10 +101,21 @@ abstract class AbstractEnginePool<T : AbstractEngine>(
 
   /**
    * Closes the pool and the instances it holds. An instance still borrowed is closed when it is returned, and later
-   * borrows throw [kotlinx.coroutines.channels.ClosedReceiveChannelException].
+   * borrows throw [kotlinx.coroutines.channels.ClosedReceiveChannelException]. Every instance the pool holds is closed
+   * even when closing one throws; the first failure then propagates, with the later ones attached as suppressed.
    */
   override fun close() {
     channel.close()
-    generateSequence { channel.tryReceive().getOrNull() }.forEach { it.close() }
+    generateSequence { channel.tryReceive().getOrNull() }.runEach { it.close() }
+  }
+
+  // Runs action on every element, even after it throws for an earlier one, then throws the first failure, with the
+  // later ones attached to it as suppressed.
+  private fun <E> Sequence<E>.runEach(action: (E) -> Unit) {
+    val failures = mapNotNull { element -> runCatching { action(element) }.exceptionOrNull() }.toList()
+    failures.firstOrNull()?.let { first ->
+      failures.drop(1).forEach(first::addSuppressed)
+      throw first
+    }
   }
 }

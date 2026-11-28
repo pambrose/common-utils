@@ -23,11 +23,18 @@ import com.pambrose.common.util.isNotNull
 import com.pambrose.common.util.isNull
 import com.pambrose.common.util.lpad
 import com.pambrose.common.util.rpad
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 
 class MiscFuncsTests : StringSpec() {
   init {
+    nullTests()
+    padTests()
+    capitalizeTests()
+  }
+
+  private fun nullTests() {
     "is null test" {
       val nullValue: String? = null
       val nonNullValue = "test"
@@ -38,7 +45,9 @@ class MiscFuncsTests : StringSpec() {
       nullValue.isNotNull() shouldBe false
       nonNullValue.isNotNull() shouldBe true
     }
+  }
 
+  private fun padTests() {
     "lpad of a negative number to a width of 0 or 1 returns the number unpadded" {
       (-5).lpad(0) shouldBe "-5"
       (-5).lpad(1) shouldBe "-5"
@@ -62,6 +71,16 @@ class MiscFuncsTests : StringSpec() {
       (-1).lpad(4, ' ') shouldBe "  -1"
     }
 
+    // A negative width used to be rejected only for a non-negative number or a padChar other than '0':
+    // (-5).lpad(-1) returned "-5", and (-5).lpad(Int.MIN_VALUE) overflowed width - 1 to Int.MAX_VALUE and tried to
+    // allocate a string that long.
+    "lpad rejects a negative width for every number and pad character" {
+      shouldThrow<IllegalArgumentException> { 5.lpad(-1) }.message shouldBe "Desired length -1 is less than zero."
+      shouldThrow<IllegalArgumentException> { (-5).lpad(-1, ' ') }
+      shouldThrow<IllegalArgumentException> { (-5).lpad(-1) }.message shouldBe "Desired length -1 is less than zero."
+      shouldThrow<IllegalArgumentException> { (-5).lpad(Int.MIN_VALUE) }
+    }
+
     "rpad test" {
       1.rpad(3) shouldBe "100"
       42.rpad(5) shouldBe "42000"
@@ -69,7 +88,9 @@ class MiscFuncsTests : StringSpec() {
       0.rpad(3) shouldBe "000"
       1.rpad(3, ' ') shouldBe "1  "
     }
+  }
 
+  private fun capitalizeTests() {
     "capitalize first char test" {
       "hello".capitalizeFirstChar() shouldBe "Hello"
       "Hello".capitalizeFirstChar() shouldBe "Hello"

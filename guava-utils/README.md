@@ -258,7 +258,7 @@ val bounded = compressed.unzip(maxBytes = 10_000_000)
 `unzip` throws `IllegalArgumentException` when the content is larger than `maxBytes` or when `maxBytes` is
 negative, and an `IOException` such as `ZipException` or `EOFException` when gzip data is corrupt. Empty input
 returns an empty string, and input without the GZIP magic header is returned decoded as UTF-8. It is annotated
-`@JvmOverloads`, so Java callers get both the no-arg and the `maxBytes` form.
+`@JvmOverloads`, so Java callers get both the no-arg and the `maxBytes` form, and both declare `throws IOException`.
 
 ### Platform Checks
 
@@ -274,7 +274,9 @@ import com.pambrose.common.util.isWindows
 - `abstract class GenericMonitor` — `waitUntilTrue()`, `waitUntilTrue(waitTime: Duration): Boolean`,
   `waitUntilFalse()`, `waitUntilFalse(waitTime: Duration): Boolean`, `waitUntilTrueWithInterruption(...)`,
   `waitUntil(value: Boolean)`, `waitUntil(value: Boolean, waitTime: Duration): Boolean`, the retrying overloads
-  `(timeout, block)` and `(timeout, maxWait, block)`, and the protected `mutate(block)`
+  `(timeout, block)` and `(timeout, maxWait, block)`, and the protected `mutate(block)`. The timed and retrying
+  `waitUntilTrueWithInterruption` overloads also take `java.time.Duration`, for Java callers, since the Kotlin
+  `Duration` ones compile under mangled names Java cannot call; the other timed waits are Kotlin-only
 - `class BooleanMonitor(initValue: Boolean) : GenericMonitor` — `get()`, `set(value: Boolean)`, and the companion
   `debug`/`info`/`warn`/`error` `MonitorAction` factories, each taking either a `String` or a message lambda
 
@@ -298,7 +300,8 @@ import com.pambrose.common.util.isWindows
   `startSync(java.time.Duration)` / `stopSync(java.time.Duration)` overloads, since the Kotlin `Duration` ones compile
   under mangled names Java cannot call
 - `abstract class GenericIdleService : AbstractIdleService` — the same `startSync` / `stopSync`
-- `fun Service.genericServiceListener(logger: KLogger): Service.Listener` — pass the result to `addListener`
+- `fun Service.genericServiceListener(logger: KLogger): Service.Listener` — pass the result to `addListener`. Java
+  callers still see the method from before 5.4.0, declared to return `GuavaDsl.ServiceListenerHelper`, until 6.0.0
 - `GuavaDsl.serviceManager(services: List<Service>, block: ServiceManager.() -> Unit): ServiceManager`
 - `GuavaDsl.serviceListener(init: ServiceListenerHelper.() -> Unit)`
 - `GuavaDsl.serviceManagerListener(init: ServiceManagerListenerHelper.() -> Unit)`
@@ -308,10 +311,11 @@ import com.pambrose.common.util.isWindows
 
 - `val CountDownLatch.isFinished: Boolean`, `CountDownLatch.countDown(block: () -> Unit)`,
   `CountDownLatch.await(duration: Duration): Boolean`
-- `fun <T> Semaphore.withLock(block: () -> T): T`
+- `fun <T> Semaphore.withLock(block: () -> T): T` — acquires the permit interruptibly, and declares
+  `InterruptedException` for Java callers
 - `fun thread(latch: CountDownLatch, start: Boolean = true, isDaemon: Boolean = false, contextClassLoader: ClassLoader? = null, name: String? = null, priority: Int = -1, block: () -> Unit): Thread`
 - `class VerboseCountDownLatch(count: Int) : CountDownLatch` — `await(timeout, msg)` logs `msg` after each timeout;
-  `timeout` must be at least 1 ms
+  `timeout` must be at least 1 ms. Java callers use the overloads taking a `java.time.Duration`
 - `String.zip(): ByteArray`, `ByteArray.zip(): ByteArray`, `ByteArray.isZipped(): Boolean`,
   `ByteArray.unzip(maxBytes: Long = Long.MAX_VALUE): String`
 
@@ -320,8 +324,12 @@ import com.pambrose.common.util.isWindows
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
-- Google Guava
+- Google Guava, an `api` dependency
+- kotlin-logging, an `api` dependency, since `genericServiceListener` takes a `KLogger`
+- kotlinx-coroutines, internally
+- core-utils, as an `implementation` dependency since 5.4.0: no core-utils type is in this module's API, so it is
+  no longer on a consumer's compile classpath. Depend on core-utils yourself to call it. It is kept on the runtime
+  classpath for code compiled against earlier releases, and 6.0.0 removes it.
 
 ## Installation
 

@@ -25,6 +25,11 @@ import io.kotest.matchers.shouldBe
 
 class MiscJavaFuncsTests : StringSpec() {
   init {
+    randomTests()
+    sleepTests()
+  }
+
+  private fun randomTests() {
     "random(int) returns a value in [0, upper) over many iterations" {
       val upper = 100
       repeat(100_000) {
@@ -67,7 +72,9 @@ class MiscJavaFuncsTests : StringSpec() {
     "random(long) rejects a negative upper bound" {
       shouldThrow<IllegalArgumentException> { MiscJavaFuncs.random(-10L) }
     }
+  }
 
+  private fun sleepTests() {
     // When Thread.sleep throws InterruptedException it clears the interrupt flag; sleepMillis
     // must restore it so callers higher up can still observe the interruption.
     "sleepMillis restores the thread interrupt flag when interrupted" {
@@ -105,6 +112,25 @@ class MiscJavaFuncsTests : StringSpec() {
 
       // Thread.interrupted() reads-and-clears: asserts the flag was restored and cleans up.
       Thread.interrupted() shouldBe true
+    }
+
+    "sleepSecs rejects a negative value" {
+      shouldThrow<IllegalArgumentException> { MiscJavaFuncs.sleepSecs(-1) }.message shouldBe
+        "timeout value is negative"
+    }
+
+    // Only positive overflow was guarded: Long.MIN_VALUE * 1000 overflowed to 0 and returned at once, and
+    // (Long.MIN_VALUE / 1000 - 1) * 1000 overflowed to about 292 million years.
+    "sleepSecs rejects a negative value whose conversion to milliseconds overflows" {
+      Thread.interrupted() // clear any leaked flag first
+      // A pending interrupt makes a regression that sleeps return at once instead of hanging the test.
+      Thread.currentThread().interrupt()
+      try {
+        shouldThrow<IllegalArgumentException> { MiscJavaFuncs.sleepSecs(Long.MIN_VALUE) }
+        shouldThrow<IllegalArgumentException> { MiscJavaFuncs.sleepSecs(Long.MIN_VALUE / 1000 - 1) }
+      } finally {
+        Thread.interrupted()
+      }
     }
   }
 }

@@ -79,6 +79,13 @@ private fun redirectPathAndQuery(target: String): String? {
   }
 }
 
+// The path excludePrefix and excludeSuffix match: that of the path and query the redirect keeps. CIO leaves an
+// absolute-form target's scheme and authority in call.request.path(), so this makes such a target excluded exactly
+// when its origin-form equivalent is. Any other target (which gets 400 unless excluded) is matched on
+// call.request.path(), as before.
+private fun ApplicationCall.exclusionPath(): String =
+  redirectPathAndQuery(request.uri)?.substringBefore('?') ?: request.path()
+
 /**
  * Redirect non-secure requests to HTTPS.
  *
@@ -158,26 +165,31 @@ class HerokuHttpsRedirect(
 
     /**
      * Exclude calls whose path (not including the query string) starts with [pathPrefix] from being redirected
-     * to https by this feature.
+     * to https by this feature. The path of an absolute-form request target (`GET http://host/health`) is its own
+     * path (`/health`), so such a call is excluded exactly when the origin-form request would be.
      */
     fun excludePrefix(pathPrefix: String) {
       exclude { call ->
-        call.request.path().startsWith(pathPrefix)
+        call.exclusionPath().startsWith(pathPrefix)
       }
     }
 
     /**
      * Exclude calls whose path (not including the query string) ends with [pathSuffix] from being redirected
-     * to https by this feature.
+     * to https by this feature. The path of an absolute-form request target (`GET http://host/robots.txt`) is its
+     * own path (`/robots.txt`), so such a call is excluded exactly when the origin-form request would be.
      */
     fun excludeSuffix(pathSuffix: String) {
       exclude { call ->
-        call.request.path().endsWith(pathSuffix)
+        call.exclusionPath().endsWith(pathSuffix)
       }
     }
 
     /**
-     * Exclude calls matching the [predicate] from being redirected to https by this feature.
+     * Exclude calls matching the [predicate] from being redirected to https by this feature. The [predicate] gets
+     * the call as the engine built it: on Ktor CIO, `call.request.path()` of an absolute-form request target
+     * (`GET http://host/path`) still holds the scheme and authority, unlike the path [excludePrefix] and
+     * [excludeSuffix] match.
      */
     fun exclude(predicate: (call: ApplicationCall) -> Boolean) {
       excludePredicates.add(predicate)

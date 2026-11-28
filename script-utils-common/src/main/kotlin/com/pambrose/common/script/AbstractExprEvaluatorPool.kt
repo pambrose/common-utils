@@ -23,8 +23,8 @@ import kotlinx.coroutines.runBlocking
  *
  * Each evaluator's context is reset once it has been returned [resetEvery] times, so engine state such as Kotlin's
  * REPL history cannot grow without bound. Resetting is not free: a fresh Kotlin REPL costs several times an evaluation,
- * so resetting on every return would make the pool slower than a lone evaluator. Between resets, a declaration an
- * expression makes (such as `val y = 1` inside `run { }`) stays visible to the evaluator's later borrowers.
+ * so resetting on every return would make the pool slower than a lone evaluator. Between resets, a top-level
+ * declaration an expression makes (such as `val y = 1; y > 0`) stays visible to the evaluator's later borrowers.
  * Subclasses populate the pool with [populate] in their `init` block. [AbstractEnginePool] describes borrowing and
  * closing.
  *

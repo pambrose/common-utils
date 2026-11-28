@@ -44,7 +44,8 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Two deliberate changes are excluded (see [changedOnPurpose]); `DurationFormatTests` pins their new output:
  * `-INFINITE` (the oracle's `Long.MIN_VALUE` overflow printed `--106751991167:-7:-12:-55`) and a negative duration
- * shorter than a millisecond (the oracle printed `-0:00:00:00`).
+ * whose output shows only zeros: one shorter than a millisecond, or, without milliseconds, shorter than a second (the
+ * oracle printed `-0:00:00:00`).
  */
 class DurationFormatEquivalenceTests : StringSpec() {
   // Verbatim copy of the ORIGINAL implementation, used as the behavior oracle.
@@ -70,8 +71,19 @@ class DurationFormatEquivalenceTests : StringSpec() {
       String.format(Locale.ROOT, "$prefix%d:%02d:%02d:%02d", day, hr, min, sec)
   }
 
-  // -INFINITE's whole milliseconds are Long.MIN_VALUE; a negative sub-millisecond duration's are 0.
-  private fun changedOnPurpose(d: Duration) = d.isNegative() && (d.isInfinite() || d.inWholeMilliseconds == 0L)
+  // -INFINITE's whole milliseconds are Long.MIN_VALUE. A negative duration that formats as all zeros has whole
+  // milliseconds of 0 with milliseconds shown, and in -999..0 without them.
+  private fun changedOnPurpose(
+    d: Duration,
+    includeMillis: Boolean,
+  ) = d.isNegative() && (d.isInfinite() || d.inWholeMilliseconds > if (includeMillis) -1L else -1000L)
+
+  // Compares format against the oracle for each flag whose output was not changed on purpose.
+  private fun shouldMatchOracle(d: Duration) {
+    for (includeMillis in listOf(false, true)) {
+      if (!changedOnPurpose(d, includeMillis)) d.format(includeMillis) shouldBe oldFormat(d, includeMillis)
+    }
+  }
 
   init {
     // Hand-picked edge cases (and the negatives of the finite ones) checked against the oracle.
@@ -103,28 +115,17 @@ class DurationFormatEquivalenceTests : StringSpec() {
     val all = edgeCases + edgeCases.filter { it.isFinite() }.map { -it }
 
     "format matches the original oracle for all edge cases (both flags)" {
-      all.filterNot(::changedOnPurpose).forEach { d ->
-        d.format(false) shouldBe oldFormat(d, false)
-        d.format(true) shouldBe oldFormat(d, true)
-      }
+      all.forEach(::shouldMatchOracle)
     }
 
     "format matches the original oracle for a large seeded random set (both flags)" {
       val rnd = Random(424242L)
       repeat(50_000) {
-        val d = rnd.nextLong().milliseconds // full Long range, incl. negatives and clamping
-        if (!changedOnPurpose(d)) {
-          d.format(false) shouldBe oldFormat(d, false)
-          d.format(true) shouldBe oldFormat(d, true)
-        }
+        shouldMatchOracle(rnd.nextLong().milliseconds) // full Long range, incl. negatives and clamping
       }
       // Dense sweep of small magnitudes around each unit boundary.
       for (base in longArrayOf(0, 1000, 60_000, 3_600_000, 86_400_000)) {
-        for (delta in -2L..2L) {
-          val d = (base + delta).milliseconds
-          d.format(false) shouldBe oldFormat(d, false)
-          d.format(true) shouldBe oldFormat(d, true)
-        }
+        for (delta in -2L..2L) shouldMatchOracle((base + delta).milliseconds)
       }
     }
   }

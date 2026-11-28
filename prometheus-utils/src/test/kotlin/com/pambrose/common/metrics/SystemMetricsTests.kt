@@ -26,13 +26,20 @@ import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.clearMocks
 import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.spyk
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.prometheus.metrics.model.registry.Collector
 import io.prometheus.metrics.model.registry.MultiCollector
 import io.prometheus.metrics.model.registry.PrometheusRegistry
+import java.lang.management.GarbageCollectorMXBean
+import java.lang.management.ManagementFactory
+import javax.management.NotificationEmitter
 
 // Runs block and verifies that it made no registration attempt on the spied registry.
 private fun shouldRegisterNothing(
@@ -43,6 +50,18 @@ private fun shouldRegisterNothing(
   block()
   verify(exactly = 0) { registry.register(any<Collector>()) }
   verify(exactly = 0) { registry.register(any<MultiCollector>()) }
+}
+
+// Runs block with PrometheusRegistry.defaultRegistry, then clears the registry and forgets it, so whatever block
+// registered there is not left for later specs, and a later initialize with the default registry registers again.
+private fun withDefaultRegistryCleanup(block: (PrometheusRegistry) -> Unit) {
+  val registry = PrometheusRegistry.defaultRegistry
+  try {
+    block(registry)
+  } finally {
+    registry.clear()
+    SystemMetrics.forget()
+  }
 }
 
 class SystemMetricsTests : StringSpec() {
@@ -88,29 +107,49 @@ class SystemMetricsTests : StringSpec() {
     )
 
   init {
+    defaultRegistryTests()
     flagTests()
     repeatCallTests()
     failureRetryTests()
     takenNameTests()
+    allocationListenerTests()
+  }
+
+  // The default registry is shared by every spec in the JVM, so these tests clear and forget it when they finish,
+  // pass or fail, rather than leave the JVM metric sets behind for later specs.
+  private fun defaultRegistryTests() {
+    "initialize registers the requested exporters with the default registry" {
+      withDefaultRegistryCleanup { registry ->
+        SystemMetrics.initialize(
+          enableStandardExports = true,
+          enableMemoryPoolsExports = true,
+          enableGarbageCollectorExports = true,
+          enableThreadExports = true,
+          enableClassLoadingExports = true,
+          enableVersionInfoExports = true,
+        )
+
+        registry.sampleValue("process_cpu_seconds_total").shouldNotBeNull()
+        registry.sampleValue("jvm_threads_current").shouldNotBeNull()
+        registry.sampleValue("jvm_classes_currently_loaded").shouldNotBeNull()
+      }
+    }
+
+    // The registry a test harness reuses between specs, and clears before each.
+    "forget with no registry forgets the default registry" {
+      withDefaultRegistryCleanup { registry ->
+        SystemMetrics.initialize(enableThreadExports = true)
+        registry.clear()
+
+        SystemMetrics.forget()
+        SystemMetrics.initialize(enableThreadExports = true)
+
+        registry.sampleValue("jvm_threads_current").shouldNotBeNull()
+      }
+    }
   }
 
   private fun flagTests() {
-    "initialize registers the requested exporters with the default registry" {
-      SystemMetrics.initialize(
-        enableStandardExports = true,
-        enableMemoryPoolsExports = true,
-        enableGarbageCollectorExports = true,
-        enableThreadExports = true,
-        enableClassLoadingExports = true,
-        enableVersionInfoExports = true,
-      )
-
-      val registry = PrometheusRegistry.defaultRegistry
-      registry.sampleValue("process_cpu_seconds_total").shouldNotBeNull()
-      registry.sampleValue("jvm_threads_current").shouldNotBeNull()
-      registry.sampleValue("jvm_classes_currently_loaded").shouldNotBeNull()
-    }
-
     "each flag registers its metric set under the 1.x names" {
       expectedSeries.forEach { (flag, series) ->
         val registry = PrometheusRegistry()
@@ -201,18 +240,6 @@ class SystemMetricsTests : StringSpec() {
       shouldRegisterNothing(kept) { SystemMetrics.initialize(enableThreadExports = true, registry = kept) }
     }
 
-    // The registry a test harness reuses between specs, and clears before each.
-    "forget with no registry forgets the default registry" {
-      val registry = PrometheusRegistry.defaultRegistry
-      SystemMetrics.initialize(enableThreadExports = true)
-      registry.clear()
-
-      SystemMetrics.forget()
-      SystemMetrics.initialize(enableThreadExports = true)
-
-      registry.sampleValue("jvm_threads_current").shouldNotBeNull()
-    }
-
     "a later call registers exporters that were not requested before" {
       val registry = PrometheusRegistry()
       SystemMetrics.initialize(enableThreadExports = true, registry = registry)
@@ -285,6 +312,53 @@ class SystemMetricsTests : StringSpec() {
       SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = registry)
 
       seriesNames(registry.prometheusText()) shouldContainAll expectedSeries.getValue("memory")
+    }
+  }
+
+  private fun allocationListenerTests() {
+    // The client's JvmMemoryPoolAllocationMetrics adds a GC notification listener to every GarbageCollectorMXBean each
+    // time it is registered, and never removes it. Counting the listeners added to stand-in beans shows whether a
+    // registration added another one.
+    "clear and forget cycles and new registries add no GC notification listeners" {
+      // The first registration in the process attaches its listener to the real beans, as an application's would.
+      SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = PrometheusRegistry())
+      val beans =
+        List(2) { mockk<GarbageCollectorMXBean>(relaxed = true, moreInterfaces = arrayOf(NotificationEmitter::class)) }
+      val reused = PrometheusRegistry()
+      mockkStatic(ManagementFactory::class)
+      try {
+        every { ManagementFactory.getGarbageCollectorMXBeans() } returns beans
+        repeat(3) {
+          reused.clear()
+          SystemMetrics.forget(reused)
+          SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = reused)
+          SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = PrometheusRegistry())
+        }
+      } finally {
+        unmockkStatic(ManagementFactory::class)
+      }
+
+      reused.metricNames() shouldContain "jvm_memory_pool_allocated_bytes"
+      beans.forEach { bean ->
+        verify(exactly = 0) { (bean as NotificationEmitter).addNotificationListener(any(), any(), any()) }
+      }
+    }
+
+    "every registry, and every clear and forget cycle, gets the same allocation counter" {
+      val first = spyk(PrometheusRegistry())
+      val second = spyk(PrometheusRegistry())
+      val registered = mutableListOf<Collector>()
+      listOf(first, second).forEach { every { it.register(capture(registered)) } answers { callOriginal() } }
+
+      SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = first)
+      first.clear()
+      SystemMetrics.forget(first)
+      SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = first)
+      SystemMetrics.initialize(enableMemoryPoolsExports = true, registry = second)
+
+      val counters = registered.filter { it.collect().metadata.prometheusName == "jvm_memory_pool_allocated_bytes" }
+      counters.size shouldBe 3
+      counters.forEach { it shouldBeSameInstanceAs counters.first() }
     }
   }
 }

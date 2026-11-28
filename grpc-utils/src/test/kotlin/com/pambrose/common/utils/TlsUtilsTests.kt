@@ -25,6 +25,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.io.File
+import javax.net.ssl.SSLException
 
 class TlsUtilsTests : StringSpec() {
   init {
@@ -34,6 +35,7 @@ class TlsUtilsTests : StringSpec() {
     serverMissingFileTests()
     serverContextTests()
     tlsContextTests()
+    checkedExceptionTests()
   }
 
   private fun clientContextTests() {
@@ -290,6 +292,25 @@ class TlsUtilsTests : StringSpec() {
       copy.sslContext shouldBe null
       copy.mutualAuth shouldBe true
       original.mutualAuth shouldBe false
+    }
+  }
+
+  // Java callers see @Throws as a checked exception they must handle. Only SslContextBuilder.build() throws
+  // SSLException, so the builder factories, which never call it, must not declare it.
+  private fun checkedExceptionTests() {
+    val pathParams = Array(3) { String::class.java }
+
+    "the builder factories declare no checked exceptions to Java callers" {
+      TlsUtils::class.java.getMethod("clientTlsContextBuilder", *pathParams).exceptionTypes.toList() shouldBe
+        emptyList()
+      TlsUtils::class.java.getMethod("serverTlsContext", *pathParams).exceptionTypes.toList() shouldBe emptyList()
+    }
+
+    "the build functions still declare the SSLException that build() throws" {
+      TlsUtils::class.java.getMethod("buildClientTlsContext", *pathParams).exceptionTypes.toList() shouldBe
+        listOf(SSLException::class.java)
+      TlsUtils::class.java.getMethod("buildServerTlsContext", *pathParams).exceptionTypes.toList() shouldBe
+        listOf(SSLException::class.java)
     }
   }
 }

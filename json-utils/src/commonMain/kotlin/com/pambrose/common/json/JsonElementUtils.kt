@@ -350,6 +350,8 @@ private val cachedPrettyFormats by lazy { listOf("  ", "    ", "\t").associateWi
  *   `\n`, as kotlinx.serialization requires
  * @return the formatted JSON string
  * @throws IllegalArgumentException if [indent] contains any other character
+ * @throws SerializationException if this element holds `NaN`, `Infinity`, `-Infinity` or a number too large for a
+ *   [Double], which JSON cannot represent (see [reformatJson])
  */
 fun JsonElement.toFormattedString(indent: String = "  "): String =
   (cachedPrettyFormats[indent] ?: prettyPrint(indent)).encodeToString(this)
@@ -357,9 +359,16 @@ fun JsonElement.toFormattedString(indent: String = "  "): String =
 /**
  * Parses this [String] as JSON and re-encodes it. Extension function on [String].
  *
+ * The output is always valid JSON, which has no way to write a non-finite number. [parseJson] accepts `NaN`,
+ * `Infinity` and `-Infinity`, and a number too large for a [Double], such as `1e500`, which re-encodes as an
+ * infinity, but the re-encoding rejects all of them: [JsonContentUtils.prettyFormat] and [JsonContentUtils.rawFormat]
+ * keep kotlinx's default `allowSpecialFloatingPointValues = false`. [JsonElement.toString] writes such values back as
+ * they were read.
+ *
  * @param prettyPrint if `true` (the default), formats the output with indentation; otherwise outputs compact JSON
  * @return the re-encoded JSON string
- * @throws kotlinx.serialization.SerializationException if this string is not valid JSON, as for [parseJson]
+ * @throws SerializationException if this string is not valid JSON, as for [parseJson], or if it holds `NaN`,
+ *   `Infinity`, `-Infinity` or a number too large for a [Double]
  */
 fun String.reformatJson(prettyPrint: Boolean = true): String = parseJson().toJsonString(prettyPrint)
 
@@ -378,6 +387,8 @@ fun String.toJsonString() = reformatJson()
  * @param T the type to serialize (must be `@Serializable` or a [JsonElement])
  * @param prettyPrint if `true`, formats the output with indentation; otherwise outputs compact JSON
  * @return the JSON string representation
+ * @throws SerializationException if the value holds a non-finite [Double] or [Float] (`NaN` or an infinity), which
+ *   JSON cannot represent; see [reformatJson]
  */
 inline fun <reified T> T.toJsonString(prettyPrint: Boolean = true) =
   (if (prettyPrint) JsonContentUtils.prettyFormat else JsonContentUtils.rawFormat).encodeToString(this)
@@ -409,7 +420,8 @@ inline fun <reified T> T.toJsonElement() = json.encodeToJsonElement(this)
  * Extension function on [String]. The input must be valid JSON: kotlinx.serialization's tree parser accepts any
  * unquoted token (`hello`, `007`, `+3`, `0x10`) as a literal, which would then be re-encoded differently on each
  * platform, so every unquoted value other than `true`, `false`, `null` and a JSON number is rejected. `NaN`,
- * `Infinity` and `-Infinity`, which kotlinx writes for non-finite doubles, are accepted.
+ * `Infinity` and `-Infinity`, which kotlinx writes for non-finite doubles, are accepted, although [reformatJson],
+ * [toFormattedString] and [toJsonString] cannot re-encode them.
  *
  * @param verbose if `true`, logs the full raw input string at WARN level on parse failure. Avoid this
  *   for sensitive payloads, since the input may contain PII or secrets.
@@ -501,7 +513,12 @@ private const val MAX_KEYS_SHOWN = 10
 
 private fun JsonElement.elementOrNull(key: String) = jsonObject[key]
 
-/** Formerly the internal logger holder for JSON element utilities. */
+/**
+ * Formerly the internal logger holder for JSON element utilities.
+ *
+ * Its [logger] puts kotlin-logging's `KLogger` in this module's public API, so kotlin-logging is an `api`
+ * dependency until this object is removed.
+ */
 @Deprecated("An internal logger that was never meant to be public API; it will be removed in a future release.")
 object JsonElementUtils {
   /** The logger formerly used by the JSON element utilities. */

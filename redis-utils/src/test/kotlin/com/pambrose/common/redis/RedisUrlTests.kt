@@ -31,11 +31,15 @@ import io.kotest.matchers.string.shouldNotContain
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.incrementAndFetch
 import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.RedisProtocol
 
 private const val SCHEME_MSG = "Redis URL scheme must be redis or rediss"
 private const val PORT_MSG = "Redis URL port must be a number from 1 to 65535"
 private const val HOST_MSG =
   "Redis URL host could not be parsed; host names may contain only letters, digits, '-' and '.'"
+private const val DATABASE_MSG =
+  "Redis URL path must be empty or a database index, such as /3; a '/' in the password must be percent-encoded as %2F"
+private const val PROTOCOL_MSG = "Redis URL protocol must be 2 or 3"
 
 /**
  * Pins which Redis URLs are accepted, how the credentials in one are read, and that the message rejecting one
@@ -46,6 +50,8 @@ class RedisUrlTests : StringSpec() {
   init {
     schemeTests()
     portTests()
+    databaseIndexTests()
+    protocolTests()
     credentialTests()
   }
 
@@ -161,6 +167,69 @@ class RedisUrlTests : StringSpec() {
     "a host that URI cannot parse keeps its own message when the port is valid" {
       shouldReject("redis://redis_cache:6379", HOST_MSG)
       shouldReject("redis://alice:s3cret@redis_cache", HOST_MSG, "alice", "s3cret")
+    }
+  }
+
+  private fun databaseIndexTests() {
+    // An unescaped '/' ends the authority, so URI reads the user name as the host, the start of the password as the
+    // port, and the rest of the password, with the real host, as the path. Jedis parsed that path as the database
+    // index with Integer.parseInt, whose message quoted it: For input string: "s3cret@localhost:6379".
+    "a database index message does not repeat a password that URI read as the path" {
+      shouldReject("redis://alice:6379/s3cret@localhost:6379", DATABASE_MSG, "alice", "6379", "s3cret")
+      shouldReject("rediss://alice:6380/0/s3cret@localhost", DATABASE_MSG, "alice", "6380", "s3cret")
+      shouldReject("redis://alice:6381/12345678901@localhost", DATABASE_MSG, "alice", "6381", "12345678901")
+    }
+
+    "a path that is not a database index is rejected by every function that takes a url" {
+      listOf(
+        "redis://localhost:6379/abc",
+        "redis://localhost:6379/3x",
+        "redis://localhost:6379/3/",
+        "redis://localhost:6379//3",
+        "redis://localhost:6379/-1",
+        "redis://localhost:6379/+3",
+        // Too large for an Int.
+        "redis://localhost:6379/2147483648",
+      ).forEach { url -> shouldReject(url, DATABASE_MSG) }
+    }
+
+    "the database index is read from the path, and an empty path or a bare slash means database 0" {
+      mapOf(
+        "redis://localhost:6379" to 0,
+        "redis://localhost:6379/" to 0,
+        "redis://localhost:6379/3" to 3,
+        "redis://localhost:6379/03" to 3,
+        "redis://localhost/15" to 15,
+        "redis://localhost:6379/2147483647" to Int.MAX_VALUE,
+        "redis://localhost:6379/4?protocol=3" to 4,
+      ).forEach { (url, database) ->
+        withClue(url) { RedisUtils.clientConfig(url).database shouldBe database }
+      }
+    }
+  }
+
+  private fun protocolTests() {
+    // Jedis' message for an unknown protocol quoted the value, which a '?' in an unescaped password can supply.
+    "an unknown protocol is rejected without repeating it" {
+      listOf(
+        "redis://localhost:6379?protocol=9",
+        "redis://localhost:6379/0?protocol=s3cret",
+        "redis://localhost:6379?protocol=",
+        "redis://alice:6379?protocol=s3cret@localhost",
+      ).forEach { url -> shouldReject(url, PROTOCOL_MSG, "s3cret") }
+    }
+
+    "the protocol is read from the query, and is left to jedis when there is none" {
+      mapOf(
+        "redis://localhost:6379" to null,
+        "redis://localhost:6379?protocol=2" to RedisProtocol.RESP2,
+        "redis://localhost:6379/1?protocol=3" to RedisProtocol.RESP3,
+        "redis://localhost:6379?name=x&protocol=3" to RedisProtocol.RESP3,
+        // A parameter without '=' is skipped, as jedis skips it.
+        "redis://localhost:6379?protocol" to null,
+      ).forEach { (url, protocol) ->
+        withClue(url) { RedisUtils.clientConfig(url).redisProtocol shouldBe protocol }
+      }
     }
   }
 

@@ -22,6 +22,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import kotlin.time.Duration
 import kotlin.time.TimeSource.Monotonic
+import kotlin.time.toKotlinDuration
 
 /**
  * A function type used as a callback during timed monitor waits.
@@ -133,6 +134,18 @@ abstract class GenericMonitor {
       .also { if (it) monitor.leave() }
 
   /**
+   * The timed [waitUntilTrueWithInterruption] for Java callers: the overload taking a Kotlin [Duration] is compiled
+   * under a mangled name that Java cannot call.
+   *
+   * @param waitTime the maximum duration to wait. A zero or negative duration checks the condition once.
+   * @return `true` if the condition was satisfied, `false` if the wait timed out.
+   * @throws InterruptedException if the thread is interrupted while waiting.
+   */
+  @Throws(InterruptedException::class)
+  fun waitUntilTrueWithInterruption(waitTime: java.time.Duration): Boolean =
+    waitUntilTrueWithInterruption(waitTime.toKotlinDuration())
+
+  /**
    * Blocks the current thread until [monitorSatisfied] returns `false`.
    * This method is not interruptible.
    */
@@ -214,6 +227,41 @@ abstract class GenericMonitor {
     maxWait: Duration,
     block: MonitorAction?,
   ): Boolean = waitWithRetries(timeout, maxWait, block) { waitUntilTrueWithInterruption(it) }
+
+  /**
+   * The retrying [waitUntilTrueWithInterruption] for Java callers; see the `java.time.Duration`
+   * [waitUntilTrueWithInterruption].
+   *
+   * @param timeout the duration of each wait attempt; at least 1 ms.
+   * @param block the action invoked on each timeout; return `false` to stop waiting.
+   * @return `true` if the condition was satisfied, `false` if the [block] returned `false`.
+   * @throws InterruptedException if the thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
+   */
+  @Throws(InterruptedException::class)
+  fun waitUntilTrueWithInterruption(
+    timeout: java.time.Duration,
+    block: MonitorAction,
+  ): Boolean = waitUntilTrueWithInterruption(timeout.toKotlinDuration(), block)
+
+  /**
+   * The retrying [waitUntilTrueWithInterruption] with an overall limit, for Java callers; see the `java.time.Duration`
+   * [waitUntilTrueWithInterruption]. A [maxWait] too long for a Kotlin [Duration], such as
+   * `java.time.Duration.ofSeconds(Long.MAX_VALUE)`, waits without limit.
+   *
+   * @param timeout the duration of each wait attempt; at least 1 ms.
+   * @param maxWait the overall maximum duration to wait; see [GenericMonitor] for its limits.
+   * @param block the action invoked on each timeout; return `false` to stop waiting. May be `null`.
+   * @return `true` if the condition was satisfied, `false` if [maxWait] elapsed or [block] returned `false`.
+   * @throws InterruptedException if the thread is interrupted while waiting.
+   * @throws IllegalArgumentException if [timeout] is shorter than 1 ms.
+   */
+  @Throws(InterruptedException::class)
+  fun waitUntilTrueWithInterruption(
+    timeout: java.time.Duration,
+    maxWait: java.time.Duration,
+    block: MonitorAction?,
+  ): Boolean = waitUntilTrueWithInterruption(timeout.toKotlinDuration(), maxWait.toKotlinDuration(), block)
 
   /**
    * Repeatedly waits for the condition to become `false`, invoking [block] on each timeout.

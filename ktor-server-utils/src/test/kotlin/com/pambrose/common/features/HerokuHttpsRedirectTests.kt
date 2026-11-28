@@ -64,6 +64,7 @@ class HerokuHttpsRedirectTests : StringSpec() {
     excludeTests()
     requestTargetTests()
     absoluteFormTests()
+    absoluteFormExcludeTests()
     requestHostTests()
     configuredHostTests()
   }
@@ -254,6 +255,65 @@ class HerokuHttpsRedirectTests : StringSpec() {
     }
   }
 
+  // CIO leaves an absolute-form target's scheme and authority in call.request.path(), so excludePrefix("/health") did
+  // not match GET http://myapp.example.com/health, which was redirected. The exclusions now match the path the
+  // redirect keeps, so an absolute-form target is excluded exactly when its origin-form equivalent is.
+  private fun absoluteFormExcludeTests() {
+    val excludeHealthAndText: HerokuHttpsRedirect.Configuration.() -> Unit = {
+      host = PINNED_HOST
+      excludePrefix("/health")
+      excludeSuffix(".txt")
+    }
+
+    "an absolute-form target whose path matches excludePrefix or excludeSuffix is not redirected" {
+      listOf(
+        "http://myapp.example.com/health",
+        "HTTPS://evil.com/healthcheck?v=2",
+        "http://user@myapp.example.com:8080/robots.txt?v=2",
+        "http://myapp.example.com/a/notes.txt",
+      ).forEach { target ->
+        withClue(target) {
+          rawRedirect(target, configure = excludeHealthAndText).apply {
+            statusCode shouldBe HttpStatusCode.OK.value
+            location shouldBe null
+          }
+        }
+      }
+    }
+
+    "an absolute-form target is redirected when only its scheme, authority or query matches an exclusion" {
+      mapOf(
+        "http://myapp.example.com/hello?next=/health" to "/hello?next=/health",
+        "http://myapp.example.com/hello?file=a.txt" to "/hello?file=a.txt",
+        "http://health.txt" to "/",
+        "http://myapp.example.com/x?a.txt" to "/x?a.txt",
+      ).forEach { (target, pathAndQuery) ->
+        withClue(target) {
+          rawRedirect(target, configure = excludeHealthAndText).location shouldBe "https://$PINNED_HOST$pathAndQuery"
+        }
+      }
+      rawRedirect("http://myapp.example.com/hello") {
+        host = PINNED_HOST
+        excludePrefix("http")
+        excludeSuffix(".com")
+      }.location shouldBe "https://$PINNED_HOST/hello"
+    }
+
+    "the exclusions match an origin-form target's path as before" {
+      rawRedirect("/healthcheck?v=2", configure = excludeHealthAndText).statusCode shouldBe HttpStatusCode.OK.value
+      rawRedirect("/hello?next=/health", configure = excludeHealthAndText).location shouldBe
+        "https://$PINNED_HOST/hello?next=/health"
+    }
+
+    // Such a target has no origin-form equivalent, and gets 400 unless an exclusion matches its raw path.
+    "a target that is neither origin-form nor absolute-form is matched on its raw path, as before" {
+      rawRedirect("@evil.com/robots.txt?v=2", configure = excludeHealthAndText).apply {
+        statusCode shouldBe HttpStatusCode.OK.value
+        location shouldBe null
+      }
+    }
+  }
+
   // With no configured host, the redirect host comes from the client's Host header.
   private fun requestHostTests() {
     // CIO passes these to the call unchecked: "evil com" redirected to "https://evil com/hello", and an empty Host
@@ -335,7 +395,7 @@ class HerokuHttpsRedirectTests : StringSpec() {
       rawRedirect("/hello?b=2&a=1") { host = "[2001:db8::1]" }.location shouldBe "https://[2001:db8::1]/hello?b=2&a=1"
     }
 
-    // sslPort is the way to set the port, but a configured "host:port" redirected to https://host:port in 5.3.1, so
+    // sslPort is the way to set the port, but a configured "host:port" redirected to https://host:port in 5.3.0, so
     // rejecting it would stop an app that relies on it from starting.
     "a configured host may still carry a port from 1 to 65535" {
       listOf("myapp.com:8443", "127.0.0.1:8443", "[2001:db8::1]:8443", "myapp.com:1", "myapp.com:65535")
@@ -344,7 +404,7 @@ class HerokuHttpsRedirectTests : StringSpec() {
         }
     }
 
-    "a configured host with a port redirects to that port, as it did in 5.3.1" {
+    "a configured host with a port redirects to that port, as it did in 5.3.0" {
       rawRedirect("/hello?b=2&a=1") { host = "myapp.com:8443" }.apply {
         statusCode shouldBe HttpStatusCode.MovedPermanently.value
         location shouldBe "https://myapp.com:8443/hello?b=2&a=1"

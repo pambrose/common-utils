@@ -32,10 +32,24 @@ RELEASE_VERSION_FILES := README.md llms.txt
 # updating this list.
 RELEASE_REQUIRED_JOBS := test.yml/test;test.yml/native-apple;test.yml/native-windows;kdocs.yml/kdocs;zizmor.yml/zizmor
 
+# The publishing secrets are resolved by shell commands that start the publish recipes' command line, and exported
+# for the ./gradlew run that ends it, rather than given as prefix assignments on that command (VAR="$(...)" ./gradlew):
+# a failing command substitution in a prefix assignment does not stop the command, so ./gradlew would run with the
+# secret set to "". Each one is assigned on its own, which takes the substitution's exit status, then exported, and
+# the recipe stops if the command fails or prints nothing. The errors name the source, never a value.
+#
+# The signing key, exported from GPG, and its passphrase, from the macOS keychain (entry gradle-signing-password,
+# account gpg-signing).
 GPG_ENV = \
-	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys $$GPG_SIGNING_KEY_ID)" \
-	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID" \
-	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)
+	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys "$$GPG_SIGNING_KEY_ID")" \
+		&& [ -n "$$ORG_GRADLE_PROJECT_signingInMemoryKey" ] \
+		|| { echo "ERROR: could not export the GPG secret key GPG_SIGNING_KEY_ID=$$GPG_SIGNING_KEY_ID" >&2; exit 1; }; \
+	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)" \
+		&& [ -n "$$ORG_GRADLE_PROJECT_signingInMemoryKeyPassword" ] \
+		|| { echo "ERROR: could not read keychain entry 'gradle-signing-password' (account 'gpg-signing'), or it is empty" >&2; exit 1; }; \
+	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID"; \
+	export ORG_GRADLE_PROJECT_signingInMemoryKey ORG_GRADLE_PROJECT_signingInMemoryKeyId \
+		ORG_GRADLE_PROJECT_signingInMemoryKeyPassword;
 
 # Maven Central's credentials, a user token's name and password from central.sonatype.com, from the macOS keychain, as
 # the signing key's passphrase is: the maven-central-username and maven-central-password entries (account
@@ -47,7 +61,12 @@ GPG_ENV = \
 # each of which asks for the value, so it stays out of the shell's history.
 MAVEN_CENTRAL_ENV = \
 	ORG_GRADLE_PROJECT_mavenCentralUsername="$$(security find-generic-password -a "maven-central" -s "maven-central-username" -w)" \
-	ORG_GRADLE_PROJECT_mavenCentralPassword="$$(security find-generic-password -a "maven-central" -s "maven-central-password" -w)"
+		&& [ -n "$$ORG_GRADLE_PROJECT_mavenCentralUsername" ] \
+		|| { echo "ERROR: could not read keychain entry 'maven-central-username' (account 'maven-central'), or it is empty" >&2; exit 1; }; \
+	ORG_GRADLE_PROJECT_mavenCentralPassword="$$(security find-generic-password -a "maven-central" -s "maven-central-password" -w)" \
+		&& [ -n "$$ORG_GRADLE_PROJECT_mavenCentralPassword" ] \
+		|| { echo "ERROR: could not read keychain entry 'maven-central-password' (account 'maven-central'), or it is empty" >&2; exit 1; }; \
+	export ORG_GRADLE_PROJECT_mavenCentralUsername ORG_GRADLE_PROJECT_mavenCentralPassword;
 
 default: help
 
@@ -302,6 +321,8 @@ upgrade-wrapper: _require-gradle-version ## Re-run the Gradle wrapper task at th
 	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin --gradle-distribution-sha256-sum=$$sum && \
 	./gradlew wrapper --gradle-version=$(GRADLE_VERSION) --distribution-type=bin --gradle-distribution-sha256-sum=$$sum
 
+# Fails, naming the keychain entry and never its value, when the signing key's passphrase is missing or empty: the
+# signing key must have one
 _check-gpg-env:
 	@if [ -z "$$GPG_SIGNING_KEY_ID" ]; then \
 		echo "ERROR: GPG_SIGNING_KEY_ID is not set" >&2; exit 1; \
@@ -309,8 +330,9 @@ _check-gpg-env:
 	@if ! gpg --list-secret-keys "$$GPG_SIGNING_KEY_ID" >/dev/null 2>&1; then \
 		echo "ERROR: no GPG secret key found for GPG_SIGNING_KEY_ID=$$GPG_SIGNING_KEY_ID" >&2; exit 1; \
 	fi
-	@if ! security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w >/dev/null 2>&1; then \
-		echo "ERROR: keychain entry 'gradle-signing-password' (account 'gpg-signing') not found" >&2; exit 1; \
+	@if [ -z "$$(security find-generic-password -a 'gpg-signing' -s 'gradle-signing-password' -w 2>/dev/null)" ]; then \
+		echo "ERROR: keychain entry 'gradle-signing-password' (account 'gpg-signing') is missing or empty; add it with: security add-generic-password -a gpg-signing -s gradle-signing-password -U -w" >&2; \
+		exit 1; \
 	fi
 
 # Fails, naming the keychain entry and never its value, when either of Maven Central's credentials is missing or empty
