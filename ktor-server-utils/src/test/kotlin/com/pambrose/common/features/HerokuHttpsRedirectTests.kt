@@ -395,7 +395,7 @@ class HerokuHttpsRedirectTests : StringSpec() {
       rawRedirect("/hello?b=2&a=1") { host = "[2001:db8::1]" }.location shouldBe "https://[2001:db8::1]/hello?b=2&a=1"
     }
 
-    // sslPort is the way to set the port, but a configured "host:port" redirected to https://host:port in 5.3.1, so
+    // sslPort is the way to set the port, but a configured "host:port" redirected to https://host:port in 5.3.0, so
     // rejecting it would stop an app that relies on it from starting.
     "a configured host may still carry a port from 1 to 65535" {
       listOf("myapp.com:8443", "127.0.0.1:8443", "[2001:db8::1]:8443", "myapp.com:1", "myapp.com:65535")
@@ -404,7 +404,7 @@ class HerokuHttpsRedirectTests : StringSpec() {
         }
     }
 
-    "a configured host with a port redirects to that port, as it did in 5.3.1" {
+    "a configured host with a port redirects to that port, as it did in 5.3.0" {
       rawRedirect("/hello?b=2&a=1") { host = "myapp.com:8443" }.apply {
         statusCode shouldBe HttpStatusCode.MovedPermanently.value
         location shouldBe "https://myapp.com:8443/hello?b=2&a=1"
