@@ -9,7 +9,9 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 A minor release with security fixes, fixes from the November code review, and dependency updates. It is binary
 compatible with 5.3.0, but several functions now reject input they used to accept. `HerokuHttpsRedirect` no longer allows an open redirect, `toObjectSecure` closes
-four ways around its allow-list, and redis-utils refuses URLs that would have connected without TLS. grpc 1.86.0
+four ways around its allow-list, and redis-utils refuses URLs that would have connected without TLS. Almost every
+other item of the November code review is fixed too: resource leaks, concurrency races, servlet protocol errors,
+script-utils type generation, and a long tail of edge cases. grpc 1.86.0
 switches channels to the rewritten pick-first load balancer, Jedis 8.1.0 adds Redis 8.12 commands, and Ktor 3.6.2
 brings bug fixes. `make release` and `make release-check` script the release itself.
 
@@ -25,8 +27,16 @@ brings bug fixes. `make release` and `make release-check` script the release its
     comma or quote.
   - **Jetty error pages**: the admin and metrics servers show only the status, not the servlet name or the
     exception.
-  - **Redis URLs**: only `redis` and `rediss` are accepted, so `tls://` no longer connects in plaintext, and an
-    escaped `:` stays in the user name.
+  - **Redis URLs**: only `redis` and `rediss` are accepted, so `tls://` no longer connects in plaintext, an
+    escaped `:` stays in the user name, and a password with an unescaped `/` can no longer leak through an error
+    message.
+  - **jetty-utils error pages**: `servletContextHandler` shows only the status on its error pages by default.
+- **Code review fixes**: leaks (a failed service start, a Redis connect cancelled midway, script engines kept alive by
+  their old bindings, a GC listener added by every `SystemMetrics.forget()`), races (`RecaptchaService.close()`,
+  `AbstractScript.params`), the servlet bridge's `304`/`204` responses and committed-response handling, and
+  script-utils' type declarations. The full list is in the CHANGELOG.
+- **New API**: `InstrumentedThreadFactory.unregister()`, and `java.time.Duration` overloads for guava-utils'
+  `GenericMonitor` and `VerboseCountDownLatch` waits.
 - **grpc 1.86.0**: grpc-utils exports `grpc-stub` and `grpc-netty` as `api`. Channels use the rewritten pick-first
   load balancer by default (gRFC A62, with A61's dual-stack support), unary and server-streaming calls defer
   deserializing the request until the client half-closes, and Netty gets transport fixes
@@ -52,8 +62,24 @@ brings bug fixes. `make release` and `make release-check` script the release its
 - **`toObjectSecure` rejects more**: a name that is not allow-listed gets `SecurityException` even when the class
   does not exist (it used to be `ClassNotFoundException`), and reading a top-level `String`, `Class` or
   `ObjectStreamClass` needs that class in `allowedClasses`. A serialized `null` throws `ClassCastException`.
-- **Redis URLs**: any scheme but `redis` or `rediss`, and a port outside 1-65535, throw `IllegalArgumentException`
-  before anything connects.
+- **Redis URLs**: any scheme but `redis` or `rediss`, a port outside 1-65535, and a database index that is not
+  `/<digits>` throw `IllegalArgumentException` before anything connects.
+- **jetty-utils error pages**: a `servletContextHandler` error page shows only the status, reason phrase and URI, and
+  a `sendError` message is replaced by the reason phrase. Set `errorHandler` in the block to use your own.
+- **Servlet bridge**: `1xx`, `204`, `205` and `304` responses carry no body, `Content-Length` or made-up
+  `Content-Type`, and `sendError` or `sendRedirect` on a committed response throws `IllegalStateException`.
+- **gRPC `bindAddress`**: a blank or unresolvable address throws when the server is built; `""` used to bind
+  127.0.0.1.
+- **Allocation metrics**: `jvm_memory_pool_allocated_bytes_total` is one counter per process, shared by every
+  registry, and continues across `clear()` and `forget()`.
+- **Source changes for some callers**: guava-utils' `unzip` and `withLock` declare checked exceptions for Java,
+  `genericServiceListener` returns `Service.Listener` to Kotlin, TlsUtils' builder functions no longer declare
+  `SSLException`, json-utils exports `kotlin-logging`, and script-utils-java renders `out`/`in` type arguments as
+  wildcards.
+- **Narrower dependencies**: zipkin-utils, redis-utils, guava-utils and grpc-utils no longer export core-utils, and
+  prometheus-utils no longer exports `prometheus-metrics-instrumentation-jvm`. Both stay on the runtime classpath, so
+  compiled code is unaffected; declare them yourself if your code uses them directly.
+- **Deprecated**: six empty public `Companion` objects, which 6.0.0 makes private.
 - **Pick-first load balancing**: a grpc-utils channel that uses the default pick-first policy now runs grpc's
   rewritten implementation, which follows gRFCs A62 and A61 (pick-first improvements and dual-stack support).
 - **Smart Client Handoffs on RESP3**: a redis-utils client built from a URL with `?protocol=3` reacts to the

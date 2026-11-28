@@ -6,8 +6,7 @@ All notable changes to Common Utils are documented in this file.
 
 ### Security
 
-These fix the seven items in phase 1 of `docs/CODE_REVIEW_2026-11-27.md`. Each one rejects some input that 5.3.0
-accepted.
+These fix the security items in `docs/CODE_REVIEW_2026-11-27.md`. Each one rejects some input that 5.3.0 accepted.
 
 - ktor-server-utils `HerokuHttpsRedirect` (R3-011, high): a request target that is not origin-form (`/path?query`)
   no longer becomes part of the redirect's host. With `host` set, `GET @evil.example/phish` redirected to
@@ -36,9 +35,100 @@ accepted.
   message repeats any part of the URL.
 - redis-utils (R3-040): an escaped `:` (`%3A`) in a user name stays in the user name, and a user name with no
   password no longer gets a made-up one. The user info is now split before it is decoded, as Jedis does.
+- redis-utils (R3-051): the parser checks the database index and the `protocol` itself, so a password with an
+  unescaped `/` or `?` can no longer leak through Jedis's `For input string` or `Unknown protocol` messages. The path
+  must be empty, `/` or `/<digits>`, and the new messages quote nothing from the URL. Indexes Jedis accepted, such as
+  `/-1` and `/+3`, are now rejected.
+- jetty-utils (R3-052): `JettyDsl.servletContextHandler` installs an error handler that shows only the status code,
+  its reason phrase and the request URI, so a servlet exception's class, message and cause, and the "Powered by
+  Jetty" footer, no longer reach the client. The block can set its own handler, or `null` for the server's. A message
+  a servlet passes to `sendError(code, msg)` is replaced by the reason phrase.
+
+### Added
+
+- prometheus-utils `InstrumentedThreadFactory.unregister()` removes the factory's three metrics from its registry, so
+  a factory with the same name can be registered there again (R3-019).
+- guava-utils `java.time.Duration` overloads for `GenericMonitor.waitUntilTrueWithInterruption` (all three forms) and
+  `VerboseCountDownLatch.await` (both forms), for Java callers (R3-021).
+
+### Changed
+
+Each of these is source-breaking for some callers, or changes behavior a caller might rely on. All are binary
+compatible: no declaration is removed or changed in an ABI dump.
+
+- grpc-utils `GrpcDsl.server` trims `bindAddress` and throws `IllegalArgumentException` when it is blank or does not
+  resolve, when the server is built. `""` used to bind 127.0.0.1 silently, and the others failed only at `start()`
+  (R3-043).
+- grpc-utils `TlsUtils.clientTlsContextBuilder` and `serverTlsContext` no longer declare an `SSLException` they
+  cannot throw. Java code that catches only `SSLException` around them no longer compiles (R3-044).
+- guava-utils `ByteArray.unzip` declares `IOException`, and `Semaphore.withLock` declares `InterruptedException`, so
+  Java callers must catch or declare them (R3-021).
+- guava-utils `genericServiceListener` returns `Service.Listener` to Kotlin callers instead of the mutable
+  `GuavaDsl.ServiceListenerHelper`. Java callers and compiled code keep the 5.3 method until 6.0.0 (R3-022).
+- json-utils exports `kotlin-logging` as `api`. The deprecated `JsonElementUtils.logger` exposes `KLogger`, which a
+  consumer's common, JS and wasmJs code could not compile against (R3-008).
+- prometheus-utils' `jvm_memory_pool_allocated_bytes_total` is one counter per process, shared by every registry
+  that registers it. It counts from the first registration in the JVM and continues across `clear()` and `forget()`
+  instead of starting from zero (R3-018).
+- ktor-server-utils' servlet bridge sends a `1xx`, `204`, `205` or `304` response without a body, a
+  `Content-Length` or a made-up `Content-Type`, and an empty body without a content type gets none. A servlet that
+  calls `sendError` or `sendRedirect` after the response is committed gets `IllegalStateException`, and the status
+  and header setters do nothing once it is (R3-012, R3-013).
+- ktor-server-utils `HerokuHttpsRedirect`'s `excludePrefix` and `excludeSuffix` match an absolute-form target's own
+  path, so `GET http://host/health` is excluded exactly when `GET /health` is (R3-050).
+- core-utils: `trimEnds` throws `IllegalArgumentException` for a length of 2^30 or more on a too-short string, as for
+  any too-short one (R3-004). `isBracketed` returns `false` for a single character (R3-005). `Int.lpad` rejects a
+  negative width, `Duration.format(includeMillis = false)` prints a negative duration shorter than a second as
+  `0:00:00:00`, and `sleepSecs` rejects a negative time before converting it (R3-006).
+- script-utils-java renders `out` and `in` type arguments as `? extends` and `? super`, so a script that relied on
+  the old invariant declaration may no longer compile (R3-029). A non-generic inner class of a generic class is
+  declared as its nearest nameable supertype, so a script loses that class's own members (R3-027).
+- script-utils-common `ScriptEngine.resetContext()` clears the old context's engine bindings (R3-024).
+- exposed-utils `upsert` throws `UnsupportedByDialectException` on H2 in MySQL or MariaDB mode before its body
+  runs, as it does on MySQL (R3-042).
+- zipkin-utils, redis-utils, guava-utils and grpc-utils take core-utils as an `implementation` dependency instead of
+  `api`, since none of them exposes a core-utils type (R3-046). core-utils stays on consumers' runtime classpath, so
+  compiled code is unaffected, but a consumer that used core-utils, or the libraries it exports (kotlinx-coroutines,
+  kotlinx-datetime, kotlin-reflect, kotlin-logging), through one of these modules without declaring it must now add
+  it. guava-utils still exports kotlin-logging, which its public API uses.
+- prometheus-utils takes `prometheus-metrics-instrumentation-jvm` as `implementation` instead of `api`, since its
+  API exposes none of that library's types (R3-047). A consumer that uses its `Jvm*Metrics` classes directly must
+  declare it.
+
+### Deprecated
+
+- The six empty public `Companion` objects (`VerboseCountDownLatch`, `AbstractEngine`, `KtorServletService`,
+  `MetricsService`, `ServletService`, `ZipkinReporterService`) are deprecated; 6.0.0 makes them private (R3-045).
+
+### Bug fixes
+
+- service-utils: a start that fails to register the JVM shutdown hook stops every sub-service it started (R3-016).
+- redis-utils: cancelling a call while it connects closes the new client, and a close failure is kept as suppressed
+  instead of being lost (R3-038).
+- recaptcha-utils: when a concurrent `RecaptchaService.close()` interrupts a verification before its request
+  starts, a caller that was not cancelled gets one retry, then a failed verification, instead of a
+  `CancellationException` (R3-035). The `HttpClient` is built on the first verification, so an app with reCAPTCHA
+  disabled opens no CIO selector (R3-036).
+- prometheus-utils: `SystemMetrics.forget()` and new registries no longer leave a GC notification listener behind on
+  every cycle (R3-018).
+- ktor-server-utils: `getCookies()` skips cookies whose names the servlet API rejects instead of failing the request
+  with a 500 (R3-014).
+- script-utils: reset pooled engines no longer keep the previous script's variables reachable (R3-024); `params`
+  reads its default type list under the lock `add` uses (R3-025); a value such as `IntStream.of(1, 2)` binds without
+  type arguments (R3-026); a pool's `close()` closes every idle instance even when one fails (R3-031); a class without
+  a canonical name fails with `ScriptException` instead of `NullPointerException` (R3-029); `KotlinScript.add`
+  rejects all-underscore names and `JavaScript.import` rejects primitives, arrays and unnamed-package classes, each of
+  which used to break every later evaluation (R3-028, R3-030).
 
 ### Build & tooling
 
+- The publish recipes stop before Gradle runs when exporting the signing key or reading a keychain entry fails or
+  returns nothing, instead of running Gradle with an empty secret, and `_check-gpg-env` rejects an empty signing
+  passphrase. The build treats a blank `signingInMemoryKey` as missing (R3-049).
+- service-utils declares `dropwizard-jmx` once, and the single-entry `dropwizard-service` bundle is gone from the
+  catalog. The resolved dependencies are unchanged (R3-048).
+- prometheus-utils' default-registry tests clean up in a `finally` (R3-020), and script-utils-kotlin's pool contract
+  tests cover `resetEvery` (R3-033).
 - Pin `glob` to 14.0.2 (from 10.5.0) and `minimatch` to 11.0.1 (from 9.0.9) through `yarnResolutions`, closing two
   Dependabot alerts on the JS toolchain lockfile: GHSA-3g3m-2fjr-6pw4 (medium), where glob kept walking the
   filesystem after its `AbortSignal` fired, and GHSA-g3hv-75wg-m249 (medium), a minimatch denial of service through
@@ -58,13 +148,23 @@ accepted.
 
 - README states Gradle 9.9.3.
 - AGENTS.md documents `make release` and `make release-check`, notes that a yarn resolution can cross a major
-  version, and dates the coverage figures to 5.3.1.
-- Add `docs/CODE_REVIEW_2026-11-27.md`, a full-repo review of 5.3.1 with 49 trackable items (R3-001…R3-049): one high,
-  17 medium and 31 low, with a phased plan for fixing them. This release fixes the seven in its first phase.
+  version, and dates the coverage figures to 5.4.0. Its versioning notes describe the `@PublishedApi internal` plus
+  `@JvmName` pattern for keeping a dump line while narrowing a return type, and its testing notes say
+  `RecaptchaService.httpClient` is `null` until first use.
+- Add `docs/CODE_REVIEW_2026-11-27.md`, a full-repo review with 49 trackable items (R3-001…R3-049): one high, 17
+  medium and 31 low, with a phased plan for fixing them. R3-050 to R3-052, three low items found while fixing it,
+  were added later. This release fixes all of them except what only a major release can do: R3-022's Java return
+  type and R3-045's private companions remain for 6.0.0.
 - The two September code reviews, whose items are all fixed, move to `docs/archive/`.
 - The ktor-server-utils, core-utils, service-utils and redis-utils READMEs describe the security fixes:
   `HerokuHttpsRedirect`'s `400` responses and why to set `host`, `toObjectSecure`'s checks, error-page contents, and
   which Redis URL schemes and ports are accepted.
+- The module READMEs describe the other fixes, and correct the review's documentation items: service-utils' Ktor
+  plugins and Zipkin host (R3-017), redis-utils' `RedisInfo` (R3-041), recaptcha-utils' `RecaptchaResponse` (R3-037),
+  grpc-utils' TLS functions (R3-044), json-utils' non-finite numbers and a missing import (R3-009, R3-010),
+  core-utils' deprecated `singleAssign` (R3-007), zipkin-utils' handler overload and shutdown order (R3-023),
+  email-utils' shared HTTP client and webhook verification (R3-034), and script-utils-common's pools (R3-032).
+- AGENTS.md and llms.txt list the narrowed dependencies, and json-utils' exported `kotlin-logging`.
 
 ### Dependency changes
 

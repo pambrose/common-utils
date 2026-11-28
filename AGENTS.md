@@ -335,7 +335,8 @@ types are typealiases to the Java ones, so there is nothing to gain from the Jav
   committed self-signed PEM fixtures (`grpc-utils/src/test/resources/tls/`); Exposed tests use in-memory H2;
   Redis tests mock Jedis with MockK; `blockingGet` tests run against a loopback JDK `HttpServer`.
 - `RecaptchaService.httpClient` is `internal` (not private) as a test seam: module tests swap in a
-  MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`.
+  MockEngine-backed client to fake Google's siteverify endpoint, restoring the original in a `finally`. It is `null`
+  until the first verification builds the client, so an app with reCAPTCHA disabled opens no CIO selector.
 - ktor-client-utils declares no client engine, so its client-creating `commonTest` specs rely on one supplied
   by the test source sets: CIO is a `jvmTest` and `nativeTest` dependency, and js/wasmJs fall back to the Js
   engine bundled in ktor-client-core. Kotlin/Native has no such fallback, so dropping CIO from `nativeTest`
@@ -368,8 +369,8 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.3.1 the project sits at 99.3% line and 96.2% branch, and the weakest package
-by line coverage is `service` at 98.2%.
+`codecov.yml` point here). As of 5.4.0 the project sits at 99.3% line and 96.1% branch, and the weakest package
+by line coverage is `service` at 98.3%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
   service-utils, ktor-server-utils and guava-utils) could lose all its coverage without failing the aggregate.
@@ -415,6 +416,9 @@ All modules use: `com.pambrose.common.*`
   `copy`, so keep a hidden overload of each (Kotlin allows an explicit `copy` with other parameters), give it the
   old defaults so its `$default` bridge survives, and add the property last so `componentN` keeps its meaning;
   `MetricsConfig` shows the pattern, and `MetricsConfigTests` calls the old signatures by reflection. A
+  `HIDDEN` deprecation compiles the declaration as synthetic, which changes its dump line; when the line must stay as
+  it is, as for a narrower return type, keep the old body as a `@PublishedApi internal` function with the old
+  `@JvmName` and mark the new Kotlin-facing one `@JvmSynthetic`, as `genericServiceListener` does. A
   declaration that could never be called successfully (for example one that always threw) may be dropped in a
   minor release, with a CHANGELOG note. One deliberate exception: the 5.1.1 patch release dropped
   `DateUtils.toCreated`, which only Canvas Cache used, and the inline two-receiver `with(a, b)`; it is not a precedent
