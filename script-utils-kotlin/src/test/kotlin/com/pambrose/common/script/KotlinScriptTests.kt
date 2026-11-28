@@ -20,6 +20,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import java.util.Properties
 import javax.script.ScriptException
 import kotlin.reflect.typeOf
@@ -55,6 +56,7 @@ class KotlinScriptTests : StringSpec() {
     specialClassTests()
     rebindingTests()
     invalidVariableTests()
+    reservedNameTests()
     evaluationTests()
     evaluatorTests()
   }
@@ -410,12 +412,26 @@ class KotlinScriptTests : StringSpec() {
         }
       }
     }
+  }
 
+  private fun reservedNameTests() {
     "the names the generated declarations read from are reserved" {
       KotlinScript().use { script ->
         listOf("bindings", "__variables").forEach { name ->
           shouldThrow<ScriptException> { script.add(name, 1) }.message.orEmpty() shouldContain "not a valid identifier"
         }
+      }
+    }
+
+    "names made only of underscores are rejected, so they cannot break later evaluations" {
+      KotlinScript().use { script ->
+        val rejections = listOf("_", "__", "___").map { name -> runCatching { script.add(name, 42) }.exceptionOrNull() }
+        // Kotlin reserves these names, so an accepted one made this evaluation, and every later one, fail to compile.
+        script.eval("1 + 1") shouldBe 2
+        rejections.forEach { it.shouldBeInstanceOf<ScriptException>() }
+        // A name that only starts with an underscore is still a valid variable.
+        script.add("_x", 1)
+        script.eval("_x + 1") shouldBe 2
       }
     }
   }

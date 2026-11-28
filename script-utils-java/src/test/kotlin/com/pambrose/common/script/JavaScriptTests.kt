@@ -28,6 +28,8 @@ import io.kotest.matchers.string.shouldContain
 import java.util.Properties
 import javax.script.ScriptContext.GLOBAL_SCOPE
 import javax.script.ScriptException
+import kotlin.reflect.KTypeProjection
+import kotlin.reflect.full.createType
 import kotlin.reflect.typeOf
 import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration.Companion.milliseconds
@@ -54,6 +56,7 @@ class JavaScriptTests : StringSpec() {
     poolTests()
     variableTests()
     declaredTypeTests()
+    typeRenderingTests()
     specialClassTests()
     evalScriptTests()
     importTests()
@@ -433,6 +436,45 @@ class JavaScriptTests : StringSpec() {
     }
   }
 
+  private fun typeRenderingTests() {
+    "use-site variance in a type argument is rendered as a Java wildcard" {
+      JavaScript().use {
+        it.apply {
+          params("x", arrayOf(typeOf<MutableList<out Number>>(), typeOf<Comparator<in Int>>())) shouldBe
+            "<java.util.List<? extends java.lang.Number>, java.util.Comparator<? super java.lang.Integer>>"
+          add("lists", mutableListOf<MutableList<out Number>>(), typeOf<MutableList<out Number>>())
+          add("ints", mutableListOf(1, 2), typeOf<Int>())
+          // A List<List<Number>> cannot take a List<Integer>, so this did not compile without the wildcard.
+          eval("lists.add(ints)") shouldBe true
+        }
+      }
+    }
+
+    // Java arrays are covariant, so Array<out T> is a T[]. Java has no contravariant array, so, as in Kotlin's own JVM
+    // signatures, Array<in T> is erased to an Object[].
+    "an array type argument is a plain Java array, whatever its variance" {
+      JavaScript().use { script ->
+        script.params("x", arrayOf(typeOf<Array<out Number>>(), typeOf<Array<in Number>>())) shouldBe
+          "<java.lang.Number[], java.lang.Object[]>"
+      }
+    }
+
+    // Rendering one used to throw an unwrapped NullPointerException, or, as an array element, render as null[].
+    "a type argument Java source cannot name is reported as a ScriptException" {
+      class Local
+
+      JavaScript().use { script ->
+        // 5 takes no type arguments, so add renders the given one into its error message.
+        shouldThrow<ScriptException> { script.add("value", 5, typeOf<Local>()) }
+        shouldThrow<ScriptException> { script.params("x", arrayOf(typeOf<List<Local>>())) }
+        val starArray = arrayOf(Local())::class.createType(listOf(KTypeProjection.STAR))
+        shouldThrow<ScriptException> { script.params("x", arrayOf(starArray)) }
+        script.add("locals", arrayOf(Local()), typeOf<Local>())
+        shouldThrow<ScriptException> { script.eval("0") }.message shouldContain "canonical name"
+      }
+    }
+  }
+
   private fun specialClassTests() {
     "a non-generic subclass of a generic class is declared as itself" {
       JavaScript().use {
@@ -534,6 +576,20 @@ class JavaScriptTests : StringSpec() {
 
       JavaScript().use { script ->
         shouldThrow<IllegalArgumentException> { script.import(Local::class.java) }
+      }
+    }
+
+    // Each has a canonical name, but an import of it does not compile, so accepting one broke every later evaluation.
+    "primitives, arrays, and classes in the unnamed package cannot be imported" {
+      JavaScript().use { script ->
+        // java-scriptengine compiles a script's class into the unnamed package.
+        val unnamed = script.evalScript("public class Main { public Object getValue() { return Main.class; } }")
+        // Int::class.java is the primitive int class.
+        listOf(Int::class.java, Array<String>::class.java, unnamed as Class<*>).forEach { clazz ->
+          shouldThrow<IllegalArgumentException> { script.import(clazz) }
+        }
+        script.importDecls shouldBe ""
+        script.eval("1 + 1") shouldBe 2
       }
     }
 

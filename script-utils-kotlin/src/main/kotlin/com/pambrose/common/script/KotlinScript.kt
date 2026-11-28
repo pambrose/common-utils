@@ -28,8 +28,9 @@ import com.pambrose.common.util.toDoubleQuoted
  *
  * Stores the variables in a single [ScriptVariables] holder, the only JSR 223 binding, and generates Kotlin `val`
  * declarations that read each one back and cast it to a type the script can name. `bindings` and `__variables` are
- * reserved names. A value whose runtime class cannot be named, such as the private list
- * class behind `listOf(1, 2)`, is cast to its nearest public class or interface.
+ * reserved names, as are Kotlin's hard keywords and the names Kotlin reserves that are made only of underscores (`_`,
+ * `__`, ...). A value whose runtime class cannot be named, such as the private list class behind `listOf(1, 2)`, is
+ * cast to its nearest public class or interface.
  *
  * Common literal JVM-termination calls (`System.exit`, `exitProcess`, `Runtime.getRuntime().exit/halt`)
  * are rejected on a best-effort basis via [ScriptGuards]. This is a convenience against accidental termination,
@@ -44,8 +45,10 @@ class KotlinScript(
   nullGlobalContext: Boolean = false,
 ) : AbstractScript("kts", nullGlobalContext) {
   // bindings is the script's own view of the engine bindings, and the holder's name is taken by the holder, so a
-  // variable named either would shadow what the generated declarations read.
-  override fun isReserved(name: String) = name in KOTLIN_KEYWORDS || name == "bindings" || name == VARIABLES_BINDING
+  // variable named either would shadow what the generated declarations read. Kotlin reserves names made only of
+  // underscores (_, __, ...), so a declaration of one would fail to compile, along with every later evaluation.
+  override fun isReserved(name: String) =
+    name in KOTLIN_KEYWORDS || name == "bindings" || name == VARIABLES_BINDING || name.all { it == '_' }
 
   /**
    * Generates Kotlin `val` declarations that retrieve every bound variable from the [ScriptVariables] holder

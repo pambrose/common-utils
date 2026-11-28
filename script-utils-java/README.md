@@ -105,13 +105,17 @@ Declarations use fully-qualified Java type names, so they need no imports of the
 ```
 
 Kotlin type arguments are mapped to their Java equivalents: `Int` and `Int?` both become `java.lang.Integer`, and
-nullability is dropped. A boxed primitive value is declared as the Java primitive (`int`, `long`, `boolean`, …). A
+nullability is dropped. A use-site `out T` or `in T` type argument becomes `? extends T` or `? super T`, so
+`typeOf<MutableList<out Number>>()` is declared as `java.util.List<? extends java.lang.Number>`. A type argument that
+Java source cannot name, such as a local class, makes `eval` throw a `ScriptException`. A boxed primitive value is
+declared as the Java primitive (`int`, `long`, `boolean`, …). A
 value whose runtime class cannot be named in generated source, such as the private list class behind `listOf(1, 2)`,
 is declared as its nearest public class or interface. A value with no public class or interface that takes its
 registered type arguments is declared as `java.lang.Object`, without them.
 
-An array is declared with its registered element type, and a primitive array as itself. A star-projected array type
-argument has no `?[]` form in Java, so it is declared with the array's erased element type:
+An array is declared with its registered element type, and a primitive array as itself. Java arrays are covariant, so
+`Array<out T>` is declared as `T[]` too. A star-projected or `in`-projected array type argument has no `?[]` form in
+Java, so, as in Kotlin's own JVM signatures, it is declared with the array's erased element type:
 
 ```kotlin
 script.add("ints", arrayOf(1, 2), typeOf<Int>())
@@ -167,6 +171,9 @@ JavaScript().use { script ->
   script.importDecls    // "import java.util.ArrayList;"
 }
 ```
+
+`import` throws `IllegalArgumentException` for a class an import declaration cannot name: a local, anonymous or hidden
+class, a primitive type (`Int::class.java`), an array class, or a class in the unnamed package.
 
 `Isolation.CallerClassLoader` is java-scriptengine's default, and the isolation a pooled instance is restored to when
 it is returned. Both levels compile each script into a class loader of its own. `Isolation.IsolatedClassLoader`

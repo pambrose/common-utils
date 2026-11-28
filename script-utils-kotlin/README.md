@@ -73,13 +73,14 @@ KotlinScript().use { script ->
 }
 ```
 
-`add` rejects a name that is not a valid identifier (`[A-Za-z_][A-Za-z0-9_]*`) or is a Kotlin hard keyword, since
-names are spliced into generated source. It also rejects a value of a local or anonymous class, which generated
-code cannot name.
+`add` rejects a name that is not a valid identifier (`[A-Za-z_][A-Za-z0-9_]*`), is a Kotlin hard keyword, or is
+made only of underscores (`_`, `__`, ...), which Kotlin reserves, since names are spliced into generated source. It
+also rejects a value of a local or anonymous class, which generated code cannot name.
 
 ```kotlin
 script.add("my-var", 5) // ScriptException: not a valid identifier
 script.add("class", 5) // ScriptException: not a valid identifier
+script.add("__", 5) // ScriptException: not a valid identifier
 ```
 
 ### Generated Declarations
