@@ -280,12 +280,36 @@ dependencies {
 - Recipient addresses are personal data: `sendEmail` logs counts and the message id instead. Keep that
   property in your own handlers, and avoid logging the contents of `Data.to` or `Click.ipAddress`
 
+The Resend SDK this module depends on can verify the signature. `Resend(apiKey).webhooks().verify(options)` checks
+it against your webhook's signing secret (`whsec_...`) in constant time, rejects a timestamp more than five minutes
+off, and throws `ResendException` on any failure. Pass it the raw request body, not a re-serialized one,
+and the three headers under their lowercase names:
+
+```kotlin
+import com.pambrose.common.webhook.ResendWebhookMsg
+import com.resend.Resend
+import com.resend.services.webhooks.model.VerifyWebhookOptions
+
+val options =
+  VerifyWebhookOptions.builder()
+    .payload(rawBody)
+    .addHeader("svix-id", svixId)
+    .addHeader("svix-timestamp", svixTimestamp)
+    .addHeader("svix-signature", svixSignature)
+    .secret(signingSecret)
+    .build()
+
+Resend(apiKey).webhooks().verify(options) // throws ResendException unless the signature is valid
+val msg = ResendWebhookMsg.decode(rawBody)
+```
+
 ## Thread Safety
 
 - `Email` is an immutable value class, and `EmailUtils` holds only a lazily compiled, immutable `Pattern`
 - `ResendWebhookMsg.json` is a single immutable `Json` instance shared by every call to `decode`
-- Each `ResendService` creates its own Resend client, and the HTTP client behind it, in its constructor and
-  reuses them for every send
+- Each `ResendService` takes one Resend `Emails` service in its constructor and reuses it for every send. The
+  HTTP client behind it is the Resend SDK's JVM-wide default, a single `OkHttpClient` that every `ResendService`
+  (and any other `Resend` client created with just an API key) shares
 
 ## License
 

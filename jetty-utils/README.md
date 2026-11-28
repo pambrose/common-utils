@@ -13,7 +13,8 @@ the block is ordinary Jetty API.
 - **`JettyDsl.server(port) { }`**: creates a `Server` listening on a port on every interface and applies the optional
   configuration block
 - **`JettyDsl.server(port, host) { }`**: the same, with its connector bound to `host` (`null` for every interface)
-- **`JettyDsl.servletContextHandler { }`**: creates a `ServletContextHandler` and applies the optional block
+- **`JettyDsl.servletContextHandler { }`**: creates a `ServletContextHandler` with a status-only error handler and
+  applies the optional block
 
 ### Servlets
 
@@ -50,6 +51,29 @@ tests bind the loopback address this way:
 
 ```kotlin
 val server = JettyDsl.server(0, "127.0.0.1") { this.handler = handler }
+```
+
+### Error Pages
+
+A context from `servletContextHandler` starts with an error handler whose pages show only the status code, its
+reason phrase and the request URI, in HTML, plain text or JSON as the `Accept` header asks. A servlet that throws
+gets a `500` page reading `Server Error`, and an unmapped path a `404` reading `Not Found`. The page carries no
+exception class, message, cause or stack trace, no servlet name, and no "Powered by Jetty" footer. A message a
+servlet passes to `sendError(code, message)` is replaced by the reason phrase too.
+
+Without it, a servlet error would fall to the server's error handler, which prints the exception's `toString()`
+and, unless the connector's `sendServerVersion` is off, a footer naming the Jetty version.
+
+To show more, set your own handler in the block; setting it to `null` hands the context's errors back to the
+server's error handler:
+
+```kotlin
+import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler
+
+val handler =
+  JettyDsl.servletContextHandler {
+    errorHandler = ErrorPageErrorHandler().apply { addErrorPage(404, "/not-found.html") }
+  }
 ```
 
 ### LambdaServlet
@@ -165,6 +189,26 @@ dependencies {
 - The no-cache headers make these endpoints safe to poll from load balancers and health checks
 - Anything beyond these helpers — static content, filters, security — is plain Jetty configuration inside
   the DSL blocks
+
+## Security Considerations
+
+- The status-only error handler covers the requests a `servletContextHandler` context handles. A request no
+  context matches (a path outside a non-root `contextPath`, for example) still gets the server's error page, with
+  its "Powered by Jetty" footer
+- `JettyDsl.server` keeps Jetty's default `HttpConfiguration`, which sends a `Server: Jetty(<version>)` header on
+  every response and puts that footer on the server's error pages. For a server reachable by untrusted clients,
+  turn it off in the block:
+
+```kotlin
+import org.eclipse.jetty.server.HttpConnectionFactory
+
+val server =
+  JettyDsl.server(8080, "127.0.0.1") {
+    connectors.single().getConnectionFactory(HttpConnectionFactory::class.java).httpConfiguration
+      .sendServerVersion = false
+    this.handler = handler
+  }
+```
 
 ## License
 

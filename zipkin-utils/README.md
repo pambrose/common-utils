@@ -26,27 +26,34 @@ val tracing =
 
 ### Reporting Spans to Zipkin
 
-`ZipkinSpanHandler`, from `zipkin-reporter-brave`, which this module includes, sends finished spans through a
-reporter. An HTTP sender such as `OkHttpSender` comes from `io.zipkin.reporter2:zipkin-sender-okhttp3`, which this
-module does not include.
+`AsyncZipkinSpanHandler`, from `zipkin-reporter-brave`, which this module includes, queues finished spans and sends
+them to Zipkin in the background as JSON V2. An HTTP sender such as `OkHttpSender` comes from
+`io.zipkin.reporter2:zipkin-sender-okhttp3`, which this module does not include.
 
 ```kotlin
 import com.pambrose.common.dsl.ZipkinDsl
-import zipkin2.reporter.AsyncReporter
-import zipkin2.reporter.brave.ZipkinSpanHandler
+import zipkin2.reporter.BytesMessageSender
+import zipkin2.reporter.brave.AsyncZipkinSpanHandler
 import zipkin2.reporter.okhttp3.OkHttpSender
 
-val sender = OkHttpSender.create("http://localhost:9411/api/v2/spans")
-val reporter = AsyncReporter.create(sender)
+// Typed as BytesMessageSender so create() resolves to the current overload. OkHttpSender also extends Sender,
+// which would otherwise select the create(Sender) overload deprecated since Zipkin Reporter 3.2.
+val sender: BytesMessageSender = OkHttpSender.create("http://localhost:9411/api/v2/spans")
+val handler = AsyncZipkinSpanHandler.create(sender)
 
 val tracing =
   ZipkinDsl.tracing {
     localServiceName("orders")
-    addSpanHandler(ZipkinSpanHandler.create(reporter))
+    addSpanHandler(handler)
   }
 ```
 
-service-utils' `ZipkinReporterService` sets this up for a Guava service, and sends queued spans when it stops.
+`AsyncZipkinSpanHandler` encodes spans on its own thread. `ZipkinSpanHandler.create(reporter)` with an
+`AsyncReporter` also works, and is the way to send another format such as JSON V1, but it converts each span on
+the thread that finishes it.
+
+service-utils' `ZipkinReporterService` manages a sender, reporter and span handler like these for a Guava service,
+and sends queued spans when it stops.
 
 ### Tracing Work
 
@@ -62,8 +69,15 @@ try {
 
 `Tracing` is `Closeable`. Close it when you are done; closing it also clears `Tracing.current()`.
 
+Closing `Tracing` does not close its span handlers or their sender, so close those too when reporting to Zipkin.
+The handler runs a flusher thread and the sender an HTTP client, and `handler.close()` drops any spans still
+queued, so flush it first:
+
 ```kotlin
 tracing.close()
+handler.flush()
+handler.close()
+sender.close()
 ```
 
 ## API Reference

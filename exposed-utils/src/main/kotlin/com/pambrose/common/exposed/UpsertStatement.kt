@@ -24,8 +24,10 @@ import org.jetbrains.exposed.v1.core.statements.UpdateStatement
 import org.jetbrains.exposed.v1.core.statements.UpsertBuilder
 import org.jetbrains.exposed.v1.core.statements.UpsertStatement
 import org.jetbrains.exposed.v1.core.vendors.DatabaseDialect
+import org.jetbrains.exposed.v1.core.vendors.H2Dialect.H2CompatibilityMode
 import org.jetbrains.exposed.v1.core.vendors.MysqlDialect
 import org.jetbrains.exposed.v1.core.vendors.currentDialect
+import org.jetbrains.exposed.v1.core.vendors.h2Mode
 import org.jetbrains.exposed.v1.exceptions.UnsupportedByDialectException
 import org.jetbrains.exposed.v1.jdbc.upsert
 
@@ -38,7 +40,8 @@ import org.jetbrains.exposed.v1.jdbc.upsert
  * its columns, and forwarding no columns would make Exposed fall back to the primary key or the first unique
  * index, silently matching on a different key. MySQL and MariaDB are not supported, because their
  * `ON DUPLICATE KEY UPDATE` fires on any unique key and cannot be limited to one index; use Exposed's own
- * `upsert` there.
+ * `upsert` there. The same goes for H2 in MySQL or MariaDB compatibility mode, where Exposed builds that MySQL
+ * statement too.
  *
  * [onUpdate], [onUpdateExclude] and [where] are passed straight through to Exposed's `upsert`. How much of
  * that each database supports is dialect-specific: the MERGE-based statement H2 uses, for example, rejects
@@ -53,7 +56,8 @@ import org.jetbrains.exposed.v1.jdbc.upsert
  * @return the executed [UpsertStatement]
  * @throws IllegalArgumentException if [conflictIndex] is not unique, belongs to a different table, or is a
  *   functional or partial index
- * @throws UnsupportedByDialectException on MySQL and MariaDB
+ * @throws UnsupportedByDialectException on MySQL and MariaDB, and on H2 in MySQL or MariaDB mode, before [body]
+ *   runs
  */
 fun <T : Table> T.upsert(
   conflictIndex: Index,
@@ -86,10 +90,15 @@ fun <T : Table> T.upsert(
   )
 }
 
+// The H2 modes for which Exposed's UpsertBuilder.getFunctionProvider picks MySQL's upsert over H2's MERGE.
+private val onDuplicateKeyH2Modes = setOf(H2CompatibilityMode.MySQL, H2CompatibilityMode.MariaDB)
+
 // MySQL's (and MariaDB's) upsert is ON DUPLICATE KEY UPDATE, which cannot name conflict columns; Exposed throws when
-// given keys, so say why up front.
+// given keys, but only after body has run, so say why up front. Exposed builds that statement for H2 in MySQL or
+// MariaDB mode as well. Its MysqlFunctionProvider is internal, so the check mirrors getFunctionProvider's choice
+// instead of testing the provider it returns. An H2 dialect reads its mode from the current transaction.
 internal fun checkConflictIndexSupported(dialect: DatabaseDialect) {
-  if (dialect is MysqlDialect)
+  if (dialect is MysqlDialect || dialect.h2Mode in onDuplicateKeyH2Modes)
     throw UnsupportedByDialectException(
       "An upsert on a conflict index needs ON CONFLICT (columns); ON DUPLICATE KEY UPDATE matches any unique key. " +
         "Use Exposed's upsert without a conflict index",

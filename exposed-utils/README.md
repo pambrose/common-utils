@@ -242,8 +242,9 @@ dependencies {
 `upsert` delegates to Exposed's native `upsert`, so it works on the databases whose upsert can name its conflict
 columns: PostgreSQL, SQLite, H2, Oracle and SQL Server (this module's own tests exercise it against H2). It is
 not supported on **MySQL or MariaDB**, whose `ON DUPLICATE KEY UPDATE` fires on any unique key and cannot be limited
-to one index; there it throws `UnsupportedByDialectException`, and Exposed's own `upsert` without a conflict index
-is the right call. How much of `onUpdate`, `onUpdateExclude` and `where` each database accepts is
+to one index; there it throws `UnsupportedByDialectException` before running the body, and Exposed's own `upsert`
+without a conflict index is the right call. H2 in `MODE=MySQL` or `MODE=MariaDB` is rejected the same way, since
+Exposed builds MySQL's `ON DUPLICATE KEY UPDATE` statement for those modes too. How much of `onUpdate`, `onUpdateExclude` and `where` each database accepts is
 dialect-specific: the MERGE-based statement H2 uses rejects `where`, for example.
 
 ## Security Considerations

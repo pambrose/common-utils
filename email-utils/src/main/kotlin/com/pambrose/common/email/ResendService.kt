@@ -29,7 +29,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging.logger
 class ResendService(
   envResendApiKey: String,
 ) {
-  // Resend.emails() builds a new OkHttp client on every call, so take one Emails service and reuse it.
+  // Resend.emails() allocates a new Emails service on every call, so take one here and reuse it for every send. The
+  // HTTP client behind it is not this instance's own: Resend(apiKey) uses the SDK's JVM-wide default client, one
+  // OkHttpClient shared by every Resend client.
   private val emails = Resend(envResendApiKey).emails()
 
   /**
