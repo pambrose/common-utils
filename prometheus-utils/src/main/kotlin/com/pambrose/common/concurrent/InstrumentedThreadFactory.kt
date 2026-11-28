@@ -38,7 +38,7 @@ import java.util.concurrent.ThreadFactory
  * @param name the base name for the Prometheus metrics (see above for the series names).
  * @param help the base help text for the Prometheus metrics.
  * @param registry the registry to register the metrics with. Defaults to [PrometheusRegistry.defaultRegistry];
- *   factories with the same [name] need separate registries.
+ *   factories with the same [name] need separate registries, or the earlier factory must be [unregister]ed first.
  * @throws IllegalArgumentException if one of the metric names is already registered in [registry]. None of the
  *   three metrics is left registered in that case.
  */
@@ -48,7 +48,7 @@ class InstrumentedThreadFactory
     private val delegate: ThreadFactory,
     name: String,
     help: String,
-    registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
+    private val registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry,
   ) : ThreadFactory {
     private val created: Counter
     private val running: Gauge
@@ -74,6 +74,20 @@ class InstrumentedThreadFactory
             help("$help threads terminated")
           }
       }
+    }
+
+    /**
+     * Removes the factory's three metrics from the registry it registered them with, so they are no longer exported
+     * and a factory with the same name can be registered there again.
+     *
+     * Only this factory's own metrics are removed, never those of another factory with the same name, so calling it
+     * more than once is harmless. The factory keeps working afterwards: it still creates threads and updates the
+     * metrics, which are simply no longer exported.
+     */
+    fun unregister() {
+      registry.unregister(created)
+      registry.unregister(running)
+      registry.unregister(terminated)
     }
 
     /**

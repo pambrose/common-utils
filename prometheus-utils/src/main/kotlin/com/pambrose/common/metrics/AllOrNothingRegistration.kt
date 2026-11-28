@@ -59,4 +59,10 @@ internal class TrackingRegistry(
     collectors.forEach(target::unregister)
     multiCollectors.forEach(target::unregister)
   }
+
+  // Registers everything registered here with registry as well, so several registries can share the same collectors.
+  fun registerAllWith(registry: PrometheusRegistry) {
+    collectors.forEach(registry::register)
+    multiCollectors.forEach(registry::register)
+  }
 }

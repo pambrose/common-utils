@@ -3,6 +3,7 @@ public final class com/pambrose/common/concurrent/InstrumentedThreadFactory : ja
 	public fun <init> (Ljava/util/concurrent/ThreadFactory;Ljava/lang/String;Ljava/lang/String;Lio/prometheus/metrics/model/registry/PrometheusRegistry;)V
 	public synthetic fun <init> (Ljava/util/concurrent/ThreadFactory;Ljava/lang/String;Ljava/lang/String;Lio/prometheus/metrics/model/registry/PrometheusRegistry;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun newThread (Ljava/lang/Runnable;)Ljava/lang/Thread;
+	public final fun unregister ()V
 }
 
 public final class com/pambrose/common/dsl/PrometheusDsl {

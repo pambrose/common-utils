@@ -120,6 +120,10 @@ running: `<name>_threads_created_total`, `<name>_threads_terminated_total` and `
 `IllegalArgumentException` and leaves none of them registered. When the delegate rejects a thread by returning
 `null`, `newThread` returns `null` too, and the thread is not counted.
 
+`unregister()` removes the factory's three metrics from its registry, so a pool recreated under the same `name`
+can register them again. It removes only that factory's own metrics, so a second call is harmless, and the factory
+keeps creating threads afterwards without exporting them.
+
 ```kotlin
 import com.pambrose.common.concurrent.InstrumentedThreadFactory
 import java.util.concurrent.Executors
@@ -132,6 +136,10 @@ val factory =
   )
 
 val executor = Executors.newFixedThreadPool(4, factory)
+
+// When the pool is retired
+executor.shutdown()
+factory.unregister()
 ```
 
 ### JVM Metrics
@@ -146,6 +154,14 @@ one or the other. Pass `registry` to use a registry other than the default one.
 `initialize` remembers what it registered with each registry, so a set removed with `registry.clear()` is not
 registered again. On a registry that is cleared and reused, as a test harness does between specs, call
 `SystemMetrics.forget(registry)` after clearing it, and the next `initialize` registers the sets again.
+
+The client updates `jvm_memory_pool_allocated_bytes_total` (from `enableMemoryPoolsExports`) through a GC
+notification listener that it adds to every garbage collector MXBean on each registration and never removes. To
+keep repeated registrations from piling up listeners, `initialize` creates that counter once per process and gives
+every registry the same one. Clear-and-forget cycles and isolated registries therefore add no listeners, and the
+single listener stays attached for the life of the JVM. The counter counts from the first registration in the JVM,
+so a registry that registers it later, or again after `clear()` and `forget()`, shows the running total rather than
+starting from zero.
 
 | Flag | Metric set | Example series |
 |---|---|---|
@@ -204,7 +220,7 @@ are the 1.x ones from `io.prometheus.metrics.core.metrics`.
 ### Collectors
 
 - `class SamplerGaugeCollector(name: String, help: String, labelNames: List<String> = emptyList(), labelValues: List<String> = emptyList(), registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry, data: () -> Double) : Collector` — `collect()` returns a `GaugeSnapshot`
-- `class InstrumentedThreadFactory(delegate: ThreadFactory, name: String, help: String, registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry) : ThreadFactory` — `newThread` returns `Thread?`
+- `class InstrumentedThreadFactory(delegate: ThreadFactory, name: String, help: String, registry: PrometheusRegistry = PrometheusRegistry.defaultRegistry) : ThreadFactory` — `newThread` returns `Thread?`; `unregister()` removes the factory's three metrics from `registry`
 
 ### `SystemMetrics`
 

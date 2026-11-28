@@ -10,6 +10,7 @@ import com.pambrose.common.metrics.sampleValue
 import com.pambrose.common.metrics.seriesNames
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -27,6 +28,7 @@ class InstrumentedThreadFactoryTests : StringSpec() {
     invariantTests()
     delegateTests()
     registrationTests()
+    unregisterTests()
   }
 
   private fun creationTests() {
@@ -282,6 +284,67 @@ class InstrumentedThreadFactoryTests : StringSpec() {
         InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_partial", "Test", registry).newThread {}
         registry.sampleValue("itf_partial_threads_created_total") shouldBe 1.0
       }
+    }
+  }
+
+  private fun unregisterTests() {
+    "unregister removes the three metrics, so a factory with the same name can be created again" {
+      val registry = PrometheusRegistry()
+      val factory = InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_unregister", "Test", registry)
+      registry.metricNames() shouldBe
+        setOf("itf_unregister_threads_created", "itf_unregister_threads_running", "itf_unregister_threads_terminated")
+
+      factory.unregister()
+
+      registry.metricNames().shouldBeEmpty()
+      InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_unregister", "Test", registry).newThread {}
+      registry.sampleValue("itf_unregister_threads_created_total") shouldBe 1.0
+    }
+
+    "unregister leaves the registry's other collectors, and calling it again is harmless" {
+      val registry = PrometheusRegistry()
+      PrometheusDsl.gauge(registry) {
+        name("itf_unregister_other")
+        help("Other")
+      }
+      val factory =
+        InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_unregister_twice", "Test", registry)
+
+      factory.unregister()
+      factory.unregister()
+
+      registry.metricNames() shouldBe setOf("itf_unregister_other")
+    }
+
+    // Unregistering removes only the factory's own collector instances, never another factory's of the same name.
+    "a second unregister leaves a newer factory with the same name registered" {
+      val registry = PrometheusRegistry()
+      val stale = InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_stale", "Test", registry)
+      stale.unregister()
+      InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_stale", "Test", registry).newThread {}
+
+      stale.unregister()
+
+      registry.sampleValue("itf_stale_threads_created_total") shouldBe 1.0
+    }
+
+    "an unregistered factory still creates and runs threads, without exporting them" {
+      val registry = PrometheusRegistry()
+      val factory =
+        InstrumentedThreadFactory(Executors.defaultThreadFactory(), "itf_after_unregister", "Test", registry)
+      factory.unregister()
+
+      val ran = CountDownLatch(1)
+      factory
+        .newThread { ran.countDown() }
+        .shouldNotBeNull()
+        .apply {
+          start()
+          join()
+        }
+
+      ran.count shouldBe 0L
+      registry.metricNames().shouldBeEmpty()
     }
   }
 }
