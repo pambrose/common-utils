@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [5.4.0] - 2026-11-27
+## [5.4.0] - 2026-11-28
 
 ### Security
 
