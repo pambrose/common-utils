@@ -11,7 +11,7 @@
 
 ## At a glance
 
-**49 issues:** 1 high · 17 medium · 31 low. Nothing is critical, the 5.0.0–5.3.1 rework largely held, and `ktor-client-utils`, `dropwizard-utils`, `jetty-utils`, CI/supply-chain, and the new `make release` / `release-check` automation are clean.
+**49 issues:** 1 high · 17 medium · 31 low (R3-050 to R3-052, three more low items found while fixing phase 1, were added later). Nothing is critical, the 5.0.0–5.3.1 rework largely held, and `ktor-client-utils`, `dropwizard-utils`, `jetty-utils`, CI/supply-chain, and the new `make release` / `release-check` automation are clean.
 
 - **One high item:**
   - [R3-011](#r3-011): `HerokuHttpsRedirect` splices `call.request.uri` directly onto the HTTPS origin with its trailing `/` stripped (introduced in RV-026). On Ktor CIO, `GET @evil.com/phish HTTP/1.1` with `X-Forwarded-Proto: http` redirects to `https://myapp.herokuapp.com@evil.com/phish` even when `host` is explicitly pinned, and standard absolute-form requests produce a malformed `https://hosthttp://host/...` URL.
@@ -68,6 +68,7 @@
 - [ ] **R3-012** `MEDIUM` · bug — `ServletRoute` fabricates `Content-Type: application/octet-stream` and `Content-Length: 0` on `304 Not Modified`, `204 No Content`, and bodyless responses (follows RV-023, RV-025) ([details](#r3-012))
 - [ ] **R3-013** `LOW` · bug — `KtorServletResponse` violates Jakarta Servlet 6.1 contracts for committed responses, `setContentType(null)`, `reset()`, and null header names (follows RV-024, RV-025) ([details](#r3-013))
 - [ ] **R3-014** `LOW` · bug — `KtorServletRequest.getCookies()` crashes with HTTP 500 on any `Cookie` header containing a non-token cookie name (follows RV-025) ([details](#r3-014))
+- [ ] **R3-050** `LOW` · bug — `HerokuHttpsRedirect`'s `excludePrefix` / `excludeSuffix` see an absolute-form request target's full URL on Ktor CIO, so such a request is redirected instead of excluded (follows R3-011) ([details](#r3-050))
 
 ### service-utils
 - [x] **R3-015** `MEDIUM` · security — Jetty admin and metrics 404/500 error pages still disclose Jetty (`org.eclipse.jetty...Default404Servlet`) and internal exception messages/causes (follows RV-031) ([details](#r3-015)) — fixed in #244
@@ -111,6 +112,7 @@
 - [x] **R3-039** `MEDIUM` · security — `RedisUtils.urlDetails` does not validate URL scheme or port range, silently downgrading non-`rediss` TLS schemes to plaintext ([details](#r3-039)) — fixed in #244
 - [x] **R3-040** `LOW` · bug — `RedisUtils.urlDetails` splits `uri.userInfo` after percent-decoding, corrupting usernames containing `%3A` ([details](#r3-040)) — fixed in #244
 - [ ] **R3-041** `LOW` · docs — `redis-utils/README.md` lists `internal class RedisInfo` as public API ([details](#r3-041))
+- [ ] **R3-051** `LOW` · security — An unescaped `/` in a Redis URL's password ends the authority early, and Jedis's database-index error then quotes the rest of the password (follows R3-039) ([details](#r3-051))
 
 ### exposed-utils
 - [ ] **R3-042** `LOW` · bug — `checkConflictIndexSupported` misses H2 in MySQL/MariaDB compatibility mode, and `UpsertStatementTests` comment is stale for Exposed 1.6.1 (follows RV-070) ([details](#r3-042))
@@ -118,6 +120,9 @@
 ### grpc-utils
 - [ ] **R3-043** `MEDIUM` · bug — `GrpcDsl.server(bindAddress = ...)` silently binds loopback on `""` and defers `UnresolvedAddressException` to `start()` on blank or whitespace-padded addresses (follows RV-075) ([details](#r3-043))
 - [ ] **R3-044** `LOW` · API — `TlsUtils.clientTlsContextBuilder` and `serverTlsContext` declare impossible `@Throws(SSLException::class)` and are omitted from `grpc-utils/README.md` API Reference ([details](#r3-044))
+
+### jetty-utils
+- [ ] **R3-052** `LOW` · security — `JettyDsl.servletContextHandler` sets no error handler, so a servlet exception's class and message reach the client on Jetty's default 500 page (follows R3-015) ([details](#r3-052))
 
 ### Cross-module API surface
 - [ ] **R3-045** `LOW` · API — Six empty public `Companion` objects remain in the published ABI across `guava-utils`, `script-utils-common`, and `service-utils` (follows RV-078) ([details](#r3-045))
@@ -408,6 +413,17 @@ Ktor's `clientCookieHeaderPattern` accepts cookie names containing RFC 2616/6265
 ---
 
 ### service-utils
+
+<a id="r3-050"></a>
+#### R3-050 — `HerokuHttpsRedirect` exclusion predicates miss absolute-form request targets
+**Severity:** Low · **Category:** bug · **Verdict:** confirmed (found while fixing R3-011; reproduced against a Ktor 3.6.2 CIO server via raw TCP socket) · **Follows up:** R3-011
+**Where:** `ktor-server-utils/src/main/kotlin/com/pambrose/common/features/HerokuHttpsRedirect.kt`
+
+On Ktor CIO, a request with an absolute-form target, such as `GET http://myapp.example.com/health HTTP/1.1` with `X-Forwarded-Proto: http`, reaches the exclusion predicates with the full URL as its path, so `excludePrefix("/health")` does not match and the request is redirected instead of excluded. Since R3-011 the redirect itself uses only the target's path and query.
+
+**Fix:** Evaluate the exclusion predicates against the same normalized path the redirect uses, so an absolute-form request is excluded exactly when its origin-form equivalent would be. Add raw-socket tests.
+
+---
 
 <a id="r3-015"></a>
 #### R3-015 — Jetty admin and metrics 404/500 error pages still disclose Jetty and internal exception details
@@ -759,6 +775,17 @@ On H2 in `MODE=MySQL` or `MODE=MariaDB`, `checkConflictIndexSupported(currentDia
 
 ### grpc-utils
 
+<a id="r3-051"></a>
+#### R3-051 — A Redis URL password with an unescaped `/` leaks through the database-index error
+**Severity:** Low · **Category:** security · **Verdict:** confirmed (found while fixing R3-039) · **Follows up:** R3-039
+**Where:** `redis-utils/src/main/kotlin/com/pambrose/common/redis/RedisUtils.kt` (`urlDetails()`, `clientConfig()`)
+
+`java.net.URI` ends the authority at the first unescaped `/`, so in `redis://alice:123/ss@host` the rest of the password becomes the path. `clientConfig()` hands the path to `JedisURIHelper` as the database index, and its `NumberFormatException` quotes it: `For input string: "ss@host"`. R3-039 made the parser's own messages repeat nothing from the URL; this one comes from Jedis.
+
+**Fix:** Validate the database index in `urlDetails()` (an empty path, `/`, or `/<digits>`), and throw `IllegalArgumentException` with a message that quotes nothing from the URL, noting that `/`, `?`, `#` and `@` in a password must be percent-encoded. Add tests that check every URL-taking entry point.
+
+---
+
 <a id="r3-043"></a>
 #### R3-043 — `GrpcDsl.server(bindAddress = ...)` mishandles empty, blank, and whitespace-padded addresses
 **Severity:** Medium · **Category:** bug · **Verdict:** confirmed (code inspection + `jshell` verification of `java.net.InetSocketAddress`) · **Follows up:** RV-075
@@ -791,6 +818,19 @@ Use `host` in both the log message and `InetSocketAddress(host, port)`, and add 
 - Separately, `grpc-utils/README.md:222-231` omits `clientTlsContextBuilder`, `serverTlsContext`, and `TlsContextBuilder` from the API Reference even though Usage Examples (`:178-179`) reference them.
 
 **Fix:** Update the KDoc on both functions to document `IllegalArgumentException` (noting `SSLException` is thrown by `build()`), add the three missing entries to `grpc-utils/README.md`, and remove `@Throws(SSLException::class)` from those two builder factories in `6.0.0` (binary-compatible on the JVM, but Java source callers catching only `SSLException` would hit a compile error).
+
+---
+
+### jetty-utils
+
+<a id="r3-052"></a>
+#### R3-052 — `JettyDsl.servletContextHandler` leaves servlet exceptions on Jetty's default 500 page
+**Severity:** Low · **Category:** security · **Verdict:** confirmed by source (found while fixing R3-015; `ServletChannelState.handleException` and the core `ErrorHandler` in Jetty 12.1.15) · **Follows up:** R3-015
+**Where:** `jetty-utils/src/main/kotlin/com/pambrose/common/dsl/JettyDsl.kt`
+
+`servletContextHandler` sets no error handler, so errors fall to the server's default `DynamicErrorHandler`. When a servlet throws, Jetty sets the error message to the exception's `toString()`, which that handler prints in the page's title, heading and message row, and it adds a "Powered by Jetty" footer unless `sendServerVersion` is off. service-utils' admin and metrics servers install their own status-only handler since R3-015; jetty-utils' DSL users get the default.
+
+**Fix:** Install a handler that shows only the status code, its reason phrase and the request URI by default, as service-utils does, or document how to install one. Add tests for the 404 and 500 pages.
 
 ---
 
