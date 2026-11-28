@@ -15,7 +15,6 @@ The verification and HTML helpers are members of the `RecaptchaService` object, 
 ### Verification
 
 - **`validateRecaptcha(config, params)`**: verifies the submitted token, responding `400` itself when it fails
-- **`RecaptchaResponse`**: the decoded siteverify response
 
 ### HTML Helpers
 
@@ -24,7 +23,7 @@ The verification and HTML helpers are members of the `RecaptchaService` object, 
 
 ### Lifecycle
 
-- **`close()`**: releases the long-lived `HttpClient` used for verification
+- **`close()`**: releases the long-lived `HttpClient` that the first verification builds
 
 ## Usage Examples
 
@@ -134,6 +133,12 @@ with a non-2xx status, even when its body would parse. There is one deliberate e
 `CancellationException` propagates instead. A client that disconnects mid-verification is a cancelled call, not
 a bot, and swallowing it would break coroutine cancellation semantics.
 
+A `RecaptchaService.close()` made elsewhere in the JVM (a second application, Ktor auto-reload) can land just as a
+verification starts. Ktor then fails the request with a `CancellationException` of its own, although the caller
+was not cancelled, so that one does not propagate. The verification is retried once with a new client instead,
+and if `close()` interrupts the retry too, it is logged and treated as a failed verification. The caller's own
+cancellation still propagates, even when the client was closed at the same moment.
+
 ### Shutdown
 
 ```kotlin
@@ -148,9 +153,11 @@ fun Application.module() {
 }
 ```
 
-`close()` releases the underlying `HttpClient` and its connection and thread pools. `ApplicationStopped` also
-fires on Ktor auto-reload, for a second embedded application in the same JVM, and between `testApplication`s, so
-a verification after `close()` builds a new client (and logs that at info level) rather than failing.
+`close()` releases the underlying `HttpClient` and its connection and thread pools. The first verification builds
+that client, not loading `RecaptchaService`: an application that never verifies a token, because reCAPTCHA is
+disabled or it only renders forms, never starts one, and `close()` then has nothing to release. `ApplicationStopped`
+also fires on Ktor auto-reload, for a second embedded application in the same JVM, and between `testApplication`s,
+so a verification after `close()` builds a new client (and logs that at info level) rather than failing.
 
 ## API Reference
 
@@ -168,11 +175,6 @@ a verification after `close()` builds a new client (and logs that at info level)
 - `fun HEAD.loadRecaptchaScript(config: RecaptchaConfig)`
 - `fun FlowContent.recaptchaWidget(config: RecaptchaConfig)`
 - `override fun close()`
-
-### `RecaptchaService.RecaptchaResponse`
-
-- `@Serializable data class RecaptchaResponse(success: Boolean, errorCodes: List<String> = emptyList(), hostname: String? = null, challengeTs: String? = null)`
-- `errorCodes` maps to `error-codes` and `challengeTs` to `challenge_ts` on the wire
 
 ## Dependencies
 
@@ -227,9 +229,11 @@ dependencies {
 
 ## Thread Safety
 
-- `RecaptchaService` is a singleton `object` holding one `HttpClient` shared by all concurrent verifications
+- `RecaptchaService` is a singleton `object` holding one `HttpClient`, built by the first verification and shared
+  by all concurrent verifications
 - The enabled-but-misconfigured warning is guarded by an `AtomicBoolean`, so concurrent requests log it once
-- `close()` may be called more than once without throwing
+- `close()` may be called more than once without throwing, and a verification it interrupts as it starts is retried
+  once with a new client rather than cancelled
 
 ## License
 

@@ -19,9 +19,6 @@
 package com.pambrose.common.recaptcha
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.read.ListAppender
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -42,19 +39,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
-import org.slf4j.LoggerFactory
-
-// Runs block with a function that snapshots the log events emitted by the recaptcha package in the meantime.
-private inline fun <T> capturingRecaptchaLogs(block: (logs: () -> List<ILoggingEvent>) -> T): T {
-  val appender = ListAppender<ILoggingEvent>().apply { start() }
-  val logger = LoggerFactory.getLogger(RecaptchaService::class.java.packageName) as Logger
-  logger.addAppender(appender)
-  return try {
-    block { synchronized(appender) { appender.list.toList() } }
-  } finally {
-    logger.detachAppender(appender)
-  }
-}
 
 /**
  * Covers verification behavior that the routing tests do not: coroutine cancellation, what is sent as

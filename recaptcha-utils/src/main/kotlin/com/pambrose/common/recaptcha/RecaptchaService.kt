@@ -16,7 +16,6 @@
 
 package com.pambrose.common.recaptcha
 
-import com.pambrose.common.util.runCatchingCancellable
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -33,6 +32,9 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.RoutingContext
 import java.io.Closeable
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.html.FlowContent
 import kotlinx.html.HEAD
@@ -48,9 +50,11 @@ import kotlinx.serialization.json.Json
  * Includes server-side token verification via the Google reCAPTCHA API, a Ktor route-level
  * validation extension, and kotlinx.html helpers for embedding the reCAPTCHA script and widget.
  *
- * Holds a long-lived [HttpClient]; call [close] on application shutdown to release its resources. A later
- * verification builds a new client, so an application that stops and starts again in the same JVM (Ktor
- * auto-reload, successive `testApplication`s) keeps verifying.
+ * Holds a long-lived [HttpClient], built by the first verification rather than when the object loads, so an
+ * application that never verifies a token (reCAPTCHA disabled, or only rendering forms) never starts one. Call
+ * [close] on application shutdown to release its resources. A later verification builds a new client, so an
+ * application that stops and starts again in the same JVM (Ktor auto-reload, successive `testApplication`s) keeps
+ * verifying.
  */
 object RecaptchaService : Closeable {
   private val logger = KotlinLogging.logger {}
@@ -59,7 +63,11 @@ object RecaptchaService : Closeable {
   // Internal (not private) so tests can swap in a MockEngine-backed client, and the factory that replaces it
   // after close(), to exercise the verification response branches hermetically; production code always uses CIO.
   internal var clientFactory: () -> HttpClient = { HttpClient(CIO) { configureVerification() } }
-  internal var httpClient = clientFactory()
+
+  // Null until the first verification builds a client: HttpClient(CIO) opens an NIO Selector as soon as it exists.
+  // After close() it keeps the closed client, which is how activeClient() tells a rebuild from the first build.
+  // Guarded by clientLock.
+  internal var httpClient: HttpClient? = null
 
   private val clientLock = Any()
 
@@ -114,18 +122,32 @@ object RecaptchaService : Closeable {
     recaptchaResponse: String,
     remoteIp: String,
   ): Boolean {
+    val parameters =
+      Parameters.build {
+        append("secret", secretKey)
+        append("response", recaptchaResponse)
+        if (remoteIp.isNotBlank()) {
+          append("remoteip", remoteIp)
+        }
+      }
+
+    // A close() from elsewhere in the JVM (another application, Ktor auto-reload) that lands as the request starts
+    // fails it with a CancellationException, but the caller was not cancelled and still needs an answer: retry once
+    // with a new client. Only once, so a second closure fails closed instead of looping.
+    return submitVerification(parameters) ?: run {
+      logger.info { "RecaptchaService.close() interrupted a reCAPTCHA verification; retrying with a new HttpClient" }
+      submitVerification(parameters) ?: false.also {
+        logger.error { "RecaptchaService.close() interrupted the reCAPTCHA verification retry; treating it as failed" }
+      }
+    }
+  }
+
+  // Sends one verification request and returns its outcome, or null when a concurrent close() closed the client
+  // under the request while the caller itself is still active.
+  private suspend fun submitVerification(parameters: Parameters): Boolean? {
     val client = activeClient()
 
-    return runCatchingCancellable {
-      val parameters =
-        Parameters.build {
-          append("secret", secretKey)
-          append("response", recaptchaResponse)
-          if (remoteIp.isNotBlank()) {
-            append("remoteip", remoteIp)
-          }
-        }
-
+    return runCatching {
       logger.info { "Verifying reCAPTCHA" }
       val response: RecaptchaResponse =
         client.submitForm(
@@ -141,8 +163,17 @@ object RecaptchaService : Closeable {
         false
       }
     }.getOrElse { e ->
-      logger.error(e) { "Error verifying reCAPTCHA" }
-      false
+      if (e is CancellationException) {
+        // The caller's own cancellation propagates as itself, closed client or not.
+        currentCoroutineContext().ensureActive()
+        // Ktor fails a request on a closed client with a CancellationException that is not the caller's. Any
+        // other cancellation propagates as before.
+        if (client.isActive) throw e
+        null
+      } else {
+        logger.error(e) { "Error verifying reCAPTCHA" }
+        false
+      }
     }
   }
 
@@ -155,7 +186,8 @@ object RecaptchaService : Closeable {
    *
    * Cancellation is not swallowed: if the call is cancelled while Google is being contacted, for example
    * because the client disconnected, the [kotlinx.coroutines.CancellationException] propagates instead of
-   * being reported as a failed verification.
+   * being reported as a failed verification. A [close] made elsewhere while the request is starting does not
+   * cancel the caller: the verification is retried once with a new client, and fails if that one is closed too.
    *
    * @param config the [RecaptchaConfig] providing keys and enabled status.
    * @param params the form [Parameters] containing the `g-recaptcha-response` token.
@@ -259,20 +291,24 @@ object RecaptchaService : Closeable {
   /**
    * Releases the underlying [HttpClient] and its connection/thread pool.
    *
-   * Call this when the application that uses reCAPTCHA verification shuts down. A verification after [close]
-   * builds a new client, so closing is safe even when the application may start again in the same JVM.
+   * Call this when the application that uses reCAPTCHA verification shuts down. Before the first verification
+   * there is no client, and closing does nothing. A verification after [close] builds a new client, so closing is
+   * safe even when the application may start again in the same JVM.
    */
   override fun close() {
-    synchronized(clientLock) { httpClient.close() }
+    synchronized(clientLock) { httpClient?.close() }
   }
 
-  // A closed client fails every request with a CancellationException, which would be mistaken for a cancelled
-  // call. close() is documented for ApplicationStopped, which also fires on Ktor auto-reload and between
-  // testApplications in one JVM, so build a new client rather than failing every later verification.
+  // The first verification builds the client. After that, a closed client fails every request with a
+  // CancellationException, which would be mistaken for a cancelled call. close() is documented for
+  // ApplicationStopped, which also fires on Ktor auto-reload and between testApplications in one JVM, so build a
+  // new client rather than failing every later verification.
   private fun activeClient(): HttpClient =
     synchronized(clientLock) {
-      httpClient.takeIf { it.isActive } ?: clientFactory().also { client ->
-        logger.info { "Creating a new reCAPTCHA HttpClient after RecaptchaService.close()" }
+      val current = httpClient
+      current?.takeIf { it.isActive } ?: clientFactory().also { client ->
+        if (current != null)
+          logger.info { "Creating a new reCAPTCHA HttpClient after RecaptchaService.close()" }
         httpClient = client
       }
     }

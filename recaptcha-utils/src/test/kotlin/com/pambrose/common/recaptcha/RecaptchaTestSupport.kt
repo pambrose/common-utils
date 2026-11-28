@@ -19,6 +19,10 @@
 
 package com.pambrose.common.recaptcha
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.post
@@ -27,13 +31,16 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.headersOf
 import io.ktor.server.plugins.mutableOriginConnectionPoint
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.post
 import io.ktor.server.testing.testApplication
+import org.slf4j.LoggerFactory
 
 // Shared by the reCAPTCHA specs, which all need the same three pieces: a config literal, a MockEngine that fakes
 // Google's siteverify endpoint, and one token pushed through validateRecaptcha.
@@ -46,6 +53,18 @@ internal fun recaptchaConfig(
   override val isRecaptchaEnabled = enabled
   override val recaptchaSiteKey = siteKey
   override val recaptchaSecretKey = secretKey
+}
+
+// Runs block with a function that snapshots the log events emitted by the recaptcha package in the meantime.
+internal inline fun <T> capturingRecaptchaLogs(block: (logs: () -> List<ILoggingEvent>) -> T): T {
+  val appender = ListAppender<ILoggingEvent>().apply { start() }
+  val logger = LoggerFactory.getLogger(RecaptchaService::class.java.packageName) as Logger
+  logger.addAppender(appender)
+  return try {
+    block { synchronized(appender) { appender.list.toList() } }
+  } finally {
+    logger.detachAppender(appender)
+  }
 }
 
 // An engine that answers every request with the given reply.
@@ -65,10 +84,13 @@ internal fun respondingEngine(
 internal fun successEngine() = respondingEngine("""{"success": true, "hostname": "example.com"}""")
 
 /**
- * Swaps the service's client for one built on [engine] with the production configuration, runs a single token
- * through `validateRecaptcha`, and restores the original client. [beforePost] runs once the swapped-in client is
- * in place. [remoteAddress] is set explicitly, because the Ktor test host reports the same value for `remoteHost`
- * and `remoteAddress`.
+ * Swaps the service's client, and the factory that replaces it after `close()`, for [clientFactory] (by default a
+ * client built on [engine] with the production configuration), runs a single token through `validateRecaptcha`,
+ * and restores the original client and factory. The swapped-in client is built up front, as if an earlier
+ * verification had built it, and [beforePost] runs once it is in place.
+ * [remoteAddress] is set explicitly, because the Ktor test host reports the same value for `remoteHost` and
+ * `remoteAddress`. [validate] is the route's call into the service; a spec replaces it to make that call from a
+ * coroutine of its own.
  *
  * The returned body is `"passed"` when validation succeeded, `"propagated <exception>"` when it threw, and
  * whatever `validateRecaptcha` itself wrote (a 400 page) when it returned false.
@@ -78,10 +100,14 @@ internal fun postToken(
   config: RecaptchaConfig = recaptchaConfig(enabled = true, siteKey = "site", secretKey = "secret"),
   remoteAddress: String = "203.0.113.7",
   beforePost: () -> Unit = {},
+  clientFactory: () -> HttpClient = { RecaptchaService.verificationClient(engine) },
+  validate: suspend RoutingContext.(RecaptchaConfig, Parameters) -> Boolean = { recaptchaConfig, params ->
+    with(RecaptchaService) { validateRecaptcha(recaptchaConfig, params) }
+  },
 ): Pair<HttpStatusCode, String> {
   val previous = RecaptchaService.httpClient
   val previousFactory = RecaptchaService.clientFactory
-  RecaptchaService.clientFactory = { RecaptchaService.verificationClient(engine) }
+  RecaptchaService.clientFactory = clientFactory
   RecaptchaService.httpClient = RecaptchaService.clientFactory()
   try {
     beforePost()
@@ -90,10 +116,7 @@ internal fun postToken(
       routing {
         post("/v") {
           call.mutableOriginConnectionPoint.remoteAddress = remoteAddress
-          val outcome =
-            runCatching {
-              with(RecaptchaService) { validateRecaptcha(config, call.receiveParameters()) }
-            }
+          val outcome = runCatching { validate(config, call.receiveParameters()) }
           val failure = outcome.exceptionOrNull()
           when {
             failure != null -> call.respondText("propagated ${failure::class.simpleName}")
@@ -114,7 +137,7 @@ internal fun postToken(
     }
     return result!!
   } finally {
-    RecaptchaService.httpClient.close()
+    RecaptchaService.httpClient?.close()
     RecaptchaService.httpClient = previous
     RecaptchaService.clientFactory = previousFactory
   }
