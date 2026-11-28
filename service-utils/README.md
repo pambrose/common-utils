@@ -400,8 +400,9 @@ reporter fails.
 - Admin and metrics paths may be written with or without a leading slash — `"ping"` and `"/ping"` reach the same
   endpoint.
 - A blank admin path disables that endpoint on both variants; it is never served at `/`.
-- The Jetty admin and metrics servers send no `Server` header and no version on error pages, and their error
-  pages carry no stack traces.
+- The Jetty admin and metrics servers send no `Server` header and no version on error pages. Their error pages
+  (HTML, plain text or JSON, as the `Accept` header asks) show only the status code, its reason phrase and the
+  request URI: no stack trace, exception class or message, cause, or servlet name.
 
 ## License
 
