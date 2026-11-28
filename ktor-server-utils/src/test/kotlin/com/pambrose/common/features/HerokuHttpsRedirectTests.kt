@@ -64,6 +64,7 @@ class HerokuHttpsRedirectTests : StringSpec() {
     excludeTests()
     requestTargetTests()
     absoluteFormTests()
+    absoluteFormExcludeTests()
     requestHostTests()
     configuredHostTests()
   }
@@ -250,6 +251,65 @@ class HerokuHttpsRedirectTests : StringSpec() {
         withClue(target) {
           rawRedirect(target) { host = PINNED_HOST }.location shouldBe "https://$PINNED_HOST$pathAndQuery"
         }
+      }
+    }
+  }
+
+  // CIO leaves an absolute-form target's scheme and authority in call.request.path(), so excludePrefix("/health") did
+  // not match GET http://myapp.example.com/health, which was redirected. The exclusions now match the path the
+  // redirect keeps, so an absolute-form target is excluded exactly when its origin-form equivalent is.
+  private fun absoluteFormExcludeTests() {
+    val excludeHealthAndText: HerokuHttpsRedirect.Configuration.() -> Unit = {
+      host = PINNED_HOST
+      excludePrefix("/health")
+      excludeSuffix(".txt")
+    }
+
+    "an absolute-form target whose path matches excludePrefix or excludeSuffix is not redirected" {
+      listOf(
+        "http://myapp.example.com/health",
+        "HTTPS://evil.com/healthcheck?v=2",
+        "http://user@myapp.example.com:8080/robots.txt?v=2",
+        "http://myapp.example.com/a/notes.txt",
+      ).forEach { target ->
+        withClue(target) {
+          rawRedirect(target, configure = excludeHealthAndText).apply {
+            statusCode shouldBe HttpStatusCode.OK.value
+            location shouldBe null
+          }
+        }
+      }
+    }
+
+    "an absolute-form target is redirected when only its scheme, authority or query matches an exclusion" {
+      mapOf(
+        "http://myapp.example.com/hello?next=/health" to "/hello?next=/health",
+        "http://myapp.example.com/hello?file=a.txt" to "/hello?file=a.txt",
+        "http://health.txt" to "/",
+        "http://myapp.example.com/x?a.txt" to "/x?a.txt",
+      ).forEach { (target, pathAndQuery) ->
+        withClue(target) {
+          rawRedirect(target, configure = excludeHealthAndText).location shouldBe "https://$PINNED_HOST$pathAndQuery"
+        }
+      }
+      rawRedirect("http://myapp.example.com/hello") {
+        host = PINNED_HOST
+        excludePrefix("http")
+        excludeSuffix(".com")
+      }.location shouldBe "https://$PINNED_HOST/hello"
+    }
+
+    "the exclusions match an origin-form target's path as before" {
+      rawRedirect("/healthcheck?v=2", configure = excludeHealthAndText).statusCode shouldBe HttpStatusCode.OK.value
+      rawRedirect("/hello?next=/health", configure = excludeHealthAndText).location shouldBe
+        "https://$PINNED_HOST/hello?next=/health"
+    }
+
+    // Such a target has no origin-form equivalent, and gets 400 unless an exclusion matches its raw path.
+    "a target that is neither origin-form nor absolute-form is matched on its raw path, as before" {
+      rawRedirect("@evil.com/robots.txt?v=2", configure = excludeHealthAndText).apply {
+        statusCode shouldBe HttpStatusCode.OK.value
+        location shouldBe null
       }
     }
   }

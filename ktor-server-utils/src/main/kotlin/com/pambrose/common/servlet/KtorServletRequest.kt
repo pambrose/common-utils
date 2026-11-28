@@ -121,10 +121,12 @@ internal class KtorServletRequest(
     attributes.remove(name)
   }
 
-  // As the servlet spec defines, null when the request carries no cookies.
+  // As the servlet spec defines, null when the request carries no cookies. Ktor's parser accepts names that Cookie
+  // rejects with IllegalArgumentException (names holding a separator such as '/', '@' or ','), so such a cookie is
+  // skipped rather than failing every servlet that reads its cookies.
   override fun getCookies(): Array<Cookie>? =
     request.cookies.rawCookies
-      .map { (name, value) -> Cookie(name, value) }
+      .mapNotNull { (name, value) -> runCatching { Cookie(name, value) }.getOrNull() }
       .takeIf { it.isNotEmpty() }
       ?.toTypedArray()
 

@@ -3,7 +3,9 @@
 package com.pambrose.common.servlet
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.mockk
@@ -22,6 +24,8 @@ class KtorServletResponseTests : StringSpec() {
     encodingTests()
     bufferTests()
     redirectTests()
+    committedTests()
+    specContractTests()
   }
 
   private fun statusTests() {
@@ -339,6 +343,117 @@ class KtorServletResponseTests : StringSpec() {
       response.status shouldBe HttpServletResponse.SC_SEE_OTHER
       response.getHeader("Location") shouldBe "/elsewhere"
       response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "see other"
+    }
+  }
+
+  // Servlet 6.1: once the response is committed, sendError and sendRedirect throw IllegalStateException, and the status,
+  // header, content type and character encoding setters have no effect.
+  private fun committedTests() {
+    // listOf rather than a [...] literal: detekt's analyzer crashes on a collection literal holding lambdas.
+    val commits =
+      listOf<Pair<String, HttpServletResponse.() -> Unit>>(
+        "flushBuffer" to { flushBuffer() },
+        "sendError" to { sendError(HttpServletResponse.SC_NOT_FOUND) },
+        "sendRedirect" to { sendRedirect("/first") },
+      )
+
+    commits.forEach { (commitBy, commit) ->
+      "sendError and sendRedirect throw IllegalStateException once $commitBy has committed the response" {
+        val response = KtorServletResponse()
+        response.commit()
+        val status = response.status
+        val location = response.getHeader("Location")
+        shouldThrow<IllegalStateException> { response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "late") }
+        shouldThrow<IllegalStateException> { response.sendError(HttpServletResponse.SC_BAD_GATEWAY) }
+        shouldThrow<IllegalStateException> { response.sendRedirect("/late") }
+        shouldThrow<IllegalStateException> { response.sendRedirect("/late", HttpServletResponse.SC_SEE_OTHER, true) }
+        response.status shouldBe status
+        response.getHeader("Location") shouldBe location
+        response.getBodyBytes().size shouldBe 0
+      }
+    }
+
+    "status, headers, content type and character encoding do not change once the response is committed" {
+      val response = KtorServletResponse()
+      response.status = HttpServletResponse.SC_CREATED
+      response.setHeader("X-Set", "1")
+      response.contentType = "text/plain"
+      response.characterEncoding = "ISO-8859-1"
+      response.flushBuffer()
+      response.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+      response.setHeader("X-Set", "2")
+      response.addHeader("X-Set", "3")
+      response.setHeader("X-Set", null)
+      response.setIntHeader("X-Int", 1)
+      response.addIntHeader("X-Int", 2)
+      response.setDateHeader("X-Date", 0L)
+      response.addDateHeader("X-Date", 0L)
+      response.setHeader("Content-Type", "text/html")
+      response.contentType = "application/json"
+      response.setContentType(null)
+      response.characterEncoding = "UTF-8"
+      response.status shouldBe HttpServletResponse.SC_CREATED
+      response.getHeaders("X-Set").toList() shouldBe ["1"]
+      response.headerNames.toList() shouldBe ["X-Set"]
+      response.contentType shouldBe "text/plain; charset=ISO-8859-1"
+      response.characterEncoding shouldBe "ISO-8859-1"
+    }
+  }
+
+  private fun specContractTests() {
+    // The Kotlin overrides took a non-null name, so a Java servlet passing null got a NullPointerException.
+    "a null header name is ignored by every header setter, as the servlet spec defines" {
+      val response: HttpServletResponse = KtorServletResponse()
+      response.setHeader(null, "1")
+      response.addHeader(null, "1")
+      response.setDateHeader(null, 0L)
+      response.addDateHeader(null, 0L)
+      response.setIntHeader(null, 1)
+      response.addIntHeader(null, 1)
+      response.headerNames.shouldBeEmpty()
+    }
+
+    "setContentType(null) also clears the character encoding, unless getWriter has been called" {
+      // listOf rather than a [...] literal: detekt's analyzer crashes on a collection literal holding lambdas.
+      val encodingSetups =
+        listOf<Pair<String, HttpServletResponse.() -> Unit>>(
+          "setContentType" to { contentType = "text/html; charset=ISO-8859-1" },
+          "setCharacterEncoding" to {
+            contentType = "text/html"
+            characterEncoding = "ISO-8859-1"
+          },
+        )
+      encodingSetups.forEach { (method, setEncoding) ->
+        withClue(method) {
+          val response = KtorServletResponse()
+          response.setEncoding()
+          response.setContentType(null)
+          response.contentType shouldBe null
+          response.characterEncoding shouldBe "UTF-8"
+        }
+      }
+
+      val writing = KtorServletResponse()
+      writing.contentType = "text/plain; charset=ISO-8859-1"
+      writing.writer
+      writing.setContentType(null)
+      writing.contentType shouldBe null
+      writing.characterEncoding shouldBe "ISO-8859-1"
+    }
+
+    "reset clears the writer, output stream and character encoding, so either can be used next" {
+      val response = KtorServletResponse()
+      response.contentType = "text/plain; charset=ISO-8859-1"
+      response.writer.print("partial")
+      response.reset()
+      response.characterEncoding shouldBe "UTF-8"
+      response.outputStream.write("bytes".toByteArray())
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "bytes"
+      response.reset()
+      response.characterEncoding = "ISO-8859-1"
+      response.characterEncoding shouldBe "ISO-8859-1"
+      response.writer.print("text")
+      response.getBodyBytes().toString(Charsets.UTF_8) shouldBe "text"
     }
   }
 }

@@ -72,20 +72,27 @@ internal class KtorServletResponse : HttpServletResponse {
 
   override fun getStatus(): Int = statusCode
 
+  // As the servlet spec defines, the status, header, content type and character encoding setters have no effect once
+  // the response is committed (by flushBuffer, sendError or sendRedirect).
+
   override fun setStatus(sc: Int) {
-    statusCode = sc
+    if (!committed)
+      statusCode = sc
   }
 
   // As in a servlet container, a Content-Type header is the content type: setting it sets the character encoding
   // too, reading it returns getContentType(), and it is not listed in getHeaderNames().
 
-  // As the servlet spec defines, a null value removes the header in setHeader and is ignored by addHeader.
+  // As the servlet spec defines, every header setter ignores a null name, and a null value removes the header in
+  // setHeader and is ignored by addHeader. The names are nullable so that a Java caller passing null gets that
+  // rather than a NullPointerException.
 
   override fun setHeader(
-    name: String,
+    name: String?,
     value: String?,
   ) {
     when {
+      name == null || committed -> Unit
       name.isContentType() -> setContentType(value)
       value == null -> headers.remove(name)
       else -> headers[name] = [value]
@@ -93,33 +100,33 @@ internal class KtorServletResponse : HttpServletResponse {
   }
 
   override fun addHeader(
-    name: String,
+    name: String?,
     value: String?,
   ) {
     when {
-      value == null -> Unit
+      name == null || value == null || committed -> Unit
       name.isContentType() -> setContentType(value)
       else -> headers.getOrPut(name) { [] }.add(value)
     }
   }
 
   override fun setDateHeader(
-    name: String,
+    name: String?,
     date: Long,
   ) = setHeader(name, GMTDate(date).toHttpDate())
 
   override fun addDateHeader(
-    name: String,
+    name: String?,
     date: Long,
   ) = addHeader(name, GMTDate(date).toHttpDate())
 
   override fun setIntHeader(
-    name: String,
+    name: String?,
     value: Int,
   ) = setHeader(name, value.toString())
 
   override fun addIntHeader(
-    name: String,
+    name: String?,
     value: Int,
   ) = addHeader(name, value.toString())
 
@@ -132,11 +139,17 @@ internal class KtorServletResponse : HttpServletResponse {
 
   override fun getHeaderNames(): Collection<String> = headers.keys
 
-  // A null type clears the content type, as the servlet spec defines.
+  // A null type clears the content type and the character encoding (unless getWriter() has been called, which fixes
+  // the encoding), as the servlet spec defines.
   override fun setContentType(type: String?) {
+    if (committed)
+      return
     contentTypeValue = type
     // As in a servlet container, a charset parameter in the content type sets the character encoding.
-    type?.charsetParameter()?.let(::setCharacterEncoding)
+    if (type == null)
+      setCharacterEncoding(null as String?)
+    else
+      type.charsetParameter()?.let(::setCharacterEncoding)
   }
 
   // As the servlet spec requires, the content type includes the character encoding once one has been specified
@@ -149,7 +162,7 @@ internal class KtorServletResponse : HttpServletResponse {
   // A null charset clears the encoding, as the servlet spec defines.
   override fun setCharacterEncoding(charset: String?) {
     // As in a servlet container, the encoding cannot change once getWriter() has been called.
-    if (!writerUsed)
+    if (!writerUsed && !committed)
       charEncodingValue = charset
   }
 
@@ -187,12 +200,14 @@ internal class KtorServletResponse : HttpServletResponse {
   }
 
   // sendError and sendRedirect behave as in a servlet container: they set the status, discard any buffered
-  // output (for sendRedirect, only when clearBuffer is true), and commit the response.
+  // output (for sendRedirect, only when clearBuffer is true), and commit the response. As the servlet spec defines,
+  // they throw IllegalStateException once the response is committed.
 
   override fun sendError(
     sc: Int,
     msg: String?,
   ) {
+    checkNotCommitted()
     discardBufferedOutput()
     statusCode = sc
     committed = true
@@ -213,6 +228,7 @@ internal class KtorServletResponse : HttpServletResponse {
     sc: Int,
     clearBuffer: Boolean,
   ) {
+    checkNotCommitted()
     if (clearBuffer)
       discardBufferedOutput()
     statusCode = sc
@@ -234,18 +250,25 @@ internal class KtorServletResponse : HttpServletResponse {
   }
 
   override fun resetBuffer() {
-    check(!committed) { "The response has already been committed" }
+    checkNotCommitted()
     discardBufferedOutput()
   }
 
+  // As the servlet spec defines, reset also clears the character encoding and whether getWriter() or
+  // getOutputStream() has been called, so either may be called next. A writer or stream obtained before is stale.
   override fun reset() {
     resetBuffer()
     headers.clear()
     statusCode = HttpServletResponse.SC_OK
     contentTypeValue = null
-    if (!writerUsed)
-      charEncodingValue = null
+    charEncodingValue = null
+    writerUsed = false
+    streamUsed = false
+    printWriter = null
+    servletOutputStream = null
   }
+
+  private fun checkNotCommitted() = check(!committed) { "The response has already been committed" }
 
   private fun discardBufferedOutput() {
     printWriter?.flush()

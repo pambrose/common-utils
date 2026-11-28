@@ -121,6 +121,11 @@ install(HerokuHttpsRedirect) {
 Configuration properties are `host`, `sslPort`, `permanentRedirect` and `excludePredicates`; the three
 `exclude*` helpers append to that predicate list.
 
+`excludePrefix` and `excludeSuffix` match the path the redirect would keep, so an absolute-form request is excluded
+exactly when its origin-form equivalent is: `GET http://myapp.example.com/health` matches `excludePrefix("/health")`.
+A predicate passed to `exclude` gets the call as the engine built it, and on Ktor CIO `call.request.path()` of an
+absolute-form request still holds the scheme and authority (`http://myapp.example.com/health`).
+
 ### Mounting a Servlet
 
 `Route.servlet` initializes the servlet once through `init(ServletConfig)`, the way a container does, then
@@ -134,25 +139,37 @@ The servlet's `destroy()` is called when the application stops.
   container features such as dynamic registration and sessions throw `UnsupportedOperationException`.
 - **Supported:** `sendError` and `sendRedirect`, so an unsupported HTTP method gets `405` from `HttpServlet`'s
   defaults. Also request attributes, and `getPathInfo()`, which is always `null`.
+- **Committed responses:** as Servlet 6.1 defines, `flushBuffer`, `sendError` and `sendRedirect` commit the
+  response. After that, `sendError`, `sendRedirect`, `resetBuffer` and `reset` throw `IllegalStateException`, and
+  the status, header, content type and character encoding setters have no effect. The body written after
+  `flushBuffer` is still sent.
 - **HEAD, TRACE and `getLastModified`:** HEAD runs `doGet` (Servlet 6.1's default) and is answered with the
   headers and `Content-Length` GET would send, but no body. TRACE and servlets that override `getLastModified`
   (`If-Modified-Since`, `Last-Modified`) work through `HttpServlet`'s defaults.
-- **Spec-defined helpers:** on the response, `set`/`addDateHeader`, `set`/`addIntHeader`, `flushBuffer` (commits
-  the response), `resetBuffer`, `reset`, and `null` arguments to `setHeader`, `addHeader`, `setContentType` and
-  `setCharacterEncoding`. `setContentLength` is accepted and ignored, like a `Content-Length` header. On the
-  request, `getCookies`, `getDateHeader`, `getIntHeader`, `getRequestURL`, `isSecure`, `getCharacterEncoding`,
-  `getContentLength`, `getDispatcherType` (`REQUEST`) and `getServletContext`.
+- **Spec-defined helpers:** on the response, `set`/`addDateHeader`, `set`/`addIntHeader`, `flushBuffer`,
+  `resetBuffer`, `reset` (which also clears the character encoding and whether `getWriter()` or `getOutputStream()`
+  was called, so either may be used next), a `null` header name (ignored by every header setter), and `null` values
+  for `setHeader`, `addHeader`, `setContentType` (which clears the character encoding too, unless `getWriter()` has
+  been called) and `setCharacterEncoding`. `setContentLength` is accepted and ignored, like a `Content-Length` header.
+  On the request, `getCookies`, `getDateHeader`, `getIntHeader`, `getRequestURL`, `isSecure`, `getCharacterEncoding`,
+  `getContentLength`, `getDispatcherType` (`REQUEST`) and `getServletContext`. `getCookies` skips a cookie whose
+  name the servlet API's `Cookie` rejects (one holding a separator such as `/`, `@` or `,`).
 - **Request bodies are not available:** `getInputStream`, `getReader` and `getParts` throw
   `UnsupportedOperationException`, and `getParameter` sees only the query string, not form bodies.
 - **Content type and character encoding:** a charset set through `setContentType` or `setCharacterEncoding` is
   used for the body and included in the `Content-Type`, as a servlet container reports it. It can't change after
   `getWriter()`. A `Content-Type` header set with `setHeader` or `addHeader` is the content type, as in a
   container: it sets the charset, `getHeader` returns `getContentType()`, and `getHeaderNames()` does not list it.
-  A servlet that sets no content type, or one that does not parse, is answered as `application/octet-stream`; the
-  malformed value is logged as a warning.
+  A body sent without a content type, or with one that does not parse, is labeled `application/octet-stream`; the
+  malformed value is logged as a warning. An empty body without a content type, such as a redirect's, gets no
+  `Content-Type`.
 - **Headers:** every value of a multi-valued header is forwarded. The servlet's `Content-Length`,
   `Transfer-Encoding` and `Upgrade` headers are dropped: Ktor sets `Content-Length` from the body it sends and
   rejects the other two.
+- **Responses without content:** a `1xx`, `204`, `205` or `304` response is sent without a body (anything the
+  servlet wrote is dropped) and without a `Content-Length` (Ktor gives a `205` `Content-Length: 0`), and it carries a
+  `Content-Type` only when the servlet set a valid one. A `304` from `HttpServlet`'s `If-Modified-Since` handling
+  therefore leaves a cached response's `Content-Type` alone.
 - **Parameters:** parameter names are case-insensitive, which is Ktor's behavior, unlike a servlet container.
 
 ```kotlin
