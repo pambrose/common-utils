@@ -4,6 +4,39 @@ All notable changes to Common Utils are documented in this file.
 
 ## [5.3.1] - 2026-11-27
 
+### Security
+
+These fix the seven items in phase 1 of `docs/CODE_REVIEW_2026-11-27.md`. Each one rejects some input that 5.3.0
+accepted.
+
+- ktor-server-utils `HerokuHttpsRedirect` (R3-011, high): a request target that is not origin-form (`/path?query`)
+  no longer becomes part of the redirect's host. With `host` set, `GET @evil.example/phish` redirected to
+  `https://<host>@evil.example/phish`, which a browser opens on evil.example. It now gets `400 Bad Request`, as does
+  any target that is neither origin-form nor an absolute-form `http://` or `https://` URI. An absolute-form target
+  redirects to its own path and query on the redirect host, instead of to a malformed URL. When `host` is not set, a
+  request whose host is not a valid host name or IP literal gets 400. The README now advises setting `host` unless an
+  upstream router only forwards requests for your own domains. A configured `host` that is not a host name or IP
+  literal, with an optional port, makes `install` throw `IllegalArgumentException`.
+- core-utils `toObjectSecure` (R3-001): each class name is checked against the allow-list before the class is
+  loaded, so a name that is not allowed loads nothing. It gets `SecurityException` whether or not the class exists;
+  a missing class used to give `ClassNotFoundException`, which revealed what is on the classpath. Arrays of
+  blocklisted classes are rejected even when allow-listed. A dynamic proxy is read only when every interface it
+  implements is allow-listed and not blocklisted. A top-level `String`, `Class` or `ObjectStreamClass` result now
+  needs its class in `allowedClasses`; a `String` nested in an allowed object still needs none. A serialized `null`
+  throws the documented `ClassCastException` instead of a `NullPointerException` (R3-003).
+- core-utils `maskUrlCredentials` (R3-002): every URL in the string is masked, also when only a comma or a quote
+  separates it from the one before, as in CSV or compact JSON. A URL with no path used to hide the credentials of the
+  next one.
+- service-utils (R3-015): the Jetty admin and metrics servers' error pages show only the status code, its reason
+  phrase and the request URI, in HTML, plain text or JSON. A 404 page named Jetty's servlet holder, and a 500 page
+  showed the exception's class, message and causes.
+- redis-utils (R3-039): only the `redis` and `rediss` schemes are accepted. `tls://`, `redis+tls://` or a misspelled
+  `rediss` connected without TLS and sent the credentials in plaintext; they now throw `IllegalArgumentException`.
+  So does a port outside 1-65535, which used to fail only on connecting, or one that is not a number. No error
+  message repeats any part of the URL.
+- redis-utils (R3-040): an escaped `:` (`%3A`) in a user name stays in the user name, and a user name with no
+  password no longer gets a made-up one. The user info is now split before it is decoded, as Jedis does.
+
 ### Build & tooling
 
 - Pin `glob` to 14.0.2 (from 10.5.0) and `minimatch` to 11.0.1 (from 9.0.9) through `yarnResolutions`, closing two
@@ -27,8 +60,11 @@ All notable changes to Common Utils are documented in this file.
 - AGENTS.md documents `make release` and `make release-check`, notes that a yarn resolution can cross a major
   version, and dates the coverage figures to 5.3.1.
 - Add `docs/CODE_REVIEW_2026-11-27.md`, a full-repo review of 5.3.1 with 49 trackable items (R3-001…R3-049): one high,
-  17 medium and 31 low, with a phased plan for fixing them. None is fixed in this release.
+  17 medium and 31 low, with a phased plan for fixing them. This release fixes the seven in its first phase.
 - The two September code reviews, whose items are all fixed, move to `docs/archive/`.
+- The ktor-server-utils, core-utils, service-utils and redis-utils READMEs describe the security fixes:
+  `HerokuHttpsRedirect`'s `400` responses and why to set `host`, `toObjectSecure`'s checks, error-page contents, and
+  which Redis URL schemes and ports are accepted.
 
 ### Dependency changes
 
