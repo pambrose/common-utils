@@ -53,85 +53,85 @@
 - [x] **R3-001** `MEDIUM` · security — `toObjectSecure` has allow-list/blocklist bypasses (`TC_STRING`, `resolveProxyClass`, array descriptors) and loads unallowed classes before checking the whitelist (follows CR-001, RV-001) ([details](#r3-001)) — fixed in #244
 - [x] **R3-002** `MEDIUM` · security — `maskUrlCredentials` leaves subsequent URL credentials unmasked when URLs are separated by punctuation (follows RV-002) ([details](#r3-002)) — fixed in #244
 - [x] **R3-003** `LOW` · bug — `toObjectSecure` throws `NullPointerException` instead of `ClassCastException` on a serialized `null` stream ([details](#r3-003)) — fixed in #244
-- [ ] **R3-004** `LOW` · bug — `String.trimEnds` overflows `2 * len` for `len >= 2^30`, bypassing its `require` check ([details](#r3-004))
-- [ ] **R3-005** `LOW` · bug — `String.isBracketed` returns `true` for a single-character string when `startChar == endChar` ([details](#r3-005))
-- [ ] **R3-006** `LOW` · bug — Remaining negative-value edge cases in `Int.lpad`, `Duration.format`, and `MiscJavaFuncs.sleepSecs` (follows RV-006) ([details](#r3-006))
-- [ ] **R3-007** `LOW` · docs — `core-utils/README.md` recommends `SingleAssignVar.singleAssign()` without noting its 5.0.0 deprecation (follows RV-010) ([details](#r3-007))
+- [x] **R3-004** `LOW` · bug — `String.trimEnds` overflows `2 * len` for `len >= 2^30`, bypassing its `require` check ([details](#r3-004)) — fixed in #245
+- [x] **R3-005** `LOW` · bug — `String.isBracketed` returns `true` for a single-character string when `startChar == endChar` ([details](#r3-005)) — fixed in #245
+- [x] **R3-006** `LOW` · bug — Remaining negative-value edge cases in `Int.lpad`, `Duration.format`, and `MiscJavaFuncs.sleepSecs` (follows RV-006) ([details](#r3-006)) — fixed in #245
+- [x] **R3-007** `LOW` · docs — `core-utils/README.md` recommends `SingleAssignVar.singleAssign()` without noting its 5.0.0 deprecation (follows RV-010) ([details](#r3-007)) — fixed in #245
 
 ### json-utils
-- [ ] **R3-008** `MEDIUM` · API — `json-utils` leaks `implementation`-scoped `KLogger` in its public multiplatform ABI via deprecated `JsonElementUtils.logger` (follows CR-031, RV-012) ([details](#r3-008))
-- [ ] **R3-009** `LOW` · bug — `String.reformatJson` throws `JsonEncodingException` on `NaN`, `Infinity`, `-Infinity`, and overflowing numbers, contradicting the README (follows RV-016) ([details](#r3-009))
-- [ ] **R3-010** `LOW` · docs — `json-utils/README.md` conversion snippet omits `import com.pambrose.common.json.parseJson` and does not compile (follows RV-017) ([details](#r3-010))
+- [x] **R3-008** `MEDIUM` · API — `json-utils` leaks `implementation`-scoped `KLogger` in its public multiplatform ABI via deprecated `JsonElementUtils.logger` (follows CR-031, RV-012) ([details](#r3-008)) — fixed in #245
+- [x] **R3-009** `LOW` · bug — `String.reformatJson` throws `JsonEncodingException` on `NaN`, `Infinity`, `-Infinity`, and overflowing numbers, contradicting the README (follows RV-016) ([details](#r3-009)) — fixed in #245
+- [x] **R3-010** `LOW` · docs — `json-utils/README.md` conversion snippet omits `import com.pambrose.common.json.parseJson` and does not compile (follows RV-017) ([details](#r3-010)) — fixed in #245
 
 ### ktor-server-utils
 - [x] **R3-011** `HIGH` · security — `HerokuHttpsRedirect` allows open redirects and malformed URLs on non-origin-form request targets even when `host` is pinned, and trusts the `Host` header by default (follows CR-040, RV-026) ([details](#r3-011)) — fixed in #244
-- [ ] **R3-012** `MEDIUM` · bug — `ServletRoute` fabricates `Content-Type: application/octet-stream` and `Content-Length: 0` on `304 Not Modified`, `204 No Content`, and bodyless responses (follows RV-023, RV-025) ([details](#r3-012))
-- [ ] **R3-013** `LOW` · bug — `KtorServletResponse` violates Jakarta Servlet 6.1 contracts for committed responses, `setContentType(null)`, `reset()`, and null header names (follows RV-024, RV-025) ([details](#r3-013))
-- [ ] **R3-014** `LOW` · bug — `KtorServletRequest.getCookies()` crashes with HTTP 500 on any `Cookie` header containing a non-token cookie name (follows RV-025) ([details](#r3-014))
-- [ ] **R3-050** `LOW` · bug — `HerokuHttpsRedirect`'s `excludePrefix` / `excludeSuffix` see an absolute-form request target's full URL on Ktor CIO, so such a request is redirected instead of excluded (follows R3-011) ([details](#r3-050))
+- [x] **R3-012** `MEDIUM` · bug — `ServletRoute` fabricates `Content-Type: application/octet-stream` and `Content-Length: 0` on `304 Not Modified`, `204 No Content`, and bodyless responses (follows RV-023, RV-025) ([details](#r3-012)) — fixed in #245
+- [x] **R3-013** `LOW` · bug — `KtorServletResponse` violates Jakarta Servlet 6.1 contracts for committed responses, `setContentType(null)`, `reset()`, and null header names (follows RV-024, RV-025) ([details](#r3-013)) — fixed in #245
+- [x] **R3-014** `LOW` · bug — `KtorServletRequest.getCookies()` crashes with HTTP 500 on any `Cookie` header containing a non-token cookie name (follows RV-025) ([details](#r3-014)) — fixed in #245
+- [x] **R3-050** `LOW` · bug — `HerokuHttpsRedirect`'s `excludePrefix` / `excludeSuffix` see an absolute-form request target's full URL on Ktor CIO, so such a request is redirected instead of excluded (follows R3-011) ([details](#r3-050)) — fixed in #245
 
 ### service-utils
 - [x] **R3-015** `MEDIUM` · security — Jetty admin and metrics 404/500 error pages still disclose Jetty (`org.eclipse.jetty...Default404Servlet`) and internal exception messages/causes (follows RV-031) ([details](#r3-015)) — fixed in #244
-- [ ] **R3-016** `MEDIUM` · leak — `AbstractGenericService.startUp()` leaks all started sub-services if `Runtime.addShutdownHook()` throws (follows CR-046) ([details](#r3-016))
-- [ ] **R3-017** `LOW` · docs — `service-utils/README.md` still documents removed Ktor plugins (`call-logging`, `compression`) and attributes a bind `host` to `ZipkinConfig` (follows RV-034) ([details](#r3-017))
+- [x] **R3-016** `MEDIUM` · leak — `AbstractGenericService.startUp()` leaks all started sub-services if `Runtime.addShutdownHook()` throws (follows CR-046) ([details](#r3-016)) — fixed in #245
+- [x] **R3-017** `LOW` · docs — `service-utils/README.md` still documents removed Ktor plugins (`call-logging`, `compression`) and attributes a bind `host` to `ZipkinConfig` (follows RV-034) ([details](#r3-017)) — fixed in #245
 
 ### prometheus-utils
-- [ ] **R3-018** `MEDIUM` · leak — `SystemMetrics.forget()` with `enableMemoryPoolsExports = true` permanently leaks GC `NotificationListener`s (follows #208, #226) ([details](#r3-018))
-- [ ] **R3-019** `LOW` · API — `InstrumentedThreadFactory` has no way to unregister its three metrics ([details](#r3-019))
-- [ ] **R3-020** `LOW` · tests — `SystemMetricsTests` clears and leaves collectors in `PrometheusRegistry.defaultRegistry` without cleanup (follows RV-040, #226) ([details](#r3-020))
+- [x] **R3-018** `MEDIUM` · leak — `SystemMetrics.forget()` with `enableMemoryPoolsExports = true` permanently leaks GC `NotificationListener`s (follows #208, #226) ([details](#r3-018)) — fixed in #245
+- [x] **R3-019** `LOW` · API — `InstrumentedThreadFactory` has no way to unregister its three metrics ([details](#r3-019)) — fixed in #245
+- [x] **R3-020** `LOW` · tests — `SystemMetricsTests` clears and leaves collectors in `PrometheusRegistry.defaultRegistry` without cleanup (follows RV-040, #226) ([details](#r3-020)) — fixed in #245
 
 ### guava-utils
-- [ ] **R3-021** `LOW` · API — `ByteArray.unzip` and `Semaphore.withLock` omit `@Throws` for checked exceptions, while mangled Kotlin-`Duration` overloads keep unreachable `@Throws` (follows RV-046) ([details](#r3-021))
-- [ ] **R3-022** `LOW` · API — `Service.genericServiceListener` leaks mutable `GuavaDsl.ServiceListenerHelper` as its public return type instead of `Service.Listener` ([details](#r3-022))
+- [x] **R3-021** `LOW` · API — `ByteArray.unzip` and `Semaphore.withLock` omit `@Throws` for checked exceptions, while mangled Kotlin-`Duration` overloads keep unreachable `@Throws` (follows RV-046) ([details](#r3-021)) — fixed in #245
+- [ ] **R3-022** `LOW` · API — `Service.genericServiceListener` leaks mutable `GuavaDsl.ServiceListenerHelper` as its public return type instead of `Service.Listener` ([details](#r3-022)) — Kotlin side fixed in #245 (Kotlin callers get `Service.Listener`); the Java return type changes in 6.0.0
 
 ### zipkin-utils
-- [ ] **R3-023** `LOW` · docs — `zipkin-utils/README.md` example calls deprecated `AsyncReporter.create(Sender)` and leaks `reporter` and `sender` ([details](#r3-023))
+- [x] **R3-023** `LOW` · docs — `zipkin-utils/README.md` example calls deprecated `AsyncReporter.create(Sender)` and leaks `reporter` and `sender` ([details](#r3-023)) — fixed in #245
 
 ### script-utils (common / java / kotlin / python)
-- [ ] **R3-024** `MEDIUM` · leak — `ScriptUtils.resetContext` leaves previous `ENGINE_SCOPE` bindings strongly retained by Kotlin and Jython engines until the next `eval()` (follows RV-048, RV-049) ([details](#r3-024))
-- [ ] **R3-025** `MEDIUM` · concurrency — `AbstractScript.params` default argument reads unsynchronized `typeMap` outside the `@Synchronized` monitor (follows RV-056) ([details](#r3-025))
-- [ ] **R3-026** `MEDIUM` · bug — Private generic classes with a non-generic public supertype (`IntStream`, `LongStream`, `DoubleStream`) cannot be bound as their public type (follows RV-052) ([details](#r3-026))
-- [ ] **R3-027** `MEDIUM` · bug — `AbstractScript.isPubliclyAccessible()` accepts non-static inner classes of generic outer classes, generating uncompilable Kotlin and Java types (follows RV-051, RV-052) ([details](#r3-027))
-- [ ] **R3-028** `MEDIUM` · bug — `KotlinScript.isReserved` does not reject all-underscore identifiers (`_`, `__`, `___`), poisoning the script instance (follows RV-048) ([details](#r3-028))
-- [ ] **R3-029** `MEDIUM` · bug — `JavaScript.renderType` throws unwrapped `NullPointerException` on local/anonymous `KType` and silently drops `in`/`out` variance projections ([details](#r3-029))
-- [ ] **R3-030** `LOW` · bug — `JavaScript.import` / `addImport` accepts primitives, arrays, and unnamed-package classes, generating invalid `import` statements (follows RV-053) ([details](#r3-030))
-- [ ] **R3-031** `LOW` · leak — `AbstractEnginePool.close()` aborts draining on the first `instance.close()` failure, leaking remaining idle instances ([details](#r3-031))
-- [ ] **R3-032** `LOW` · docs — `script-utils-common/README.md` and `AbstractExprEvaluatorPool` KDoc have stale `valueMap` type, contradictory isolation text, and a non-reproducing `run { val y = 1 }` example (follows RV-049, RV-059) ([details](#r3-032))
-- [ ] **R3-033** `LOW` · tests — No end-to-end test exercises `KotlinExprEvaluatorPool`'s `resetEvery` behavior on the real Kotlin engine (follows RV-049) ([details](#r3-033))
+- [x] **R3-024** `MEDIUM` · leak — `ScriptUtils.resetContext` leaves previous `ENGINE_SCOPE` bindings strongly retained by Kotlin and Jython engines until the next `eval()` (follows RV-048, RV-049) ([details](#r3-024)) — fixed in #245
+- [x] **R3-025** `MEDIUM` · concurrency — `AbstractScript.params` default argument reads unsynchronized `typeMap` outside the `@Synchronized` monitor (follows RV-056) ([details](#r3-025)) — fixed in #245
+- [x] **R3-026** `MEDIUM` · bug — Private generic classes with a non-generic public supertype (`IntStream`, `LongStream`, `DoubleStream`) cannot be bound as their public type (follows RV-052) ([details](#r3-026)) — fixed in #245
+- [x] **R3-027** `MEDIUM` · bug — `AbstractScript.isPubliclyAccessible()` accepts non-static inner classes of generic outer classes, generating uncompilable Kotlin and Java types (follows RV-051, RV-052) ([details](#r3-027)) — fixed in #245
+- [x] **R3-028** `MEDIUM` · bug — `KotlinScript.isReserved` does not reject all-underscore identifiers (`_`, `__`, `___`), poisoning the script instance (follows RV-048) ([details](#r3-028)) — fixed in #245
+- [x] **R3-029** `MEDIUM` · bug — `JavaScript.renderType` throws unwrapped `NullPointerException` on local/anonymous `KType` and silently drops `in`/`out` variance projections ([details](#r3-029)) — fixed in #245
+- [x] **R3-030** `LOW` · bug — `JavaScript.import` / `addImport` accepts primitives, arrays, and unnamed-package classes, generating invalid `import` statements (follows RV-053) ([details](#r3-030)) — fixed in #245
+- [x] **R3-031** `LOW` · leak — `AbstractEnginePool.close()` aborts draining on the first `instance.close()` failure, leaking remaining idle instances ([details](#r3-031)) — fixed in #245
+- [x] **R3-032** `LOW` · docs — `script-utils-common/README.md` and `AbstractExprEvaluatorPool` KDoc have stale `valueMap` type, contradictory isolation text, and a non-reproducing `run { val y = 1 }` example (follows RV-049, RV-059) ([details](#r3-032)) — fixed in #245
+- [x] **R3-033** `LOW` · tests — No end-to-end test exercises `KotlinExprEvaluatorPool`'s `resetEvery` behavior on the real Kotlin engine (follows RV-049) ([details](#r3-033)) — fixed in #245
 
 ### email-utils
-- [ ] **R3-034** `LOW` · docs — `ResendService` docs and comments claim each instance owns its own OkHttp client, stale since `resend-java` 4.32.0 shares a singleton default `HttpClient` (follows RV-061) ([details](#r3-034))
+- [x] **R3-034** `LOW` · docs — `ResendService` docs and comments claim each instance owns its own OkHttp client, stale since `resend-java` 4.32.0 shares a singleton default `HttpClient` (follows RV-061) ([details](#r3-034)) — fixed in #245
 
 ### recaptcha-utils
-- [ ] **R3-035** `MEDIUM` · concurrency — Concurrent `RecaptchaService.close()` races with `verifyRecaptcha` and propagates a spurious `CancellationException` to an uncancelled caller (follows RV-065) ([details](#r3-035))
-- [ ] **R3-036** `LOW` · leak — `RecaptchaService` eagerly starts a live `HttpClient(CIO)` (NIO `Selector` + coroutine) in `<clinit>` even when reCAPTCHA is disabled (follows RV-065) ([details](#r3-036))
-- [ ] **R3-037** `LOW` · docs — `recaptcha-utils/README.md` lists `internal data class RecaptchaResponse` as public API ([details](#r3-037))
+- [x] **R3-035** `MEDIUM` · concurrency — Concurrent `RecaptchaService.close()` races with `verifyRecaptcha` and propagates a spurious `CancellationException` to an uncancelled caller (follows RV-065) ([details](#r3-035)) — fixed in #245
+- [x] **R3-036** `LOW` · leak — `RecaptchaService` eagerly starts a live `HttpClient(CIO)` (NIO `Selector` + coroutine) in `<clinit>` even when reCAPTCHA is disabled (follows RV-065) ([details](#r3-036)) — fixed in #245
+- [x] **R3-037** `LOW` · docs — `recaptcha-utils/README.md` lists `internal data class RecaptchaResponse` as public API ([details](#r3-037)) — fixed in #245
 
 ### redis-utils
-- [ ] **R3-038** `MEDIUM` · leak — `withSuspendingRedis` / `withSuspendingNonNullRedis` leak `RedisClient` if cancelled while connecting (follows RV-066) ([details](#r3-038))
+- [x] **R3-038** `MEDIUM` · leak — `withSuspendingRedis` / `withSuspendingNonNullRedis` leak `RedisClient` if cancelled while connecting (follows RV-066) ([details](#r3-038)) — fixed in #245
 - [x] **R3-039** `MEDIUM` · security — `RedisUtils.urlDetails` does not validate URL scheme or port range, silently downgrading non-`rediss` TLS schemes to plaintext ([details](#r3-039)) — fixed in #244
 - [x] **R3-040** `LOW` · bug — `RedisUtils.urlDetails` splits `uri.userInfo` after percent-decoding, corrupting usernames containing `%3A` ([details](#r3-040)) — fixed in #244
-- [ ] **R3-041** `LOW` · docs — `redis-utils/README.md` lists `internal class RedisInfo` as public API ([details](#r3-041))
-- [ ] **R3-051** `LOW` · security — An unescaped `/` in a Redis URL's password ends the authority early, and Jedis's database-index error then quotes the rest of the password (follows R3-039) ([details](#r3-051))
+- [x] **R3-041** `LOW` · docs — `redis-utils/README.md` lists `internal class RedisInfo` as public API ([details](#r3-041)) — fixed in #245
+- [x] **R3-051** `LOW` · security — An unescaped `/` in a Redis URL's password ends the authority early, and Jedis's database-index error then quotes the rest of the password (follows R3-039) ([details](#r3-051)) — fixed in #245
 
 ### exposed-utils
-- [ ] **R3-042** `LOW` · bug — `checkConflictIndexSupported` misses H2 in MySQL/MariaDB compatibility mode, and `UpsertStatementTests` comment is stale for Exposed 1.6.1 (follows RV-070) ([details](#r3-042))
+- [x] **R3-042** `LOW` · bug — `checkConflictIndexSupported` misses H2 in MySQL/MariaDB compatibility mode, and `UpsertStatementTests` comment is stale for Exposed 1.6.1 (follows RV-070) ([details](#r3-042)) — fixed in #245
 
 ### grpc-utils
-- [ ] **R3-043** `MEDIUM` · bug — `GrpcDsl.server(bindAddress = ...)` silently binds loopback on `""` and defers `UnresolvedAddressException` to `start()` on blank or whitespace-padded addresses (follows RV-075) ([details](#r3-043))
-- [ ] **R3-044** `LOW` · API — `TlsUtils.clientTlsContextBuilder` and `serverTlsContext` declare impossible `@Throws(SSLException::class)` and are omitted from `grpc-utils/README.md` API Reference ([details](#r3-044))
+- [x] **R3-043** `MEDIUM` · bug — `GrpcDsl.server(bindAddress = ...)` silently binds loopback on `""` and defers `UnresolvedAddressException` to `start()` on blank or whitespace-padded addresses (follows RV-075) ([details](#r3-043)) — fixed in #245
+- [x] **R3-044** `LOW` · API — `TlsUtils.clientTlsContextBuilder` and `serverTlsContext` declare impossible `@Throws(SSLException::class)` and are omitted from `grpc-utils/README.md` API Reference ([details](#r3-044)) — fixed in #245
 
 ### jetty-utils
-- [ ] **R3-052** `LOW` · security — `JettyDsl.servletContextHandler` sets no error handler, so a servlet exception's class and message reach the client on Jetty's default 500 page (follows R3-015) ([details](#r3-052))
+- [x] **R3-052** `LOW` · security — `JettyDsl.servletContextHandler` sets no error handler, so a servlet exception's class and message reach the client on Jetty's default 500 page (follows R3-015) ([details](#r3-052)) — fixed in #245
 
 ### Cross-module API surface
-- [ ] **R3-045** `LOW` · API — Six empty public `Companion` objects remain in the published ABI across `guava-utils`, `script-utils-common`, and `service-utils` (follows RV-078) ([details](#r3-045))
+- [ ] **R3-045** `LOW` · API — Six empty public `Companion` objects remain in the published ABI across `guava-utils`, `script-utils-common`, and `service-utils` (follows RV-078) ([details](#r3-045)) — deprecated in #245; made private in 6.0.0
 
 ### Build & publishing
-- [ ] **R3-046** `LOW` · build — Four modules (`zipkin-utils`, `redis-utils`, `guava-utils`, `grpc-utils`) still export `:core-utils` as `api` without exposing any `core-utils` types (follows RV-079) ([details](#r3-046))
-- [ ] **R3-047** `LOW` · build — `prometheus-utils` exports `prometheus-metrics-instrumentation-jvm` as `api` although no type from it appears in the public ABI ([details](#r3-047))
-- [ ] **R3-048** `LOW` · build — `service-utils` declares `dropwizard-jmx` twice (`api` and `implementation` via single-use bundle), and `llms.txt` omits it from `service-utils`'s `api` list ([details](#r3-048))
-- [ ] **R3-049** `LOW` · publishing — `Makefile` publishing env setup does not guard against an empty GPG passphrase or failed secret export, and `build.gradle.kts` treats a blank `signingInMemoryKey` as present ([details](#r3-049))
+- [x] **R3-046** `LOW` · build — Four modules (`zipkin-utils`, `redis-utils`, `guava-utils`, `grpc-utils`) still export `:core-utils` as `api` without exposing any `core-utils` types (follows RV-079) ([details](#r3-046)) — fixed in #245
+- [x] **R3-047** `LOW` · build — `prometheus-utils` exports `prometheus-metrics-instrumentation-jvm` as `api` although no type from it appears in the public ABI ([details](#r3-047)) — fixed in #245
+- [x] **R3-048** `LOW` · build — `service-utils` declares `dropwizard-jmx` twice (`api` and `implementation` via single-use bundle), and `llms.txt` omits it from `service-utils`'s `api` list ([details](#r3-048)) — fixed in #245
+- [x] **R3-049** `LOW` · publishing — `Makefile` publishing env setup does not guard against an empty GPG passphrase or failed secret export, and `build.gradle.kts` treats a blank `signingInMemoryKey` as present ([details](#r3-049)) — fixed in #245
 
 ---
 
