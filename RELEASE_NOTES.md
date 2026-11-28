@@ -5,7 +5,7 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## v5.4.0 — 2026-11-27
+## v5.4.0 — 2026-11-28
 
 A minor release with security fixes, fixes from the November code review, and dependency updates. It is binary
 compatible with 5.3.0, but several functions now reject input they used to accept. `HerokuHttpsRedirect` no longer allows an open redirect, `toObjectSecure` closes
