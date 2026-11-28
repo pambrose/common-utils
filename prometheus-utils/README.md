@@ -234,7 +234,8 @@ This module depends on:
 - Kotlin Standard Library
 - kotlin-logging (internally)
 - `io.prometheus:prometheus-metrics-core` (`api`), which brings `prometheus-metrics-model` (`PrometheusRegistry`)
-- `io.prometheus:prometheus-metrics-instrumentation-jvm` (`api`)
+- `io.prometheus:prometheus-metrics-instrumentation-jvm`, internally (`implementation` since 5.4.0, as none of its
+  types is in this module's API; depend on it yourself to use its `JvmMetrics` collectors directly)
 
 ## Installation
 

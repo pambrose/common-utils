@@ -100,6 +100,10 @@ class MetricsService(
       add("path", path.ensureLeadingSlash())
     }
 
+  @Deprecated(
+    "This companion object has no public members. It becomes private in 6.0.0.",
+    level = DeprecationLevel.WARNING,
+  )
   companion object {
     private val logger = KotlinLogging.logger {}
   }

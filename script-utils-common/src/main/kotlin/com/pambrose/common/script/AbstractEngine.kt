@@ -64,6 +64,10 @@ abstract class AbstractEngine(
     // Nothing to release by default.
   }
 
+  @Deprecated(
+    "This companion object has no public members. It becomes private in 6.0.0.",
+    level = DeprecationLevel.WARNING,
+  )
   companion object {
     // Discovers engines with this library's class loader. The no-argument constructor would use the context class
     // loader of whichever thread happened to construct the first engine, and keep it for every later lookup. An engine

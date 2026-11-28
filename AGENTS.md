@@ -10,9 +10,15 @@ cases. Published on Maven Central.
 Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, and **ktor-client-utils**. They target
 JVM, JS, wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code lives in `src/commonMain`, JVM-bound
 code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM. Most depend
-on core-utils' jvm variant via ordinary project dependencies; jetty-utils, dropwizard-utils, prometheus-utils,
-exposed-utils and ktor-server-utils do not (they declare kotlin-logging directly where they log), and neither does
-ktor-client-utils. Don't add core-utils to a module for one helper: every consumer inherits its whole `api` surface.
+on core-utils' jvm variant via ordinary project dependencies. json-utils, email-utils, recaptcha-utils,
+script-utils-common (and through it the script-utils-* engines) and service-utils export it as `api`. grpc-utils,
+guava-utils, redis-utils and zipkin-utils take it as `implementation` (since 5.4.0), because no core-utils type is in
+their public API; only grpc-utils uses it, and the other three keep it solely so that code compiled against an earlier
+release still finds it at runtime, until 6.0.0 drops it. They declare what they use themselves (kotlin-logging,
+kotlinx-coroutines), as `api` where it is in their API (guava-utils' `KLogger`). jetty-utils, dropwizard-utils,
+prometheus-utils, exposed-utils and ktor-server-utils do not depend on core-utils (they declare kotlin-logging directly
+where they log), and neither does ktor-client-utils. Don't add core-utils to a module for one helper: as `api`, every
+consumer inherits its whole `api` surface.
 
 ## Common Development Commands
 
@@ -81,7 +87,11 @@ Run `make help` for a self-documenting list of every target.
   `~/.gradle/gradle.properties`, which every Gradle build on the machine reads. The entries are shared by every repository that publishes this way. Add them once with
   `security add-generic-password -a maven-central -s maven-central-username -U -w` (and the same for
   `maven-central-password`), which prompts for the value so it stays out of the shell history. Both publish targets
-  check the entries first through `_check-maven-central-env`, which names a missing or empty entry, never its value.
+  check the entries first through `_check-maven-central-env`, which names a missing or empty entry, never its value,
+  and `_check-gpg-env` fails the same way on a missing or empty `gradle-signing-password` (the signing key must have a
+  passphrase). The publish recipes then resolve each secret (`GPG_ENV`, `MAVEN_CENTRAL_ENV`) as a separate shell
+  assignment and export it, stopping before `./gradlew` if a command fails or prints nothing. Don't go back to prefix
+  assignments (`VAR="$(...)" ./gradlew`): a failing substitution there still runs Gradle, with the secret set to `""`.
 
 ## Architecture
 
@@ -96,7 +106,7 @@ The root `build.gradle.kts` applies a shared set of plugins to every subproject 
   `configureKmpTests()` also runs their test tasks in up to eight forks, or in one on GitHub-hosted runners (detected
   through `RUNNER_ENVIRONMENT`), so the timing-sensitive specs don't race other test JVMs for CPU in CI; the JVM
   modules keep Gradle's default of one fork
-- `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing, so an unsigned Central upload still cannot happen
+- `configurePublishing(isKmp)` - Maven publication setup: vanniktech maven-publish with the `KotlinJvm` or `KotlinMultiplatform` platform, POM metadata, and `signAllPublications()` applied **only when a `signingInMemoryKey` is present and not blank**. Signing unconditionally breaks `make publish-local`, which publishes to the local Maven repo with no signatory configured; a `doFirst` guard on every `*MavenCentral*` task fails the build with an explanatory message when the key is missing or blank, so an unsigned Central upload still cannot happen
 - `configureDokka()` - per-module Dokka HTML configuration (homepage link and footer), shared with the root `dokka` block
 - `configureBom()` - turns `common-utils-bom` into a `java-platform` with a constraint on every other module (and
   on the KMP modules' `-jvm` artifacts), published through the same POM setup; it skips all the Kotlin, lint,

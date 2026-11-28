@@ -16,7 +16,7 @@ dependencies {
 
     implementation(project(":prometheus-utils"))
 
-    implementation(libs.bundles.dropwizard.service)
+    implementation(libs.dropwizard.servlets)
     implementation(libs.bundles.ktor.server.service)
     implementation(libs.bundles.prometheus.service)
     implementation(libs.zipkin.sender.okhttp)

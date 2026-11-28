@@ -258,7 +258,9 @@ exception; that `SSLException` comes from your own `builder.build()` call instea
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
+- core-utils and kotlin-logging, internally. core-utils is an `implementation` dependency since 5.4.0: no
+  core-utils type is in this module's API, so it is no longer on a consumer's compile classpath. Depend on
+  core-utils yourself to call it.
 - gRPC Netty, Stub and In-Process. Protobuf and the gRPC services are not included; add
   `grpc-protobuf` or `grpc-services` yourself if you use them
 - Netty tcnative (BoringSSL) for TLS, with its native libraries for Linux (x86_64, aarch_64), macOS (x86_64,

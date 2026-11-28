@@ -141,8 +141,11 @@ it rejects a pattern without a `{hash-tag}`, and with one it returns only that t
 This module depends on:
 
 - Kotlin Standard Library
-- core-utils
-- Jedis (`redis.clients:jedis`)
+- Jedis (`redis.clients:jedis`), an `api` dependency
+- kotlin-logging and kotlinx-coroutines, internally
+- core-utils, as an `implementation` dependency since 5.4.0: no core-utils type is in this module's API, so it is
+  no longer on a consumer's compile classpath. Depend on core-utils yourself to call it. It is kept on the runtime
+  classpath for code compiled against earlier releases, and 6.0.0 removes it.
 
 ## Installation
 
