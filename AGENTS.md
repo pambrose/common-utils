@@ -11,10 +11,11 @@ Three modules are Kotlin Multiplatform (KMP): **core-utils**, **json-utils**, an
 JVM, JS, wasmJs, and Native (iOS/macOS/tvOS/watchOS/Linux/Windows). Portable code lives in `src/commonMain`, JVM-bound
 code in `src/jvmMain` (the JVM artifact keeps the full pre-KMP API). All other modules are plain Kotlin/JVM. Most depend
 on core-utils' jvm variant via ordinary project dependencies. json-utils, email-utils, recaptcha-utils,
-script-utils-common (and through it the script-utils-* engines) and service-utils export it as `api`. grpc-utils,
-guava-utils, redis-utils and zipkin-utils take it as `implementation` (since 5.4.0), because no core-utils type is in
-their public API; only grpc-utils uses it, and the other three keep it solely so that code compiled against an earlier
-release still finds it at runtime, until 6.0.0 drops it. They declare what they use themselves (kotlin-logging,
+script-utils-common (and through it the script-utils-* engines) and service-utils export it as `api`. Since 5.4.0,
+grpc-utils takes it as `implementation`, and guava-utils, redis-utils and zipkin-utils as `runtimeOnly`, because no
+core-utils type is in their public API; only grpc-utils uses it. The other three keep it solely so that code compiled
+against an earlier release still finds it at runtime, until 6.0.0 drops it, and `runtimeOnly` makes the compiler
+check that they don't use it. They declare what they use themselves (kotlin-logging,
 kotlinx-coroutines), as `api` where it is in their API (guava-utils' `KLogger`). jetty-utils, dropwizard-utils,
 prometheus-utils, exposed-utils and ktor-server-utils do not depend on core-utils (they declare kotlin-logging directly
 where they log), and neither does ktor-client-utils. Don't add core-utils to a module for one helper: as `api`, every

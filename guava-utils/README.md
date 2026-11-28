@@ -327,7 +327,7 @@ This module depends on:
 - Google Guava, an `api` dependency
 - kotlin-logging, an `api` dependency, since `genericServiceListener` takes a `KLogger`
 - kotlinx-coroutines, internally
-- core-utils, as an `implementation` dependency since 5.4.0: no core-utils type is in this module's API, so it is
+- core-utils, as a `runtimeOnly` dependency since 5.4.0: no core-utils type is in this module's API, so it is
   no longer on a consumer's compile classpath. Depend on core-utils yourself to call it. It is kept on the runtime
   classpath for code compiled against earlier releases, and 6.0.0 removes it.
 

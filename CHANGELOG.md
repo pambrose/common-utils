@@ -86,8 +86,8 @@ compatible: no declaration is removed or changed in an ABI dump.
 - script-utils-common `ScriptEngine.resetContext()` clears the old context's engine bindings (R3-024).
 - exposed-utils `upsert` throws `UnsupportedByDialectException` on H2 in MySQL or MariaDB mode before its body
   runs, as it does on MySQL (R3-042).
-- zipkin-utils, redis-utils, guava-utils and grpc-utils take core-utils as an `implementation` dependency instead of
-  `api`, since none of them exposes a core-utils type (R3-046). core-utils stays on consumers' runtime classpath, so
+- zipkin-utils, redis-utils and guava-utils take core-utils as a `runtimeOnly` dependency, and grpc-utils as
+  `implementation`, instead of `api`, since none of them exposes a core-utils type (R3-046). core-utils stays on consumers' runtime classpath, so
   compiled code is unaffected, but a consumer that used core-utils, or the libraries it exports (kotlinx-coroutines,
   kotlinx-datetime, kotlin-reflect, kotlin-logging), through one of these modules without declaring it must now add
   it. guava-utils still exports kotlin-logging, which its public API uses.

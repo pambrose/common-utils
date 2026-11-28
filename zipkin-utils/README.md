@@ -93,7 +93,7 @@ This module depends on:
 - Kotlin Standard Library
 - Brave (`io.zipkin.brave:brave`), Zipkin (`io.zipkin.zipkin2:zipkin`) and Zipkin Reporter for Brave
   (`io.zipkin.reporter2:zipkin-reporter-brave`), all `api` dependencies
-- core-utils, as an `implementation` dependency since 5.4.0: no core-utils type is in this module's API, so it is
+- core-utils, as a `runtimeOnly` dependency since 5.4.0: no core-utils type is in this module's API, so it is
   no longer on a consumer's compile classpath. Depend on core-utils yourself to call it. It is kept on the runtime
   classpath for code compiled against earlier releases, and 6.0.0 removes it.
 
