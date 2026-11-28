@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [Unreleased]
+## [5.3.1] - 2026-11-27
 
 ### Build & tooling
 
@@ -21,6 +21,15 @@ All notable changes to Common Utils are documented in this file.
   sections, README and llms.txt bumped from the previous version, no tag of the version on another commit, every CI
   check and each required CI job passed for HEAD, and no artifact of the version on Maven Central yet.
 
+### Documentation
+
+- README states Gradle 9.9.3.
+- AGENTS.md documents `make release` and `make release-check`, notes that a yarn resolution can cross a major
+  version, and dates the coverage figures to 5.3.1.
+- Add `docs/CODE_REVIEW_2026-11-27.md`, a full-repo review of 5.3.1 with 49 trackable items (R3-001…R3-049): one high,
+  17 medium and 31 low, with a phased plan for fixing them. None is fixed in this release.
+- The two September code reviews, whose items are all fixed, move to `docs/archive/`.
+
 ### Dependency changes
 
 - `grpc` 1.85.1 → 1.86.0, whose `grpc-stub` and `grpc-netty` grpc-utils exports as `api`. Channels now use the
@@ -29,6 +38,21 @@ All notable changes to Common Utils are documented in this file.
   trailers and for draining a gracefully shut down server connection before closing it
   ([1.86.0](https://github.com/grpc/grpc-java/releases/tag/v1.86.0)). grpc 1.86.0 still names netty-tcnative
   2.0.81.Final, so the catalog's 2.0.86.Final stays ahead of it.
+- `ktor` 3.6.1 → 3.6.2, which ktor-client-utils, ktor-server-utils, recaptcha-utils and email-utils export as `api`:
+  bug fixes only. The client fails on a streamed response that ends early instead of reading it as complete
+  (KTOR-6905), a 204 No Content response no longer carries a `Content-Length` header (KTOR-10111), CIO sends the
+  origin-form request target inside an HTTPS proxy tunnel (KTOR-10179), and `ktor-serialization-kotlinx` no longer
+  pulls in `kotlinx-datetime` 0.8.0-0.6.x-compat (KTOR-9930) ([3.6.2](https://github.com/ktorio/ktor/releases/tag/3.6.2)).
+- `jedis` 8.0.2 → 8.1.0, which redis-utils exports as `api`: Redis 8.12 commands (`ZMOVE`, `BITRANGEINTARRAY`, set
+  member expiration and the `BLESS` family) and Smart Client Handoffs, which meet the maintenance notifications Redis
+  Cloud and Redis Software send with relaxed timeouts and early reconnects. They are on by default for RESP3
+  connections only, so a client redis-utils builds gets them only from a URL with `?protocol=3`. Bug fixes include
+  `Pipeline.sync()` reporting read failures to the caller and `monitor()` no longer returning a still-monitoring
+  connection to a `JedisPool` ([8.1.0](https://github.com/redis/jedis/releases/tag/v8.1.0)).
+- `resend` 4.31.0 → 4.32.0, which email-utils exports as `api`: listing received emails can filter them by recipient
+  and date ([4.32.0](https://github.com/resend/resend-java/releases/tag/v4.32.0)).
+- Gradle wrapper 9.9.2 → 9.9.3
+- Bump project version to 5.3.1
 
 ## [5.3.0] - 2026-11-23
 

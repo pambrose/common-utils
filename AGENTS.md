@@ -358,7 +358,7 @@ Kover verification rules live in the root `build.gradle.kts`:
 - **Per-package rule:** 90% line in every package.
 
 They are floors, not targets, and this is the one place the current figures are kept (the root build script and
-`codecov.yml` point here). As of 5.3.0 the project sits at 99.3% line and 96.2% branch, and the weakest package
+`codecov.yml` point here). As of 5.3.1 the project sits at 99.3% line and 96.2% branch, and the weakest package
 by line coverage is `service` at 98.2%.
 
 - **Why a per-package rule:** without it, any module smaller than about 200 lines (all but core-utils,
