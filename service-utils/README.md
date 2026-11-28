@@ -38,8 +38,9 @@ guava-utils, jetty-utils, dropwizard-utils, zipkin-utils, Dropwizard's `metrics-
 ### Configuration
 
 - **`AdminConfig`**, **`MetricsConfig`**, **`ZipkinConfig`**: data classes for the admin, Prometheus, and Zipkin
-  settings, each with an optional `host` to restrict the bind address. `MetricsConfig`'s nine `*ExportsEnabled` flags
-  select the metric sets passed to prometheus-utils' `SystemMetrics.initialize`
+  settings. `AdminConfig` and `MetricsConfig` each take an optional `host` to restrict the bind address, while
+  `ZipkinConfig`'s required `hostname` names the Zipkin collector to report to. `MetricsConfig`'s nine
+  `*ExportsEnabled` flags select the metric sets passed to prometheus-utils' `SystemMetrics.initialize`
 
 ## Usage Examples
 
@@ -153,8 +154,8 @@ class MyKtorService(configVals: MyConfig) :
 }
 ```
 
-service-utils uses Ktor's compression and call-logging plugins only as runtime `implementation` dependencies, so
-they are not on your compile classpath. To install `Compression` as above, depend on
+service-utils bundles no Ktor plugins: the only Ktor artifact it adds beyond ktor-server-utils' `ktor-server-core`
+is the CIO engine, `ktor-server-cio`, as an `implementation` dependency. To install `Compression` as above, depend on
 `io.ktor:ktor-server-compression` yourself.
 
 ### Health Checks and Metrics
@@ -303,7 +304,7 @@ Also used, but as `implementation` details that consumers do not inherit:
 - prometheus-utils, and the Prometheus 1.x Jakarta servlet exporter (`prometheus-metrics-exporter-servlet-jakarta`)
   and Dropwizard bridge (`prometheus-metrics-instrumentation-dropwizard`)
 - Dropwizard Jakarta metrics servlets
-- Ktor server CIO, call logging, and compression
+- Ktor server CIO (`ktor-server-cio`)
 - Zipkin OkHttp sender
 
 Jakarta `HttpServlet` and `Servlet` types appear in the servlet-group API, and Ktor's `Application` in
@@ -365,13 +366,15 @@ copy of the service list, so a service added afterwards is not managed, is absen
   Dropwizard `Counter` named `x` alongside a `PrometheusDsl` counter also named `x`. A Dropwizard `Counter` is
   exposed as a Prometheus counter named `<name>_total`; timers and histograms become summaries, meters `_total`
   counters and gauges gauges.
-- **Shutdown hook**: registered at the end of a successful `startUp()` and removed during `shutDown()`. Removal
-  failures — an `IllegalStateException` when the JVM is already shutting down, for instance — are swallowed
-  rather than failing the shutdown. The hook logs `*** <class name> shutting down ***` and
-  `*** <class name> shut down complete ***` at INFO. JVM shutdown hooks run concurrently, so a logging framework
-  that stops itself in a hook of its own can drop those lines, and the service's own shutdown logging with them:
-  Log4j 2 (unless `shutdownHook="disable"`), `java.util.logging`, Logback with `<shutdownHook/>`, and Spring Boot
-  all do. Logback without `<shutdownHook/>` registers no hook, and keeps logging until the JVM halts.
+- **Shutdown hook**: registered as the last step of `startUp()` and removed during `shutDown()`. A registration
+  that fails, such as the `IllegalStateException` `addShutdownHook` throws once the JVM is shutting down, fails the
+  start and rolls it back like any other failed step. Removal failures — an `IllegalStateException` when the JVM
+  is already shutting down, for instance — are swallowed rather than failing the shutdown. The hook logs
+  `*** <class name> shutting down ***` and `*** <class name> shut down complete ***` at INFO. JVM shutdown hooks
+  run concurrently, so a logging framework that stops itself in a hook of its own can drop those lines, and the
+  service's own shutdown logging with them: Log4j 2 (unless `shutdownHook="disable"`), `java.util.logging`,
+  Logback with `<shutdownHook/>`, and Spring Boot all do. Logback without `<shutdownHook/>` registers no hook, and
+  keeps logging until the JVM halts.
 - **Embedding a service**: a service that runs inside a host application, which stops it after its own work,
   overrides `registersShutDownHook` to return `false`; otherwise the hook stops the service on `SIGTERM` in parallel
   with the host's own shutdown. The service then stops only when `stopSync()` or `close()` is called.
