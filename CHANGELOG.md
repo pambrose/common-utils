@@ -2,7 +2,7 @@
 
 All notable changes to Common Utils are documented in this file.
 
-## [5.3.1] - 2026-11-27
+## [5.4.0] - 2026-11-27
 
 ### Security
 
@@ -88,7 +88,7 @@ accepted.
 - `resend` 4.31.0 → 4.32.0, which email-utils exports as `api`: listing received emails can filter them by recipient
   and date ([4.32.0](https://github.com/resend/resend-java/releases/tag/v4.32.0)).
 - Gradle wrapper 9.9.2 → 9.9.3
-- Bump project version to 5.3.1
+- Bump project version to 5.4.0
 
 ## [5.3.0] - 2026-11-23
 

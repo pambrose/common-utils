@@ -5,10 +5,10 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
-## v5.3.1 — 2026-11-27
+## v5.4.0 — 2026-11-27
 
-A patch release with security fixes and dependency updates. There are no API changes, but several functions now
-reject input they used to accept. `HerokuHttpsRedirect` no longer allows an open redirect, `toObjectSecure` closes
+A minor release with security fixes, fixes from the November code review, and dependency updates. It is binary
+compatible with 5.3.0, but several functions now reject input they used to accept. `HerokuHttpsRedirect` no longer allows an open redirect, `toObjectSecure` closes
 four ways around its allow-list, and redis-utils refuses URLs that would have connected without TLS. grpc 1.86.0
 switches channels to the rewritten pick-first load balancer, Jedis 8.1.0 adds Redis 8.12 commands, and Ktor 3.6.2
 brings bug fixes. `make release` and `make release-check` script the release itself.
@@ -73,7 +73,7 @@ brings bug fixes. `make release` and `make release-check` script the release its
   alerts)
 - Gradle 9.9.2 → 9.9.3 (build only)
 
-**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.3.0...5.3.1
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.3.0...5.4.0
 
 ---
 
