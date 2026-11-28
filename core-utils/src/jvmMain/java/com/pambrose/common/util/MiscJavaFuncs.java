@@ -30,6 +30,11 @@ public class MiscJavaFuncs {
   }
 
   public static void sleepSecs(long time) {
+    // Checked before converting: the clamp below guards only positive overflow, and a large negative value
+    // overflows to 0 or to a huge positive sleep instead of reaching Thread.sleep's own negative check.
+    if (time < 0) {
+      throw new IllegalArgumentException("timeout value is negative");
+    }
     sleepMillis(Math.min(time, Long.MAX_VALUE / 1000) * 1000);
   }
 

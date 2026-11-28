@@ -245,13 +245,16 @@ fun List<String>.linesBetween(
 /**
  * Returns `true` if this trimmed [String] starts with [startChar] and ends with [endChar].
  *
+ * As with [isSingleQuoted], the trimmed string must be at least two characters long, so a single character is not
+ * bracketed even when [startChar] and [endChar] are the same.
+ *
  * @param startChar the expected opening character (default `'['`)
  * @param endChar the expected closing character (default `']'`)
  */
 fun String.isBracketed(
   startChar: Char = '[',
   endChar: Char = ']',
-) = trim().run { startsWith(startChar) && endsWith(endChar) }
+) = trim().run { length >= 2 && startsWith(startChar) && endsWith(endChar) }
 
 /**
  * Returns `true` if this [String] is not bracketed by [startChar] and [endChar].
@@ -316,7 +319,8 @@ fun String.trimEnds(len: Int = 1): String {
   // Checked explicitly because JS's substring swaps or clamps out-of-range indices instead of throwing.
   require(len >= 0) { "len must not be negative but was $len" }
   val trimmed = trim()
-  require(trimmed.length >= 2 * len) { "Cannot remove $len characters from each end of \"$trimmed\"" }
+  // Compared against half the length because 2 * len overflows to a negative Int for len >= 2^30.
+  require(len <= trimmed.length / 2) { "Cannot remove $len characters from each end of \"$trimmed\"" }
   return trimmed.substring(len, trimmed.length - len)
 }
 
