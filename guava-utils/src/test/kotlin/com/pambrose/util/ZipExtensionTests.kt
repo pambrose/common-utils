@@ -22,6 +22,7 @@ import com.pambrose.common.util.zip
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import java.io.EOFException
 import java.io.IOException
@@ -32,6 +33,7 @@ class ZipExtensionTests : StringSpec() {
     roundTripTests()
     inputFormatTests()
     maxBytesTests()
+    javaCallerTests()
   }
 
   private fun roundTripTests() {
@@ -148,6 +150,18 @@ class ZipExtensionTests : StringSpec() {
     // maxBytes limits what decompression produces; input that is not gzipped is returned as it is.
     "maxBytes does not limit input that is not gzipped" {
       "longer than the limit".toByteArray().unzip(maxBytes = 3) shouldBe "longer than the limit"
+    }
+  }
+
+  private fun javaCallerTests() {
+    // @JvmOverloads gives Java a no-arg form and a maxBytes form. Both must declare the checked IOException, or a Java
+    // caller cannot catch the ZipException or EOFException that corrupt input throws.
+    "both Java forms of unzip declare IOException" {
+      val facade = Class.forName("com.pambrose.common.util.ZipExtensionsKt")
+      val signatures = listOf(listOf(ByteArray::class.java), listOf(ByteArray::class.java, Long::class.java))
+      for (params in signatures) {
+        facade.getMethod("unzip", *params.toTypedArray()).exceptionTypes.toList() shouldContain IOException::class.java
+      }
     }
   }
 }

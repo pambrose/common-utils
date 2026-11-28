@@ -20,6 +20,7 @@ package com.pambrose.common.concurrent
 
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.Service
+import com.pambrose.common.dsl.GuavaDsl
 import io.github.oshai.kotlinlogging.KLogger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
@@ -28,6 +29,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import java.lang.reflect.Modifier
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -105,6 +107,7 @@ class GenericServicesTests : StringSpec() {
   init {
     syncFailureTests()
     serviceListenerTests()
+    serviceListenerTypeTests()
     startStopTests()
   }
 
@@ -193,6 +196,37 @@ class GenericServicesTests : StringSpec() {
       verify(exactly = 2) { logger.debug(capture(debugMessages)) }
       infoMessages.map { it() } shouldBe ["Running $service", "Terminated $service"]
       debugMessages.map { it() } shouldBe ["Starting $service", "Stopping $service"]
+    }
+  }
+
+  private fun serviceListenerTypeTests() {
+    // A caller holding the mutable ServiceListenerHelper could replace the logging callbacks after the fact.
+    "genericServiceListener is declared to return Service.Listener, not the mutable ServiceListenerHelper" {
+      Service::genericServiceListener.returnType.classifier shouldBe Service.Listener::class
+    }
+
+    // Code compiled against 5.3 links to the method returning ServiceListenerHelper, so it stays until 6.0.0. The
+    // Service.Listener method Kotlin resolves to must be synthetic, or Java would see two methods it cannot tell apart.
+    "the 5.3 genericServiceListener method is kept, and is the only one Java sees" {
+      val javaVisible =
+        Class
+          .forName("com.pambrose.common.concurrent.GenericServiceListenerKt")
+          .declaredMethods
+          .filter { it.name == "genericServiceListener" && !it.isSynthetic }
+      javaVisible.map { it.returnType } shouldBe [GuavaDsl.ServiceListenerHelper::class.java]
+      val method = javaVisible.single()
+      Modifier.isPublic(method.modifiers) shouldBe true
+      Modifier.isStatic(method.modifiers) shouldBe true
+      method.parameterTypes.toList() shouldBe [Service::class.java, KLogger::class.java]
+
+      val logger = mockk<KLogger>(relaxed = true)
+      val service = BlockingService()
+      service.addListener(method.invoke(null, service, logger) as Service.Listener, MoreExecutors.directExecutor())
+      service.startSync()
+      service.stopSync()
+
+      verify(exactly = 2, timeout = 5_000) { logger.info(any<() -> Any?>()) }
+      verify(exactly = 2) { logger.debug(any<() -> Any?>()) }
     }
   }
 

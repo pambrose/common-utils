@@ -20,6 +20,7 @@ package com.pambrose.common.concurrent
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.net.URLClassLoader
@@ -131,6 +132,15 @@ class ConcurrentExtensionsTests : StringSpec() {
       outcome.getGuarded().exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
       blockRan.load() shouldBe false
       semaphore.availablePermits() shouldBe 1
+    }
+
+    // withLock is not inline, so Java can call it, and it must declare the InterruptedException its acquire throws.
+    "semaphore with lock declares InterruptedException for Java callers" {
+      Class
+        .forName("com.pambrose.common.concurrent.ConcurrentUtils")
+        .getMethod("withLock", Semaphore::class.java, Function0::class.java)
+        .exceptionTypes
+        .toList() shouldContain InterruptedException::class.java
     }
   }
 

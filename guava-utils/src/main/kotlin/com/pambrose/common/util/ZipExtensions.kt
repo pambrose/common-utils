@@ -20,6 +20,7 @@ import com.google.common.io.ByteStreams
 import com.google.common.math.LongMath
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPInputStream.GZIP_MAGIC
@@ -73,10 +74,11 @@ fun ByteArray.isZipped() = size >= 2 && this[0] == GZIP_MAGIC.toByte() && this[1
  * @return the decompressed string content.
  * @throws IllegalArgumentException if the decompressed content is larger than [maxBytes], or [maxBytes] is
  *   negative.
- * @throws java.io.IOException if the data has a GZIP header but is corrupt or truncated, such as a
- *   `java.util.zip.ZipException` or `java.io.EOFException`.
+ * @throws IOException if the data has a GZIP header but is corrupt or truncated, such as a
+ *   `java.util.zip.ZipException` or `java.io.EOFException`. Both Java forms declare it.
  */
 @JvmOverloads
+@Throws(IOException::class)
 fun ByteArray.unzip(maxBytes: Long = Long.MAX_VALUE): String {
   require(maxBytes >= 0) { "maxBytes must not be negative, but was $maxBytes" }
   return when {

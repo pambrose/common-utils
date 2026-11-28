@@ -4,17 +4,20 @@ package com.pambrose.common.concurrent
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import java.time.Duration as JavaDuration
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
+import kotlin.time.toKotlinDuration
 
 // A monitor whose guard throws, to check that the guard's own exception reaches the caller.
 private class ThrowingMonitor : GenericMonitor() {
@@ -73,6 +76,7 @@ class GenericMonitorTests : StringSpec() {
     interruptTests()
     retryBlockTests()
     throwingGuardTests()
+    javaDurationTests()
   }
 
   private fun blockingWaitTests() {
@@ -474,6 +478,76 @@ class GenericMonitorTests : StringSpec() {
         monitor.isHeldByCurrentThread shouldBe true
       }
       monitor.isHeldByCurrentThread shouldBe false
+    }
+  }
+
+  // The Kotlin Duration waits compile under mangled names (waitUntilTrueWithInterruption-LRDsOJo) that Java cannot
+  // call, so Java callers use the java.time.Duration overloads.
+  private fun javaDurationTests() {
+    "Java callers get waitUntilTrueWithInterruption overloads that declare InterruptedException" {
+      val signatures =
+        listOf(
+          listOf(JavaDuration::class.java),
+          listOf(JavaDuration::class.java, Function0::class.java),
+          listOf(JavaDuration::class.java, JavaDuration::class.java, Function0::class.java),
+        )
+      for (params in signatures) {
+        GenericMonitor::class.java
+          .getMethod("waitUntilTrueWithInterruption", *params.toTypedArray())
+          .exceptionTypes
+          .toList() shouldContain InterruptedException::class.java
+      }
+    }
+
+    "the java.time.Duration timed wait returns whether the condition held in time" {
+      BooleanMonitor(true).waitUntilTrueWithInterruption(JavaDuration.ofMillis(50)) shouldBe true
+      BooleanMonitor(false).waitUntilTrueWithInterruption(JavaDuration.ofMillis(50)) shouldBe false
+    }
+
+    "the java.time.Duration retrying waits call the block after each attempt and stop at maxWait" {
+      var retries = 0
+      BooleanMonitor(false).waitUntilTrueWithInterruption(JavaDuration.ofMillis(10)) { ++retries < 3 } shouldBe false
+      retries shouldBe 3
+
+      // Each attempt would wait an hour, so returning within the hang guard shows maxWait cut the wait short.
+      val monitor = BooleanMonitor(false)
+      val (_, outcome) =
+        inDaemonThread {
+          monitor.waitUntilTrueWithInterruption(JavaDuration.ofHours(1), JavaDuration.ofMillis(200), null)
+        }
+      outcome.getGuarded() shouldBe false
+
+      // Java has no Duration.INFINITE, so the KDoc points Java callers at a maxWait too long to convert, which waits
+      // without limit rather than logging the negative-maxWait deprecation warning.
+      JavaDuration.ofSeconds(Long.MAX_VALUE).toKotlinDuration() shouldBe Duration.INFINITE
+    }
+
+    "the java.time.Duration retrying waits reject a timeout below 1 ms" {
+      val monitor = BooleanMonitor(false)
+      shouldThrow<IllegalArgumentException> { monitor.waitUntilTrueWithInterruption(JavaDuration.ZERO) { true } }
+      shouldThrow<IllegalArgumentException> {
+        monitor.waitUntilTrueWithInterruption(JavaDuration.ofNanos(500_000), JavaDuration.ofSeconds(1), null)
+      }
+    }
+
+    "the java.time.Duration waits throw InterruptedException when interrupted while waiting" {
+      val waits: List<InspectableMonitor.() -> Boolean> =
+        [
+          { waitUntilTrueWithInterruption(JavaDuration.ofHours(1)) },
+          { waitUntilTrueWithInterruption(JavaDuration.ofHours(1), JavaDuration.ofDays(1), null) },
+          { waitUntilTrueWithInterruption(JavaDuration.ofHours(1)) { true } },
+        ]
+
+      for (waitFor in waits) {
+        val monitor = InspectableMonitor()
+        val (waiter, outcome) = waitOnDaemonThread { monitor.waitFor() }
+
+        waiter.awaitParked()
+        waiter.interrupt()
+
+        outcome.getGuarded().result.exceptionOrNull().shouldBeInstanceOf<InterruptedException>()
+        monitor.isOccupied shouldBe false
+      }
     }
   }
 }
