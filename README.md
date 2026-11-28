@@ -209,9 +209,9 @@ This library is available on [Maven Central](https://central.sonatype.com/artifa
 ```kotlin
 dependencies {
     // Include specific modules as needed
-  implementation("com.pambrose.common-utils:core-utils:5.3.0")
-  implementation("com.pambrose.common-utils:json-utils:5.3.0")
-  implementation("com.pambrose.common-utils:ktor-server-utils:5.3.0")
+  implementation("com.pambrose.common-utils:core-utils:5.3.1")
+  implementation("com.pambrose.common-utils:json-utils:5.3.1")
+  implementation("com.pambrose.common-utils:ktor-server-utils:5.3.1")
     // ... other modules
 }
 ```
@@ -221,7 +221,7 @@ declared without one:
 
 ```kotlin
 dependencies {
-  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.3.0"))
+  implementation(platform("com.pambrose.common-utils:common-utils-bom:5.3.1"))
   implementation("com.pambrose.common-utils:core-utils")
   implementation("com.pambrose.common-utils:service-utils")
 }
@@ -238,7 +238,7 @@ root coordinate automatically. The JVM-only modules keep their plain artifact id
     <dependency>
         <groupId>com.pambrose.common-utils</groupId>
         <artifactId>core-utils-jvm</artifactId>
-      <version>5.3.0</version>
+      <version>5.3.1</version>
     </dependency>
     <!-- Add other modules as needed -->
 </dependencies>
@@ -253,7 +253,7 @@ artifacts too):
         <dependency>
             <groupId>com.pambrose.common-utils</groupId>
             <artifactId>common-utils-bom</artifactId>
-            <version>5.3.0</version>
+            <version>5.3.1</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -264,7 +264,7 @@ artifacts too):
 ## Technology Stack
 
 - **Languages**: Kotlin 2.4.21, Java
-- **Build System**: Gradle 9.9.2 with Kotlin DSL
+- **Build System**: Gradle 9.9.3 with Kotlin DSL
 - **Testing**: Kotest, MockK
 - **Serialization**: Kotlinx.serialization
 - **Concurrency**: Kotlin Coroutines, Guava

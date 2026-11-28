@@ -5,6 +5,54 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ---
 
+## v5.3.1 — 2026-11-27
+
+A patch release of dependency updates. There are no API changes. grpc 1.86.0 switches channels to the rewritten
+pick-first load balancer, Jedis 8.1.0 adds Redis 8.12 commands, and Ktor 3.6.2 brings bug fixes. `make release`
+and `make release-check` script the release itself.
+
+### Highlights
+
+- **grpc 1.86.0**: grpc-utils exports `grpc-stub` and `grpc-netty` as `api`. Channels use the rewritten pick-first
+  load balancer by default (gRFC A62, with A61's dual-stack support), unary and server-streaming calls defer
+  deserializing the request until the client half-closes, and Netty gets transport fixes
+  ([1.86.0](https://github.com/grpc/grpc-java/releases/tag/v1.86.0)).
+- **Jedis 8.1.0**: redis-utils exports Jedis as `api`. It adds the Redis 8.12 commands (`ZMOVE`, `BITRANGEINTARRAY`,
+  set member expiration and the `BLESS` family) and Smart Client Handoffs
+  ([8.1.0](https://github.com/redis/jedis/releases/tag/v8.1.0)).
+- **Ktor 3.6.2**: bug fixes for the client, the server and CIO, which ktor-client-utils, ktor-server-utils,
+  recaptcha-utils and email-utils export as `api` ([3.6.2](https://github.com/ktorio/ktor/releases/tag/3.6.2)).
+- **Release targets**: `make release-check` fails unless the checkout is fit to publish its version, checking the
+  version files, the git state, CI and Maven Central. `make release` runs it, then every check, asks, publishes to
+  Maven Central and tags the commit.
+- **JS toolchain alerts closed**: `glob` and `minimatch` are pinned to patched versions in the JS test toolchain,
+  closing two Dependabot alerts. Build only, with no effect on consumers.
+
+### Behavior changes
+
+- **Pick-first load balancing**: a grpc-utils channel that uses the default pick-first policy now runs grpc's
+  rewritten implementation, which follows gRFCs A62 and A61 (pick-first improvements and dual-stack support).
+- **Smart Client Handoffs on RESP3**: a redis-utils client built from a URL with `?protocol=3` reacts to the
+  maintenance notifications Redis Cloud and Redis Software send, with relaxed timeouts and early reconnects. Clients
+  on RESP2, the default, are unchanged.
+- **Truncated streamed responses fail**: the Ktor client fails on a streamed response that ends before its declared
+  length instead of reading it as complete (KTOR-6905).
+- **Jedis pipeline read failures**: `Pipeline.sync()` reports a read failure to the caller.
+
+### Dependency bumps
+
+- `grpc` 1.85.1 → 1.86.0 (`netty-tcnative-boringssl-static` 2.0.86.Final stays ahead of the 2.0.81.Final it pins)
+- `jedis` 8.0.2 → 8.1.0
+- `ktor` 3.6.1 → 3.6.2 (bug fixes)
+- `resend` 4.31.0 → 4.32.0 (filters received emails by recipient and date)
+- `glob` 10.5.0 → 14.0.2 and `minimatch` 9.0.9 → 11.0.1 in the JS toolchain (build only; closes two Dependabot
+  alerts)
+- Gradle 9.9.2 → 9.9.3 (build only)
+
+**Full Changelog**: https://github.com/pambrose/common-utils/compare/5.3.0...5.3.1
+
+---
+
 ## v5.3.0 — 2026-11-23
 
 A minor, binary-compatible release. A service-utils service can run inside a host application without registering a
