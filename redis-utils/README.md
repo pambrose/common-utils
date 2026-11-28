@@ -25,8 +25,9 @@ without handling connection failures yourself, and scan keys lazily.
 ### Connection URLs
 
 Every function that creates a client takes a Redis URL such as `redis://user:password@host:port`, or
-`rediss://...` for TLS, matched case-insensitively. It defaults to the `REDIS_URL` environment variable, or
-`redis://user:none@localhost:6379` when that is unset.
+`rediss://...` for TLS, matched case-insensitively. No other scheme is accepted: any other one, including a TLS
+spelling such as `tls://` or `redis+tls://`, throws rather than connecting without TLS. The URL defaults to the
+`REDIS_URL` environment variable, or `redis://user:none@localhost:6379` when that is unset.
 
 The whole URL is read, not just the host and port:
 
@@ -38,13 +39,15 @@ The whole URL is read, not just the host and port:
 
 The password is sent only when it is a real one: a blank password and the placeholder `none` both count as no
 password. The user is sent only alongside a real password, and only when the name itself is a real one — not
-blank, `default` or `user`.
+blank, `default` or `user`. Percent-escapes in either are decoded after the userinfo is split at its first `:`, so
+`tenant%3Aalice:secret` is the user `tenant:alice`, and a literal `+` stays a `+`.
 
 A URL without a port connects to 6379. A URL that can never work throws `IllegalArgumentException` from every
 function that takes one, before any block runs; it is a configuration error, not a connection failure, so it does
 not take the `null` path described below. That covers a malformed URL, one with no host (such as
-`localhost:6379`, which parses as the scheme `localhost`), a non-numeric database index and an unknown
-`protocol`. The message of a malformed-URL exception leaves out the URL, which may hold a password.
+`localhost:6379`, which parses as the scheme `localhost`), a scheme other than `redis` or `rediss`, a port that is
+not a number from 1 to 65535, a non-numeric database index and an unknown `protocol`. Apart from the last two,
+whose messages quote the offending value, these messages leave out the URL, which may hold a password.
 
 ### Short-lived Clients
 

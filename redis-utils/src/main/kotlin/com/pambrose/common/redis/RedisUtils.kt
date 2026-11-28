@@ -19,6 +19,8 @@ package com.pambrose.common.redis
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URI
 import java.net.URISyntaxException
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -41,9 +43,16 @@ import redis.clients.jedis.util.JedisURIHelper
  * Pool sizing and wait time can be configured via system properties or method parameters.
  * The default Redis URL is read from the `REDIS_URL` environment variable.
  *
- * A URL without a port uses 6379. A URL that can never work (one that is malformed, has no host, or carries a
- * non-numeric database index or an unknown `protocol`) is a configuration error: every function that takes a URL
- * throws [IllegalArgumentException] for it, rather than treating it as a connection failure.
+ * Only the `redis` and `rediss` (TLS) schemes are accepted, in any case. Any other scheme, including TLS spellings
+ * such as `tls` or `redis+tls`, is rejected rather than connecting without TLS.
+ *
+ * A URL without a port uses 6379. A URL that can never work (one that is malformed, has no host, has another scheme
+ * or a port that is not a number from 1 to 65535, or carries a non-numeric database index or an unknown `protocol`)
+ * is a configuration error: every function that takes a URL throws [IllegalArgumentException] for it, rather than
+ * treating it as a connection failure.
+ *
+ * Percent-escapes in the user name and password are decoded after the user info is split at its first `:`, so an
+ * escaped `%3A` stays in the user name, and a literal `+` stays a `+`.
  */
 object RedisUtils {
   private val logger = KotlinLogging.logger {}
@@ -67,6 +76,10 @@ object RedisUtils {
   private const val PLACEHOLDER_PASSWORD = "none"
 
   private const val FAILED_TO_CONNECT_MSG = "Failed to connect to redis"
+
+  private const val INVALID_PORT_MSG = "Redis URL port must be a number from 1 to 65535"
+
+  private val validPorts = 1..65535
 
   // The exception's message says why (refused, timed out, bad credentials, pool exhausted) and holds no secrets, so
   // it is logged even without the stack trace.
@@ -103,7 +116,9 @@ object RedisUtils {
       get() = user.isNotBlank() && user != "default" && user != "user" && hasRealPassword
   }
 
-  // A URL that can never work is rejected here, rather than becoming a client whose every connection fails.
+  // A URL that can never work is rejected here, rather than becoming a client whose every connection fails. No
+  // message repeats any part of the URL, not even the port: an unescaped '/' in a password ends the authority, so
+  // what java.net.URI reports as the host or port can be the start of the password.
   private fun urlDetails(redisUrl: String): RedisInfo {
     val uri =
       try {
@@ -113,18 +128,40 @@ object RedisUtils {
         throw IllegalArgumentException("Malformed Redis URL: ${e.reason} at index ${e.index}")
       }
     // Without a host, as in localhost:6379 (read as scheme "localhost"), Jedis would silently connect to loopback.
-    // java.net.URI also reports no host for a name it cannot parse as one, such as redis_cache (an underscore is
-    // legal in a Docker Compose service name but not in a URI host), which gets its own message.
-    require(!uri.host.isNullOrBlank()) {
-      // The authority's host part: after any userinfo, before any port.
-      if (uri.rawAuthority.orEmpty().substringAfterLast('@').substringBeforeLast(':').isBlank())
-        "Redis URL has no host"
-      else
-        "Redis URL host could not be parsed; host names may contain only letters, digits, '-' and '.'"
+    require(!uri.host.isNullOrBlank()) { hostlessUrlMessage(uri) }
+    // clientConfig() enables TLS only for rediss, so any other scheme, such as tls, redis+tls or a misspelled
+    // rediss, would send the credentials in plaintext.
+    require(JedisURIHelper.isRedisScheme(uri) || JedisURIHelper.isRedisSSLScheme(uri)) {
+      "Redis URL scheme must be redis or rediss"
     }
-    val userInfo = uri.userInfo?.split(":", limit = 2).orEmpty()
+    // URI accepts any port that fits in an Int, and Jedis would fail only on connecting. -1 means no port.
+    require(uri.port == -1 || uri.port in validPorts) { INVALID_PORT_MSG }
+    // Split before decoding, as JedisURIHelper does: userInfo is already decoded, so an escaped ':' (%3A) in the
+    // user name would split it.
+    val userInfo = uri.rawUserInfo?.split(":", limit = 2).orEmpty().map(::decodeUserInfo)
     return RedisInfo(uri, userInfo.getOrElse(0) { "" }, userInfo.getOrElse(1) { "" })
   }
+
+  // java.net.URI reports no host when there is none, and also when it cannot parse the authority as host[:port]:
+  // for a name such as redis_cache (an underscore is legal in a Docker Compose service name but not in a URI host),
+  // and for a port that is not a number or does not fit in an Int. Each gets its own message.
+  private fun hostlessUrlMessage(uri: URI): String {
+    // The authority's host and port: after any userinfo. The host is what precedes the last ':'.
+    val hostAndPort = uri.rawAuthority.orEmpty().substringAfterLast('@')
+    val port = hostAndPort.substringAfterLast(':', missingDelimiterValue = "")
+    return when {
+      hostAndPort.substringBeforeLast(':').isBlank() -> "Redis URL has no host"
+      port.isNotEmpty() && !port.isValidPort() -> INVALID_PORT_MSG
+      else -> "Redis URL host could not be parsed; host names may contain only letters, digits, '-' and '.'"
+    }
+  }
+
+  // URI accepts only ASCII digits in a port, whereas toIntOrNull() also accepts a sign.
+  private fun String.isValidPort() = all { it in '0'..'9' } && toIntOrNull() in validPorts
+
+  // Decodes as JedisURIHelper does: a URI keeps a literal '+', which URLDecoder alone would turn into a space. The
+  // URI constructor has already rejected a malformed escape, so this cannot throw.
+  private fun decodeUserInfo(raw: String): String = URLDecoder.decode(raw.replace("+", "%2B"), UTF_8)
 
   // URI reports a missing port as -1, which Jedis would try to connect to.
   private val URI.hostAndPort: HostAndPort get() = HostAndPort(host, port.takeUnless { it == -1 } ?: DEFAULT_PORT)
