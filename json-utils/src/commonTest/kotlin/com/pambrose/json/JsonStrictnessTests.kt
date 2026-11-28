@@ -18,6 +18,7 @@
 
 package com.pambrose.json
 
+import com.pambrose.common.json.doubleValue
 import com.pambrose.common.json.get
 import com.pambrose.common.json.intValue
 import com.pambrose.common.json.intValueOrNull
@@ -27,19 +28,29 @@ import com.pambrose.common.json.parseJson
 import com.pambrose.common.json.reformatJson
 import com.pambrose.common.json.toFormattedString
 import com.pambrose.common.json.toJsonElement
+import com.pambrose.common.json.toJsonString
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 
 // Pins the strict-parsing and integer-accessor rules on every platform. kotlinx's tree parser accepts any unquoted
 // token as a literal, and each platform's number parsing accepts different extras, so without these screens the same
 // input gave different results on the JVM, JS and native.
 class JsonStrictnessTests : StringSpec() {
   init {
+    parsingTests()
+    integerAccessorTests()
+    errorMessageAndIndentTests()
+    nonFiniteNumberTests()
+  }
+
+  private fun parsingTests() {
     "parseJson rejects unquoted tokens that are not JSON literals" {
       listOf("hello", "[1, two, 3]", """{"b": 007}""", "[+3]", "[0x10]", "[.5]", "[1.5f]").forEach { text ->
         shouldThrow<SerializationException> { text.parseJson() }
@@ -67,7 +78,9 @@ class JsonStrictnessTests : StringSpec() {
     "the deprecated String.toJsonElement still parses JSON text" {
       "42".toJsonElement() shouldBe JsonPrimitive(42)
     }
+  }
 
+  private fun integerAccessorTests() {
     "intValue and intValueOrNull accept only JSON integers" {
       val json = """{"n": -12, "q": "42", "lead": "007", "plus": "+5", "arabic": "١٢", "big": 3000000000}""".parseJson()
       json.intValue("n") shouldBe -12
@@ -90,7 +103,9 @@ class JsonStrictnessTests : StringSpec() {
       """{"n": null}""".parseJson().longValueOrNull("n") shouldBe null
       shouldThrow<NumberFormatException> { json.longValue("over") }
     }
+  }
 
+  private fun errorMessageAndIndentTests() {
     "a missing key names the key and the keys present, never the document's content" {
       val json = """{"a": {"secret": "s3cr3t-value", "other": 1}}""".parseJson()
       val message = shouldThrow<IllegalArgumentException> { json["a", "missing"] }.message.orEmpty()
@@ -109,6 +124,39 @@ class JsonStrictnessTests : StringSpec() {
       json.toFormattedString("\t") shouldBe "{\n\t\"a\": 1\n}"
       json.toFormattedString("    ") shouldBe "{\n    \"a\": 1\n}"
       shouldThrow<IllegalArgumentException> { json.toFormattedString("--") }
+    }
+  }
+
+  // JSON cannot represent NaN or an infinity. parseJson keeps the tokens kotlinx writes for them, and a number such as
+  // 1e500 that overflows a Double, but the encoders keep kotlinx's allowSpecialFloatingPointValues = false, so
+  // re-encoding one throws on every platform instead of writing invalid JSON.
+  private fun nonFiniteNumberTests() {
+    "reformatJson throws for non-finite and overflowing numbers" {
+      listOf("[NaN, Infinity, -Infinity]", """{"a": NaN}""", "[Infinity]", "[-Infinity]", "[1e500]", "[-1e500]")
+        .forEach { text ->
+          withClue(text) {
+            shouldThrow<SerializationException> { text.reformatJson() }
+            shouldThrow<SerializationException> { text.reformatJson(prettyPrint = false) }
+          }
+        }
+    }
+
+    "toFormattedString and toJsonString throw for non-finite numbers too" {
+      val parsed = "[1, NaN, 1e500]".parseJson()
+      shouldThrow<SerializationException> { parsed.toFormattedString() }
+      shouldThrow<SerializationException> { parsed.toJsonString(prettyPrint = false) }
+      shouldThrow<SerializationException> { Double.NaN.toJsonString() }
+      shouldThrow<SerializationException> { Double.NEGATIVE_INFINITY.toJsonString(prettyPrint = false) }
+    }
+
+    "parseJson keeps non-finite and overflowing numbers, and toString writes them back as read" {
+      val parsed = "[NaN, Infinity, -Infinity, 1e500]".parseJson()
+      parsed.toString() shouldBe "[NaN,Infinity,-Infinity,1e500]"
+      parsed.jsonArray[3].doubleValue shouldBe Double.POSITIVE_INFINITY
+    }
+
+    "a large finite number still reformats" {
+      "[1e308, -1e308]".reformatJson(false).parseJson().jsonArray.map { it.doubleValue } shouldBe [1e308, -1e308]
     }
   }
 }

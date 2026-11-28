@@ -29,7 +29,12 @@ fun JsonBuilder.defaultJsonConfig() {
   prettyPrintIndent = "  "
 }
 
-/** Pre-configured [Json] instances for common serialization scenarios. */
+/**
+ * Pre-configured [Json] instances for common serialization scenarios.
+ *
+ * None of them sets `allowSpecialFloatingPointValues`, so, as with kotlinx's defaults, encoding `NaN` or an infinity
+ * throws a [kotlinx.serialization.SerializationException] rather than writing invalid JSON.
+ */
 object JsonContentUtils {
   /** Pretty-printed JSON with defaults encoded. */
   val prettyFormat by lazy {

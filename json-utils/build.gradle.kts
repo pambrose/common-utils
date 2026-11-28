@@ -14,7 +14,11 @@ kotlin {
             api(project(":core-utils"))
             // JsonElement and the kotlinx.serialization types appear throughout the public API.
             api(libs.kotlinx.serialization.json)
-            implementation(libs.kotlin.logging)
+            // KLogger is in the public API through the deprecated JsonElementUtils.logger. As `implementation`, a
+            // consumer's commonMain, JS and wasmJs code could not compile a call to it; only the JVM (through
+            // core-utils) and native targets saw the type. Return it to `implementation` when 6.0.0 removes
+            // JsonElementUtils.
+            api(libs.kotlin.logging)
         }
         commonTest.dependencies {
             implementation(libs.kotest.assertions.core)
