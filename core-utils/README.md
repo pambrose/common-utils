@@ -64,8 +64,9 @@ so neither splits an emoji; `maxLength` can therefore return one character fewer
 `trimEnds` throw `IllegalArgumentException` for a negative length, and `trimEnds` also throws when the trimmed string
 is shorter than twice the length it removes.
 
-`maskUrlCredentials()` masks only credentials inside the authority — an `@` between `://` and the first `/`, `?`
-or `#` — so an `@` in a path, query or fragment is left alone. Credentials must be percent-encoded as RFC 3986
+`maskUrlCredentials()` masks only credentials inside the authority — an `@` between `://` and the first `/`, `?`,
+`#`, whitespace, or the next `://` — so an `@` in a path, query or fragment is left alone, and every URL in the string
+is masked, even when only a comma or a quote separates them. Credentials must be percent-encoded as RFC 3986
 requires; an unencoded `/`, `?` or `#` in a password ends the authority early.
 
 `pathOf(...)` and `List<String>.toPath()` skip empty elements and strip a leading separator from every element
@@ -260,9 +261,13 @@ compatibility. All of the hardening is on the read side. `toObjectSecure` deseri
 allow-list, which avoids the deserialization gadget risk that the deprecated `toObject()` carries.
 
 The allow-list is required and must be non-empty, and it has to name every class in the stream, including
-superclasses (an `Integer` also needs `Number`). A blocklist is checked first and rejects `java.lang.Runtime`,
-`java.lang.Process` and `java.lang.ProcessBuilder`, plus anything under `java.rmi.`, `javax.management.` or the
-Commons Collections `functors` packages, even when allow-listed. A JEP 290 `ObjectInputFilter` bounds the stream
+superclasses (an `Integer` also needs `Number`). Class names are checked before any class is loaded. A blocklist is
+checked first and rejects `java.lang.Runtime`, `java.lang.Process` and `java.lang.ProcessBuilder`, plus anything under
+`java.rmi.`, `javax.management.` or the Commons Collections `functors` packages, and arrays of any of them, even when
+allow-listed. A dynamic proxy is read only when `java.lang.reflect.Proxy`, its invocation handler's class and every
+interface it implements are allow-listed and none is blocklisted. Strings nested in an allow-listed object need no
+entry, but a top-level `String` (or `Class` or `ObjectStreamClass`) result does: reading back a serialized `String`
+takes `setOf(String::class.java)`. A JEP 290 `ObjectInputFilter` bounds the stream
 as well — at most 20 levels of nesting, and no array length or object-reference count larger than the payload's
 size in bytes — and is merged with any JVM-wide `jdk.serialFilter` rather than replacing it. The serialized input
 itself is capped at 10 MB. Allow-list hash-based collections (`HashSet`, `HashMap`, `Hashtable`) sparingly for
@@ -283,8 +288,9 @@ val verified = withSum.verifyChecksum()
 ```
 
 `toObjectSecure` throws `IllegalArgumentException` for an empty allow-list, `SecurityException` for an oversized
-payload or a blocklisted or non-allow-listed class, and `InvalidClassException` when the depth or array-length
-limits are exceeded.
+payload or a blocklisted or non-allow-listed class, `InvalidClassException` when the depth or array-length
+limits are exceeded, and `ClassCastException` when the result is not an `expectedClass`, a serialized `null`
+included.
 
 ### Content Sources (JVM)
 

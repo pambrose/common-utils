@@ -7,12 +7,26 @@ Release details are sourced from [GitHub Releases](https://github.com/pambrose/c
 
 ## v5.3.1 — 2026-11-27
 
-A patch release of dependency updates. There are no API changes. grpc 1.86.0 switches channels to the rewritten
-pick-first load balancer, Jedis 8.1.0 adds Redis 8.12 commands, and Ktor 3.6.2 brings bug fixes. `make release`
-and `make release-check` script the release itself.
+A patch release with security fixes and dependency updates. There are no API changes, but several functions now
+reject input they used to accept. `HerokuHttpsRedirect` no longer allows an open redirect, `toObjectSecure` closes
+four ways around its allow-list, and redis-utils refuses URLs that would have connected without TLS. grpc 1.86.0
+switches channels to the rewritten pick-first load balancer, Jedis 8.1.0 adds Redis 8.12 commands, and Ktor 3.6.2
+brings bug fixes. `make release` and `make release-check` script the release itself.
 
 ### Highlights
 
+- **Security fixes**: the seven items in phase 1 of the November code review (`docs/CODE_REVIEW_2026-11-27.md`).
+  - **Open redirect** (high): with `host` set, `HerokuHttpsRedirect` turned `GET @evil.example/phish` into a redirect to
+    `https://<host>@evil.example/phish`, which a browser opens on evil.example. Such targets now get
+    `400 Bad Request`.
+  - **`toObjectSecure`**: checks each class name before loading it, rejects arrays of blocklisted classes and dynamic
+    proxies whose interfaces are not allowed, and checks a top-level `String`, `Class` or `ObjectStreamClass`.
+  - **`maskUrlCredentials`**: masks every URL in CSV or compact JSON, not just the first of two URLs separated by a
+    comma or quote.
+  - **Jetty error pages**: the admin and metrics servers show only the status, not the servlet name or the
+    exception.
+  - **Redis URLs**: only `redis` and `rediss` are accepted, so `tls://` no longer connects in plaintext, and an
+    escaped `:` stays in the user name.
 - **grpc 1.86.0**: grpc-utils exports `grpc-stub` and `grpc-netty` as `api`. Channels use the rewritten pick-first
   load balancer by default (gRFC A62, with A61's dual-stack support), unary and server-streaming calls defer
   deserializing the request until the client half-closes, and Netty gets transport fixes
@@ -30,6 +44,16 @@ and `make release-check` script the release itself.
 
 ### Behavior changes
 
+- **`HerokuHttpsRedirect` returns 400** for a request target that is neither `/path?query` nor an absolute
+  `http://` or `https://` URI, and, when `host` is not set, for a request whose host is not a host name or IP
+  literal. An absolute-form target now redirects to its own path and query. A configured `host` that is not a host
+  name or IP literal (with an optional port) makes `install` throw. Set `host` unless an upstream router only
+  forwards requests for your own domains.
+- **`toObjectSecure` rejects more**: a name that is not allow-listed gets `SecurityException` even when the class
+  does not exist (it used to be `ClassNotFoundException`), and reading a top-level `String`, `Class` or
+  `ObjectStreamClass` needs that class in `allowedClasses`. A serialized `null` throws `ClassCastException`.
+- **Redis URLs**: any scheme but `redis` or `rediss`, and a port outside 1-65535, throw `IllegalArgumentException`
+  before anything connects.
 - **Pick-first load balancing**: a grpc-utils channel that uses the default pick-first policy now runs grpc's
   rewritten implementation, which follows gRFCs A62 and A61 (pick-first improvements and dual-stack support).
 - **Smart Client Handoffs on RESP3**: a redis-utils client built from a URL with `?protocol=3` reacts to the

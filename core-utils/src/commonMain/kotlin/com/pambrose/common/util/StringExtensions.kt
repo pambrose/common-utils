@@ -388,15 +388,18 @@ fun String.asRegex(ignoreCase: Boolean = false) =
  */
 fun pathOf(vararg elems: Any): String = elems.toList().map { it.toString() }.filter { it.isNotEmpty() }.join("/")
 
+// Only the characters that end an authority for URL parsers. Lenient ones (MongoDB's, libpq's) accept a raw ", ', <,
+// >, { or } in a password, so ending the authority at one of those would leave such a password visible.
 private val AUTHORITY_TERMINATORS = charArrayOf('/', '?', '#')
 
 /**
  * Masks username and password in every URL in a string, replacing them with `*****`.
  *
  * For example, the credentials in `"https://user:pass@host.com"` become `*****:*****`, and in a log line holding
- * several URLs each one is masked. Only an `@` inside an authority (between `://` and the first `/`, `?`, `#` or
- * whitespace) separates credentials, so an `@` in the path, query, or fragment is left alone. Credentials must be
- * percent-encoded as RFC 3986 requires: an unencoded `/`, `?`, `#` or space in a password ends the authority early.
+ * several URLs each one is masked, whatever separates them. Only an `@` inside an authority (between `://` and the
+ * first `/`, `?`, `#`, whitespace, or the next `://`) separates credentials, so an `@` in the path, query, or fragment
+ * is left alone. Credentials must be percent-encoded as RFC 3986 requires: an unencoded `/`, `?`, `#` or space in a
+ * password ends the authority early.
  *
  * @return the string with masked credentials, or the original string if no credentials are present
  */
@@ -406,15 +409,18 @@ fun String.maskUrlCredentials(): String {
   var schemeEnd = indexOf("://")
   while (schemeEnd != -1) {
     val authorityStart = schemeEnd + 3
+    // The next URL bounds this authority, so a URL with no path cannot run on into the next one and hide it
+    val nextSchemeEnd = indexOf("://", authorityStart)
+    val scanEnd = if (nextSchemeEnd == -1) length else nextSchemeEnd
     val authorityEnd =
-      (authorityStart until length).firstOrNull { this[it] in AUTHORITY_TERMINATORS || this[it].isWhitespace() }
-        ?: length
+      (authorityStart until scanEnd).firstOrNull { this[it] in AUTHORITY_TERMINATORS || this[it].isWhitespace() }
+        ?: scanEnd
     val at = lastIndexOf('@', authorityEnd - 1)
     if (at >= authorityStart) {
       masked.append(substring(copied, authorityStart)).append("*****:*****")
       copied = at
     }
-    schemeEnd = indexOf("://", authorityEnd)
+    schemeEnd = nextSchemeEnd
   }
   return if (copied == 0) this else masked.append(substring(copied)).toString()
 }

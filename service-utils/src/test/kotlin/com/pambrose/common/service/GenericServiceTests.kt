@@ -55,11 +55,16 @@ import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import io.prometheus.metrics.model.registry.Collector
 import io.prometheus.metrics.model.registry.PrometheusRegistry
 import io.prometheus.metrics.model.snapshots.CounterSnapshot
+import jakarta.servlet.http.HttpServlet
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.PrintStream
 import java.lang.management.ManagementFactory
 import java.net.Inet4Address
@@ -216,6 +221,45 @@ private fun checkEndpoints(
   httpGet(service.metricsService.boundPort, "/metrics").apply {
     statusCode() shouldBe 200
     body() shouldContain metricName
+  }
+}
+
+private const val FAILURE_MESSAGE = "secret-failure-detail"
+private const val FAILURE_CAUSE = "secret-cause-detail"
+
+// The exception the failing endpoints throw, with a distinctive message and cause that must not reach a 500 page.
+private fun failure() = IllegalStateException(FAILURE_MESSAGE, IOException(FAILURE_CAUSE))
+
+// A servlet whose every GET fails.
+private class FailingServlet : HttpServlet() {
+  override fun doGet(
+    req: HttpServletRequest,
+    resp: HttpServletResponse,
+  ): Unit = throw failure()
+}
+
+// The Accept headers that select each format of an error page: none (HTML), plain text, and JSON.
+private val errorPageAcceptHeaders =
+  listOf(emptyMap(), mapOf("Accept" to "text/plain"), mapOf("Accept" to "application/json"))
+
+// Requests path in every error page format and checks that each response has status and shows reason, but names
+// nothing internal in any case: not Jetty, a servlet, an exception class or its cause, nor any of secrets.
+private fun checkErrorPages(
+  port: Int,
+  path: String,
+  status: Int,
+  reason: String,
+  vararg secrets: String,
+) {
+  val forbidden = listOf("jetty", "servlet", "exception", "caused by", "com.pambrose") + secrets.map { it.lowercase() }
+  errorPageAcceptHeaders.forEach { headers ->
+    httpGet(port, path, headers).apply {
+      withClue("Accept ${headers["Accept"] ?: "absent"}, body:\n${body()}") {
+        statusCode() shouldBe status
+        body() shouldContain reason
+        forbidden.forEach { body().lowercase() shouldNotContain it }
+      }
+    }
   }
 }
 
@@ -376,6 +420,7 @@ class GenericServiceTests : StringSpec() {
     initGuardTests()
     servletInitTests()
     serverExposureTests()
+    errorPageTests()
     shutdownHookTests()
     optionalShutdownHookTests()
     lifecycleLoggingTests()
@@ -797,16 +842,13 @@ class GenericServiceTests : StringSpec() {
   }
 
   private fun serverExposureTests() {
-    "the Jetty admin and metrics servers do not reveal the Jetty version" {
+    "the Jetty admin and metrics servers reveal neither the Jetty version nor their servlets on a 404 page" {
       TestJettyService(admin = enabledAdmin(), metrics = enabledMetrics()).use { service ->
         service.startSync()
         listOf(service.adminPort, service.metricsService.boundPort).forEach { port ->
           httpGet(port, "/ping").headers().firstValue("Server").isPresent shouldBe false
-          httpGet(port, "/no-such-endpoint").apply {
-            statusCode() shouldBe 404
-            headers().firstValue("Server").isPresent shouldBe false
-            body() shouldNotContain "Jetty"
-          }
+          httpGet(port, "/no-such-endpoint").headers().firstValue("Server").isPresent shouldBe false
+          checkErrorPages(port, "/no-such-endpoint", 404, "Not Found")
         }
       }
     }
@@ -845,6 +887,31 @@ class GenericServiceTests : StringSpec() {
           canConnect(address, service.metricsService.boundPort) shouldBe true
         }
       }
+  }
+
+  private fun errorPageTests() {
+    "the Jetty admin server's 500 page reveals neither the exception nor the servlet that threw it" {
+      TestJettyService(admin = enabledAdmin(), servletInit = { addServlet("/fail", FailingServlet()) }).use { service ->
+        service.startSync()
+        checkErrorPages(service.adminPort, "/fail", 500, "Server Error", FAILURE_MESSAGE, FAILURE_CAUSE)
+      }
+    }
+
+    "the Jetty metrics server's 500 page reveals neither the exception nor the metrics servlet" {
+      val registry = PrometheusRegistry().apply { register(Collector { throw failure() }) }
+      val service = MetricsService(0, "metrics", LOOPBACK, registry)
+      service.whileRunning {
+        checkErrorPages(
+          service.boundPort,
+          "/metrics",
+          500,
+          "Server Error",
+          "prometheus",
+          FAILURE_MESSAGE,
+          FAILURE_CAUSE,
+        )
+      }
+    }
   }
 
   private fun shutdownHookTests() {
